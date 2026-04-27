@@ -35,7 +35,8 @@
       "Bash(./GenerateProjectFiles.bat \"D:/DivineBeastsArena/DivineBeastsArena.uproject\")",
       "Bash(./UnrealBuildTool.exe -Project=\"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -Target=\"DivineBeastsArenaServer Win64\" -NoUBTMichelles -NoHotReload -verbose)",
       "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat\" \"D:\\\\DivineBeastsArena\\\\DivineBeastsArena.uproject\" DivineBeastsArenaServer Win64 Development -NoUBTMichelles)",
-      "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat\" \"D:\\\\DivineBeastsArena\\\\DivineBeastsArena.uproject\" DivineBeastsArenaServer Win64 Development)"
+      "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat\" \"D:\\\\DivineBeastsArena\\\\DivineBeastsArena.uproject\" DivineBeastsArenaServer Win64 Development)",
+      "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat\" \"D:\\\\DivineBeastsArena\\\\DivineBeastsArena.uproject\" DivineBeastsArena Win64 Development)"
     ]
   }
 }

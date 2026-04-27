@@ -38,7 +38,6 @@
 	],
 	"TargetPlatforms": [
 		"Windows",
-		"WindowsEditor",
-		"WindowsServer"
+		"WindowsEditor"
 	]
 }
