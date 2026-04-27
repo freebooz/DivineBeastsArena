@@ -1,8 +1,10 @@
 // Copyright FreeboozStudio. All Rights Reserved.
+// 共鸣护盾增益效果实现 - 根据共鸣等级提供属性加成
 
 #include "GAS/Effects/DBEResonanceBuffEffect.h"
 #include "GAS/Attributes/DBABattleAttributeSet.h"
 
+// 构造函数 - 初始化共鸣增益效果
 UDBEResonanceBuffEffect::UDBEResonanceBuffEffect()
 {
 	// 持续效果：持续到手动移除
@@ -13,8 +15,10 @@ UDBEResonanceBuffEffect::UDBEResonanceBuffEffect()
 	ConfigureForResonanceLevel(1);
 }
 
+// ConfigureForResonanceLevel - 根据共鸣等级配置效果参数
 void UDBEResonanceBuffEffect::ConfigureForResonanceLevel(int32 Level)
 {
+	// 限制共鸣等级在有效范围内（1-4级）
 	ResonanceLevel = FMath::Clamp(Level, 1, 4);
 
 	// 清空现有修饰符
@@ -26,6 +30,7 @@ void UDBEResonanceBuffEffect::ConfigureForResonanceLevel(int32 Level)
 	float HealthBonus = 0.0f;
 	float ShieldBonus = 0.0f;
 
+	// 根据共鸣等级设置对应的属性加成数值
 	switch (ResonanceLevel)
 	{
 	case 1:
@@ -56,10 +61,10 @@ void UDBEResonanceBuffEffect::ConfigureForResonanceLevel(int32 Level)
 		break;
 	}
 
-	// 获取属性类
+	// 获取属性类用于查找属性
 	UClass* AttributeClass = UDBABattleAttributeSet::StaticClass();
 
-	// 伤害加成修饰符
+	// 创建伤害加成修饰符（攻击力）
 	FGameplayModifierInfo DamageInfo;
 	if (FProperty* AttackProperty = AttributeClass->FindPropertyByName(FName(TEXT("AttackPower"))))
 	{
@@ -69,7 +74,7 @@ void UDBEResonanceBuffEffect::ConfigureForResonanceLevel(int32 Level)
 	DamageInfo.ModifierMagnitude = FScalableFloat(DamageBonus);
 	Modifiers.Add(DamageInfo);
 
-	// 防御加成修饰符
+	// 创建防御加成修饰符（防御力）
 	FGameplayModifierInfo DefenseInfo;
 	if (FProperty* DefenseProperty = AttributeClass->FindPropertyByName(FName(TEXT("Defense"))))
 	{
@@ -79,7 +84,7 @@ void UDBEResonanceBuffEffect::ConfigureForResonanceLevel(int32 Level)
 	DefenseInfo.ModifierMagnitude = FScalableFloat(DefenseBonus);
 	Modifiers.Add(DefenseInfo);
 
-	// 生命值加成修饰符
+	// 创建生命值加成修饰符（最大生命）
 	FGameplayModifierInfo HealthInfo;
 	if (FProperty* MaxHealthProperty = AttributeClass->FindPropertyByName(FName(TEXT("MaxHealth"))))
 	{
@@ -89,7 +94,7 @@ void UDBEResonanceBuffEffect::ConfigureForResonanceLevel(int32 Level)
 	HealthInfo.ModifierMagnitude = FScalableFloat(HealthBonus);
 	Modifiers.Add(HealthInfo);
 
-	// 护盾值加成修饰符（通过 MaxShield 属性实现共鸣护盾加成）
+	// 创建护盾值加成修饰符（通过 MaxShield 属性实现共鸣护盾加成）
 	FGameplayModifierInfo ShieldInfo;
 	if (FProperty* MaxShieldProperty = AttributeClass->FindPropertyByName(FName(TEXT("MaxShield"))))
 	{

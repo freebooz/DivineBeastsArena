@@ -1,4 +1,5 @@
 // Copyright FreeboozStudio. All Rights Reserved.
+// 共鸣能力基类实现 - 处理角色共鸣效果的能力基类
 
 #include "GAS/Abilities/DBAResonanceAbilityBase.h"
 #include "GAS/DBAAbilitySystemComponent.h"
@@ -6,24 +7,32 @@
 #include "Common/DBALogChannels.h"
 #include "Data/DBAResonanceBonusData.h"
 
+// 构造函数 - 初始化共鸣能力
 UDBAResonanceAbilityBase::UDBAResonanceAbilityBase()
 {
-	// Resonance 被动无需网络同步动画等
+    // Resonance 被动无需网络同步动画等
 }
 
+// ActivateAbility - 能力激活时的处理
 void UDBAResonanceAbilityBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
+    // 调用父类实现
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
+	// 获取能力系统组件
 	UDBAAbilitySystemComponent* ASC = Cast<UDBAAbilitySystemComponent>(ActorInfo->AbilitySystemComponent.Get());
+
+	// 仅在网络权威（服务器）上应用共鸣效果
 	if (ASC && ActorInfo->IsNetAuthority())
 	{
 		ApplyResonanceEffect(ASC->GetResonanceLevel());
 	}
 }
 
+// ApplyResonanceEffect - 应用共鸣效果到角色
 void UDBAResonanceAbilityBase::ApplyResonanceEffect(int32 CurrentResonanceLevel)
 {
+	// 无效的共鸣等级，不处理
 	if (CurrentResonanceLevel <= 0)
 	{
 		UE_LOG(LogDBACombat, Log, TEXT("[DBAResonanceAbilityBase] 共鸣等级 0，无共鸣效果"));

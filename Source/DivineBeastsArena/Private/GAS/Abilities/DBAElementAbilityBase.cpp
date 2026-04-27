@@ -1,4 +1,5 @@
 // Copyright FreeboozStudio. All Rights Reserved.
+// 元素能力基类实现 - 所有元素相关能力的基类
 
 #include "GAS/Abilities/DBAElementAbilityBase.h"
 #include "GAS/DBAAbilitySystemComponent.h"
@@ -6,14 +7,19 @@
 #include "GAS/Effects/DBEEnergyCostEffect.h"
 #include "Common/DBALogChannels.h"
 
+// 构造函数 - 初始化元素能力默认属性
 UDBAElementAbilityBase::UDBAElementAbilityBase()
 {
+    // 默认元素类型为金
 	ElementType = EDBAElement::Gold;
+	// 默认能量消耗为0
 	EnergyCost = 0.0f;
 }
 
+// CanActivateAbility - 检查能力是否可以激活
 bool UDBAElementAbilityBase::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
 {
+    // 调用父类检查
 	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
 	{
 		return false;
@@ -23,16 +29,17 @@ bool UDBAElementAbilityBase::CanActivateAbility(const FGameplayAbilitySpecHandle
 	ensure(ActorInfo != nullptr);
 	ensure(ActorInfo->AbilitySystemComponent.IsValid());
 
-	// 校验 CurrentEnergy 是否足够
+	// 校验能量是否足够
 	if (EnergyCost > 0.0f && ActorInfo && ActorInfo->AbilitySystemComponent.IsValid())
 	{
+        // 获取能力系统组件
 		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
 		if (!ASC)
 		{
 			return false;
 		}
 
-		// 通过 AttributeAccessor 获取 CurrentEnergy
+		// 获取战斗属性集
 		const UDBABattleAttributeSet* CombatAttrSet = ASC->GetSet<UDBABattleAttributeSet>();
 		if (!CombatAttrSet)
 		{
@@ -40,9 +47,11 @@ bool UDBAElementAbilityBase::CanActivateAbility(const FGameplayAbilitySpecHandle
 			return false;
 		}
 
+		// 获取当前能量和最大能量
 		float CurrentEnergy = CombatAttrSet->GetCurrentEnergy();
 		float MaxEnergy = CombatAttrSet->GetMaxEnergy();
 
+		// 检查能量是否足够
 		if (CurrentEnergy < EnergyCost)
 		{
 			UE_LOG(LogDBACombat, Warning, TEXT("[DBAElementAbilityBase] 能量不足：需要 %.1f，当前 %.1f / %.1f"), EnergyCost, CurrentEnergy, MaxEnergy);
@@ -53,6 +62,7 @@ bool UDBAElementAbilityBase::CanActivateAbility(const FGameplayAbilitySpecHandle
 	return true;
 }
 
+// CommitAbilityCost - 提交能力消耗（能量消耗）
 bool UDBAElementAbilityBase::CommitAbilityCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, OUT FGameplayTagContainer* OptionalRelevantTags)
 {
 	// 防御性检查
@@ -62,7 +72,7 @@ bool UDBAElementAbilityBase::CommitAbilityCost(const FGameplayAbilitySpecHandle 
 		ensure(ActorInfo->AbilitySystemComponent.IsValid());
 	}
 
-	// 先校验能量
+	// 先校验能量是否足够
 	if (EnergyCost > 0.0f && ActorInfo && ActorInfo->AbilitySystemComponent.IsValid())
 	{
 		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
@@ -71,14 +81,17 @@ bool UDBAElementAbilityBase::CommitAbilityCost(const FGameplayAbilitySpecHandle 
 			return false;
 		}
 
+		// 获取战斗属性集
 		const UDBABattleAttributeSet* CombatAttrSet = ASC->GetSet<UDBABattleAttributeSet>();
 		if (!CombatAttrSet)
 		{
 			return false;
 		}
 
+		// 获取当前能量
 		float CurrentEnergy = CombatAttrSet->GetCurrentEnergy();
 
+		// 再次检查能量是否足够
 		if (CurrentEnergy < EnergyCost)
 		{
 			UE_LOG(LogDBACombat, Warning, TEXT("[DBAElementAbilityBase] 能量不足：需要 %.1f，当前 %.1f"), EnergyCost, CurrentEnergy);
@@ -101,6 +114,7 @@ bool UDBAElementAbilityBase::CommitAbilityCost(const FGameplayAbilitySpecHandle 
 		// 应用到自身
 		FActiveGameplayEffectHandle ActiveHandle = ASC->ApplyGameplayEffectSpecToSelf(EffectSpec);
 
+		// 检查能量消耗是否成功
 		if (ActiveHandle.IsValid())
 		{
 			UE_LOG(LogDBACombat, Log, TEXT("[DBAElementAbilityBase] 能量消耗成功：%.1f"), EnergyCost);
@@ -114,6 +128,7 @@ bool UDBAElementAbilityBase::CommitAbilityCost(const FGameplayAbilitySpecHandle 
 		return true;
 	}
 
+	// 如果没有能量消耗，则调用父类处理
 	bool bCostCommited = Super::CommitAbilityCost(Handle, ActorInfo, ActivationInfo, OptionalRelevantTags);
 
 	return bCostCommited;
