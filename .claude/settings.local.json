@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat\" DivineBeastsArenaServer Win64 Development -Project=\"%cd%/DivineBeastsArena.uproject\" -EnginePath=\"E:/UnrealEngine-5.7.1-release/Engine\" -WaitMutex)",
+      "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/GenerateProjectFiles.bat\" -project=\"%cd%/DivineBeastsArena.uproject\" -EnginePath=\"E:/UnrealEngine-5.7.1-release/Engine\")",
+      "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat\" DivineBeastsArena Win64 Development -Project=\"%cd%/DivineBeastsArena.uproject\" -EnginePath=\"E:/UnrealEngine-5.7.1-release/Engine\" -WaitMutex)",
+      "Bash(\"d:/DivineBeastsArena/Binaries/Win64/DivineBeastsArenaServer.exe\" -server -log -abslog=\"d:/DivineBeastsArena/Logs/Server.log\")",
+      "Bash(\"d:/DivineBeastsArena/Binaries/Win64/DivineBeastsArena.exe\")",
+      "Bash(\"d:/DivineBeastsArena/Binaries/Win64/DivineBeastsArenaServer.exe\" -server -log -NoShaderGeneration -nosound -defaultmap=/Engine/Maps/Entry)",
+      "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Binaries/Win64/UnrealEditor.exe\" \"d:/DivineBeastsArena/DivineBeastsArena.uproject\" -run=Python -Script=\\\\\"d:/DivineBeastsArena/Content/Developer/CreateBasicContent.py\\\\\" -Headless)",
+      "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat\" DivineBeastsArenaEditor Win64 Development -Project=\"%cd%/DivineBeastsArena.uproject\" -EnginePath=\"E:/UnrealEngine-5.7.1-release/Engine\" -WaitMutex)",
+      "Bash(E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat DivineBeastsArena Win64 Development)",
+      "Bash(powershell -Command \"Get-ChildItem 'd:/DivineBeastsArena' -Filter '*.sln' -Recurse | Select-Object -ExpandProperty FullName\")",
+      "Bash(powershell -Command \"Get-ChildItem 'd:/DivineBeastsArena' -Filter '*.vcxproj' -Recurse | Select-Object -ExpandProperty FullName\")",
+      "Bash(\"/d/Program Files/Epic Games/UE_5.7/Engine/Build/BatchFiles/Build.bat\" DivineBeastsArenaServer Win64 Development \"$\\(pwd\\)/DivineBeastsArena.uproject\" -WaitMutex)",
+      "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Binaries/DotNET/UnrealBuildTool.exe\" -ProjectFiles -Project=\"d:/DivineBeastsArena/DivineBeastsArena.uproject\" -Game -Engine -NoIntelliSense -NoBuild)",
+      "Bash(cmd //c \"E:\\\\\\\\UnrealEngine-5.7.1-release\\\\\\\\Engine\\\\\\\\Binaries\\\\\\\\DotNET\\\\\\\\UnrealBuildTool.exe\" -ProjectFiles -Project=\"d:\\\\\\\\DivineBeastsArena\\\\\\\\DivineBeastsArena.uproject\" -Game -Engine -NoIntelliSense -NoBuild)",
+      "Bash(cmd //c \"\\\\\"E:\\\\\\\\UnrealEngine-5.7.1-release\\\\\\\\Engine\\\\\\\\Binaries\\\\\\\\Win64\\\\\\\\UnrealEditor.exe\\\\\" DivineBeastsArena.uproject -Build -ForcePluginBuilder -DisableJoystickInput -AllowNonDevTools 2>&1\")",
+      "Bash(\"/e/UnrealEngine-5.7.1-release/Engine/Binaries/Win64/UnrealEditor.exe\" --version)",
+      "Bash(./Engine/Build/BatchFiles/GenerateProjectFiles.bat \"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -VSCode)",
+      "Bash(./Engine/Build/BatchFiles/Build.bat DivineBeastsArena Win64 Development \"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -WaitMutex)"
+    ]
+  }
+}

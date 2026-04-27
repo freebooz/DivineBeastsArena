@@ -1,0 +1,82 @@
+# Visual Studio (已删除，使用 VSCode + 源代码引擎)
+# .sln 和 .vcxproj 文件不应提交到版本控制
+.vs/
+*.suo
+*.user
+*.sln.docstates
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# Rider
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/settings.local.json
+
+# Unreal Engine
+Binaries/
+Build/
+Intermediate/
+Saved/
+DerivedDataCache/
+*.VC.db
+*.opensdf
+*.opendb
+*.sdf
+*.sln
+*.suo
+*.xcodeproj
+*.xcworkspace
+
+# Android
+[Aa]ndroid/
+.gradle/
+local.properties
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+*.ipa
+
+# Developer local settings
+Developer/
+
+# Crash reports
+*.dmp
+
+# Cache files
+*.uasset.tmp
+*.umap.tmp
+
+# Packaging
+Dist/
+Releases/
+
+# OS
+.DS_Store
+Thumbs.db
