@@ -1,4 +1,5 @@
 // Copyright FreeboozStudio. All Rights Reserved.
+// DBA 能力系统组件实现 - 管理角色能力和战斗属性
 
 #include "GAS/DBAAbilitySystemComponent.h"
 #include "GAS/DBAAbilitySetLibrary.h"
@@ -13,17 +14,19 @@
 #include "TimerManager.h"
 #include "Engine/World.h"
 
+// 构造函数 - 初始化能力系统组件
 UDBAAbilitySystemComponent::UDBAAbilitySystemComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
-	, UltimateEnergy(0.0f)
-	, ChainLevel(0)
-	, ResonanceLevel(0)
-	, LastHitTime(0.0f)
+	, UltimateEnergy(0.0f)      // 初始终极能量为0
+	, ChainLevel(0)             // 初始连击等级为0
+	, ResonanceLevel(0)          // 初始共鸣等级为0
+	, LastHitTime(0.0f)         // 上次命中时间
 {
-	// 默认配置
+	// 默认配置：启用复制
 	SetIsReplicatedByDefault(true);
 }
 
+// BeginPlay - 游戏开始时初始化
 void UDBAAbilitySystemComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -38,16 +41,17 @@ void UDBAAbilitySystemComponent::BeginPlay()
 				UltimateEnergyRegenTimerHandle,
 				this,
 				&UDBAAbilitySystemComponent::PassiveRegenUltimateEnergy,
-				1.0f,
-				true
+				1.0f,    // 每秒回复1点终极能量
+				true     // 循环执行
 			);
 		}
 	}
 }
 
+// EndPlay - 游戏结束时清理
 void UDBAAbilitySystemComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// 清理计时器
+	// 清理所有计时器
 	UWorld* World = GetWorld();
 	if (World)
 	{
@@ -58,6 +62,7 @@ void UDBAAbilitySystemComponent::EndPlay(const EEndPlayReason::Type EndPlayReaso
 	Super::EndPlay(EndPlayReason);
 }
 
+// InitAbilityActorInfo - 初始化能力Actor信息
 void UDBAAbilitySystemComponent::InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor)
 {
 	Super::InitAbilityActorInfo(InOwnerActor, InAvatarActor);
@@ -65,6 +70,7 @@ void UDBAAbilitySystemComponent::InitAbilityActorInfo(AActor* InOwnerActor, AAct
 	// 初始化完成后可以授予 Ability
 }
 
+// GrantAbilitiesFromFixedSkillGroup - 从固定技能组授予能力
 void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& FixedSkillGroupId)
 {
 	// 服务端权威
@@ -84,7 +90,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 		return;
 	}
 
-	// 授予 Passive
+	// 授予 Passive（被动技能）
 	if (AbilitySet->PassiveAbilityClass)
 	{
 		FGameplayAbilitySpec Spec(TSubclassOf<UGameplayAbility>(AbilitySet->PassiveAbilityClass), 1, INDEX_NONE, this);
@@ -92,7 +98,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 		GrantedAbilityHandles.Add(Handle);
 	}
 
-	// 授予 Skill01~04
+	// 授予 Skill01~Skill04（主动技能）
 	TArray<TSubclassOf<UDBAElementAbilityBase>> ActiveSkills = {
 		AbilitySet->Skill01Class,
 		AbilitySet->Skill02Class,
@@ -108,6 +114,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 		static_cast<int32>(EDBAAbilityInputID::Skill04)
 	};
 
+	// 遍历并授予每个主动技能
 	for (int32 i = 0; i < ActiveSkills.Num(); ++i)
 	{
 		if (ActiveSkills[i])
@@ -118,7 +125,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 		}
 	}
 
-	// 授予 ZodiacUltimate
+	// 授予 ZodiacUltimate（生肖终极技能）
 	if (AbilitySet->ZodiacUltimateClass)
 	{
 		FGameplayAbilitySpec Spec(TSubclassOf<UGameplayAbility>(AbilitySet->ZodiacUltimateClass), 1, static_cast<int32>(EDBAAbilityInputID::Ultimate), this);
@@ -126,7 +133,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 		GrantedAbilityHandles.Add(Handle);
 	}
 
-	// 授予 Resonance
+	// 授予 Resonance（共鸣能力）
 	if (AbilitySet->ResonanceAbilityClass)
 	{
 		FGameplayAbilitySpec Spec(TSubclassOf<UGameplayAbility>(AbilitySet->ResonanceAbilityClass), 1, INDEX_NONE, this);
@@ -167,6 +174,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 	SetResonanceLevel(SameElementCount >= 5 ? 4 : SameElementCount >= 4 ? 3 : SameElementCount >= 3 ? 2 : SameElementCount >= 2 ? 1 : 0);
 }
 
+// RemoveAllGrantedAbilities - 移除所有已授予的能力
 void UDBAAbilitySystemComponent::RemoveAllGrantedAbilities()
 {
 	// 服务端权威
@@ -175,6 +183,7 @@ void UDBAAbilitySystemComponent::RemoveAllGrantedAbilities()
 		return;
 	}
 
+	// 清除所有已授予的能力
 	for (const FGameplayAbilitySpecHandle& Handle : GrantedAbilityHandles)
 	{
 		ClearAbility(Handle);
@@ -183,6 +192,7 @@ void UDBAAbilitySystemComponent::RemoveAllGrantedAbilities()
 	GrantedAbilityHandles.Empty();
 }
 
+// AddUltimateEnergy - 增加终极能量
 void UDBAAbilitySystemComponent::AddUltimateEnergy(float Amount)
 {
 	// 服务端权威
@@ -191,9 +201,11 @@ void UDBAAbilitySystemComponent::AddUltimateEnergy(float Amount)
 		return;
 	}
 
+	// 限制终极能量在有效范围内 [0, MaxUltimateEnergy]
 	UltimateEnergy = FMath::Clamp(UltimateEnergy + Amount, 0.0f, DBAConstants::MaxUltimateEnergy);
 }
 
+// ConsumeUltimateEnergy - 消耗终极能量
 bool UDBAAbilitySystemComponent::ConsumeUltimateEnergy(float Amount)
 {
 	// 服务端权威
@@ -202,6 +214,7 @@ bool UDBAAbilitySystemComponent::ConsumeUltimateEnergy(float Amount)
 		return false;
 	}
 
+	// 检查能量是否足够
 	if (UltimateEnergy >= Amount)
 	{
 		UltimateEnergy -= Amount;
@@ -211,11 +224,13 @@ bool UDBAAbilitySystemComponent::ConsumeUltimateEnergy(float Amount)
 	return false;
 }
 
+// HasEnoughUltimateEnergy - 检查是否有足够的终极能量
 bool UDBAAbilitySystemComponent::HasEnoughUltimateEnergy(float Amount) const
 {
 	return UltimateEnergy >= Amount;
 }
 
+// AddChainLevel - 增加连击等级
 void UDBAAbilitySystemComponent::AddChainLevel(int32 Amount)
 {
 	// 服务端权威
@@ -224,6 +239,7 @@ void UDBAAbilitySystemComponent::AddChainLevel(int32 Amount)
 		return;
 	}
 
+	// 限制连击等级在 [0, 10] 范围内
 	ChainLevel = FMath::Clamp(ChainLevel + Amount, 0, 10);
 	LastHitTime = GetWorld()->GetTimeSeconds();
 
@@ -242,6 +258,7 @@ void UDBAAbilitySystemComponent::AddChainLevel(int32 Amount)
 	}
 }
 
+// ResetChainLevel - 重置连击等级
 void UDBAAbilitySystemComponent::ResetChainLevel()
 {
 	// 服务端权威
@@ -260,11 +277,14 @@ void UDBAAbilitySystemComponent::ResetChainLevel()
 	}
 }
 
+// ShouldTriggerChainFinisher - 是否应该触发连击终结
 bool UDBAAbilitySystemComponent::ShouldTriggerChainFinisher() const
 {
+	// 连击等级达到10级时触发连击终结
 	return ChainLevel >= 10;
 }
 
+// SetResonanceLevel - 设置共鸣等级
 void UDBAAbilitySystemComponent::SetResonanceLevel(int32 Level)
 {
 	// 服务端权威
@@ -273,9 +293,11 @@ void UDBAAbilitySystemComponent::SetResonanceLevel(int32 Level)
 		return;
 	}
 
+	// 限制共鸣等级在 [0, 4] 范围内
 	ResonanceLevel = FMath::Clamp(Level, 0, 4);
 }
 
+// CanActivateAbility - 检查是否可以激活指定能力
 bool UDBAAbilitySystemComponent::CanActivateAbility(TSubclassOf<UDBAMobaGameplayAbilityBase> AbilityClass, AActor* Target) const
 {
 	// 服务端权威
@@ -333,6 +355,7 @@ bool UDBAAbilitySystemComponent::CanActivateAbility(TSubclassOf<UDBAMobaGameplay
 	return true;
 }
 
+// IsValidTarget - 检查目标是否有效（可作为技能目标）
 bool UDBAAbilitySystemComponent::IsValidTarget(AActor* Target, bool bRequireEnemy) const
 {
 	// 服务端权威
@@ -404,6 +427,7 @@ bool UDBAAbilitySystemComponent::IsValidTarget(AActor* Target, bool bRequireEnem
 	return true;
 }
 
+// TriggerGameplayCue - 触发 GameplayCue 效果
 void UDBAAbilitySystemComponent::TriggerGameplayCue(const FGameplayTag& CueTag, AActor* Target)
 {
 	if (!CueTag.IsValid())
@@ -423,6 +447,7 @@ void UDBAAbilitySystemComponent::TriggerGameplayCue(const FGameplayTag& CueTag, 
 		*CueTag.ToString(), Target ? *Target->GetName() : TEXT("None"));
 }
 
+// PassiveRegenUltimateEnergy - 被动回复终极能量（定时器回调）
 void UDBAAbilitySystemComponent::PassiveRegenUltimateEnergy()
 {
 	// 服务端权威
@@ -431,9 +456,11 @@ void UDBAAbilitySystemComponent::PassiveRegenUltimateEnergy()
 		return;
 	}
 
+	// 每秒回复1点终极能量
 	AddUltimateEnergy(1.0f);
 }
 
+// CheckChainReset - 检查是否需要重置连击等级（定时器回调）
 void UDBAAbilitySystemComponent::CheckChainReset()
 {
 	// 服务端权威
@@ -443,16 +470,19 @@ void UDBAAbilitySystemComponent::CheckChainReset()
 	}
 
 	float CurrentTime = GetWorld()->GetTimeSeconds();
+	// 检查距离上次命中是否超过超时时间
 	if (CurrentTime - LastHitTime >= DBAConstants::ChainTimeout)
 	{
 		ResetChainLevel();
 	}
 }
 
+// GetLifetimeReplicatedProps - 网络复制属性定义
 void UDBAAbilitySystemComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	// 复制终极能量、连击等级、共鸣等级到所有客户端
 	DOREPLIFETIME(UDBAAbilitySystemComponent, UltimateEnergy);
 	DOREPLIFETIME(UDBAAbilitySystemComponent, ChainLevel);
 	DOREPLIFETIME(UDBAAbilitySystemComponent, ResonanceLevel);

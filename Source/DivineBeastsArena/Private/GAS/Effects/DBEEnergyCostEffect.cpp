@@ -1,8 +1,10 @@
 // Copyright FreeboozStudio. All Rights Reserved.
+// 能量消耗效果实现 - 用于技能的能量消耗 GameplayEffect
 
 #include "GAS/Effects/DBEEnergyCostEffect.h"
 #include "GAS/Attributes/DBABattleAttributeSet.h"
 
+// 构造函数 - 初始化能量消耗效果
 UDBEEnergyCostEffect::UDBEEnergyCostEffect()
 {
 	// 即时效果：立即应用并结束

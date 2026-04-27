@@ -1,4 +1,5 @@
 // Copyright FreeboozStudio. All Rights Reserved.
+// 游戏实例实现 - 管理游戏生命周期和子系统
 
 #include "DBAGameInstance.h"
 #include "Common/Subsystems/DBAGameInstanceSubsystemBase.h"
@@ -6,10 +7,12 @@
 #include "Kismet/GameplayStatics.h"
 #include "Common/DBALogChannels.h"
 
+// 构造函数 - 初始化游戏实例
 UDBAGameInstance::UDBAGameInstance()
 {
 }
 
+// Init - 游戏实例初始化
 void UDBAGameInstance::Init()
 {
 	Super::Init();
@@ -24,6 +27,7 @@ void UDBAGameInstance::Init()
 	}
 }
 
+// Shutdown - 游戏实例关闭
 void UDBAGameInstance::Shutdown()
 {
 	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 关闭中"));
@@ -31,6 +35,7 @@ void UDBAGameInstance::Shutdown()
 	Super::Shutdown();
 }
 
+// OnWorldChanged - 世界切换时的回调
 void UDBAGameInstance::OnWorldChanged(UWorld* OldWorld, UWorld* NewWorld)
 {
 	Super::OnWorldChanged(OldWorld, NewWorld);

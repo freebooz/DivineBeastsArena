@@ -4,11 +4,13 @@
 #include "DBAGameModeBase.h"
 #include "Common/DBALogChannels.h"
 
+// 构造函数 - 初始化游戏模式基础配置
 ADBAGameModeBase::ADBAGameModeBase()
 {
     // 基础配置
 }
 
+// BeginPlay - 游戏开始时调用
 void ADBAGameModeBase::BeginPlay()
 {
     Super::BeginPlay();
