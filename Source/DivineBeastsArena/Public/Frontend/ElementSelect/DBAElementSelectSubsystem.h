@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Common/Types/DBACommonEnums.h"
 #include "DBAElementSelectSubsystem.generated.h"
 
 UENUM(BlueprintType)

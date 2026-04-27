@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "GameFramework/PlayerState.h"
 #include "DBAPartySubsystem.generated.h"
 
 class UDBAInviteServiceStub;

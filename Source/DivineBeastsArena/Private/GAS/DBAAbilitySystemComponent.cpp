@@ -4,6 +4,7 @@
 #include "GAS/DBAAbilitySetLibrary.h"
 #include "MobaBase/GAS/DBAMobaGameplayAbilityBase.h"
 #include "GAS/Abilities/DBAElementAbilityBase.h"
+#include "Abilities/GameplayAbility.h"
 #include "AbilitySystemGlobals.h"
 #include "Common/Types/DBACommonTypes.h"
 #include "Common/DBALogChannels.h"
@@ -86,13 +87,13 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 	// 授予 Passive
 	if (AbilitySet->PassiveAbilityClass)
 	{
-		FGameplayAbilitySpec Spec(AbilitySet->PassiveAbilityClass, 1, INDEX_NONE, this);
+		FGameplayAbilitySpec Spec(TSubclassOf<UGameplayAbility>(AbilitySet->PassiveAbilityClass), 1, INDEX_NONE, this);
 		FGameplayAbilitySpecHandle Handle = GiveAbility(Spec);
 		GrantedAbilityHandles.Add(Handle);
 	}
 
 	// 授予 Skill01~04
-	TArray<TSubclassOf<UDBAMobaGameplayAbilityBase>> ActiveSkills = {
+	TArray<TSubclassOf<UDBAElementAbilityBase>> ActiveSkills = {
 		AbilitySet->Skill01Class,
 		AbilitySet->Skill02Class,
 		AbilitySet->Skill03Class,
@@ -111,7 +112,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 	{
 		if (ActiveSkills[i])
 		{
-			FGameplayAbilitySpec Spec(ActiveSkills[i], 1, SkillInputIDs[i], this);
+			FGameplayAbilitySpec Spec(TSubclassOf<UGameplayAbility>(ActiveSkills[i]), 1, SkillInputIDs[i], this);
 			FGameplayAbilitySpecHandle Handle = GiveAbility(Spec);
 			GrantedAbilityHandles.Add(Handle);
 		}
@@ -120,7 +121,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 	// 授予 ZodiacUltimate
 	if (AbilitySet->ZodiacUltimateClass)
 	{
-		FGameplayAbilitySpec Spec(AbilitySet->ZodiacUltimateClass, 1, static_cast<int32>(EDBAAbilityInputID::Ultimate), this);
+		FGameplayAbilitySpec Spec(TSubclassOf<UGameplayAbility>(AbilitySet->ZodiacUltimateClass), 1, static_cast<int32>(EDBAAbilityInputID::Ultimate), this);
 		FGameplayAbilitySpecHandle Handle = GiveAbility(Spec);
 		GrantedAbilityHandles.Add(Handle);
 	}
@@ -128,7 +129,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 	// 授予 Resonance
 	if (AbilitySet->ResonanceAbilityClass)
 	{
-		FGameplayAbilitySpec Spec(AbilitySet->ResonanceAbilityClass, 1, INDEX_NONE, this);
+		FGameplayAbilitySpec Spec(TSubclassOf<UGameplayAbility>(AbilitySet->ResonanceAbilityClass), 1, INDEX_NONE, this);
 		FGameplayAbilitySpecHandle Handle = GiveAbility(Spec);
 		GrantedAbilityHandles.Add(Handle);
 	}

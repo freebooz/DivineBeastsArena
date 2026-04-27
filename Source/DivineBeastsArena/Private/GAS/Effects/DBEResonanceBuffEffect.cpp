@@ -9,18 +9,6 @@ UDBEResonanceBuffEffect::UDBEResonanceBuffEffect()
 	DurationPolicy = EGameplayEffectDurationType::HasDuration;
 	DurationMagnitude = FScalableFloat(0.0f);  // 0 表示永久，需要手动移除
 
-	// 无冷却
-	PeriodicInterval = 0.0f;
-	bExecutePeriodicEffectOnApplication = false;
-
-	// 复制策略：复制到所有相关客户端
-	ReplicationPolicy = EGameplayEffectReplicationPolicy::ReplicateInstanced;
-
-	// 堆叠策略：替换同类型效果
-	StackingType = EGameplayEffectStackingType::AggregateByTarget;
-	StackLimitCount = 1;
-	StackPeriodResetOnApplication = false;
-
 	// 默认 Lv.1 配置
 	ConfigureForResonanceLevel(1);
 }
@@ -68,30 +56,45 @@ void UDBEResonanceBuffEffect::ConfigureForResonanceLevel(int32 Level)
 		break;
 	}
 
+	// 获取属性类
+	UClass* AttributeClass = UDBABattleAttributeSet::StaticClass();
+
 	// 伤害加成修饰符
 	FGameplayModifierInfo DamageInfo;
-	DamageInfo.Attribute.SetUProperty(FindPropertyByName(FName(TEXT("AttackPower"))));
+	if (FProperty* AttackProperty = AttributeClass->FindPropertyByName(FName(TEXT("AttackPower"))))
+	{
+		DamageInfo.Attribute.SetUProperty(AttackProperty);
+	}
 	DamageInfo.ModifierOp = EGameplayModOp::Additive;
 	DamageInfo.ModifierMagnitude = FScalableFloat(DamageBonus);
 	Modifiers.Add(DamageInfo);
 
 	// 防御加成修饰符
 	FGameplayModifierInfo DefenseInfo;
-	DefenseInfo.Attribute.SetUProperty(FindPropertyByName(FName(TEXT("Defense"))));
+	if (FProperty* DefenseProperty = AttributeClass->FindPropertyByName(FName(TEXT("Defense"))))
+	{
+		DefenseInfo.Attribute.SetUProperty(DefenseProperty);
+	}
 	DefenseInfo.ModifierOp = EGameplayModOp::Additive;
 	DefenseInfo.ModifierMagnitude = FScalableFloat(DefenseBonus);
 	Modifiers.Add(DefenseInfo);
 
 	// 生命值加成修饰符
 	FGameplayModifierInfo HealthInfo;
-	HealthInfo.Attribute.SetUProperty(FindPropertyByName(FName(TEXT("MaxHealth"))));
+	if (FProperty* MaxHealthProperty = AttributeClass->FindPropertyByName(FName(TEXT("MaxHealth"))))
+	{
+		HealthInfo.Attribute.SetUProperty(MaxHealthProperty);
+	}
 	HealthInfo.ModifierOp = EGameplayModOp::Additive;
 	HealthInfo.ModifierMagnitude = FScalableFloat(HealthBonus);
 	Modifiers.Add(HealthInfo);
 
 	// 护盾值加成修饰符（通过 MaxShield 属性实现共鸣护盾加成）
 	FGameplayModifierInfo ShieldInfo;
-	ShieldInfo.Attribute.SetUProperty(FindPropertyByName(FName(TEXT("MaxShield"))));
+	if (FProperty* MaxShieldProperty = AttributeClass->FindPropertyByName(FName(TEXT("MaxShield"))))
+	{
+		ShieldInfo.Attribute.SetUProperty(MaxShieldProperty);
+	}
 	ShieldInfo.ModifierOp = EGameplayModOp::Additive;
 	ShieldInfo.ModifierMagnitude = FScalableFloat(ShieldBonus);
 	Modifiers.Add(ShieldInfo);

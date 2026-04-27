@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "MobaBase/GAS/DBAMobaAbilitySystemComponentBase.h"
 #include "Common/DBAEnumsCore.h"
+#include "Common/DBAConstants.h"
+#include "GAS/Attributes/DBABattleAttributeSet.h"
 #include "DBAAbilitySystemComponent.generated.h"
 
 class UDBAAbilitySetDataAsset;

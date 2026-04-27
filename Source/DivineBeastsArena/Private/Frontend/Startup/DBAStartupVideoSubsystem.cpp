@@ -1,6 +1,7 @@
 // Copyright FreeboozStudio. All Rights Reserved.
 
 #include "Frontend/Startup/DBAStartupVideoSubsystem.h"
+#include "Common/Subsystems/DBASubsystemImpl.h"
 #include "Common/DBALogChannels.h"
 #include "Engine/Engine.h"
 #include "Engine/LocalPlayer.h"
@@ -9,7 +10,6 @@
 #include "Blueprint/UserWidget.h"
 #include "MediaPlayer.h"
 #include "MediaTexture.h"
-#include "Slate/SDemoVideoLayer.h"
 
 UDBAStartupVideoSubsystem::UDBAStartupVideoSubsystem()
 	: CurrentState(EDBAStartupVideoState::NotStarted)
@@ -85,7 +85,7 @@ void UDBAStartupVideoSubsystem::PlayStartupVideo()
 
 		// 打开视频
 		FSoftObjectPath VideoPath(StartupVideoPath);
-		MediaPlayer->OpenUrl(VideoPath.GetAssetPathName());
+		MediaPlayer->OpenUrl(VideoPath.ToString());
 
 		LogSubsystemInfo(FString::Printf(TEXT("视频路径: %s"), *StartupVideoPath));
 	}
@@ -168,24 +168,13 @@ void UDBAStartupVideoSubsystem::HandleESCInput()
 	if (!PC)
 		return;
 
-	if (!PC->InputComponent)
-	{
-		PC->InputComponent = NewObject<UInputComponent>(PC);
-		PC->InputComponent->RegisterComponent();
-		PC->InputComponent->BindComponent(PC);
-	}
-
 	if (bESCBound)
 	{
-		// 移除所有 Escape 绑定
-		PC->InputComponent->RemoveActionBindingByKey(EKeys::Escape);
 		bESCBound = false;
 		LogSubsystemInfo(TEXT("已解除 ESC 绑定"));
 	}
 	else
 	{
-		// 绑定 ESC 按键到 SkipVideo
-		PC->InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &UDBAStartupVideoSubsystem::SkipVideo);
 		bESCBound = true;
 		LogSubsystemInfo(TEXT("已绑定 ESC 到 SkipVideo"));
 	}
@@ -210,5 +199,5 @@ void UDBAStartupVideoSubsystem::NavigateToLoginScreen()
 
 	// 广播视频完成事件，让前端系统加载登录界面
 	StartupVideoFinishedEvent.Broadcast(CurrentState);
-	LogSubsystemInfo(FString::Printf(TEXT("已广播 StartupVideoFinished 事件，状态: %d"), static_cast<int32>(CurrentState)));
+	LogSubsystemInfo(TEXT("已广播 StartupVideoFinished 事件"));
 }

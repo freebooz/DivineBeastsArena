@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
+#include "Common/Types/DBACommonEnums.h"
 #include "DBAFiveCampSelectWidgetBase.generated.h"
 
 class UDBAFiveCampInfoPanelWidgetBase;

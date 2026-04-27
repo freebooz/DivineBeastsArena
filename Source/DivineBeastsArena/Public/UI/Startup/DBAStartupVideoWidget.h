@@ -6,6 +6,8 @@
 #include "Blueprint/IUserObjectListEntry.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "Components/Button.h"
+#include "UMG.h"
 #include "DBAStartupVideoWidget.generated.h"
 
 class UMediaPlayer;
@@ -37,15 +39,25 @@ protected:
 	virtual void NativeDestruct() override;
 
 	/**
-	 * 视频播放完成时调用
+	 * 视频播放完成时调用（由子类实现）
 	 */
-	UFUNCTION(BlueprintCallable, Category = "StartupVideo")
+	UFUNCTION(BlueprintImplementableEvent, Category = "StartupVideo")
+	void OnVideoFinishedBP();
+
+	/**
+	 * 跳过的点击事件（由子类实现）
+	 */
+	UFUNCTION(BlueprintImplementableEvent, Category = "StartupVideo")
+	void OnSkipClickedBP();
+
+	/**
+	 * 视频播放完成内部处理
+	 */
 	void OnVideoFinished();
 
 	/**
-	 * 跳过的点击事件
+	 * 跳过按钮点击处理
 	 */
-	UFUNCTION(BlueprintCallable, Category = "StartupVideo")
 	void OnSkipClicked();
 
 private:

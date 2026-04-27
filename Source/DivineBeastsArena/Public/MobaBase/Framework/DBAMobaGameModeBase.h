@@ -5,6 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "GameFramework/GameStateBase.h"
 #include "Common/Types/DBACommonEnums.h"
 #include "DBAMobaGameModeBase.generated.h"
 

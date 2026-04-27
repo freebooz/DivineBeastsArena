@@ -531,10 +531,11 @@ bool UDBAInputRouterComponent::ServerLockTarget_Validate(AActor* TargetActor)
 	// 检查目标是否在合理范围内
 	const float MaxLockTargetDistance = 3000.0f; // 30米
 	FVector OwnerLocation = FVector::ZeroVector;
+	APawn* OwnerPawn = Cast<APawn>(GetOwner());
 
-	if (APawn* Pawn = Cast<APawn>(GetOwner()))
+	if (OwnerPawn)
 	{
-		OwnerLocation = Pawn->GetActorLocation();
+		OwnerLocation = OwnerPawn->GetActorLocation();
 	}
 
 	float Distance = FVector::Dist(OwnerLocation, TargetActor->GetActorLocation());
@@ -545,7 +546,7 @@ bool UDBAInputRouterComponent::ServerLockTarget_Validate(AActor* TargetActor)
 	}
 
 	// 检查目标是否可见（视线检测）
-	if (!HasLineOfSightToTarget(Pawn, TargetActor))
+	if (!HasLineOfSightToTarget(OwnerPawn, TargetActor))
 	{
 		UE_LOG(LogDBAUI, Warning, TEXT("[DBAInputRouter] ServerLockTarget_Validate 失败 - 目标不可见"));
 		return false;

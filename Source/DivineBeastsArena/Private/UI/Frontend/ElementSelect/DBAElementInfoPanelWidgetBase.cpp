@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "UI/Frontend/ElementSelect/DBAElementInfoPanelWidgetBase.h"
+#include "Common/Types/DBACommonEnums.h"
 
 UDBAElementInfoPanelWidgetBase::UDBAElementInfoPanelWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

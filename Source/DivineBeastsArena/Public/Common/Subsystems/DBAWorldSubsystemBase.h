@@ -52,7 +52,7 @@ public:
 	/**
 	 * 获取子系统显示名称
 	 */
-	virtual FString GetSubsystemDisplayName() const { return GetSubsystemDisplayNameInternal(*GetClass()->GetName().ToString()); }
+	virtual FString GetSubsystemDisplayName() const { return GetSubsystemDisplayNameInternal(GetClass()->GetName()); }
 
 	/**
 	 * 检查子系统是否已正确初始化
@@ -100,17 +100,17 @@ protected:
 	/**
 	 * 记录子系统错误
 	 */
-	void LogSubsystemError(const FString& ErrorMessage) const { LogSubsystemErrorInternal(*GetClass()->GetName().ToString(), ErrorMessage); }
+	void LogSubsystemError(const FString& ErrorMessage) const { LogSubsystemErrorInternal(GetClass()->GetName(), ErrorMessage); }
 
 	/**
 	 * 记录子系统警告
 	 */
-	void LogSubsystemWarning(const FString& WarningMessage) const { LogSubsystemWarningInternal(*GetClass()->GetName().ToString(), WarningMessage); }
+	void LogSubsystemWarning(const FString& WarningMessage) const { LogSubsystemWarningInternal(GetClass()->GetName(), WarningMessage); }
 
 	/**
 	 * 记录子系统信息
 	 */
-	void LogSubsystemInfo(const FString& InfoMessage) const { LogSubsystemInfoInternal(*GetClass()->GetName().ToString(), InfoMessage); }
+	void LogSubsystemInfo(const FString& InfoMessage) const { LogSubsystemInfoInternal(GetClass()->GetName(), InfoMessage); }
 
 	/**
 	 * 检查是否在 GameThread
@@ -120,5 +120,5 @@ protected:
 	/**
 	 * 确保在 GameThread 执行
 	 */
-	bool EnsureGameThread(const FString& FunctionName) const { return EnsureGameThreadInternal(*GetClass()->GetName().ToString(), *FunctionName); }
+	bool EnsureGameThread(const FString& FunctionName) const { return EnsureGameThreadInternal(GetClass()->GetName(), FunctionName); }
 };

@@ -96,7 +96,7 @@ bool UDBAElementAbilityBase::CommitAbilityCost(const FGameplayAbilitySpecHandle 
 
 		// 创建能量消耗 GE Spec（使用内置的 CostGameplayEffect 机制）
 		TSubclassOf<UGameplayEffect> EnergyCostEffectClass = UDBEEnergyCostEffect::StaticClass();
-		FGameplayEffectSpec EffectSpec(EnergyCostEffectClass, EffectContext, EnergyCost);
+		FGameplayEffectSpec EffectSpec(EnergyCostEffectClass.GetDefaultObject(), EffectContext, EnergyCost);
 
 		// 应用到自身
 		FActiveGameplayEffectHandle ActiveHandle = ASC->ApplyGameplayEffectSpecToSelf(EffectSpec);

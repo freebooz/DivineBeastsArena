@@ -210,7 +210,7 @@ FString UDBAReadyCheckSubsystem::GetLocalPlayerId() const
 		{
 			if (APlayerState* PlayerState = PC->GetPlayerState<APlayerState>())
 			{
-				return PlayerState->GetPlayerId();
+				return FString::FromInt(PlayerState->GetPlayerId());
 			}
 		}
 	}

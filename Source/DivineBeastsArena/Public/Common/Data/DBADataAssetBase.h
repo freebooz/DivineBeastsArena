@@ -16,9 +16,6 @@ class DIVINEBEASTSARENA_API UDBADataAssetBase : public UPrimaryDataAsset
     GENERATED_BODY()
 
 public:
-    UDBADataAssetBase();
-
-public:
     /** 数据 ID */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Base")
     FName DataId;

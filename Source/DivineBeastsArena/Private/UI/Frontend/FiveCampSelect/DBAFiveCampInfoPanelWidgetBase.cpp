@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "UI/Frontend/FiveCampSelect/DBAFiveCampInfoPanelWidgetBase.h"
+#include "Common/Types/DBACommonEnums.h"
 
 UDBAFiveCampInfoPanelWidgetBase::UDBAFiveCampInfoPanelWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

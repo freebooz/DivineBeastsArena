@@ -6,7 +6,6 @@
 #include "Components/TextBlock.h"
 #include "MediaPlayer.h"
 #include "MediaTexture.h"
-#include "Blueprint/SlateTextureAtlasBootstrap.h"
 #include "RenderingThread.h"
 #include "Common/DBALogChannels.h"
 
@@ -44,10 +43,7 @@ void UDBAStartupVideoWidget::SetMediaPlayer(UMediaPlayer* InMediaPlayer)
 
 	if (MediaPlayer)
 	{
-		// 设置视频播放完成回调
-		MediaPlayer->OnEndPlayback.AddDynamic(this, &UDBAStartupVideoWidget::OnVideoFinished);
 		bIsPlaying = true;
-
 		UE_LOG(LogDBAUI, Log, TEXT("[DBAStartupVideoWidget] 媒体播放器已设置"));
 	}
 }
@@ -55,17 +51,10 @@ void UDBAStartupVideoWidget::SetMediaPlayer(UMediaPlayer* InMediaPlayer)
 void UDBAStartupVideoWidget::OnVideoFinished()
 {
 	bIsPlaying = false;
-
 	UE_LOG(LogDBAUI, Log, TEXT("[DBAStartupVideoWidget] 视频播放完成"));
-
-	// 通过 EventDispatcher 通知外部
-	OnVideoFinishedBP();
 }
 
 void UDBAStartupVideoWidget::OnSkipClicked()
 {
 	UE_LOG(LogDBAUI, Log, TEXT("[DBAStartupVideoWidget] 用户点击跳过"));
-
-	// 通过 EventDispatcher 通知外部
-	OnSkipClickedBP();
 }

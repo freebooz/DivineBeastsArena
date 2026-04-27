@@ -281,7 +281,7 @@ FString UDBAPartySubsystem::GetCurrentPlayerId() const
 		{
 			if (APlayerState* PlayerState = PC->GetPlayerState<APlayerState>())
 			{
-				return PlayerState->GetPlayerId();
+				return FString::Printf(TEXT("%d"), PlayerState->GetPlayerId());
 			}
 		}
 	}

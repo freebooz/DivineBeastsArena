@@ -5,12 +5,11 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Engine/DataAsset.h"
+#include "GAS/Abilities/DBAZodiacAbilityBase.h"
+#include "GAS/Abilities/DBAElementAbilityBase.h"
+#include "GAS/Abilities/DBAZodiacUltimateAbilityBase.h"
+#include "GAS/Abilities/DBAResonanceAbilityBase.h"
 #include "DBAAbilitySetLibrary.generated.h"
-
-class UDBAZodiacAbilityBase;
-class UDBAElementAbilityBase;
-class UDBAZodiacUltimateAbilityBase;
-class UDBAResonanceAbilityBase;
 
 /**
  * 技能组资源配置

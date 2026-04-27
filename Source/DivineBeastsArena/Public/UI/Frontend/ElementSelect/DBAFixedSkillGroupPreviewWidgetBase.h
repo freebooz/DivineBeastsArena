@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAWidgetBase.h"
+#include "Common/Types/DBACommonEnums.h"
 #include "DBAFixedSkillGroupPreviewWidgetBase.generated.h"
 
 UCLASS(Abstract, Blueprintable, BlueprintType)

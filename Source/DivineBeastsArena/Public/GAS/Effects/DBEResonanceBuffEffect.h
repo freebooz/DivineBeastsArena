@@ -36,7 +36,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Resonance")
 	int32 ResonanceLevel = 1;
 
-protected:
+public:
 	/** 根据共鸣等级配置修饰符 */
 	void ConfigureForResonanceLevel(int32 Level);
 };
