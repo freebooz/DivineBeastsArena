@@ -100,7 +100,6 @@ public class DivineBeastsArena : ModuleRules
 
         // 优化设置
         bUseUnity = true;                           // 启用 Unity 构建加速编译
-        bEnforceIWYU = true;                        // 强制 IWYU（Include What You Use）
         bLegacyPublicIncludePaths = false;          // 禁用旧版公共 Include 路径
 
         // C++ 标准

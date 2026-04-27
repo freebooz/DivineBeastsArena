@@ -31,7 +31,10 @@
       "Bash(./Engine/Build/BatchFiles/RunUAT.bat CookCook -project=\"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -platform=Windows -map=/Game/Maps/Frontend/FrontendMap)",
       "Bash(./UnrealEditor.exe \"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -run=CookCook -platform=Windows -map=/Game/Maps/Frontend/FrontendMap -file=Cook)",
       "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Binaries/Win64/UnrealEditor.exe\" \"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -CookMaps=\"FrontendMap\" -platform=Windows -file=Cooked -OutputDir=\"D:/DivineBeastsArena/Saved/Cooked/Windows\")",
-      "Bash(./GenerateProjectFiles.bat \"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -Engine=\"E:/UnrealEngine-5.7.1-release\")"
+      "Bash(./GenerateProjectFiles.bat \"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -Engine=\"E:/UnrealEngine-5.7.1-release\")",
+      "Bash(./GenerateProjectFiles.bat \"D:/DivineBeastsArena/DivineBeastsArena.uproject\")",
+      "Bash(./UnrealBuildTool.exe -Project=\"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -Target=\"DivineBeastsArenaServer Win64\" -NoUBTMichelles -NoHotReload -verbose)",
+      "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat\" \"D:\\\\DivineBeastsArena\\\\DivineBeastsArena.uproject\" DivineBeastsArenaServer Win64 Development -NoUBTMichelles)"
     ]
   }
 }
