@@ -18,7 +18,11 @@
       "Bash(cmd //c \"\\\\\"E:\\\\\\\\UnrealEngine-5.7.1-release\\\\\\\\Engine\\\\\\\\Binaries\\\\\\\\Win64\\\\\\\\UnrealEditor.exe\\\\\" DivineBeastsArena.uproject -Build -ForcePluginBuilder -DisableJoystickInput -AllowNonDevTools 2>&1\")",
       "Bash(\"/e/UnrealEngine-5.7.1-release/Engine/Binaries/Win64/UnrealEditor.exe\" --version)",
       "Bash(./Engine/Build/BatchFiles/GenerateProjectFiles.bat \"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -VSCode)",
-      "Bash(./Engine/Build/BatchFiles/Build.bat DivineBeastsArena Win64 Development \"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -WaitMutex)"
+      "Bash(./Engine/Build/BatchFiles/Build.bat DivineBeastsArena Win64 Development \"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -WaitMutex)",
+      "Bash(./UnrealEditor.exe \"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -game -windowed -log)",
+      "Bash(./Engine/Build/BatchFiles/Build.bat DivineBeastsArena Win64 Server \"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -WaitMutex)",
+      "Bash(\"D:/DivineBeastsArena/Binaries/Win64/DivineBeastsArena.exe\" \"D:/DivineBeastsArena/Content/Maps/Frontend/L_main.umap\" -server -log -windowed)",
+      "Bash(\"D:/DivineBeastsArena/Binaries/Win64/DivineBeastsArena.exe\" 127.0.0.1 -game -windowed)"
     ]
   }
 }
