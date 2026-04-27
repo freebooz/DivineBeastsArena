@@ -42,9 +42,6 @@ public class DivineBeastsArenaServerTarget : TargetRules
 		// 性能优化
 		bUseSharedPCHs = true;                      // 使用共享 PCH
 
-		// 服务器特定设置
-		bAllowCrossgen = false;                     // 禁用 Cross-Gen（服务器不需要）
-
 		// 日志输出
 		System.Console.WriteLine("DivineBeastsArena Server Target: Building for " + Target.Platform + " (" + Target.Configuration + ")");
 	}
