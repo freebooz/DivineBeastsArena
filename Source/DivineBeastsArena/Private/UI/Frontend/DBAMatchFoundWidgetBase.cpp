@@ -23,7 +23,10 @@ void UDBAMatchFoundWidgetBase::NativeDestruct()
 
 	if (AutoNavigateTimerHandle.IsValid())
 	{
-		GetWorld()->GetTimerManager().ClearTimer(AutoNavigateTimerHandle);
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(AutoNavigateTimerHandle);
+		}
 	}
 }
 
@@ -34,7 +37,10 @@ void UDBAMatchFoundWidgetBase::ShowMatchFound(const FText& InModeName, const FTe
 
 	BP_OnMatchFoundShown(CachedModeName, CachedMapName);
 
-	GetWorld()->GetTimerManager().SetTimer(AutoNavigateTimerHandle, this, &UDBAMatchFoundWidgetBase::AutoNavigateToReadyCheck, 2.0f, false);
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(AutoNavigateTimerHandle, this, &UDBAMatchFoundWidgetBase::AutoNavigateToReadyCheck, 2.0f, false);
+	}
 }
 
 void UDBAMatchFoundWidgetBase::AutoNavigateToReadyCheck()

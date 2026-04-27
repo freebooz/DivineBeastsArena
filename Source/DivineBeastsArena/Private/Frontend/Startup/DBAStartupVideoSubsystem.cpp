@@ -28,7 +28,10 @@ void UDBAStartupVideoSubsystem::Deinitialize()
 	// 清理定时器
 	if (VideoFinishedTimerHandle.IsValid())
 	{
-		GetWorld()->GetTimerManager().ClearTimer(VideoFinishedTimerHandle);
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(VideoFinishedTimerHandle);
+		}
 	}
 
 	// 移除 ESC 绑定
@@ -151,7 +154,10 @@ void UDBAStartupVideoSubsystem::SkipVideo()
 	// 清理定时器
 	if (VideoFinishedTimerHandle.IsValid())
 	{
-		GetWorld()->GetTimerManager().ClearTimer(VideoFinishedTimerHandle);
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(VideoFinishedTimerHandle);
+		}
 	}
 
 	CurrentState = EDBAStartupVideoState::Skipped;

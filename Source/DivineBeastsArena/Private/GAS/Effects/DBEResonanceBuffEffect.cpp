@@ -68,7 +68,7 @@ void UDBEResonanceBuffEffect::ConfigureForResonanceLevel(int32 Level)
 	FGameplayModifierInfo DamageInfo;
 	if (FProperty* AttackProperty = AttributeClass->FindPropertyByName(FName(TEXT("AttackPower"))))
 	{
-		DamageInfo.Attribute.SetUProperty(AttackProperty);
+		DamageInfo.Attribute = AttackProperty;
 	}
 	DamageInfo.ModifierOp = EGameplayModOp::Additive;
 	DamageInfo.ModifierMagnitude = FScalableFloat(DamageBonus);
@@ -78,7 +78,7 @@ void UDBEResonanceBuffEffect::ConfigureForResonanceLevel(int32 Level)
 	FGameplayModifierInfo DefenseInfo;
 	if (FProperty* DefenseProperty = AttributeClass->FindPropertyByName(FName(TEXT("Defense"))))
 	{
-		DefenseInfo.Attribute.SetUProperty(DefenseProperty);
+		DefenseInfo.Attribute = DefenseProperty;
 	}
 	DefenseInfo.ModifierOp = EGameplayModOp::Additive;
 	DefenseInfo.ModifierMagnitude = FScalableFloat(DefenseBonus);
@@ -88,7 +88,7 @@ void UDBEResonanceBuffEffect::ConfigureForResonanceLevel(int32 Level)
 	FGameplayModifierInfo HealthInfo;
 	if (FProperty* MaxHealthProperty = AttributeClass->FindPropertyByName(FName(TEXT("MaxHealth"))))
 	{
-		HealthInfo.Attribute.SetUProperty(MaxHealthProperty);
+		HealthInfo.Attribute = MaxHealthProperty;
 	}
 	HealthInfo.ModifierOp = EGameplayModOp::Additive;
 	HealthInfo.ModifierMagnitude = FScalableFloat(HealthBonus);
@@ -98,7 +98,7 @@ void UDBEResonanceBuffEffect::ConfigureForResonanceLevel(int32 Level)
 	FGameplayModifierInfo ShieldInfo;
 	if (FProperty* MaxShieldProperty = AttributeClass->FindPropertyByName(FName(TEXT("MaxShield"))))
 	{
-		ShieldInfo.Attribute.SetUProperty(MaxShieldProperty);
+		ShieldInfo.Attribute = MaxShieldProperty;
 	}
 	ShieldInfo.ModifierOp = EGameplayModOp::Additive;
 	ShieldInfo.ModifierMagnitude = FScalableFloat(ShieldBonus);

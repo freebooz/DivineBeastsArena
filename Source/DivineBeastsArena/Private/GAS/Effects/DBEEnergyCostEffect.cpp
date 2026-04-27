@@ -19,7 +19,7 @@ UDBEEnergyCostEffect::UDBEEnergyCostEffect()
 	{
 		if (FProperty* EnergyProperty = AttributeClass->FindPropertyByName(FName(TEXT("CurrentEnergy"))))
 		{
-			EnergyModifier.Attribute.SetUProperty(EnergyProperty);
+			EnergyModifier.Attribute = EnergyProperty;
 		}
 	}
 
