@@ -43,7 +43,7 @@ void UDBAStartupVideoWidget::NativeDestruct()
 	Super::NativeDestruct();
 }
 
-void UDBAStartupVideoWidget::SetMediaPlayer(UObject* InMediaPlayer)
+void UDBAStartupVideoWidget::SetMediaPlayer(UMediaPlayer* InMediaPlayer)
 {
 	MediaPlayer = InMediaPlayer;
 
