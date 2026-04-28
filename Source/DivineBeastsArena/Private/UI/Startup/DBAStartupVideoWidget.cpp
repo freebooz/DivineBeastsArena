@@ -7,7 +7,7 @@
 #include "RenderingThread.h"
 #include "Common/DBALogChannels.h"
 
-// 媒体资源仅在非专用服务器构建时可用
+// 仅在非服务器构建时包含 MediaAssets
 #if !UE_SERVER
 #include "MediaPlayer.h"
 #include "MediaTexture.h"

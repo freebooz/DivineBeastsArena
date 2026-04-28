@@ -100,13 +100,13 @@ protected:
 	void NavigateToLoginScreen();
 
 private:
-	/** 视频播放器（服务器端使用 UObject 基类） */
+	/** 视频播放器 */
 	UPROPERTY()
-	TObjectPtr<UObject> MediaPlayer;
+	TObjectPtr<UMediaPlayer> MediaPlayer;
 
-	/** 视频纹理（服务器端使用 UObject 基类） */
+	/** 视频纹理 */
 	UPROPERTY()
-	TObjectPtr<UObject> MediaTexture;
+	TObjectPtr<UMediaTexture> MediaTexture;
 
 	/** 视频播放控件 */
 	UPROPERTY()
