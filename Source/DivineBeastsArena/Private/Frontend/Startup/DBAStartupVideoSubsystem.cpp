@@ -83,6 +83,7 @@ void UDBAStartupVideoSubsystem::PlayStartupVideo()
 	CurrentState = EDBAStartupVideoState::Playing;
 	LogSubsystemInfo(TEXT("开始播放启动视频"));
 
+#if !UE_SERVER
 	// 创建视频播放器
 	MediaPlayer = NewObject<UMediaPlayer>(this);
 	if (MediaPlayer)
@@ -99,6 +100,7 @@ void UDBAStartupVideoSubsystem::PlayStartupVideo()
 
 	// 创建视频播放控件
 	CreateVideoWidget();
+#endif
 
 	// 设置超时定时器
 	World->GetTimerManager().SetTimer(VideoFinishedTimerHandle, this, &UDBAStartupVideoSubsystem::OnVideoFinished, VideoTimeout, false);
@@ -149,11 +151,13 @@ void UDBAStartupVideoSubsystem::SkipVideo()
 
 	LogSubsystemInfo(TEXT("用户跳过视频"));
 
+#if !UE_SERVER
 	// 停止播放
 	if (MediaPlayer)
 	{
 		MediaPlayer->Pause();
 	}
+#endif
 
 	// 清理定时器
 	if (VideoFinishedTimerHandle.IsValid())
