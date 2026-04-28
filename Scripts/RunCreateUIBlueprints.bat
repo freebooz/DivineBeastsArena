@@ -1,5 +1,5 @@
 @echo off
-REM 神兽竞技场 - 创建 UI 蓝图脚本
+REM 神兽竞技场 - 创建 UI 蓝图脚本 (WBP_DBA_* 命名规范)
 REM 使用方法:
 REM 1. 打开 UE 编辑器
 REM 2. 打开控制台 (~)
@@ -8,6 +8,7 @@ REM 4. 按 Enter 执行
 
 echo ========================================
 echo DivineBeastsArena - UI Blueprint Creator
+echo            (WBP_DBA_* Naming)
 echo ========================================
 echo.
 echo 步骤:
