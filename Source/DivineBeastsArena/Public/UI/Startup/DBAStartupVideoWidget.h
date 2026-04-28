@@ -32,7 +32,7 @@ public:
 	 * 设置媒体播放器
 	 */
 	UFUNCTION(BlueprintCallable, Category = "StartupVideo")
-	void SetMediaPlayer(UMediaPlayer* InMediaPlayer);
+	void SetMediaPlayer(UObject* InMediaPlayer);
 
 protected:
 	virtual void NativeConstruct() override;
@@ -61,9 +61,9 @@ protected:
 	void OnSkipClicked();
 
 private:
-	/** 媒体播放器 */
+	/** 媒体播放器（服务器端使用 UObject 基类） */
 	UPROPERTY(Transient)
-	TObjectPtr<UMediaPlayer> MediaPlayer;
+	TObjectPtr<UObject> MediaPlayer;
 
 	/** 跳过提示文本 */
 	UPROPERTY( meta = (BindWidget) )
