@@ -25,7 +25,7 @@
 	"Plugins": [
 		{
 			"Name": "GameplayAbilities",
-			"Enabled": true
+			"Enabled": false
 		},
 		{
 			"Name": "OnlineSubsystem",
@@ -40,5 +40,6 @@
 		"Windows",
 		"WindowsEditor",
 		"WindowsServer"
-	]
+	],
+	"EpicSampleNameHash": "1234567890"
 }
