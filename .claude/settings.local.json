@@ -37,7 +37,18 @@
       "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat\" \"D:\\\\DivineBeastsArena\\\\DivineBeastsArena.uproject\" DivineBeastsArenaServer Win64 Development -NoUBTMichelles)",
       "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat\" \"D:\\\\DivineBeastsArena\\\\DivineBeastsArena.uproject\" DivineBeastsArenaServer Win64 Development)",
       "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat\" \"D:\\\\DivineBeastsArena\\\\DivineBeastsArena.uproject\" DivineBeastsArena Win64 Development)",
-      "Bash(mkdir -p \"d:/DivineBeastsArena/Intermediate_HIDDEN\")"
+      "Bash(mkdir -p \"d:/DivineBeastsArena/Intermediate_HIDDEN\")",
+      "Bash(mkdir -p L1_Common)",
+      "Bash(mkdir -p L2_MobaBase)",
+      "Bash(mkdir -p L3_DBA)",
+      "Bash(rmdir L2_MobaBase/Moba)",
+      "Bash(mv L2_MobaBase/MobaBase/* L2_MobaBase/)",
+      "Bash(rmdir L2_MobaBase/MobaBase)",
+      "Bash(rmdir DBA/DBA)",
+      "Bash(rm -rf DBA/DBA)",
+      "Bash(ls DBA/)",
+      "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat\" DivineBeastsArena Win64 Development \"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -WaitMutex)",
+      "Bash(git mv *)"
     ]
   }
 }

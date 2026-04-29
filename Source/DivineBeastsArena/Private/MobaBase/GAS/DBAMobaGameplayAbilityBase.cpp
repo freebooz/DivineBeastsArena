@@ -2,7 +2,7 @@
 
 #include "MobaBase/GAS/DBAMobaGameplayAbilityBase.h"
 #include "MobaBase/GAS/DBAMobaAbilitySystemComponentBase.h"
-#include "GAS/Attributes/DBABattleAttributeSet.h"
+#include "DBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "Common/DBALogChannels.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"

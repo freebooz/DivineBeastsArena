@@ -1,18 +1,17 @@
 @echo off
-REM Quick stub replacer for DivineBeastsArena build
-echo Starting build with stub fix...
+REM Stub replacer for DivineBeastsArena build - handles GameplayAbilities temp file conflict
+echo Starting build preparation...
 
-:retry
-REM Wait for Intermediate\Source to be created
-if not exist "D:\DivineBeastsArena\Intermediate\Source" (
-    timeout /t 1 /nobreak >nul
-    goto retry
+REM Clean up any stale Intermediate\Source temp files that conflict with real Target.cs
+if exist "D:\DivineBeastsArena\Intermediate\Source" (
+    echo Cleaning stale Intermediate/Source...
+    rd /s /q "D:\DivineBeastsArena\Intermediate\Source" 2>nul
 )
 
-REM Copy real files over stubs
-copy /Y "D:\DivineBeastsArena\Source\DivineBeastsArena\DivineBeastsArena.Build.cs" "D:\DivineBeastsArena\Intermediate\Source\DivineBeastsArena.Build.cs" >nul 2>&1
-copy /Y "D:\DivineBeastsArena\Source\DivineBeastsArena\DivineBeastsArena.Target.cs" "D:\DivineBeastsArena\Intermediate\Source\DivineBeastsArena.Target.cs" >nul 2>&1
-copy /Y "D:\DivineBeastsArena\Source\DivineBeastsArena\DivineBeastsArenaEditor.Target.cs" "D:\DivineBeastsArena\Intermediate\Source\DivineBeastsArenaEditor.Target.cs" >nul 2>&1
-copy /Y "D:\DivineBeastsArena\Source\DivineBeastsArena\DivineBeastsArenaServer.Target.cs" "D:\DivineBeastsArena\Intermediate\Source\DivineBeastsArenaServer.Target.cs" >nul 2>&1
+REM Clean build intermediates to force clean rebuild
+if exist "D:\DivineBeastsArena\Intermediate\Build\Win64\DivineBeastsArena" (
+    echo Cleaning build cache...
+    rd /s /q "D:\DivineBeastsArena\Intermediate\Build\Win64\DivineBeastsArena" 2>nul
+)
 
-echo Stub files replaced with real files
+echo Build preparation complete
