@@ -94,7 +94,9 @@ void UDBEResonanceBuffEffect::ConfigureForResonanceLevel(int32 Level)
 	HealthInfo.ModifierMagnitude = FScalableFloat(HealthBonus);
 	Modifiers.Add(HealthInfo);
 
-	// 创建护盾值加成修饰符（通过 MaxShield 属性实现共鸣护盾加成）
+	// 注意：护盾作为独立机制实现
+// 当前通过 MaxShield 属性修饰符实现共鸣护盾加成
+// 如果需要独立的护盾值系统（不受 MaxShield 影响），应创建专门的护盾管理组件
 	FGameplayModifierInfo ShieldInfo;
 	if (FProperty* MaxShieldProperty = AttributeClass->FindPropertyByName(FName(TEXT("MaxShield"))))
 	{
