@@ -4,8 +4,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBACue_Snake_Q.generated.h"
 #include "GameplayCueNotify_Actor.h"
+#include "DBACue_Snake_Q.generated.h"
 
 UCLASS()
 class DIVINEBEASTSARENA_API UDBACue_Snake_Q : public AGameplayCueNotify_Actor

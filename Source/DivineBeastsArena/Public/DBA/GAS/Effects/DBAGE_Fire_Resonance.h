@@ -4,8 +4,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAGE_Fire_Resonance.generated.h"
 #include "GameplayEffect.h"
+#include "DBAGE_Fire_Resonance.generated.h"
 
 UCLASS()
 class DIVINEBEASTSARENA_API UDBAGE_Fire_Resonance : public UGameplayEffect

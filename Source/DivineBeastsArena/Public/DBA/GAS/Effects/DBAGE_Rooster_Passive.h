@@ -4,8 +4,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAGE_Rooster_Passive.generated.h"
 #include "GameplayEffect.h"
+#include "DBAGE_Rooster_Passive.generated.h"
 
 UCLASS()
 class DIVINEBEASTSARENA_API UDBAGE_Rooster_Passive : public UGameplayEffect

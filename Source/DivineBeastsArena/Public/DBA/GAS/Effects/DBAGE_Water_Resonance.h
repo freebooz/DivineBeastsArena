@@ -4,8 +4,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAGE_Water_Resonance.generated.h"
 #include "GameplayEffect.h"
+#include "DBAGE_Water_Resonance.generated.h"
 
 UCLASS()
 class DIVINEBEASTSARENA_API UDBAGE_Water_Resonance : public UGameplayEffect

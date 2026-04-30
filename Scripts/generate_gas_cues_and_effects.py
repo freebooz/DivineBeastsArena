@@ -56,8 +56,8 @@ CUE_HEADER_TEMPLATE = """// Copyright Freebooz Games, Inc. All Rights Reserved.
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBACue_{zodiac}_{skill}.generated.h"
 #include "GameplayCueNotify_Actor.h"
+#include "DBACue_{zodiac}_{skill}.generated.h"
 
 UCLASS()
 class DIVINEBEASTSARENA_API UDBACue_{zodiac}_{skill} : public AGameplayCueNotify_Actor
@@ -123,8 +123,8 @@ GE_HEADER_TEMPLATE = """// Copyright Freebooz Games, Inc. All Rights Reserved.
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAGE_{zodiac}_{skill}.generated.h"
 #include "GameplayEffect.h"
+#include "DBAGE_{zodiac}_{skill}.generated.h"
 
 UCLASS()
 class DIVINEBEASTSARENA_API UDBAGE_{zodiac}_{skill} : public UGameplayEffect
@@ -256,8 +256,8 @@ def generate_resonance_effects(ge_public_dir, ge_private_dir, start_count):
             zodiac=element_id,
             skill="Resonance",
         )
-        header_path = ge_public_dir / f"DBAGE_Resonance_{element_id}.h"
-        cpp_path = ge_private_dir / f"DBAGE_Resonance_{element_id}.cpp"
+        header_path = ge_public_dir / f"DBAGE_{element_id}_Resonance.h"
+        cpp_path = ge_private_dir / f"DBAGE_{element_id}_Resonance.cpp"
         with open(header_path, "w", encoding="utf-8") as f:
             f.write(header)
         with open(cpp_path, "w", encoding="utf-8") as f:

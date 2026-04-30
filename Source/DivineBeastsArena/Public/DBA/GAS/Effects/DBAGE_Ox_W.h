@@ -4,8 +4,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAGE_Ox_W.generated.h"
 #include "GameplayEffect.h"
+#include "DBAGE_Ox_W.generated.h"
 
 UCLASS()
 class DIVINEBEASTSARENA_API UDBAGE_Ox_W : public UGameplayEffect
