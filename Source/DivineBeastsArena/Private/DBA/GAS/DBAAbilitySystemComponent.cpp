@@ -96,6 +96,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 		FGameplayAbilitySpec Spec(TSubclassOf<UGameplayAbility>(AbilitySet->PassiveAbilityClass), 1, INDEX_NONE, this);
 		FGameplayAbilitySpecHandle Handle = GiveAbility(Spec);
 		GrantedAbilityHandles.Add(Handle);
+		AbilityClassToHandleMap.Add(AbilitySet->PassiveAbilityClass, Handle);
 	}
 
 	// 授予 Skill01~Skill04（主动技能）
@@ -122,6 +123,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 			FGameplayAbilitySpec Spec(TSubclassOf<UGameplayAbility>(ActiveSkills[i]), 1, SkillInputIDs[i], this);
 			FGameplayAbilitySpecHandle Handle = GiveAbility(Spec);
 			GrantedAbilityHandles.Add(Handle);
+			AbilityClassToHandleMap.Add(ActiveSkills[i], Handle);
 		}
 	}
 
@@ -131,6 +133,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 		FGameplayAbilitySpec Spec(TSubclassOf<UGameplayAbility>(AbilitySet->ZodiacUltimateClass), 1, static_cast<int32>(EDBAAbilityInputID::Ultimate), this);
 		FGameplayAbilitySpecHandle Handle = GiveAbility(Spec);
 		GrantedAbilityHandles.Add(Handle);
+		AbilityClassToHandleMap.Add(AbilitySet->ZodiacUltimateClass, Handle);
 	}
 
 	// 授予 Resonance（共鸣能力）
@@ -139,6 +142,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 		FGameplayAbilitySpec Spec(TSubclassOf<UGameplayAbility>(AbilitySet->ResonanceAbilityClass), 1, INDEX_NONE, this);
 		FGameplayAbilitySpecHandle Handle = GiveAbility(Spec);
 		GrantedAbilityHandles.Add(Handle);
+		AbilityClassToHandleMap.Add(AbilitySet->ResonanceAbilityClass, Handle);
 	}
 
 	// 计算 ResonanceLevel
@@ -190,6 +194,7 @@ void UDBAAbilitySystemComponent::RemoveAllGrantedAbilities()
 	}
 
 	GrantedAbilityHandles.Empty();
+	AbilityClassToHandleMap.Empty();
 }
 
 // AddUltimateEnergy - 增加终极能量
@@ -239,8 +244,8 @@ void UDBAAbilitySystemComponent::AddChainLevel(int32 Amount)
 		return;
 	}
 
-	// 限制连击等级在 [0, 10] 范围内
-	ChainLevel = FMath::Clamp(ChainLevel + Amount, 0, 10);
+// 限制连击等级在 [0, MaxChainLevel] 范围内
+	ChainLevel = FMath::Clamp(ChainLevel + Amount, 0, DBAConstants::MaxChainLevel);
 	LastHitTime = GetWorld()->GetTimeSeconds();
 
 	// 重置 ChainLevel 归零计时器
@@ -293,8 +298,8 @@ void UDBAAbilitySystemComponent::SetResonanceLevel(int32 Level)
 		return;
 	}
 
-	// 限制共鸣等级在 [0, 4] 范围内
-	ResonanceLevel = FMath::Clamp(Level, 0, 4);
+	// 限制共鸣等级在 [0, MaxResonanceLevel] 范围内
+	ResonanceLevel = FMath::Clamp(Level, 0, DBAConstants::MaxResonanceLevel);
 }
 
 // CanActivateAbility - 检查是否可以激活指定能力
@@ -306,25 +311,23 @@ bool UDBAAbilitySystemComponent::CanActivateAbility(TSubclassOf<UDBAMobaGameplay
 		return false;
 	}
 
-	// 查找对应的 Ability Spec
-	bool bAbilityFound = false;
-	for (const FGameplayAbilitySpec& SpecIter : GetActivatableAbilities())
-	{
-		if (SpecIter.Ability->GetClass() == AbilityClass)
-		{
-			bAbilityFound = true;
-			break;
-		}
-	}
-
-	if (!bAbilityFound)
+	// O(1) 查找：检查技能是否已授予
+	if (!AbilityClassToHandleMap.Contains(AbilityClass))
 	{
 		return false;
 	}
 
-	// 检查技能是否在冷却中
-	UDBAMobaGameplayAbilityBase* AbilityCDO = AbilityClass.GetDefaultObject();
-	if (AbilityCDO && AbilityCDO->IsOnCooldown())
+	// 通过 Handle 获取 Spec 进行冷却和能量检查
+	const FGameplayAbilitySpecHandle Handle = AbilityClassToHandleMap[AbilityClass];
+	FGameplayAbilitySpec* Spec = FindAbilitySpecFromHandle(Handle);
+	if (!Spec)
+	{
+		return false;
+	}
+
+	// 检查技能是否在冷却中（使用实际实例而非 CDO）
+	UDBAMobaGameplayAbilityBase* AbilityInstance = Cast<UDBAMobaGameplayAbilityBase>(Spec->Ability);
+	if (AbilityInstance && AbilityInstance->IsOnCooldown())
 	{
 		return false;
 	}
@@ -334,9 +337,10 @@ bool UDBAAbilitySystemComponent::CanActivateAbility(TSubclassOf<UDBAMobaGameplay
 	const UDBABattleAttributeSet* AttrSet = GetSet<UDBABattleAttributeSet>();
 	if (AttrSet)
 	{
-		if (AbilityCDO)
+		UDBAMobaGameplayAbilityBase* CDO = AbilityClass.GetDefaultObject();
+		if (CDO)
 		{
-			if (const UDBAElementAbilityBase* ElementAbility = Cast<UDBAElementAbilityBase>(AbilityCDO))
+			if (const UDBAElementAbilityBase* ElementAbility = Cast<UDBAElementAbilityBase>(CDO))
 			{
 				if (ElementAbility->EnergyCost > AttrSet->GetCurrentEnergy())
 				{

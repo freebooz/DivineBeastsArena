@@ -127,6 +127,9 @@ namespace DBAConstants
 	// 共鸣系统
 	// ========================================
 
+	/** 最大共鸣等级 */
+	constexpr int32 MaxResonanceLevel = 4;
+
 	/** 共鸣1级技能数量要求 */
 	constexpr int32 ResonanceLevel1_SkillCount = 2;
 
@@ -389,8 +392,8 @@ namespace DBAPaths
 	/** DBA 项目资源根路径 */
 	constexpr const TCHAR* DBARoot = TEXT("/Game/DBA");
 
-	/** Frontend 资源根路径 */
-	constexpr const TCHAR* FrontendRoot = TEXT("/Game/Frontend");
+	/** Lobby 资源根路径 */
+	constexpr const TCHAR* LobbyRoot = TEXT("/Game/Lobby");
 
 	/** Arena 资源根路径 */
 	constexpr const TCHAR* ArenaRoot = TEXT("/Game/Arena");
@@ -437,10 +440,10 @@ namespace DBAPaths
 	constexpr const TCHAR* Map_Arena5v5 = TEXT("/Game/Arena/Maps/Arena_5v5");
 
 	/** 主大厅地图 */
-	constexpr const TCHAR* Map_MainLobby = TEXT("/Game/Frontend/Maps/MainLobby");
+	constexpr const TCHAR* Map_MainLobby = TEXT("/Game/Lobby/Maps/MainLobby");
 
 	/** 新手村地图 */
-	constexpr const TCHAR* Map_NewbieVillage = TEXT("/Game/Frontend/Maps/NewbieVillage");
+	constexpr const TCHAR* Map_NewbieVillage = TEXT("/Game/Lobby/Maps/NewbieVillage");
 
 	/** 练习地图 */
 	constexpr const TCHAR* Map_Practice = TEXT("/Game/Practice/Maps/Practice_Training");

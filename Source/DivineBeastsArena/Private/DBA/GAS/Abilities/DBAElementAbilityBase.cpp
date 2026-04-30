@@ -26,11 +26,11 @@ bool UDBAElementAbilityBase::CanActivateAbility(const FGameplayAbilitySpecHandle
 	}
 
 	// 防御性检查：确保 ActorInfo 有效
-	ensure(ActorInfo != nullptr);
-	ensure(ActorInfo->AbilitySystemComponent.IsValid());
-
-	// 校验能量是否足够
-	if (EnergyCost > 0.0f && ActorInfo && ActorInfo->AbilitySystemComponent.IsValid())
+	if (!ActorInfo || !ActorInfo->AbilitySystemComponent.IsValid())
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAElementAbilityBase] CanActivateAbility 失败：ActorInfo 无效"));
+		return false;
+	}
 	{
         // 获取能力系统组件
 		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
@@ -65,15 +65,12 @@ bool UDBAElementAbilityBase::CanActivateAbility(const FGameplayAbilitySpecHandle
 // CommitAbilityCost - 提交能力消耗（能量消耗）
 bool UDBAElementAbilityBase::CommitAbilityCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, OUT FGameplayTagContainer* OptionalRelevantTags)
 {
-	// 防御性检查
-	ensure(ActorInfo != nullptr);
-	if (ActorInfo)
+	// 防御性检查：确保 ActorInfo 有效
+	if (!ActorInfo || !ActorInfo->AbilitySystemComponent.IsValid())
 	{
-		ensure(ActorInfo->AbilitySystemComponent.IsValid());
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAElementAbilityBase] CommitAbilityCost 失败：ActorInfo 无效"));
+		return false;
 	}
-
-	// 先校验能量是否足够
-	if (EnergyCost > 0.0f && ActorInfo && ActorInfo->AbilitySystemComponent.IsValid())
 	{
 		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
 		if (!ASC)

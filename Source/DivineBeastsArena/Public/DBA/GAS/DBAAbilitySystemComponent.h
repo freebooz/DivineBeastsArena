@@ -221,6 +221,13 @@ protected:
 	TArray<FGameplayAbilitySpecHandle> GrantedAbilityHandles;
 
 	/**
+	 * Ability Class 到 Handle 的快速查找映射
+	 * 用于 O(1) 查找技能是否已授予
+	 */
+	UPROPERTY()
+	TMap<UClass*, FGameplayAbilitySpecHandle> AbilityClassToHandleMap;
+
+	/**
 	 * 上次命中敌人的时间
 	 * 用于 ChainLevel 6 秒未命中归零
 	 */

@@ -63,14 +63,21 @@ void UDBAMockAccountService::AutoLogin(FDBAOnLoginComplete OnComplete)
 	UDBAAccountSaveGame* SaveGame = LoadAccountSaveGame();
 	if (SaveGame && SaveGame->IsValid())
 	{
-		// 使用存档数据登录
+		// 使用存档数据登录（保持 SessionToken 一致性以支持记住登录）
 		CurrentAccountInfo = SaveGame->AccountInfo;
 		CurrentCharacterId = SaveGame->CurrentCharacterId;
-		SessionToken = FGuid::NewGuid().ToString();
+		SessionToken = SaveGame->SessionToken;
+
+		// 如果存档中没有 Token，生成一个新的
+		if (SessionToken.IsEmpty())
+		{
+			SessionToken = FGuid::NewGuid().ToString();
+		}
 
 		// 更新最后登录时间
 		CurrentAccountInfo.LastLoginTime = FDateTime::UtcNow().ToUnixTimestamp();
 		SaveGame->AccountInfo = CurrentAccountInfo;
+		SaveGame->SessionToken = SessionToken;
 		SaveAccountSaveGame(SaveGame);
 
 		LogSubsystemInfo(FString::Printf(TEXT("AutoLogin - 自动登录成功：%s"), *CurrentAccountInfo.DisplayName));
@@ -435,6 +442,7 @@ bool UDBAMockAccountService::SaveCurrentAccount()
 
 	SaveGame->AccountInfo = CurrentAccountInfo;
 	SaveGame->CurrentCharacterId = CurrentCharacterId;
+	SaveGame->SessionToken = SessionToken;
 
 	return SaveAccountSaveGame(SaveGame);
 }

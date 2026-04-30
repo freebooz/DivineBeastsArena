@@ -11,6 +11,8 @@
 #include "DBA/GAS/Abilities/DBAResonanceAbilityBase.h"
 #include "DBAAbilitySetLibrary.generated.h"
 
+class UDataTable;
+
 /**
  * 技能组资源配置
  * 承载 FixedSkillGroup 数据
@@ -47,6 +49,11 @@ public:
 };
 
 /**
+ * 技能组异步加载完成委托
+ */
+DECLARE_DYNAMIC_DELEGATE_OneParam(FDBAOnFixedSkillGroupLoaded, UDBAFixedSkillGroupDataAsset*, LoadedAsset);
+
+/**
  * 技能组静态函数库
  * 提供通过 FixedSkillGroupId 查询 AbilitySet 的能力
  */
@@ -57,9 +64,20 @@ class DIVINEBEASTSARENA_API UDBAFixedSkillGroupLibrary : public UBlueprintFuncti
 
 public:
 	/**
-	 * 通过 FixedSkillGroupId 查询对应的 AbilitySet
-	 * 若使用 AssetManager，此处会进行 Soft 引用加载或同步获取
+	 * 通过 FixedSkillGroupId 查询对应的 AbilitySet（同步版本）
+	 * 优先从已缓存的资产中加载
+	 * @param FixedSkillGroupId 技能组 ID
+	 * @return 技能组数据资产，如果未找到返回 nullptr
 	 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|FixedSkillGroup")
 	static UDBAFixedSkillGroupDataAsset* GetFixedSkillGroupById(const FName& FixedSkillGroupId);
+
+	/**
+	 * 通过 FixedSkillGroupId 异步加载对应的 AbilitySet
+	 * 适用于需要动态加载技能组的场景
+	 * @param FixedSkillGroupId 技能组 ID
+	 * @param OnLoadedDelegate 加载完成回调
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|FixedSkillGroup")
+	static void LoadFixedSkillGroupByIdAsync(const FName& FixedSkillGroupId, FDBAOnFixedSkillGroupLoaded OnLoadedDelegate);
 };

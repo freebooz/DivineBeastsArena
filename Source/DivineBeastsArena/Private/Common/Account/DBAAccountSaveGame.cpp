@@ -9,12 +9,27 @@ UDBAAccountSaveGame::UDBAAccountSaveGame()
 	: SchemaVersion(DBASaveGameVersions::SCHEMA_VERSION)
 	, DataVersion(DBASaveGameVersions::DATA_VERSION)
 	, LastSaveTime(0)
+	, DataChecksum(0)
+	, SessionToken()
 {
 }
 
 bool UDBAAccountSaveGame::IsValid() const
 {
 	return AccountInfo.IsValid();
+}
+
+bool UDBAAccountSaveGame::ValidateDataIntegrity() const
+{
+	// 检查校验和是否匹配
+	const int32 CalculatedChecksum = CalculateChecksum();
+	if (DataChecksum != CalculatedChecksum)
+	{
+		UE_LOG(LogDBACore, Warning, TEXT("UDBAAccountSaveGame::ValidateDataIntegrity - 校验失败：存储=%d，计算=%d"),
+			DataChecksum, CalculatedChecksum);
+		return false;
+	}
+	return true;
 }
 
 bool UDBAAccountSaveGame::IsVersionCompatible() const
@@ -52,6 +67,9 @@ bool UDBAAccountSaveGame::MigrateToCurrentVersion()
 	SchemaVersion = DBASaveGameVersions::SCHEMA_VERSION;
 	DataVersion = DBASaveGameVersions::DATA_VERSION;
 
+	// 迁移后重新计算校验和
+	UpdateChecksum();
+
 	UE_LOG(LogDBACore, Log, TEXT("UDBAAccountSaveGame::MigrateToCurrentVersion - 迁移成功"));
 	return true;
 }
@@ -64,6 +82,7 @@ void UDBAAccountSaveGame::ResetToDefault()
 	Characters.Empty();
 	CurrentCharacterId = FDBACharacterId();
 	LastSaveTime = 0;
+	DataChecksum = 0;
 
 	UE_LOG(LogDBACore, Log, TEXT("UDBAAccountSaveGame::ResetToDefault - 重置为默认数据"));
 }
@@ -134,6 +153,34 @@ void UDBAAccountSaveGame::UpdateLastSaveTime()
 	LastSaveTime = FDateTime::UtcNow().ToUnixTimestamp();
 }
 
+void UDBAAccountSaveGame::UpdateChecksum()
+{
+	DataChecksum = CalculateChecksum();
+}
+
+int32 UDBAAccountSaveGame::CalculateChecksum() const
+{
+	// 简单的校验和算法：将关键数据的哈希值混合
+	int32 Checksum = 0;
+
+	// 基于账户ID
+	Checksum ^= GetTypeHash(AccountInfo.AccountId.ToString());
+
+	// 基于角色数量
+	Checksum ^= (Characters.Num() * 0x9E3779B9);
+
+	// 基于当前选中角色
+	Checksum ^= GetTypeHash(CurrentCharacterId.ToString());
+
+	// 基于 SessionToken
+	Checksum ^= GetTypeHash(SessionToken);
+
+	// 基于最后保存时间
+	Checksum ^= (LastSaveTime & 0xFFFFFFFF);
+
+	return Checksum;
+}
+
 // ============================================================================
 // UDBAProfileSaveGame
 // ============================================================================
@@ -142,11 +189,25 @@ UDBAProfileSaveGame::UDBAProfileSaveGame()
 	: SchemaVersion(DBASaveGameVersions::SCHEMA_VERSION)
 	, DataVersion(DBASaveGameVersions::DATA_VERSION)
 	, LastSaveTime(0)
+	, DataChecksum(0)
 {
 }
 
 bool UDBAProfileSaveGame::IsValid() const
 {
+	return true;
+}
+
+bool UDBAProfileSaveGame::ValidateDataIntegrity() const
+{
+	// 检查校验和是否匹配
+	const int32 CalculatedChecksum = CalculateChecksum();
+	if (DataChecksum != CalculatedChecksum)
+	{
+		UE_LOG(LogDBACore, Warning, TEXT("UDBAProfileSaveGame::ValidateDataIntegrity - 校验失败：存储=%d，计算=%d"),
+			DataChecksum, CalculatedChecksum);
+		return false;
+	}
 	return true;
 }
 
@@ -185,6 +246,9 @@ bool UDBAProfileSaveGame::MigrateToCurrentVersion()
 	SchemaVersion = DBASaveGameVersions::SCHEMA_VERSION;
 	DataVersion = DBASaveGameVersions::DATA_VERSION;
 
+	// 迁移后重新计算校验和
+	UpdateChecksum();
+
 	UE_LOG(LogDBACore, Log, TEXT("UDBAProfileSaveGame::MigrateToCurrentVersion - 迁移成功"));
 	return true;
 }
@@ -195,6 +259,7 @@ void UDBAProfileSaveGame::ResetToDefault()
 	DataVersion = DBASaveGameVersions::DATA_VERSION;
 	PlayerProfile = FDBAPlayerProfile();
 	LastSaveTime = 0;
+	DataChecksum = 0;
 
 	UE_LOG(LogDBACore, Log, TEXT("UDBAProfileSaveGame::ResetToDefault - 重置为默认数据"));
 }
@@ -202,4 +267,26 @@ void UDBAProfileSaveGame::ResetToDefault()
 void UDBAProfileSaveGame::UpdateLastSaveTime()
 {
 	LastSaveTime = FDateTime::UtcNow().ToUnixTimestamp();
+}
+
+void UDBAProfileSaveGame::UpdateChecksum()
+{
+	DataChecksum = CalculateChecksum();
+}
+
+int32 UDBAProfileSaveGame::CalculateChecksum() const
+{
+	// 简单的校验和算法
+	int32 Checksum = 0;
+
+	// 基于玩家名称（如果存在）
+	if (!PlayerProfile.PlayerName.IsEmpty())
+	{
+		Checksum ^= GetTypeHash(PlayerProfile.PlayerName);
+	}
+
+	// 基于最后保存时间
+	Checksum ^= (LastSaveTime & 0xFFFFFFFF);
+
+	return Checksum;
 }

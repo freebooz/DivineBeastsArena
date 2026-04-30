@@ -15,6 +15,7 @@
  * - 账户信息
  * - 角色列表
  * - 当前选中角色
+ * - 会话 Token（支持记住登录）
  *
  * 持久化策略：
  * - 本地持久化：Guest 模式存储在本地
@@ -60,15 +61,32 @@ public:
 	FDBACharacterId CurrentCharacterId;
 
 	/**
+	 * 会话 Token（支持记住登录）
+	 */
+	UPROPERTY()
+	FString SessionToken;
+
+	/**
 	 * 最后保存时间（Unix 时间戳）
 	 */
 	UPROPERTY()
 	int64 LastSaveTime;
 
 	/**
+	 * 数据校验和（用于检测存档篡改）
+	 */
+	UPROPERTY()
+	int32 DataChecksum;
+
+	/**
 	 * 检查存档是否有效
 	 */
 	bool IsValid() const;
+
+	/**
+	 * 检查存档数据完整性（防篡改）
+	 */
+	bool ValidateDataIntegrity() const;
 
 	/**
 	 * 检查版本是否兼容
@@ -125,6 +143,17 @@ public:
 	 * 更新最后保存时间
 	 */
 	void UpdateLastSaveTime();
+
+	/**
+	 * 计算并更新校验和
+	 */
+	void UpdateChecksum();
+
+protected:
+	/**
+	 * 计算数据的校验和
+	 */
+	int32 CalculateChecksum() const;
 };
 
 /**
@@ -172,9 +201,20 @@ public:
 	int64 LastSaveTime;
 
 	/**
+	 * 数据校验和（用于检测存档篡改）
+	 */
+	UPROPERTY()
+	int32 DataChecksum;
+
+	/**
 	 * 检查存档是否有效
 	 */
 	bool IsValid() const;
+
+	/**
+	 * 检查存档数据完整性（防篡改）
+	 */
+	bool ValidateDataIntegrity() const;
 
 	/**
 	 * 检查版本是否兼容
@@ -202,4 +242,15 @@ public:
 	 * 更新最后保存时间
 	 */
 	void UpdateLastSaveTime();
+
+	/**
+	 * 计算并更新校验和
+	 */
+	void UpdateChecksum();
+
+protected:
+	/**
+	 * 计算数据的校验和
+	 */
+	int32 CalculateChecksum() const;
 };
