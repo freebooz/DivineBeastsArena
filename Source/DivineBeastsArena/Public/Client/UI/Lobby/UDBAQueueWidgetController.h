@@ -4,9 +4,28 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAWidgetController.h"
-#include "Frontend/Queue/DBAQueueSubsystem.h"
-#include "DBAQueueWidgetController.generated.h"
+#include "UDBAQueueWidgetController.generated.h"
 
+/**
+ * 队列状态委托
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnQueueStateChangedDelegate, int32, NewState);
+
+/**
+ * 匹配成功委托
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMatchFoundDelegate, const FString&, MatchId);
+
+/**
+ * 队列取消委托
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnQueueCancelledDelegate, const FString&, Reason);
+
+/**
+ * 队列 Widget 控制器
+ *
+ * 管理匹配队列 UI 的数据绑定和交互
+ */
 UCLASS(BlueprintType)
 class DIVINEBEASTSARENA_API UDBAQueueWidgetController : public UDBAWidgetController
 {
@@ -17,7 +36,7 @@ public:
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Queue")
-	void RequestJoinQueue(EDBAQueueSubsystemMode Mode);
+	void RequestJoinQueue(int32 Mode);
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|Queue")
 	void RequestLeaveQueue();
@@ -29,15 +48,12 @@ public:
 	void RequestDeclineMatch();
 
 public:
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnQueueStateChanged, EDBAQueueSubsystemState, NewState);
 	UPROPERTY(BlueprintAssignable, Category = "DBA|Queue")
-	FOnQueueStateChanged OnQueueStateChanged;
+	FOnQueueStateChangedDelegate OnQueueStateChanged;
 
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMatchFound, const FDBAQueueSubsystemMatchInfo&, MatchInfo);
 	UPROPERTY(BlueprintAssignable, Category = "DBA|Queue")
-	FOnMatchFound OnMatchFound;
+	FOnMatchFoundDelegate OnMatchFound;
 
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnQueueCancelled, const FString&, Reason);
 	UPROPERTY(BlueprintAssignable, Category = "DBA|Queue")
-	FOnQueueCancelled OnQueueCancelled;
+	FOnQueueCancelledDelegate OnQueueCancelled;
 };

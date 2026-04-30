@@ -4,13 +4,13 @@
 #include "MobaBase/Data/DBAInputConfigDataAsset.h"
 #include "MobaBase/Input/DBAInputPlatformPolicy.h"
 #include "Common/DBALogChannels.h"
+#include "Common/DBAInterfacesCore.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/LocalPlayer.h"
 #include "Net/UnrealNetwork.h"
-#include "Frontend/Interaction/DBAInteractionComponent.h"
 
 UDBAInputRouterComponent::UDBAInputRouterComponent()
 {
@@ -448,14 +448,20 @@ void UDBAInputRouterComponent::OnInteractTriggered(const FInputActionValue& Valu
 			return;
 		}
 
-		// 通过交互组件检测可交互对象
+		// 通过 Actor 的 IDBAInteractableInterface 检测可交互对象
 		AActor* InteractableTarget = nullptr;
-		if (UDBAInteractionComponent* InteractionComp = Pawn->FindComponentByClass<UDBAInteractionComponent>())
+		// 简单的距离检测：查找 5 米内的可交互 Actor
+		TArray<AActor*> OverlappingActors;
+		Pawn->GetOverlappingActors(OverlappingActors, AActor::StaticClass());
+		for (AActor* Actor : OverlappingActors)
 		{
-			TScriptInterface<IDBAInteractionInterface> TargetInterface;
-			if (InteractionComp->FindInteractableTarget(TargetInterface))
+			if (Actor && Actor->Implements<UDBATargetableInterface>())
 			{
-				InteractableTarget = Cast<AActor>(TargetInterface.GetObject());
+				if (IDBAInteractableInterface::Execute_CanInteract(Actor, Pawn))
+				{
+					InteractableTarget = Actor;
+					break;
+				}
 			}
 		}
 
@@ -561,13 +567,10 @@ void UDBAInputRouterComponent::ServerInteract_Implementation(AActor* Interactabl
 	UE_LOG(LogDBAUI, Log, TEXT("[DBAInputRouter] ServerInteract - Actor: %s"),
 		InteractableActor ? *InteractableActor->GetName() : TEXT("None"));
 
-	// 调用交互组件处理交互逻辑
-	if (APawn* Pawn = Cast<APawn>(GetOwner()))
+	// 通过 IDBAInteractableInterface 执行交互
+	if (InteractableActor && InteractableActor->Implements<UDBATargetableInterface>())
 	{
-		if (UDBAInteractionComponent* InteractionComp = Pawn->FindComponentByClass<UDBAInteractionComponent>())
-		{
-			InteractionComp->InteractWith(InteractableActor);
-		}
+		IDBAInteractableInterface::Execute_Interact(InteractableActor, GetOwner());
 	}
 }
 

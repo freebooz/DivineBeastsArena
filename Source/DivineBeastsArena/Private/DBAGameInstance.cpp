@@ -1,9 +1,8 @@
-// Copyright FreeboozStudio. All Rights Reserved.
+// Copyright Freebooz Games, Inc. All Rights Reserved.
 // 游戏实例实现 - 管理游戏生命周期和子系统
 
 #include "DBAGameInstance.h"
 #include "Common/Subsystems/DBAGameInstanceSubsystemBase.h"
-#include "Frontend/Startup/DBAStartupVideoSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Common/DBALogChannels.h"
 
@@ -18,13 +17,6 @@ void UDBAGameInstance::Init()
 	Super::Init();
 
 	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 初始化完成"));
-
-	// 获取启动视频子系统并播放视频
-	StartupVideoSubsystem = GetSubsystem<UDBAStartupVideoSubsystem>();
-	if (StartupVideoSubsystem)
-	{
-		StartupVideoSubsystem->PlayStartupVideo();
-	}
 }
 
 // Shutdown - 游戏实例关闭
