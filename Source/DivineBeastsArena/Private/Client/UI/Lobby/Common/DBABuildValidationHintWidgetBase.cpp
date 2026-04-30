@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/Common/DBABuildValidationHintWidgetBase.h"
+#include "Client/UI/Lobby/Common/DBABuildValidationHintWidgetBase.h"
 
 UDBABuildValidationHintWidgetBase::UDBABuildValidationHintWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/HeroSelect/DBAHeroInfoPanelWidgetBase.h"
+#include "Client/UI/Lobby/HeroSelect/DBAHeroInfoPanelWidgetBase.h"
 
 UDBAHeroInfoPanelWidgetBase::UDBAHeroInfoPanelWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

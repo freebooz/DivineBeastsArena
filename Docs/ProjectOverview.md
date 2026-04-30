@@ -332,7 +332,7 @@ Source/DivineBeastsArena/
 │   │   ├── Abilities/
 │   │   ├── Attributes/
 │   │   └── Effects/
-│   ├── Frontend/                  # 游戏层 - 前端
+│   ├── Lobby/                  # 游戏层 - 前端
 │   │   ├── BuildValidation/
 │   │   ├── ElementSelect/
 │   │   ├── FiveCampSelect/
@@ -351,7 +351,7 @@ Source/DivineBeastsArena/
 │   │   └── Startup/
 │   └── UI/                        # 游戏层 - UI
 │       ├── Arena/
-│       └── Frontend/
+│       └── Lobby/
 └── Private/                       # 实现文件
 ```
 

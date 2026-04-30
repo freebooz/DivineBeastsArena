@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/DBAMatchFoundWidgetBase.h"
+#include "Client/UI/Lobby/DBAMatchFoundWidgetBase.h"
 
 UDBAMatchFoundWidgetBase::UDBAMatchFoundWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/FiveCampSelect/DBAFiveCampSelectWidgetController.h"
+#include "Client/UI/Lobby/FiveCampSelect/DBAFiveCampSelectWidgetController.h"
 
 /**
  * 构造函数

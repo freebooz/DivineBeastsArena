@@ -62,7 +62,7 @@ UUserWidget
 
 ### 2.1 UDBAWidgetController
 
-**文件**: `Public/UI/DBAWidgetController.h`
+**文件**: `Public/Client/UI/DBAWidgetController.h`
 
 Widget 控制器基类，负责管理 Widget 的数据和业务逻辑。
 
@@ -92,7 +92,7 @@ protected:
 
 ### 2.2 UDBAUserWidgetBase
 
-**文件**: `Public/UI/DBAUserWidgetBase.h`
+**文件**: `Public/Client/UI/DBAUserWidgetBase.h`
 
 UMG UserWidget 基类，用于所有可在屏幕上显示的 UI 控件。
 
@@ -243,7 +243,7 @@ FDBAOnSkillReleased OnSkillReleasedEvent;
 
 ### 5.1 ArenaHUDWidgetController
 
-**文件**: `Public/UI/Arena/DBAArenaHUDWidgetController.h`
+**文件**: `Public/Client/UI/Arena/DBAArenaHUDWidgetController.h`
 
 ```cpp
 UCLASS(BlueprintType)
@@ -297,7 +297,7 @@ protected:
 
 ### 5.2 PlayerUnitFrameWidgetController
 
-**文件**: `Public/UI/Arena/DBAPlayerUnitFrameWidgetController.h`
+**文件**: `Public/Client/UI/Arena/DBAPlayerUnitFrameWidgetController.h`
 
 ```cpp
 UCLASS(BlueprintType)
@@ -350,7 +350,7 @@ public:
 
 ### 6.1 HUD 根 Widget
 
-**文件**: `Public/UI/Arena/DBAArenaHUDRootWidgetBase.h`
+**文件**: `Public/Client/UI/Arena/DBAArenaHUDRootWidgetBase.h`
 
 ```cpp
 UCLASS(Abstract, Blueprintable, BlueprintType)

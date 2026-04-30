@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/DBANewbieTaskTrackerWidgetBase.h"
+#include "Client/UI/Lobby/DBANewbieTaskTrackerWidgetBase.h"
 
 UDBANewbieTaskTrackerWidgetBase::UDBANewbieTaskTrackerWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

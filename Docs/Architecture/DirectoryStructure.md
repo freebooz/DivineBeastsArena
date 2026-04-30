@@ -57,12 +57,13 @@
   - Heroes: 英雄实现（继承 MobaBase Character）
   - Data: 项目专属数据表
 
-### Frontend/ - 前台系统
+### Lobby/ - 大厅系统 (原Frontend)
 - 登录、大厅、组队、匹配、英雄选择
 - 不参与对局内战斗逻辑
 - 可在 Dedicated Server 上禁用部分功能
+- 子目录: Common, ElementSelect, FiveCampSelect, HeroSelect, Loading
 
-### UI/ - UI 系统
+### Client/UI/ - UI 系统
 - Framework: CommonUI/WidgetController 基础
 - HUD: 对局内 HUD（UnitFrame/BuffBar/ActionBar）
 - Widgets: 通用 UI 组件
@@ -130,7 +131,7 @@
 ```
 Core → MobaBase → DBA
        ↓           ↓
-    Frontend    Combat
+    Lobby      Combat
        ↓           ↓
       UI        Animation
 ```

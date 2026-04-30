@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/DBAQueueModeSelectWidgetBase.h"
+#include "Client/UI/Lobby/DBAQueueModeSelectWidgetBase.h"
 
 UDBAQueueModeSelectWidgetBase::UDBAQueueModeSelectWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

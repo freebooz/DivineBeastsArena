@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/DBANewbieVillageMainWidgetBase.h"
-#include "Client/UI/Frontend/DBANewbieTaskTrackerWidgetBase.h"
+#include "Client/UI/Lobby/DBANewbieVillageMainWidgetBase.h"
+#include "Client/UI/Lobby/DBANewbieTaskTrackerWidgetBase.h"
 
 UDBANewbieVillageMainWidgetBase::UDBANewbieVillageMainWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

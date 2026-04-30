@@ -1,8 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/FiveCampSelect/DBAFiveCampSelectWidgetBase.h"
-#include "Client/UI/Frontend/FiveCampSelect/DBAFiveCampInfoPanelWidgetBase.h"
-#include "Client/UI/Frontend/FiveCampSelect/DBAFiveCampSelectWidgetController.h"
+#include "Client/UI/Lobby/FiveCampSelect/DBAFiveCampSelectWidgetBase.h"
+#include "Client/UI/Lobby/FiveCampSelect/DBAFiveCampInfoPanelWidgetBase.h"
+#include "Client/UI/Lobby/FiveCampSelect/DBAFiveCampSelectWidgetController.h"
 
 UDBAFiveCampSelectWidgetBase::UDBAFiveCampSelectWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

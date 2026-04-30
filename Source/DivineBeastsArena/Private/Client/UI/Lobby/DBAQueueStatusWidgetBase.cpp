@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/DBAQueueStatusWidgetBase.h"
+#include "Client/UI/Lobby/DBAQueueStatusWidgetBase.h"
 
 UDBAQueueStatusWidgetBase::UDBAQueueStatusWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

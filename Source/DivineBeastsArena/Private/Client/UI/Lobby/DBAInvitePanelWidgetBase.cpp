@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/DBAInvitePanelWidgetBase.h"
+#include "Client/UI/Lobby/DBAInvitePanelWidgetBase.h"
 
 UDBAInvitePanelWidgetBase::UDBAInvitePanelWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

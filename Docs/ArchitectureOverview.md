@@ -24,7 +24,7 @@ Source/DivineBeastsArena/
 │   │   ├── Session/            # 会话管理
 │   │   └── Subsystems/         # 核心子系统
 │   ├── Data/                   # 数据资产
-│   ├── Frontend/               # 前台系统 (大厅/选择流程)
+│   ├── Lobby/               # 前台系统 (大厅/选择流程)
 │   ├── GAS/                    # Gameplay Ability System
 │   │   ├── Abilities/          # 技能基类
 │   │   ├── Attributes/         # 属性集
@@ -33,7 +33,7 @@ Source/DivineBeastsArena/
 │   ├── MobaBase/               # MOBA 框架基类
 │   └── UI/                     # UI 系统
 │       ├── Arena/              # 竞技场 HUD
-│       ├── Frontend/           # 前台 UI
+│       ├── Lobby/           # 前台 UI
 │       └── Startup/            # 启动动画
 ├── Public/                     # 头文件
 │   └── (同上结构)

@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/Loading/DBALoadingWidgetController.h"
+#include "Client/UI/Lobby/Loading/DBALoadingWidgetController.h"
 
 /**
  * 构造函数

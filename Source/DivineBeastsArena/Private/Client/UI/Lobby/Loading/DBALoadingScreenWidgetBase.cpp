@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/Loading/DBALoadingScreenWidgetBase.h"
-#include "Client/UI/Frontend/Loading/DBALoadingWidgetController.h"
+#include "Client/UI/Lobby/Loading/DBALoadingScreenWidgetBase.h"
+#include "Client/UI/Lobby/Loading/DBALoadingWidgetController.h"
 
 UDBALoadingScreenWidgetBase::UDBALoadingScreenWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

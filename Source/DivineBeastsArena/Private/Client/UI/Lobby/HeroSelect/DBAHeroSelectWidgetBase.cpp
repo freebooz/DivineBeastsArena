@@ -1,8 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/HeroSelect/DBAHeroSelectWidgetBase.h"
-#include "Client/UI/Frontend/HeroSelect/DBAHeroInfoPanelWidgetBase.h"
-#include "Client/UI/Frontend/HeroSelect/DBAHeroSelectWidgetController.h"
+#include "Client/UI/Lobby/HeroSelect/DBAHeroSelectWidgetBase.h"
+#include "Client/UI/Lobby/HeroSelect/DBAHeroInfoPanelWidgetBase.h"
+#include "Client/UI/Lobby/HeroSelect/DBAHeroSelectWidgetController.h"
 
 UDBAHeroSelectWidgetBase::UDBAHeroSelectWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

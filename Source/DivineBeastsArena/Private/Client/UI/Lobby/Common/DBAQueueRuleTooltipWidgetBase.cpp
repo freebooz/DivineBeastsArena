@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/Common/DBAQueueRuleTooltipWidgetBase.h"
+#include "Client/UI/Lobby/Common/DBAQueueRuleTooltipWidgetBase.h"
 
 UDBAQueueRuleTooltipWidgetBase::UDBAQueueRuleTooltipWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

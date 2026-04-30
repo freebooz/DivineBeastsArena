@@ -1,9 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/ElementSelect/DBAElementSelectWidgetBase.h"
-#include "Client/UI/Frontend/ElementSelect/DBAElementInfoPanelWidgetBase.h"
-#include "Client/UI/Frontend/ElementSelect/DBAFixedSkillGroupPreviewWidgetBase.h"
-#include "Client/UI/Frontend/ElementSelect/DBAElementSelectWidgetController.h"
+#include "Client/UI/Lobby/ElementSelect/DBAElementSelectWidgetBase.h"
+#include "Client/UI/Lobby/ElementSelect/DBAElementInfoPanelWidgetBase.h"
+#include "Client/UI/Lobby/ElementSelect/DBAFixedSkillGroupPreviewWidgetBase.h"
+#include "Client/UI/Lobby/ElementSelect/DBAElementSelectWidgetController.h"
 
 UDBAElementSelectWidgetBase::UDBAElementSelectWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/DBAPartyPanelWidgetBase.h"
+#include "Client/UI/Lobby/DBAPartyPanelWidgetBase.h"
 
 UDBAPartyPanelWidgetBase::UDBAPartyPanelWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

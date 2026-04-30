@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/DBAMainLobbyWidgetController.h"
+#include "Client/UI/Lobby/DBAMainLobbyWidgetController.h"
 
 /**
  * 构造函数

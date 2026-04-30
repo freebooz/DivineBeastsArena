@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/DBAReadyCheckWidgetBase.h"
+#include "Client/UI/Lobby/DBAReadyCheckWidgetBase.h"
 
 UDBAReadyCheckWidgetBase::UDBAReadyCheckWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

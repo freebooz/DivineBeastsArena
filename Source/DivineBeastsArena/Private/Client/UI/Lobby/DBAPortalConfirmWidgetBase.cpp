@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/DBAPortalConfirmWidgetBase.h"
+#include "Client/UI/Lobby/DBAPortalConfirmWidgetBase.h"
 
 UDBAPortalConfirmWidgetBase::UDBAPortalConfirmWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

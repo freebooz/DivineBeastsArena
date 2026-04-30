@@ -27,7 +27,7 @@
     DBACore/
     DBAMobaBase/
     DBAProject/
-    DBAFrontend/
+    DBALobby/
     ...
 ```
 

@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/DBAInteractionPromptWidgetBase.h"
+#include "Client/UI/Lobby/DBAInteractionPromptWidgetBase.h"
 
 UDBAInteractionPromptWidgetBase::UDBAInteractionPromptWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

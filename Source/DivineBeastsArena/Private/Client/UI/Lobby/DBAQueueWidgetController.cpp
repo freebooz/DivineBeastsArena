@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/DBAQueueWidgetController.h"
+#include "Client/UI/Lobby/DBAQueueWidgetController.h"
 
 /**
  * 构造函数

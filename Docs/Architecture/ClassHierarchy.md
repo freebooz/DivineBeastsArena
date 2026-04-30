@@ -461,10 +461,10 @@ UDBAInterface (DBA Project)
 | DBAChainComponent.h | UDBAChainComponent | DBA/Combat/ | Project |
 | DBAResonanceComponent.h | UDBAResonanceComponent | DBA/Combat/ | Project |
 | DBAUltimateEnergyComponent.h | UDBAUltimateEnergyComponent | DBA/Combat/ | Project |
-| DBAAccountSubsystem.h | UDBAAccountSubsystem | Frontend/Account/ | Project |
-| DBAPartySubsystem.h | UDBAPartySubsystem | Frontend/Party/ | Project |
-| DBAQueueSubsystem.h | UDBAQueueSubsystem | Frontend/Queue/ | Project |
-| DBAFlowSubsystem.h | UDBAFlowSubsystem | Frontend/Flow/ | Project |
+| DBAAccountSubsystem.h | UDBAAccountSubsystem | Lobby/Account/ | Project |
+| DBAPartySubsystem.h | UDBAPartySubsystem | Lobby/Party/ | Project |
+| DBAQueueSubsystem.h | UDBAQueueSubsystem | Lobby/Queue/ | Project |
+| DBAFlowSubsystem.h | UDBAFlowSubsystem | Lobby/Flow/ | Project |
 | DBAMinionAIController.h | ADBAMinionAIController | AI/Minion/ | Project |
 | DBAMonsterAIController.h | ADBAMonsterAIController | AI/Monster/ | Project |
 | DBAUIManagerSubsystem.h | UDBAUIManagerSubsystem | UI/Framework/ | Project |
@@ -475,7 +475,7 @@ UDBAInterface (DBA Project)
 | DBAElementDataAsset.h | UDBAElementDataAsset | DBA/Data/ | Project |
 | DBASkillDataAsset.h | UDBASkillDataAsset | DBA/Data/ | Project |
 | DBAInteractableInterface.h | UDBAInteractableInterface | Shared/Interfaces/ | Project |
-| DBAPortalActor.h | ADBAPortalActor | Frontend/Portal/ | Project |
+| DBAPortalActor.h | ADBAPortalActor | Lobby/Portal/ | Project |
 | DBAMonitoringClientSubsystem.h | UDBAMonitoringClientSubsystem | External/Monitoring/ | Project |
 | DBAGameOpsClientSubsystem.h | UDBAGameOpsClientSubsystem | External/GameOps/ | Project |
 

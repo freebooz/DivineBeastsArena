@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/ElementSelect/DBAFixedSkillGroupPreviewWidgetBase.h"
+#include "Client/UI/Lobby/ElementSelect/DBAFixedSkillGroupPreviewWidgetBase.h"
 
 UDBAFixedSkillGroupPreviewWidgetBase::UDBAFixedSkillGroupPreviewWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

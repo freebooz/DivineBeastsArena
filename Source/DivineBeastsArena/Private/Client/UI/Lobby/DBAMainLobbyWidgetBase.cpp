@@ -1,9 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/DBAMainLobbyWidgetBase.h"
-#include "Client/UI/Frontend/DBAMainLobbyWidgetController.h"
-#include "Client/UI/Frontend/DBAPartyPanelWidgetBase.h"
-#include "Client/UI/Frontend/DBAQueueModeSelectWidgetBase.h"
+#include "Client/UI/Lobby/DBAMainLobbyWidgetBase.h"
+#include "Client/UI/Lobby/DBAMainLobbyWidgetController.h"
+#include "Client/UI/Lobby/DBAPartyPanelWidgetBase.h"
+#include "Client/UI/Lobby/DBAQueueModeSelectWidgetBase.h"
 
 UDBAMainLobbyWidgetBase::UDBAMainLobbyWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

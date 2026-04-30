@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Frontend/HeroSelect/DBAHeroSelectWidgetController.h"
+#include "Client/UI/Lobby/HeroSelect/DBAHeroSelectWidgetController.h"
 
 UDBAHeroSelectWidgetController::UDBAHeroSelectWidgetController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
