@@ -13,15 +13,5 @@ class DIVINEBEASTSARENA_API UDBAGameplayAbility_Pig_W : public UDBAElementAbilit
 	GENERATED_BODY()
 
 public:
-	UDBAGameplayAbility_Pig_W()
-	{
-		// 技能配置
-		AbilityTag = FGameplayTag::RequestGameplayTag(FName("Ability.Pig.W"), false);
-		ActivationPolicy = EDBAMobaAbilityActivationPolicy::OnInputTriggered;
-
-		// 生肖/元素类型
-		ZodiacType = EDBAZodiacType::Pig;
-		// TODO: 根据英雄主元素设置
-		ElementType = EDBAElement::None;
-	}
+	UDBAGameplayAbility_Pig_W();
 };

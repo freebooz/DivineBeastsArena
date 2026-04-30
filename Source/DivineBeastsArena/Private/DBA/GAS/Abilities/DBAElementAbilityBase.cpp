@@ -130,9 +130,4 @@ bool UDBAElementAbilityBase::CommitAbilityCost(const FGameplayAbilitySpecHandle 
 
 		return true;
 	}
-
-	// 如果没有能量消耗，则调用父类处理
-	bool bCostCommited = Super::CommitAbilityCost(Handle, ActorInfo, ActivationInfo, OptionalRelevantTags);
-
-	return bCostCommited;
 }

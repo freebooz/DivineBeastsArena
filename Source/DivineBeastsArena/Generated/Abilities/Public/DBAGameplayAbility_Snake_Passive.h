@@ -13,15 +13,5 @@ class DIVINEBEASTSARENA_API UDBAGameplayAbility_Snake_Passive : public UDBAZodia
 	GENERATED_BODY()
 
 public:
-	UDBAGameplayAbility_Snake_Passive()
-	{
-		// 技能配置
-		AbilityTag = FGameplayTag::RequestGameplayTag(FName("Ability.Snake.Passive"), false);
-		ActivationPolicy = EDBAMobaAbilityActivationPolicy::OnInputTriggered;
-
-		// 生肖/元素类型
-		ZodiacType = EDBAZodiacType::Snake;
-		// Passive 技能不绑定特定元素
-		ElementType = EDBAElement::None;
-	}
+	UDBAGameplayAbility_Snake_Passive();
 };

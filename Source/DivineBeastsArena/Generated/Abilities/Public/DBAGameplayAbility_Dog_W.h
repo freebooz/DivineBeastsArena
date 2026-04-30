@@ -13,15 +13,5 @@ class DIVINEBEASTSARENA_API UDBAGameplayAbility_Dog_W : public UDBAElementAbilit
 	GENERATED_BODY()
 
 public:
-	UDBAGameplayAbility_Dog_W()
-	{
-		// 技能配置
-		AbilityTag = FGameplayTag::RequestGameplayTag(FName("Ability.Dog.W"), false);
-		ActivationPolicy = EDBAMobaAbilityActivationPolicy::OnInputTriggered;
-
-		// 生肖/元素类型
-		ZodiacType = EDBAZodiacType::Dog;
-		// TODO: 根据英雄主元素设置
-		ElementType = EDBAElement::None;
-	}
+	UDBAGameplayAbility_Dog_W();
 };

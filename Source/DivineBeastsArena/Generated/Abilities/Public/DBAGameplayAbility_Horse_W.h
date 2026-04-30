@@ -13,15 +13,5 @@ class DIVINEBEASTSARENA_API UDBAGameplayAbility_Horse_W : public UDBAElementAbil
 	GENERATED_BODY()
 
 public:
-	UDBAGameplayAbility_Horse_W()
-	{
-		// 技能配置
-		AbilityTag = FGameplayTag::RequestGameplayTag(FName("Ability.Horse.W"), false);
-		ActivationPolicy = EDBAMobaAbilityActivationPolicy::OnInputTriggered;
-
-		// 生肖/元素类型
-		ZodiacType = EDBAZodiacType::Horse;
-		// TODO: 根据英雄主元素设置
-		ElementType = EDBAElement::None;
-	}
+	UDBAGameplayAbility_Horse_W();
 };

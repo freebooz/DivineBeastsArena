@@ -13,15 +13,5 @@ class DIVINEBEASTSARENA_API UDBAGameplayAbility_Rooster_R : public UDBAZodiacUlt
 	GENERATED_BODY()
 
 public:
-	UDBAGameplayAbility_Rooster_R()
-	{
-		// 技能配置
-		AbilityTag = FGameplayTag::RequestGameplayTag(FName("Ability.Rooster.R"), false);
-		ActivationPolicy = EDBAMobaAbilityActivationPolicy::OnInputTriggered;
-
-		// 生肖/元素类型
-		ZodiacType = EDBAZodiacType::Rooster;
-		// TODO: 根据英雄主元素设置
-		ElementType = EDBAElement::None;
-	}
+	UDBAGameplayAbility_Rooster_R();
 };

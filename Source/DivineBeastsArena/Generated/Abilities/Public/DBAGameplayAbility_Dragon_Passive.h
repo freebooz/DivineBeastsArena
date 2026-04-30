@@ -13,15 +13,5 @@ class DIVINEBEASTSARENA_API UDBAGameplayAbility_Dragon_Passive : public UDBAZodi
 	GENERATED_BODY()
 
 public:
-	UDBAGameplayAbility_Dragon_Passive()
-	{
-		// 技能配置
-		AbilityTag = FGameplayTag::RequestGameplayTag(FName("Ability.Dragon.Passive"), false);
-		ActivationPolicy = EDBAMobaAbilityActivationPolicy::OnInputTriggered;
-
-		// 生肖/元素类型
-		ZodiacType = EDBAZodiacType::Dragon;
-		// Passive 技能不绑定特定元素
-		ElementType = EDBAElement::None;
-	}
+	UDBAGameplayAbility_Dragon_Passive();
 };

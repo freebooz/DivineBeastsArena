@@ -13,15 +13,5 @@ class DIVINEBEASTSARENA_API UDBAGameplayAbility_Dragon_W : public UDBAElementAbi
 	GENERATED_BODY()
 
 public:
-	UDBAGameplayAbility_Dragon_W()
-	{
-		// 技能配置
-		AbilityTag = FGameplayTag::RequestGameplayTag(FName("Ability.Dragon.W"), false);
-		ActivationPolicy = EDBAMobaAbilityActivationPolicy::OnInputTriggered;
-
-		// 生肖/元素类型
-		ZodiacType = EDBAZodiacType::Dragon;
-		// TODO: 根据英雄主元素设置
-		ElementType = EDBAElement::None;
-	}
+	UDBAGameplayAbility_Dragon_W();
 };

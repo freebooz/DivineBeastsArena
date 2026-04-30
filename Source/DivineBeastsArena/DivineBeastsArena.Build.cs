@@ -79,6 +79,7 @@ public class DivineBeastsArena : ModuleRules
         PublicIncludePaths.AddRange(new string[]
         {
             "DivineBeastsArena/Public",
+            "DivineBeastsArena/Generated/Abilities/Public",
         });
 
         // 私有 Include 路径

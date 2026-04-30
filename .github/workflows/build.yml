@@ -1,0 +1,103 @@
+name: Build Verification
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  UE_VERSION: "5.7"
+  ENGINE_ROOT: "E:/UnrealEngine-5.7.1-release"
+  PROJECT_NAME: "DivineBeastsArena"
+
+jobs:
+  build-editor:
+    name: Build Editor (Development)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ./.github/actions/setup-msvc
+
+      - name: Build DivineBeastsArenaEditor
+        id: build
+        shell: cmd
+        run: |
+          call "${{ env.ENGINE_ROOT }}\Engine\Build\BatchFiles\Build.bat" DivineBeastsArenaEditor Development Win64 -Project="${{ github.workspace }}\${{ env.PROJECT_NAME }}.uproject" -BuildMachine -NoEngineChanges -NoHotReloadFromIDE
+        timeout-minutes: 120
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output-${{ runner.os }}
+          path: |
+            ${{ github.workspace }}/${{ env.PROJECT_NAME }}/Binaries/Win64/**
+            ${{ github.workspace }}/${{ env.PROJECT_NAME }}/Intermediate/**
+          retention-days: 7
+
+  build-server:
+    name: Build Server (Development)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ./.github/actions/setup-msvc
+
+      - name: Build DivineBeastsArenaServer
+        shell: cmd
+        run: |
+          call "${{ env.ENGINE_ROOT }}\Engine\Build\BatchFiles\Build.bat" DivineBeastsArenaServer Development Win64 -Project="${{ github.workspace }}\${{ env.PROJECT_NAME }}.uproject" -BuildMachine -NoEngineChanges -NoHotReloadFromIDE
+        timeout-minutes: 120
+
+  code-quality:
+    name: Code Quality Check
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check include order
+        shell: pwsh
+        run: |
+          # Check that .generated.h is last include in all header files
+          $errors = @()
+          Get-ChildItem -Path Source -Recurse -Include *.h | ForEach-Object {
+            $content = Get-Content $_.FullName -Raw
+            if ($content -match '#include\s+"[^"]*\.generated\.h"') {
+              $afterGenerated = $content -replace '.*?#include\s+"[^"]*\.generated\.h"(\s*[\r\n]+)?', ''
+              if ($afterGenerated -match '#include') {
+                $errors += $_.FullName
+              }
+            }
+          }
+          if ($errors.Count -gt 0) {
+            Write-Host "ERROR: Found files with includes after .generated.h:"
+            $errors | ForEach-Object { Write-Host "  $_" }
+            exit 1
+          }
+          Write-Host "Include order check passed"
+
+      - name: Check naming conventions
+        shell: pwsh
+        run: |
+          # Check that files follow UDBA/DBA naming convention
+          $errors = @()
+          Get-ChildItem -Path Source -Recurse -Include *.h | ForEach-Object {
+            if ($_.Name -match '^[DU]?DBA[A-Z]' -and $_.Name -notmatch '^U?DBA') {
+              $errors += $_.FullName
+            }
+          }
+          if ($errors.Count -gt 0) {
+            Write-Host "WARNING: Found files with potentially incorrect naming:"
+            $errors | ForEach-Object { Write-Host "  $_" }
+          }
+          Write-Host "Naming check completed"

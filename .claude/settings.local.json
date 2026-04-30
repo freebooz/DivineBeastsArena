@@ -52,7 +52,10 @@
       "Bash(xargs sed *)",
       "Bash(git -C \"D:/DivineBeastsArena\" status --short)",
       "Bash(sed -i 's/#include \"DBAArenaHUDWidgetController\\\\.generated\\\\.h\"/#include \"UDBAArenaHUDWidgetController.generated.h\"/g' Source/DivineBeastsArena/Public/Client/UI/Arena/UDBAArenaHUDWidgetController.h)",
-      "Bash(sed -i 's/#include \"DBAFixedSkillGroupPreviewWidgetBase\\\\.generated\\\\.h\"/#include \"UDBAFixedSkillGroupPreviewWidgetBase.generated.h\"/g' Source/DivineBeastsArena/Public/Client/UI/Lobby/ElementSelect/UDBAFixedSkillGroupPreviewWidgetBase.h)"
+      "Bash(sed -i 's/#include \"DBAFixedSkillGroupPreviewWidgetBase\\\\.generated\\\\.h\"/#include \"UDBAFixedSkillGroupPreviewWidgetBase.generated.h\"/g' Source/DivineBeastsArena/Public/Client/UI/Lobby/ElementSelect/UDBAFixedSkillGroupPreviewWidgetBase.h)",
+      "Bash(rm -rf Source/DivineBeastsArena/Generated/Abilities/Private/*.cpp Source/DivineBeastsArena/Generated/Abilities/Public/*.h)",
+      "Bash(python Scripts/generate_zodiac_abilities.py)",
+      "Bash(E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat DivineBeastsArenaEditor Development Win64 -Project=\"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -BuildMachine -NoEngineChanges -NoHotReloadFromIDE)"
     ]
   }
 }

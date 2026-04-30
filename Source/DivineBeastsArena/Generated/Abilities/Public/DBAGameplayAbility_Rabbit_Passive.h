@@ -13,15 +13,5 @@ class DIVINEBEASTSARENA_API UDBAGameplayAbility_Rabbit_Passive : public UDBAZodi
 	GENERATED_BODY()
 
 public:
-	UDBAGameplayAbility_Rabbit_Passive()
-	{
-		// 技能配置
-		AbilityTag = FGameplayTag::RequestGameplayTag(FName("Ability.Rabbit.Passive"), false);
-		ActivationPolicy = EDBAMobaAbilityActivationPolicy::OnInputTriggered;
-
-		// 生肖/元素类型
-		ZodiacType = EDBAZodiacType::Rabbit;
-		// Passive 技能不绑定特定元素
-		ElementType = EDBAElement::None;
-	}
+	UDBAGameplayAbility_Rabbit_Passive();
 };

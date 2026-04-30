@@ -46,12 +46,15 @@ ELEMENTS = [
 ]
 
 # 技能类型
+# Passive -> DBAZodiacAbilityBase (有 ZodiacType)
+# Q/W/E -> DBAElementAbilityBase (有 ElementType，无 ZodiacType)
+# R -> DBAZodiacUltimateAbilityBase (继承自 DBAZodiacAbilityBase，有 ZodiacType)
 SKILL_TYPES = [
-    ("Passive", "被动技能", "DBAZodiacAbilityBase"),
-    ("Q", "Q技能", "DBAElementAbilityBase"),
-    ("W", "W技能", "DBAElementAbilityBase"),
-    ("E", "E技能", "DBAElementAbilityBase"),
-    ("R", "终极技能", "DBAZodiacUltimateAbilityBase"),
+    ("Passive", "被动技能", "DBAZodiacAbilityBase", "zodiac"),
+    ("Q", "Q技能", "DBAElementAbilityBase", "element"),
+    ("W", "W技能", "DBAElementAbilityBase", "element"),
+    ("E", "E技能", "DBAElementAbilityBase", "element"),
+    ("R", "终极技能", "DBAZodiacUltimateAbilityBase", "zodiac"),
 ]
 
 # ============== 模板 ==============
@@ -71,43 +74,42 @@ class DIVINEBEASTSARENA_API UDBAGameplayAbility_{zodiac}_{skill} : public U{base
 	GENERATED_BODY()
 
 public:
-	UDBAGameplayAbility_{zodiac}_{skill}()
-	{{
-		// 技能配置
-		AbilityTag = FGameplayTag::RequestGameplayTag(FName("Ability.{zodiac}.{skill}"), false);
-		ActivationPolicy = EDBAMobaAbilityActivationPolicy::OnInputTriggered;
-
-		// 生肖/元素类型
-		ZodiacType = EDBAZodiacType::{zodiac};
-{element_config}
-	}}
+	UDBAGameplayAbility_{zodiac}_{skill}();
 }};
 """
 
 CPP_TEMPLATE = """// Copyright FreeboozStudio. All Rights Reserved.
 // 自动生成的 {zodiac_cn}{skill_name} 技能类实现
 
-#include "DBA/GAS/Abilities/DBAGameplayAbility_{zodiac}_{skill}.h"
+#include "DBAGameplayAbility_{zodiac}_{skill}.h"
 
 UDBAGameplayAbility_{zodiac}_{skill}::UDBAGameplayAbility_{zodiac}_{skill}()
 {{
-	// 默认配置已在头文件构造函数中完成
+	// 技能配置
+	AbilityTag = FGameplayTag::RequestGameplayTag(FName("Ability.{zodiac}.{skill}"), false);
+	ActivationPolicy = EDBAMobaAbilityActivationPolicy::OnInputTriggered;
+
+	// 生肖类型 - 仅 ZodiacAbilityBase 和其子类需要设置
+{zodiac_config}
 }}
 """
 
 # ============== 代码生成 ==============
 
-def get_element_config(skill_type: str) -> str:
-    """获取元素类型配置"""
-    if skill_type == "Passive":
-        return "\t\t// Passive 技能不绑定特定元素\n\t\tElementType = EDBAElement::None;"
+def get_property_config(skill_type: str, zodiac: str) -> str:
+    """获取属性配置
+    - zodiac 类型: Passive/R -> 设置 ZodiacType = EDBAZodiacType::{zodiac}
+    - element 类型: Q/W/E -> 设置 ElementType = EDBAElement::None (需要外部设置)
+    """
+    if skill_type == "zodiac":
+        return f"\tZodiacType = EDBAZodiacType::{zodiac};"
     else:
-        # Q/W/E 技能需要设置元素类型，使用占位符
-        return "\t\t// TODO: 根据英雄主元素设置\n\t\tElementType = EDBAElement::None;"
+        # element 类型不设置 ZodiacType，只在注释中说明需要外部配置
+        return "\t// ElementType 由英雄实例在 SpawnAbility 时设置"
 
-def generate_ability_class(zodiac: str, zodiac_cn: str, skill: str, skill_name: str, base_class: str) -> Dict[str, str]:
+def generate_ability_class(zodiac: str, zodiac_cn: str, skill: str, skill_name: str, base_class: str, property_type: str) -> Dict[str, str]:
     """生成单个技能类的头文件和cpp文件内容"""
-    element_config = get_element_config(skill)
+    property_config = get_property_config(property_type, zodiac)
 
     header = HEADER_TEMPLATE.format(
         zodiac_cn=zodiac_cn,
@@ -115,7 +117,7 @@ def generate_ability_class(zodiac: str, zodiac_cn: str, skill: str, skill_name: 
         zodiac=zodiac,
         skill=skill,
         base_class=base_class,
-        element_config=element_config,
+        zodiac_config=property_config,
     )
 
     cpp = CPP_TEMPLATE.format(
@@ -123,6 +125,7 @@ def generate_ability_class(zodiac: str, zodiac_cn: str, skill: str, skill_name: 
         skill_name=skill_name,
         zodiac=zodiac,
         skill=skill,
+        zodiac_config=property_config,
     )
 
     return {
@@ -153,12 +156,12 @@ def main():
 
     # 遍历所有生肖生成技能类
     for zodiac_id, zodiac_cn in ZODIAC_TYPES:
-        for skill, skill_name, base_class in SKILL_TYPES:
+        for skill, skill_name, base_class, property_type in SKILL_TYPES:
             # 生成类名
             class_name = f"DBAGameplayAbility_{zodiac_id}_{skill}"
 
             # 生成代码
-            code = generate_ability_class(zodiac_id, zodiac_cn, skill, skill_name, base_class)
+            code = generate_ability_class(zodiac_id, zodiac_cn, skill, skill_name, base_class, property_type)
 
             # 写入头文件
             header_path = public_dir / f"{class_name}.h"
@@ -213,7 +216,7 @@ def get_file_list() -> str:
     """获取生成的文件列表"""
     files = []
     for zodiac_id, zodiac_cn in ZODIAC_TYPES:
-        for skill, _, _ in SKILL_TYPES:
+        for skill, _, _, _ in SKILL_TYPES:
             files.append(f"  - DBAGameplayAbility_{zodiac_id}_{skill}.h/cpp")
     return "\n// ".join(files)
 

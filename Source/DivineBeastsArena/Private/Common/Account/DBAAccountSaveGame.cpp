@@ -279,11 +279,10 @@ int32 UDBAProfileSaveGame::CalculateChecksum() const
 	// 简单的校验和算法
 	int32 Checksum = 0;
 
-	// 基于玩家名称（如果存在）
-	if (!PlayerProfile.PlayerName.IsEmpty())
-	{
-		Checksum ^= GetTypeHash(PlayerProfile.PlayerName);
-	}
+	// 基于玩家设置数据的哈希
+	Checksum ^= GetTypeHash(PlayerProfile.GraphicsSettings.QualityLevel);
+	Checksum ^= GetTypeHash(PlayerProfile.AudioSettings.MasterVolume);
+	Checksum ^= GetTypeHash(PlayerProfile.GameplaySettings.MouseSensitivity);
 
 	// 基于最后保存时间
 	Checksum ^= (LastSaveTime & 0xFFFFFFFF);

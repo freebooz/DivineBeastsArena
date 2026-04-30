@@ -13,15 +13,5 @@ class DIVINEBEASTSARENA_API UDBAGameplayAbility_Horse_Passive : public UDBAZodia
 	GENERATED_BODY()
 
 public:
-	UDBAGameplayAbility_Horse_Passive()
-	{
-		// 技能配置
-		AbilityTag = FGameplayTag::RequestGameplayTag(FName("Ability.Horse.Passive"), false);
-		ActivationPolicy = EDBAMobaAbilityActivationPolicy::OnInputTriggered;
-
-		// 生肖/元素类型
-		ZodiacType = EDBAZodiacType::Horse;
-		// Passive 技能不绑定特定元素
-		ElementType = EDBAElement::None;
-	}
+	UDBAGameplayAbility_Horse_Passive();
 };
