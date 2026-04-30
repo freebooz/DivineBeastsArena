@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Freebooz Games, Inc. All Rights Reserved.
 // 神兽竞技场 - MOBA GameState 基类实现
 
 #include "MobaBase/Framework/DBAGameStateBase.h"
@@ -25,7 +25,7 @@ void ADBAMobaGameStateBase::BeginPlay()
 {
     Super::BeginPlay();
 
-    UE_LOG(LogDBACombat, Log, TEXT("ADBAMobaGameStateBase: BeginPlay"));
+    UE_LOG(LogDBACombat, Log, TEXT("[ADBAMobaGameStateBase] BeginPlay"));
 }
 
 float ADBAMobaGameStateBase::GetElapsedTime() const

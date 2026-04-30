@@ -67,7 +67,7 @@ protected:
 	{
 		if (!::IsInGameThread())
 		{
-			UE_LOG(LogDBACore, Error, TEXT("[%s] %s called from non-game thread"), *SubsystemName, *FunctionName);
+			UE_LOG(LogDBACore, Error, TEXT("[%s] %s 在非游戏线程调用"), *SubsystemName, *FunctionName);
 			return false;
 		}
 		return true;

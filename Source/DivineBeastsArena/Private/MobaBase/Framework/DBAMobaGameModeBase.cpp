@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Freebooz Games, Inc. All Rights Reserved.
 // 神兽竞技场 - MOBA GameMode 基类实现
 
 #include "MobaBase/Framework/DBAMobaGameModeBase.h"
@@ -14,12 +14,12 @@ void ADBAMobaGameModeBase::BeginPlay()
 {
     Super::BeginPlay();
 
-    UE_LOG(LogDBACombat, Log, TEXT("ADBAMobaGameModeBase: BeginPlay"));
+    UE_LOG(LogDBACombat, Log, TEXT("[ADBAMobaGameModeBase] BeginPlay"));
 }
 
 void ADBAMobaGameModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    UE_LOG(LogDBACombat, Log, TEXT("ADBAMobaGameModeBase: EndPlay"));
+    UE_LOG(LogDBACombat, Log, TEXT("[ADBAMobaGameModeBase] EndPlay"));
 
     Super::EndPlay(EndPlayReason);
 }
@@ -28,12 +28,12 @@ void ADBAMobaGameModeBase::PostLogin(APlayerController* NewPlayer)
 {
     Super::PostLogin(NewPlayer);
 
-    UE_LOG(LogDBACombat, Log, TEXT("ADBAMobaGameModeBase: PostLogin - Player: %s"), *NewPlayer->GetName());
+    UE_LOG(LogDBACombat, Log, TEXT("[ADBAMobaGameModeBase] 玩家登录: %s"), *NewPlayer->GetName());
 }
 
 void ADBAMobaGameModeBase::Logout(AController* Exiting)
 {
-    UE_LOG(LogDBACombat, Log, TEXT("ADBAMobaGameModeBase: Logout - Controller: %s"), *Exiting->GetName());
+    UE_LOG(LogDBACombat, Log, TEXT("[ADBAMobaGameModeBase] 玩家登出: %s"), *Exiting->GetName());
 
     Super::Logout(Exiting);
 }
@@ -65,10 +65,10 @@ int32 ADBAMobaGameModeBase::GetMaxPlayerCount() const
 
 void ADBAMobaGameModeBase::OnPlayerCountChanged_Implementation(int32 OldCount, int32 NewCount)
 {
-    UE_LOG(LogDBACombat, Log, TEXT("ADBAMobaGameModeBase: PlayerCount changed from %d to %d"), OldCount, NewCount);
+    UE_LOG(LogDBACombat, Log, TEXT("[ADBAMobaGameModeBase] 玩家数量变化: %d -> %d"), OldCount, NewCount);
 }
 
 void ADBAMobaGameModeBase::OnGameStateChanged_Implementation(EDBAGameModeState NewState)
 {
-    UE_LOG(LogDBACombat, Log, TEXT("ADBAMobaGameModeBase: GameState changed to %s"), *UEnum::GetValueAsString(NewState));
+    UE_LOG(LogDBACombat, Log, TEXT("[ADBAMobaGameModeBase] 游戏状态变化: %s"), *UEnum::GetValueAsString(NewState));
 }

@@ -86,7 +86,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 	UDBAFixedSkillGroupDataAsset* AbilitySet = UDBAFixedSkillGroupLibrary::GetFixedSkillGroupById(FixedSkillGroupId);
 	if (!AbilitySet)
 	{
-		UE_LOG(LogDBACombat, Warning, TEXT("UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup - 技能集未找到，FixedSkillGroupId: %s"), *FixedSkillGroupId.ToString());
+		UE_LOG(LogDBACombat, Warning, TEXT("[UDBAAbilitySystemComponent] 授予技能组失败：技能集未找到，FixedSkillGroupId: %s"), *FixedSkillGroupId.ToString());
 		return;
 	}
 
@@ -436,7 +436,7 @@ void UDBAAbilitySystemComponent::TriggerGameplayCue(const FGameplayTag& CueTag, 
 {
 	if (!CueTag.IsValid())
 	{
-		UE_LOG(LogDBACombat, Warning, TEXT("UDBAAbilitySystemComponent::TriggerGameplayCue - CueTag 无效"));
+		UE_LOG(LogDBACombat, Warning, TEXT("[UDBAAbilitySystemComponent] 触发 GameplayCue 失败：CueTag 无效"));
 		return;
 	}
 
@@ -447,7 +447,7 @@ void UDBAAbilitySystemComponent::TriggerGameplayCue(const FGameplayTag& CueTag, 
 	// 触发 GameplayCue
 	ExecuteGameplayCue(CueTag, CueParams);
 
-	UE_LOG(LogDBACombat, Log, TEXT("UDBAAbilitySystemComponent::TriggerGameplayCue - Cue: %s, Target: %s"),
+	UE_LOG(LogDBACombat, Log, TEXT("[UDBAAbilitySystemComponent] 触发 GameplayCue：Cue=%s，Target=%s"),
 		*CueTag.ToString(), Target ? *Target->GetName() : TEXT("None"));
 }
 

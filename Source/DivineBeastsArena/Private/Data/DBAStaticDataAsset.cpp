@@ -52,31 +52,31 @@ bool UDBAStaticDataAsset::ValidateAllTables() const
 
 	if (ZodiacStaticTable.IsNull())
 	{
-		UE_LOG(LogDBAData, Error, TEXT("UDBAStaticDataAsset: ZodiacStaticTable is null"));
+		UE_LOG(LogDBAData, Error, TEXT("[UDBAStaticDataAsset] 生肖数据表引用为空"));
 		bAllValid = false;
 	}
 
 	if (ElementDefinitionTable.IsNull())
 	{
-		UE_LOG(LogDBAData, Error, TEXT("UDBAStaticDataAsset: ElementDefinitionTable is null"));
+		UE_LOG(LogDBAData, Error, TEXT("[UDBAStaticDataAsset] 元素数据表引用为空"));
 		bAllValid = false;
 	}
 
 	if (FiveCampDisplayTable.IsNull())
 	{
-		UE_LOG(LogDBAData, Error, TEXT("UDBAStaticDataAsset: FiveCampDisplayTable is null"));
+		UE_LOG(LogDBAData, Error, TEXT("[UDBAStaticDataAsset] 阵营数据表引用为空"));
 		bAllValid = false;
 	}
 
 	if (MapDefinitionTable.IsNull())
 	{
-		UE_LOG(LogDBAData, Error, TEXT("UDBAStaticDataAsset: MapDefinitionTable is null"));
+		UE_LOG(LogDBAData, Error, TEXT("[UDBAStaticDataAsset] 地图数据表引用为空"));
 		bAllValid = false;
 	}
 
 	if (ModeDefinitionTable.IsNull())
 	{
-		UE_LOG(LogDBAData, Error, TEXT("UDBAStaticDataAsset: ModeDefinitionTable is null"));
+		UE_LOG(LogDBAData, Error, TEXT("[UDBAStaticDataAsset] 模式数据表引用为空"));
 		bAllValid = false;
 	}
 

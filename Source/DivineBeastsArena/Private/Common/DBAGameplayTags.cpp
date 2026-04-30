@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Freebooz Games, Inc. All Rights Reserved.
 // 神兽竞技场 - GameplayTag 根命名实现
 
 #include "Common/DBAGameplayTags.h"
@@ -13,11 +13,11 @@ const FDBAGameplayTags& FDBAGameplayTags::Get()
 
 void FDBAGameplayTags::InitializeNativeTags()
 {
-	UE_LOG(LogDBACore, Log, TEXT("FDBAGameplayTags::InitializeNativeTags - 开始初始化 GameplayTag"));
+	UE_LOG(LogDBACore, Log, TEXT("[FDBAGameplayTags] 开始初始化 GameplayTag"));
 
 	AddAllTags();
 
-	UE_LOG(LogDBACore, Log, TEXT("FDBAGameplayTags::InitializeNativeTags - GameplayTag 初始化完成"));
+	UE_LOG(LogDBACore, Log, TEXT("[FDBAGameplayTags] GameplayTag 初始化完成"));
 }
 
 FGameplayTag FDBAGameplayTags::AddTag(const FString& TagName, const FString& Comment)

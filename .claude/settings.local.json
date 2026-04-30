@@ -48,7 +48,8 @@
       "Bash(rm -rf DBA/DBA)",
       "Bash(ls DBA/)",
       "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat\" DivineBeastsArena Win64 Development \"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -WaitMutex)",
-      "Bash(git mv *)"
+      "Bash(git mv *)",
+      "Bash(xargs sed *)"
     ]
   }
 }

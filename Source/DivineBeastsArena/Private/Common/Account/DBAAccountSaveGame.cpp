@@ -25,7 +25,7 @@ bool UDBAAccountSaveGame::ValidateDataIntegrity() const
 	const int32 CalculatedChecksum = CalculateChecksum();
 	if (DataChecksum != CalculatedChecksum)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("UDBAAccountSaveGame::ValidateDataIntegrity - 校验失败：存储=%d，计算=%d"),
+		UE_LOG(LogDBACore, Warning, TEXT("[UDBAAccountSaveGame] ValidateDataIntegrity 校验失败：存储=%d，计算=%d"),
 			DataChecksum, CalculatedChecksum);
 		return false;
 	}
@@ -46,7 +46,7 @@ bool UDBAAccountSaveGame::MigrateToCurrentVersion()
 {
 	if (!IsVersionCompatible())
 	{
-		UE_LOG(LogDBACore, Error, TEXT("UDBAAccountSaveGame::MigrateToCurrentVersion - 版本不兼容，无法迁移：SchemaVersion=%d, DataVersion=%d"),
+		UE_LOG(LogDBACore, Error, TEXT("[UDBAAccountSaveGame] MigrateToCurrentVersion 版本不兼容，无法迁移：SchemaVersion=%d, DataVersion=%d"),
 			SchemaVersion, DataVersion);
 		return false;
 	}
@@ -56,7 +56,7 @@ bool UDBAAccountSaveGame::MigrateToCurrentVersion()
 		return true;
 	}
 
-	UE_LOG(LogDBACore, Warning, TEXT("UDBAAccountSaveGame::MigrateToCurrentVersion - 开始迁移：从 SchemaVersion=%d, DataVersion=%d 到 SchemaVersion=%d, DataVersion=%d"),
+	UE_LOG(LogDBACore, Warning, TEXT("[UDBAAccountSaveGame] MigrateToCurrentVersion 开始迁移：SchemaVersion=%d, DataVersion=%d -> SchemaVersion=%d, DataVersion=%d"),
 		SchemaVersion, DataVersion,
 		DBASaveGameVersions::SCHEMA_VERSION, DBASaveGameVersions::DATA_VERSION);
 
@@ -70,7 +70,7 @@ bool UDBAAccountSaveGame::MigrateToCurrentVersion()
 	// 迁移后重新计算校验和
 	UpdateChecksum();
 
-	UE_LOG(LogDBACore, Log, TEXT("UDBAAccountSaveGame::MigrateToCurrentVersion - 迁移成功"));
+	UE_LOG(LogDBACore, Log, TEXT("[UDBAAccountSaveGame] MigrateToCurrentVersion 迁移成功"));
 	return true;
 }
 
@@ -84,26 +84,26 @@ void UDBAAccountSaveGame::ResetToDefault()
 	LastSaveTime = 0;
 	DataChecksum = 0;
 
-	UE_LOG(LogDBACore, Log, TEXT("UDBAAccountSaveGame::ResetToDefault - 重置为默认数据"));
+	UE_LOG(LogDBACore, Log, TEXT("[UDBAAccountSaveGame] ResetToDefault 重置为默认数据"));
 }
 
 bool UDBAAccountSaveGame::AddCharacter(const FDBACharacterSummary& Character)
 {
 	if (!Character.IsValid())
 	{
-		UE_LOG(LogDBACore, Error, TEXT("UDBAAccountSaveGame::AddCharacter - 角色无效"));
+		UE_LOG(LogDBACore, Error, TEXT("[UDBAAccountSaveGame] AddCharacter 失败：角色无效"));
 		return false;
 	}
 
 	// 检查是否已存在
 	if (FindCharacter(Character.CharacterId))
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("UDBAAccountSaveGame::AddCharacter - 角色已存在：%s"), *Character.CharacterId.ToString());
+		UE_LOG(LogDBACore, Warning, TEXT("[UDBAAccountSaveGame] AddCharacter 失败：角色已存在 %s"), *Character.CharacterId.ToString());
 		return false;
 	}
 
 	Characters.Add(Character);
-	UE_LOG(LogDBACore, Log, TEXT("UDBAAccountSaveGame::AddCharacter - 添加角色成功：%s"), *Character.CharacterName);
+	UE_LOG(LogDBACore, Log, TEXT("[UDBAAccountSaveGame] AddCharacter 成功：%s"), *Character.CharacterName);
 	return true;
 }
 
@@ -116,7 +116,7 @@ bool UDBAAccountSaveGame::RemoveCharacter(const FDBACharacterId& CharacterId)
 
 	if (Index == INDEX_NONE)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("UDBAAccountSaveGame::RemoveCharacter - 角色不存在：%s"), *CharacterId.ToString());
+		UE_LOG(LogDBACore, Warning, TEXT("[UDBAAccountSaveGame] RemoveCharacter 失败：角色不存在 %s"), *CharacterId.ToString());
 		return false;
 	}
 
@@ -128,7 +128,7 @@ bool UDBAAccountSaveGame::RemoveCharacter(const FDBACharacterId& CharacterId)
 		CurrentCharacterId = FDBACharacterId();
 	}
 
-	UE_LOG(LogDBACore, Log, TEXT("UDBAAccountSaveGame::RemoveCharacter - 移除角色成功：%s"), *CharacterId.ToString());
+	UE_LOG(LogDBACore, Log, TEXT("[UDBAAccountSaveGame] RemoveCharacter 成功：%s"), *CharacterId.ToString());
 	return true;
 }
 
@@ -204,7 +204,7 @@ bool UDBAProfileSaveGame::ValidateDataIntegrity() const
 	const int32 CalculatedChecksum = CalculateChecksum();
 	if (DataChecksum != CalculatedChecksum)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("UDBAProfileSaveGame::ValidateDataIntegrity - 校验失败：存储=%d，计算=%d"),
+		UE_LOG(LogDBACore, Warning, TEXT("[UDBAProfileSaveGame] ValidateDataIntegrity 校验失败：存储=%d，计算=%d"),
 			DataChecksum, CalculatedChecksum);
 		return false;
 	}
@@ -225,7 +225,7 @@ bool UDBAProfileSaveGame::MigrateToCurrentVersion()
 {
 	if (!IsVersionCompatible())
 	{
-		UE_LOG(LogDBACore, Error, TEXT("UDBAProfileSaveGame::MigrateToCurrentVersion - 版本不兼容，无法迁移：SchemaVersion=%d, DataVersion=%d"),
+		UE_LOG(LogDBACore, Error, TEXT("[UDBAProfileSaveGame] MigrateToCurrentVersion 版本不兼容，无法迁移：SchemaVersion=%d, DataVersion=%d"),
 			SchemaVersion, DataVersion);
 		return false;
 	}
@@ -235,7 +235,7 @@ bool UDBAProfileSaveGame::MigrateToCurrentVersion()
 		return true;
 	}
 
-	UE_LOG(LogDBACore, Warning, TEXT("UDBAProfileSaveGame::MigrateToCurrentVersion - 开始迁移：从 SchemaVersion=%d, DataVersion=%d 到 SchemaVersion=%d, DataVersion=%d"),
+	UE_LOG(LogDBACore, Warning, TEXT("[UDBAProfileSaveGame] MigrateToCurrentVersion 开始迁移：SchemaVersion=%d, DataVersion=%d -> SchemaVersion=%d, DataVersion=%d"),
 		SchemaVersion, DataVersion,
 		DBASaveGameVersions::SCHEMA_VERSION, DBASaveGameVersions::DATA_VERSION);
 
@@ -249,7 +249,7 @@ bool UDBAProfileSaveGame::MigrateToCurrentVersion()
 	// 迁移后重新计算校验和
 	UpdateChecksum();
 
-	UE_LOG(LogDBACore, Log, TEXT("UDBAProfileSaveGame::MigrateToCurrentVersion - 迁移成功"));
+	UE_LOG(LogDBACore, Log, TEXT("[UDBAProfileSaveGame] MigrateToCurrentVersion 迁移成功"));
 	return true;
 }
 
@@ -261,7 +261,7 @@ void UDBAProfileSaveGame::ResetToDefault()
 	LastSaveTime = 0;
 	DataChecksum = 0;
 
-	UE_LOG(LogDBACore, Log, TEXT("UDBAProfileSaveGame::ResetToDefault - 重置为默认数据"));
+	UE_LOG(LogDBACore, Log, TEXT("[UDBAProfileSaveGame] ResetToDefault 重置为默认数据"));
 }
 
 void UDBAProfileSaveGame::UpdateLastSaveTime()

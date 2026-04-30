@@ -9,12 +9,12 @@ void UDBALocalPlayerSubsystemBase::Initialize(FSubsystemCollectionBase& Collecti
 	bIsInitialized = false;
 	OnSubsystemInitialize();
 	bIsInitialized = true;
-	UE_LOG(LogDBACore, Log, TEXT("[%s] Initialized"), *GetSubsystemDisplayName());
+	UE_LOG(LogDBACore, Log, TEXT("[%s] 已初始化"), *GetSubsystemDisplayName());
 }
 
 void UDBALocalPlayerSubsystemBase::Deinitialize()
 {
-	UE_LOG(LogDBACore, Log, TEXT("[%s] Deinitializing"), *GetSubsystemDisplayName());
+	UE_LOG(LogDBACore, Log, TEXT("[%s] 正在反初始化"), *GetSubsystemDisplayName());
 	CancelAllAsyncOperations();
 	OnSubsystemDeinitialize();
 	Super::Deinitialize();
