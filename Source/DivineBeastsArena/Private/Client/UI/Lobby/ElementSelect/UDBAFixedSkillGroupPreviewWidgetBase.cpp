@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/ElementSelect/DBAFixedSkillGroupPreviewWidgetBase.h"
+#include "Client/UI/Lobby/ElementSelect/UDBAFixedSkillGroupPreviewWidgetBase.h"
 
 UDBAFixedSkillGroupPreviewWidgetBase::UDBAFixedSkillGroupPreviewWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

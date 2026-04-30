@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "UUDBAConnectionWarningWidgetBase.generated.h"
+#include "UDBAConnectionWarningWidgetBase.generated.h"
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBAConnectionWarningWidgetBase : public UDBAUserWidgetBase

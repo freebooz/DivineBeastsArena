@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/HeroSelect/DBAHeroSelectWidgetController.h"
+#include "Client/UI/Lobby/HeroSelect/UDBAHeroSelectWidgetController.h"
 
 UDBAHeroSelectWidgetController::UDBAHeroSelectWidgetController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

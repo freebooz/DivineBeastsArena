@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "UUDBAArenaObjectiveTrackerWidgetBase.generated.h"
+#include "UDBAArenaObjectiveTrackerWidgetBase.generated.h"
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBAArenaObjectiveTrackerWidgetBase : public UDBAUserWidgetBase

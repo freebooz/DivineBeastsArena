@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "UUDBAUltimateReadyPromptWidgetBase.generated.h"
+#include "UDBAUltimateReadyPromptWidgetBase.generated.h"
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBAUltimateReadyPromptWidgetBase : public UDBAUserWidgetBase

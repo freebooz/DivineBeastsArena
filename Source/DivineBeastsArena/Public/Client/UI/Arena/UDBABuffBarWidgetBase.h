@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "UUDBABuffBarWidgetBase.generated.h"
+#include "UDBABuffBarWidgetBase.generated.h"
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBABuffBarWidgetBase : public UDBAUserWidgetBase

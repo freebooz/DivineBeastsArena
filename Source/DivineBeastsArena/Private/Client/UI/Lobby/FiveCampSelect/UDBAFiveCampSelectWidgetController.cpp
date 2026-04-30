@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/FiveCampSelect/DBAFiveCampSelectWidgetController.h"
+#include "Client/UI/Lobby/FiveCampSelect/UDBAFiveCampSelectWidgetController.h"
 
 /**
  * 构造函数

@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/DBAArenaHUDWidgetController.h"
+#include "Client/UI/Arena/UDBAArenaHUDWidgetController.h"
 
 /**
  * 构造函数

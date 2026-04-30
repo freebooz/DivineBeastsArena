@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/DBAPartyPanelWidgetBase.h"
+#include "Client/UI/Lobby/UDBAPartyPanelWidgetBase.h"
 
 UDBAPartyPanelWidgetBase::UDBAPartyPanelWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "UUDBACombatAnnouncementWidgetBase.generated.h"
+#include "UDBACombatAnnouncementWidgetBase.generated.h"
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBACombatAnnouncementWidgetBase : public UDBAUserWidgetBase

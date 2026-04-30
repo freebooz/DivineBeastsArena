@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/DBAPassiveAndResonancePanelWidgetBase.h"
+#include "Client/UI/Arena/UDBAPassiveAndResonancePanelWidgetBase.h"
 
 UDBAPassiveAndResonancePanelWidgetBase::UDBAPassiveAndResonancePanelWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

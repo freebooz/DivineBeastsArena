@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/Common/DBAQueueRuleTooltipWidgetBase.h"
+#include "Client/UI/Lobby/Common/UDBAQueueRuleTooltipWidgetBase.h"
 
 UDBAQueueRuleTooltipWidgetBase::UDBAQueueRuleTooltipWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

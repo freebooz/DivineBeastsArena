@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/DBAInteractionPromptWidgetBase.h"
+#include "Client/UI/Lobby/UDBAInteractionPromptWidgetBase.h"
 
 UDBAInteractionPromptWidgetBase::UDBAInteractionPromptWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

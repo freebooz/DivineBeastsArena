@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/Loading/DBALoadingWidgetController.h"
+#include "Client/UI/Lobby/Loading/UDBALoadingWidgetController.h"
 
 /**
  * 构造函数

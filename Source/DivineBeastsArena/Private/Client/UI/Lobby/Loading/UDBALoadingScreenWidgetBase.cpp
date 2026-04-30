@@ -1,7 +1,7 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/Loading/DBALoadingScreenWidgetBase.h"
-#include "Client/UI/Lobby/Loading/DBALoadingWidgetController.h"
+#include "Client/UI/Lobby/Loading/UDBALoadingScreenWidgetBase.h"
+#include "Client/UI/Lobby/Loading/UDBALoadingWidgetController.h"
 
 UDBALoadingScreenWidgetBase::UDBALoadingScreenWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

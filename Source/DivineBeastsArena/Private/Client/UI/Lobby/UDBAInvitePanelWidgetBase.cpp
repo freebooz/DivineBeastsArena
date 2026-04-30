@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/DBAInvitePanelWidgetBase.h"
+#include "Client/UI/Lobby/UDBAInvitePanelWidgetBase.h"
 
 UDBAInvitePanelWidgetBase::UDBAInvitePanelWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

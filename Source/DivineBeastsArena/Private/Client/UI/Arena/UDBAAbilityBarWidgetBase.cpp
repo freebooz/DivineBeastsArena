@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/DBAAbilityBarWidgetBase.h"
+#include "Client/UI/Arena/UDBAAbilityBarWidgetBase.h"
 
 UDBAAbilityBarWidgetBase::UDBAAbilityBarWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

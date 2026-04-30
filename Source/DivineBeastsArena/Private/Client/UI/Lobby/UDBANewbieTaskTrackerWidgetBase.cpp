@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/DBANewbieTaskTrackerWidgetBase.h"
+#include "Client/UI/Lobby/UDBANewbieTaskTrackerWidgetBase.h"
 
 UDBANewbieTaskTrackerWidgetBase::UDBANewbieTaskTrackerWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

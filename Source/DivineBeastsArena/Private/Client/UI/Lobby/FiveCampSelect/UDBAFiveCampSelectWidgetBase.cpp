@@ -1,8 +1,8 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/FiveCampSelect/DBAFiveCampSelectWidgetBase.h"
-#include "Client/UI/Lobby/FiveCampSelect/DBAFiveCampInfoPanelWidgetBase.h"
-#include "Client/UI/Lobby/FiveCampSelect/DBAFiveCampSelectWidgetController.h"
+#include "Client/UI/Lobby/FiveCampSelect/UDBAFiveCampSelectWidgetBase.h"
+#include "Client/UI/Lobby/FiveCampSelect/UDBAFiveCampInfoPanelWidgetBase.h"
+#include "Client/UI/Lobby/FiveCampSelect/UDBAFiveCampSelectWidgetController.h"
 
 UDBAFiveCampSelectWidgetBase::UDBAFiveCampSelectWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

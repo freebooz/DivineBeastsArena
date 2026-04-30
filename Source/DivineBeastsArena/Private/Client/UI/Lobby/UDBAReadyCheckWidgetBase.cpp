@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/DBAReadyCheckWidgetBase.h"
+#include "Client/UI/Lobby/UDBAReadyCheckWidgetBase.h"
 
 UDBAReadyCheckWidgetBase::UDBAReadyCheckWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

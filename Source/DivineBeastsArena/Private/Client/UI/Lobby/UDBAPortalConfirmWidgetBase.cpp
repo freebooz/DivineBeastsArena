@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/DBAPortalConfirmWidgetBase.h"
+#include "Client/UI/Lobby/UDBAPortalConfirmWidgetBase.h"
 
 UDBAPortalConfirmWidgetBase::UDBAPortalConfirmWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

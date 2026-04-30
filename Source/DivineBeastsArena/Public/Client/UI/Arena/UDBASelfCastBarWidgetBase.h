@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "UUDBASelfCastBarWidgetBase.generated.h"
+#include "UDBASelfCastBarWidgetBase.generated.h"
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBASelfCastBarWidgetBase : public UDBAUserWidgetBase

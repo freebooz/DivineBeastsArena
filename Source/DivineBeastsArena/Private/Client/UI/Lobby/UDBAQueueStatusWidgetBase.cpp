@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/DBAQueueStatusWidgetBase.h"
+#include "Client/UI/Lobby/UDBAQueueStatusWidgetBase.h"
 
 UDBAQueueStatusWidgetBase::UDBAQueueStatusWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

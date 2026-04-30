@@ -1,0 +1,938 @@
+{
+	"folders": [
+		{
+			"name": "DivineBeastsArena",
+			"path": "."
+		},
+		{
+			"name": "UE5",
+			"path": "E:\\UnrealEngine-5.7.1-release"
+		}
+	],
+	"settings": {
+		"typescript.tsc.autoDetect": "off",
+		"npm.autoDetect": "off",
+		"terminal.integrated.env.windows": {
+			"PATH": "E:\\UnrealEngine-5.7.1-release\\Engine\\Binaries\\ThirdParty\\DotNet\\8.0.412\\win-x64;${env:PATH}",
+			"DOTNET_ROOT": "E:\\UnrealEngine-5.7.1-release\\Engine\\Binaries\\ThirdParty\\DotNet\\8.0.412\\win-x64",
+			"DOTNET_HOST_PATH": "E:\\UnrealEngine-5.7.1-release\\Engine\\Binaries\\ThirdParty\\DotNet\\8.0.412\\win-x64\\dotnet.exe",
+			"DOTNET_MULTILEVEL_LOOKUP": "0",
+			"DOTNET_ROLL_FORWARD": "LatestMajor"
+		}
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-vscode.cpptools",
+			"ms-dotnettools.csharp"
+		]
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "DivineBeastsArena Win64 Debug Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArena",
+					"Win64",
+					"Debug",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArena Win64 Debug Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArena",
+					"Win64",
+					"Debug",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"DivineBeastsArena Win64 Debug Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArena Win64 Debug Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"DivineBeastsArena",
+					"Win64",
+					"Debug",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArena Win64 DebugGame Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArena",
+					"Win64",
+					"DebugGame",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArena Win64 DebugGame Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArena",
+					"Win64",
+					"DebugGame",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"DivineBeastsArena Win64 DebugGame Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArena Win64 DebugGame Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"DivineBeastsArena",
+					"Win64",
+					"DebugGame",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArena Win64 Development Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArena",
+					"Win64",
+					"Development",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArena Win64 Development Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArena",
+					"Win64",
+					"Development",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"DivineBeastsArena Win64 Development Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArena Win64 Development Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"DivineBeastsArena",
+					"Win64",
+					"Development",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArena Win64 Test Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArena",
+					"Win64",
+					"Test",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArena Win64 Test Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArena",
+					"Win64",
+					"Test",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"DivineBeastsArena Win64 Test Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArena Win64 Test Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"DivineBeastsArena",
+					"Win64",
+					"Test",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArena Win64 Shipping Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArena",
+					"Win64",
+					"Shipping",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArena Win64 Shipping Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArena",
+					"Win64",
+					"Shipping",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"DivineBeastsArena Win64 Shipping Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArena Win64 Shipping Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"DivineBeastsArena",
+					"Win64",
+					"Shipping",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaEditor Win64 Debug Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaEditor",
+					"Win64",
+					"Debug",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaEditor Win64 Debug Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaEditor",
+					"Win64",
+					"Debug",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"DivineBeastsArenaEditor Win64 Debug Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaEditor Win64 Debug Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"DivineBeastsArenaEditor",
+					"Win64",
+					"Debug",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaEditor Win64 DebugGame Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaEditor",
+					"Win64",
+					"DebugGame",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaEditor Win64 DebugGame Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaEditor",
+					"Win64",
+					"DebugGame",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"DivineBeastsArenaEditor Win64 DebugGame Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaEditor Win64 DebugGame Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"DivineBeastsArenaEditor",
+					"Win64",
+					"DebugGame",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaEditor Win64 Development Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaEditor",
+					"Win64",
+					"Development",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaEditor Win64 Development Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaEditor",
+					"Win64",
+					"Development",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"DivineBeastsArenaEditor Win64 Development Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaEditor Win64 Development Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"DivineBeastsArenaEditor",
+					"Win64",
+					"Development",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaServer Win64 Debug Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaServer",
+					"Win64",
+					"Debug",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaServer Win64 Debug Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaServer",
+					"Win64",
+					"Debug",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"DivineBeastsArenaServer Win64 Debug Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaServer Win64 Debug Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"DivineBeastsArenaServer",
+					"Win64",
+					"Debug",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaServer Win64 DebugGame Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaServer",
+					"Win64",
+					"DebugGame",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaServer Win64 DebugGame Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaServer",
+					"Win64",
+					"DebugGame",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"DivineBeastsArenaServer Win64 DebugGame Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaServer Win64 DebugGame Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"DivineBeastsArenaServer",
+					"Win64",
+					"DebugGame",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaServer Win64 Development Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaServer",
+					"Win64",
+					"Development",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaServer Win64 Development Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaServer",
+					"Win64",
+					"Development",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"DivineBeastsArenaServer Win64 Development Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaServer Win64 Development Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"DivineBeastsArenaServer",
+					"Win64",
+					"Development",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaServer Win64 Test Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaServer",
+					"Win64",
+					"Test",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaServer Win64 Test Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaServer",
+					"Win64",
+					"Test",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"DivineBeastsArenaServer Win64 Test Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaServer Win64 Test Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"DivineBeastsArenaServer",
+					"Win64",
+					"Test",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaServer Win64 Shipping Build",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaServer",
+					"Win64",
+					"Shipping",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaServer Win64 Shipping Rebuild",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Build.bat",
+				"args": [
+					"DivineBeastsArenaServer",
+					"Win64",
+					"Shipping",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"DivineBeastsArenaServer Win64 Shipping Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			},
+			{
+				"label": "DivineBeastsArenaServer Win64 Shipping Clean",
+				"group": "build",
+				"command": "Engine\\Build\\BatchFiles\\Clean.bat",
+				"args": [
+					"DivineBeastsArenaServer",
+					"Win64",
+					"Shipping",
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "E:\\UnrealEngine-5.7.1-release"
+				}
+			}
+		]
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Launch DivineBeastsArena (Debug)",
+				"request": "launch",
+				"program": "D:\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArena-Win64-Debug.exe",
+				"preLaunchTask": "DivineBeastsArena Win64 Debug Build",
+				"args": [
+				],
+				"cwd": "E:\\UnrealEngine-5.7.1-release",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UnrealEngine-5.7.1-release\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis"
+			},
+			{
+				"name": "Launch DivineBeastsArena (DebugGame)",
+				"request": "launch",
+				"program": "D:\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArena-Win64-DebugGame.exe",
+				"preLaunchTask": "DivineBeastsArena Win64 DebugGame Build",
+				"args": [
+				],
+				"cwd": "E:\\UnrealEngine-5.7.1-release",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UnrealEngine-5.7.1-release\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis"
+			},
+			{
+				"name": "Launch DivineBeastsArena (Development)",
+				"request": "launch",
+				"program": "D:\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArena.exe",
+				"preLaunchTask": "DivineBeastsArena Win64 Development Build",
+				"args": [
+				],
+				"cwd": "E:\\UnrealEngine-5.7.1-release",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UnrealEngine-5.7.1-release\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis"
+			},
+			{
+				"name": "Launch DivineBeastsArena (Test)",
+				"request": "launch",
+				"program": "D:\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArena-Win64-Test.exe",
+				"preLaunchTask": "DivineBeastsArena Win64 Test Build",
+				"args": [
+				],
+				"cwd": "E:\\UnrealEngine-5.7.1-release",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UnrealEngine-5.7.1-release\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis"
+			},
+			{
+				"name": "Launch DivineBeastsArena (Shipping)",
+				"request": "launch",
+				"program": "D:\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArena-Win64-Shipping.exe",
+				"preLaunchTask": "DivineBeastsArena Win64 Shipping Build",
+				"args": [
+				],
+				"cwd": "E:\\UnrealEngine-5.7.1-release",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UnrealEngine-5.7.1-release\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis"
+			},
+			{
+				"name": "Launch DivineBeastsArenaEditor (Debug)",
+				"request": "launch",
+				"program": "D:\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaEditor-Win64-Debug.exe",
+				"preLaunchTask": "DivineBeastsArenaEditor Win64 Debug Build",
+				"args": [
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject"
+				],
+				"cwd": "E:\\UnrealEngine-5.7.1-release",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UnrealEngine-5.7.1-release\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis"
+			},
+			{
+				"name": "Launch DivineBeastsArenaEditor (DebugGame)",
+				"request": "launch",
+				"program": "D:\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaEditor-Win64-DebugGame.exe",
+				"preLaunchTask": "DivineBeastsArenaEditor Win64 DebugGame Build",
+				"args": [
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject"
+				],
+				"cwd": "E:\\UnrealEngine-5.7.1-release",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UnrealEngine-5.7.1-release\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis"
+			},
+			{
+				"name": "Launch DivineBeastsArenaEditor (Development)",
+				"request": "launch",
+				"program": "D:\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaEditor.exe",
+				"preLaunchTask": "DivineBeastsArenaEditor Win64 Development Build",
+				"args": [
+					"D:\\DivineBeastsArena\\DivineBeastsArena.uproject"
+				],
+				"cwd": "E:\\UnrealEngine-5.7.1-release",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UnrealEngine-5.7.1-release\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis"
+			},
+			{
+				"name": "Launch DivineBeastsArenaServer (Debug)",
+				"request": "launch",
+				"program": "D:\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer-Win64-Debug.exe",
+				"preLaunchTask": "DivineBeastsArenaServer Win64 Debug Build",
+				"args": [
+				],
+				"cwd": "E:\\UnrealEngine-5.7.1-release",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UnrealEngine-5.7.1-release\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis"
+			},
+			{
+				"name": "Launch DivineBeastsArenaServer (DebugGame)",
+				"request": "launch",
+				"program": "D:\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer-Win64-DebugGame.exe",
+				"preLaunchTask": "DivineBeastsArenaServer Win64 DebugGame Build",
+				"args": [
+				],
+				"cwd": "E:\\UnrealEngine-5.7.1-release",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UnrealEngine-5.7.1-release\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis"
+			},
+			{
+				"name": "Launch DivineBeastsArenaServer (Development)",
+				"request": "launch",
+				"program": "D:\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer.exe",
+				"preLaunchTask": "DivineBeastsArenaServer Win64 Development Build",
+				"args": [
+				],
+				"cwd": "E:\\UnrealEngine-5.7.1-release",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UnrealEngine-5.7.1-release\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis"
+			},
+			{
+				"name": "Launch DivineBeastsArenaServer (Test)",
+				"request": "launch",
+				"program": "D:\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer-Win64-Test.exe",
+				"preLaunchTask": "DivineBeastsArenaServer Win64 Test Build",
+				"args": [
+				],
+				"cwd": "E:\\UnrealEngine-5.7.1-release",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UnrealEngine-5.7.1-release\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis"
+			},
+			{
+				"name": "Launch DivineBeastsArenaServer (Shipping)",
+				"request": "launch",
+				"program": "D:\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer-Win64-Shipping.exe",
+				"preLaunchTask": "DivineBeastsArenaServer Win64 Shipping Build",
+				"args": [
+				],
+				"cwd": "E:\\UnrealEngine-5.7.1-release",
+				"stopAtEntry": false,
+				"console": "integratedTerminal",
+				"type": "cppvsdbg",
+				"visualizerFile": "E:\\UnrealEngine-5.7.1-release\\Engine\\Extras\\VisualStudioDebugging\\Unreal.natvis"
+			},
+			{
+				"name": "Generate Project Files",
+				"type": "coreclr",
+				"request": "launch",
+				"preLaunchTask": "UnrealBuildTool Win64 Development Build",
+				"program": "E:\\UnrealEngine-5.7.1-release\\Engine\\Build\\BatchFiles\\RunUBT.bat",
+				"args": [
+					"-projectfiles",
+					"-vscode",
+					"-project=D:\\DivineBeastsArena\\DivineBeastsArena.uproject",
+					"-game",
+					"-engine",
+					"-dotnet"
+				],
+				"env": {
+					"PATH": "E:\\UnrealEngine-5.7.1-release\\Engine\\Binaries\\ThirdParty\\DotNet\\8.0.412\\win-x64;${env:PATH}",
+					"DOTNET_ROOT": "E:\\UnrealEngine-5.7.1-release\\Engine\\Binaries\\ThirdParty\\DotNet\\8.0.412\\win-x64",
+					"DOTNET_HOST_PATH": "E:\\UnrealEngine-5.7.1-release\\Engine\\Binaries\\ThirdParty\\DotNet\\8.0.412\\win-x64\\dotnet.exe",
+					"DOTNET_MULTILEVEL_LOOKUP": "0",
+					"DOTNET_ROLL_FORWARD": "LatestMajor"
+				},
+				"console": "integratedTerminal",
+				"stopAtEntry": false,
+				"cwd": "E:\\UnrealEngine-5.7.1-release"
+			}
+		]
+	}
+}

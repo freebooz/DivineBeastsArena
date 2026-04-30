@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/Common/DBABuildValidationHintWidgetBase.h"
+#include "Client/UI/Lobby/Common/UDBABuildValidationHintWidgetBase.h"
 
 UDBABuildValidationHintWidgetBase::UDBABuildValidationHintWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

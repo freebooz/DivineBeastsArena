@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/DBAMainLobbyWidgetController.h"
+#include "Client/UI/Lobby/UDBAMainLobbyWidgetController.h"
 
 /**
  * 构造函数

@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/HeroSelect/DBAHeroInfoPanelWidgetBase.h"
+#include "Client/UI/Lobby/HeroSelect/UDBAHeroInfoPanelWidgetBase.h"
 
 UDBAHeroInfoPanelWidgetBase::UDBAHeroInfoPanelWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
