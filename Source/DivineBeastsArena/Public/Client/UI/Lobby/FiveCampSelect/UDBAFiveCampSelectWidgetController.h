@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAWidgetController.h"
-#include "DBAFiveCampSelectWidgetController.generated.h"
+#include "UDBAFiveCampSelectWidgetController.generated.h"
 
 UCLASS(BlueprintType)
 class DIVINEBEASTSARENA_API UDBAFiveCampSelectWidgetController : public UDBAWidgetController

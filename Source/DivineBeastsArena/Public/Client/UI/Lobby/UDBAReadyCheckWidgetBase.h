@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "DBAReadyCheckWidgetBase.generated.h"
+#include "UDBAReadyCheckWidgetBase.generated.h"
 
 /**
  * DBAReadyCheckWidgetBase

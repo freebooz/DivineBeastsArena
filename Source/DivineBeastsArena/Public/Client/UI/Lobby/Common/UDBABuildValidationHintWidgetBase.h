@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAWidgetBase.h"
-#include "DBABuildValidationHintWidgetBase.generated.h"
+#include "UDBABuildValidationHintWidgetBase.generated.h"
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBABuildValidationHintWidgetBase : public UDBAWidgetBase

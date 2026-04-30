@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "DBAPlayerUnitFrameWidgetBase.generated.h"
+#include "UDBAPlayerUnitFrameWidgetBase.generated.h"
 
 class UDBAPlayerUnitFrameWidgetController;
 

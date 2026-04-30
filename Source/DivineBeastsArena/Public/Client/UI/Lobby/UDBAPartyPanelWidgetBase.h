@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
 #include "Common/Types/DBACommonEnums.h"
-#include "DBAPartyPanelWidgetBase.generated.h"
+#include "UDBAPartyPanelWidgetBase.generated.h"
 
 USTRUCT(BlueprintType)
 struct FDBAPartyMemberData

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "UDBACriticalStateHintWidgetBase.generated.h"
+#include "UUDBACriticalStateHintWidgetBase.generated.h"
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBACriticalStateHintWidgetBase : public UDBAUserWidgetBase

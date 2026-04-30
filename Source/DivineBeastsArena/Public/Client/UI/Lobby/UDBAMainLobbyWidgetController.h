@@ -6,7 +6,7 @@
 #include "Common/UI/DBAWidgetController.h"
 #include "Common/Account/DBAAccountTypes.h"
 #include "Common/Party/DBAPartyTypes.h"
-#include "DBAMainLobbyWidgetController.generated.h"
+#include "UDBAMainLobbyWidgetController.generated.h"
 
 UCLASS(BlueprintType)
 class DIVINEBEASTSARENA_API UDBAMainLobbyWidgetController : public UDBAWidgetController

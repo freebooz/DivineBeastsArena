@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "DBALoadingScreenWidgetBase.generated.h"
+#include "UDBALoadingScreenWidgetBase.generated.h"
 
 class UDBALoadingWidgetController;
 

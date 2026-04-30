@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAWidgetController.h"
-#include "DBAPlayerUnitFrameWidgetController.generated.h"
+#include "UDBAPlayerUnitFrameWidgetController.generated.h"
 
 UCLASS(BlueprintType)
 class DIVINEBEASTSARENA_API UDBAPlayerUnitFrameWidgetController : public UDBAWidgetController

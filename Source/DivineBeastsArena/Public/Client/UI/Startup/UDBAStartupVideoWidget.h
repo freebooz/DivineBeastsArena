@@ -8,7 +8,7 @@
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
 #include "UMG.h"
-#include "DBAStartupVideoWidget.generated.h"
+#include "UDBAStartupVideoWidget.generated.h"
 
 class UMediaPlayer;
 class UMediaTexture;

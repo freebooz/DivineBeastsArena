@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "DBAMatchFoundWidgetBase.generated.h"
+#include "UDBAMatchFoundWidgetBase.generated.h"
 
 /**
  * DBAMatchFoundWidgetBase

@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
 #include "Common/Types/DBACommonEnums.h"
-#include "DBAElementSelectWidgetBase.generated.h"
+#include "UDBAElementSelectWidgetBase.generated.h"
 
 class UDBAElementInfoPanelWidgetBase;
 class UDBAFixedSkillGroupPreviewWidgetBase;

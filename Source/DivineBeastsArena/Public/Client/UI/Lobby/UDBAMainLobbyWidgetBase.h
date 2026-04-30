@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
 #include "Common/DBAEnumsCore.h"
-#include "DBAMainLobbyWidgetBase.generated.h"
+#include "UDBAMainLobbyWidgetBase.generated.h"
 
 class UDBAMainLobbyWidgetController;
 class UDBAPartyPanelWidgetBase;

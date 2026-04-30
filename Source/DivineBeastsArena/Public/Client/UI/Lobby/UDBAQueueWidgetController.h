@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAWidgetController.h"
-#include "UDBAQueueWidgetController.generated.h"
+#include "UUDBAQueueWidgetController.generated.h"
 
 /**
  * 队列状态委托

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "DBANewbieVillageMainWidgetBase.generated.h"
+#include "UDBANewbieVillageMainWidgetBase.generated.h"
 
 class UDBANewbieTaskTrackerWidgetBase;
 

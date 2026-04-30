@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "UDBAMomentumPanelWidgetBase.generated.h"
+#include "UUDBAMomentumPanelWidgetBase.generated.h"
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBAMomentumPanelWidgetBase : public UDBAUserWidgetBase

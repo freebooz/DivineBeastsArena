@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "DBAQueueStatusWidgetBase.generated.h"
+#include "UDBAQueueStatusWidgetBase.generated.h"
 
 /**
  * DBAQueueStatusWidgetBase

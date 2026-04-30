@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "DBAQueueModeSelectWidgetBase.generated.h"
+#include "UDBAQueueModeSelectWidgetBase.generated.h"
 
 UENUM(BlueprintType)
 enum class EDBAQueueModeSelectMode : uint8

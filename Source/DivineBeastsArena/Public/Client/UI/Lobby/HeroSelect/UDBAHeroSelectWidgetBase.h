@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "DBAHeroSelectWidgetBase.generated.h"
+#include "UDBAHeroSelectWidgetBase.generated.h"
 
 class UDBAHeroInfoPanelWidgetBase;
 class UDBAHeroSelectWidgetController;

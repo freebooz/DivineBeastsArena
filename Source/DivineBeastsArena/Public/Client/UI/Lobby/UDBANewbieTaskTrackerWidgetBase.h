@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "DBANewbieTaskTrackerWidgetBase.generated.h"
+#include "UDBANewbieTaskTrackerWidgetBase.generated.h"
 
 USTRUCT(BlueprintType)
 struct FDBANewbieTaskData

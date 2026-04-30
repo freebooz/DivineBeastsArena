@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "DBAArenaHUDRootWidgetBase.generated.h"
+#include "UDBAArenaHUDRootWidgetBase.generated.h"
 
 class UDBAPlayerUnitFrameWidgetBase;
 class UDBAAbilityBarWidgetBase;

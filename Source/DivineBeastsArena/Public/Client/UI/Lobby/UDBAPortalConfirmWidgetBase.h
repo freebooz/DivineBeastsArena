@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "DBAPortalConfirmWidgetBase.generated.h"
+#include "UDBAPortalConfirmWidgetBase.generated.h"
 
 /**
  * DBAPortalConfirmWidgetBase

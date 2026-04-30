@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "DBAInteractionPromptWidgetBase.generated.h"
+#include "UDBAInteractionPromptWidgetBase.generated.h"
 
 UENUM(BlueprintType)
 enum class EDBAInteractionType : uint8

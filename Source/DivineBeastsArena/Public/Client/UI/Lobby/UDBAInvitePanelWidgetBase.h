@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Common/UI/DBAUserWidgetBase.h"
-#include "DBAInvitePanelWidgetBase.generated.h"
+#include "UDBAInvitePanelWidgetBase.generated.h"
 
 USTRUCT(BlueprintType)
 struct FDBAFriendData

@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Common/UI/DBAWidgetBase.h"
 #include "Common/Types/DBACommonEnums.h"
-#include "DBAFixedSkillGroupPreviewWidgetBase.generated.h"
+#include "UDBAFixedSkillGroupPreviewWidgetBase.generated.h"
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBAFixedSkillGroupPreviewWidgetBase : public UDBAWidgetBase

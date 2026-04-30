@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "MobaBase/UI/UDBAMobaHUDWidgetControllerBase.h"
-#include "DBAArenaHUDWidgetController.generated.h"
+#include "UDBAArenaHUDWidgetController.generated.h"
 
 UCLASS(BlueprintType)
 class DIVINEBEASTSARENA_API UDBAArenaHUDWidgetController : public UDBAMobaHUDWidgetControllerBase
