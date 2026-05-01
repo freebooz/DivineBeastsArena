@@ -5,7 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "DBAZodiacAnimConfig_Rabbit.generated.h"
-#include "DBA/Animation/DBAAnimConfig.h"
+#include "Animation/DBAAnimConfig.h"
 
 /**
  * UDBAZodiacAnimConfig_Rabbit

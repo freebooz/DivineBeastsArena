@@ -5,7 +5,6 @@
 
 #include "CoreMinimal.h"
 #include "DBAAnimConfig.generated.h"
-#include "DBAAnimConfig.generated.h"
 
 USTRUCT(BlueprintType)
 struct FDBAAnimConfig

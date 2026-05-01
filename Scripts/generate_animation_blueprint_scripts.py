@@ -78,7 +78,6 @@ ANIM_CONFIG_H = """// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "CoreMinimal.h"
 #include "DBAAnimConfig.generated.h"
-#include "DBAAnimConfig.generated.h"
 
 USTRUCT(BlueprintType)
 struct FDBAAnimConfig
@@ -123,7 +122,7 @@ ZODIAC_ANIM_CONFIG_H = """// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "CoreMinimal.h"
 #include "DBAZodiacAnimConfig_{zodiac}.generated.h"
-#include "DBA/Animation/DBAAnimConfig.h"
+#include "Animation/DBAAnimConfig.h"
 
 /**
  * UDBAZodiacAnimConfig_{zodiac}
