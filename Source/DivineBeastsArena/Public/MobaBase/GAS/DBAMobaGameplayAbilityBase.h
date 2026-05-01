@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
+#include "RPC/DBARpcInterface.h"
 #include "DBAMobaGameplayAbilityBase.generated.h"
 
 class UDBAMobaAbilitySystemComponentBase;
@@ -174,6 +175,22 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Ability|Helper")
 	const AActor* GetTargetActorFromEventData(const FGameplayEventData& EventData) const;
+
+	// ========== RPC 接口 ==========
+
+	/**
+	 * 调用服务端尝试激活技能
+	 * 客户端通过此函数向服务端发送技能激活请求
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Ability|RPC")
+	void CallServerTryActivateAbility(AActor* TargetActor, FVector TargetLocation);
+
+	/**
+	 * 获取 RPC 处理器
+	 * 用于获取角色身上的 RPC Handler 引用
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Ability|RPC")
+	ADBARpcHandler* GetRpcHandler() const;
 
 protected:
 	/** 伤害相关 Tag 容器 */

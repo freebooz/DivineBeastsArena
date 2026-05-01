@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "MobaBase/GAS/DBAMobaGameplayAbilityBase.h"
 #include "Common/DBAEnumsCore.h"
+#include "RPC/DBARpcServer.h"
 #include "DBAZodiacAbilityBase.generated.h"
 
 /**
@@ -25,4 +26,7 @@ public:
 
 protected:
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+
+	/** 服务端激活回调 - RPC集成 */
+	virtual void OnServerActivate_Implementation() override;
 };

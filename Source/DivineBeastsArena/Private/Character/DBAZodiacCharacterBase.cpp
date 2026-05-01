@@ -17,6 +17,13 @@ ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
 void ADBAZodiacCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Spawn RPC Handler
+	if (HasAuthority() && RpcHandlerClass)
+	{
+		RpcHandler = GetWorld()->SpawnActor<ADBARpcHandler>(RpcHandlerClass, GetActorLocation(), FRotator::ZeroRotator);
+		RpcHandler->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
+	}
 }
 
 void ADBAZodiacCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

@@ -5,10 +5,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "RPC/DBARpcHandler.h"
 #include "DBAZodiacCharacterBase.generated.h"
 
 class UDBAZodiacAnimInstance;
 class UDBAAbilitySystemComponent;
+class ADBARpcHandler;
 
 /**
  * DBAZodiacCharacterBase
@@ -67,4 +69,15 @@ protected:
 	/** 角色生肖类型 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Config")
 	FName ZodiacType = FName(TEXT("None"));
+
+public:
+	// ==================== RPC 相关 ====================
+
+	/** RPC 处理器类 */
+	UPROPERTY(EditDefaultsOnly, Category = "RPC")
+	TSubclassOf<ADBARpcHandler> RpcHandlerClass;
+
+	/** RPC 处理器实例 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RPC")
+	ADBARpcHandler* RpcHandler;
 };

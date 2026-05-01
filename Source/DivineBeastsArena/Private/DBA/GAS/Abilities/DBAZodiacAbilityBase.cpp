@@ -2,6 +2,7 @@
 // 生肖能力基类实现 - 所有生肖相关能力的基类
 
 #include "DBA/GAS/Abilities/DBAZodiacAbilityBase.h"
+#include "Character/DBAZodiacCharacterBase.h"
 
 // 构造函数 - 初始化生肖能力默认属性
 UDBAZodiacAbilityBase::UDBAZodiacAbilityBase()
@@ -16,4 +17,18 @@ bool UDBAZodiacAbilityBase::CanActivateAbility(const FGameplayAbilitySpecHandle 
 	// 调用父类检查（BlockTags、冷却等）
 	// 生肖技能通常为被动技能，激活逻辑复用基类
 	return Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags);
+}
+
+void UDBAZodiacAbilityBase::OnServerActivate_Implementation()
+{
+	// 调用父类实现
+	Super::OnServerActivate_Implementation();
+
+	// 调用 RPC 通知客户端技能激活
+	if (ADBARpcHandler* Handler = GetRpcHandler())
+	{
+		// 获取当前 Ability Spec Handle
+		FGameplayAbilitySpecHandle Handle = CurrentSpecHandle;
+		Handler->ClientAbilityActivated(Handle);
+	}
 }

@@ -3,6 +3,7 @@
 #include "MobaBase/GAS/DBAMobaGameplayAbilityBase.h"
 #include "MobaBase/GAS/DBAMobaAbilitySystemComponentBase.h"
 #include "DBA/GAS/Attributes/DBABattleAttributeSet.h"
+#include "Character/DBAZodiacCharacterBase.h"
 #include "Common/DBALogChannels.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
@@ -311,4 +312,29 @@ const AActor* UDBAMobaGameplayAbilityBase::GetTargetActorFromEventData(const FGa
 	// EventData.Target 是 TObjectPtr<AActor>
 	// 返回 const 指针以避免 const_cast
 	return EventData.Target.Get();
+}
+
+void UDBAMobaGameplayAbilityBase::CallServerTryActivateAbility(AActor* TargetActor, FVector TargetLocation)
+{
+	if (ADBAZodiacCharacterBase* Character = Cast<ADBAZodiacCharacterBase>(GetOwningActorFromActorInfo()))
+	{
+		if (Character->RpcHandler)
+		{
+			FDBAAbilityRpcParams Params;
+			Params.AbilityHandle = CurrentSpecHandle;
+			Params.TargetActor = TargetActor;
+			Params.TargetLocation = TargetLocation;
+
+			Character->RpcHandler->ServerTryActivateAbility(Params);
+		}
+	}
+}
+
+ADBARpcHandler* UDBAMobaGameplayAbilityBase::GetRpcHandler() const
+{
+	if (ADBAZodiacCharacterBase* Character = Cast<ADBAZodiacCharacterBase>(GetOwningActorFromActorInfo()))
+	{
+		return Character->RpcHandler;
+	}
+	return nullptr;
 }
