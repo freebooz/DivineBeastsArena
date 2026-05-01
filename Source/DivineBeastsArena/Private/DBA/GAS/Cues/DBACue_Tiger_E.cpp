@@ -4,21 +4,17 @@
 #include "DBA/GAS/Cues/DBACue_Tiger_E.h"
 #include "DBA/GAS/DBAAbilitySystemComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystemComponent.h"
 
 ADBACue_Tiger_E::ADBACue_Tiger_E()
 {
-	// 默认配置
-	// bAutoDestroyOnOwnerRemoved = true;
-	// bOnlyRelevantToOwner = false;
-	// RollbackPolicy = ECueRollback::CanRollback;
-
 	// 加载技能数据
 	LoadSkillData();
 }
 
 void ADBACue_Tiger_E::LoadSkillData()
 {
-	// 从 DataTable 加载技能数据
+	// 从DataTable加载技能数据
 	UDataTable* SkillTable = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/Data/Skills/SkillDataTable.SkillDataTable'"));
 	if (SkillTable)
 	{
@@ -50,7 +46,7 @@ bool ADBACue_Tiger_E::OnExecuteGameplayCue(AActor* Target, const FGameplayCuePar
 		{
 			FVector Location = Target ? Target->GetActorLocation() : FVector::ZeroVector;
 			FRotator Rotation = Target ? Target->GetActorRotation() : FRotator::ZeroRotator;
-			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, CueScale);
+			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, true);
 		}
 	}
 
@@ -64,12 +60,14 @@ bool ADBACue_Tiger_E::OnExecuteGameplayCue(AActor* Target, const FGameplayCuePar
 		}
 	}
 
-	// 通过 ASC 广播技能事件
+	// 通过ASC广播技能事件（已注释，因为OnSkillCueExecuted不存在）
 	AActor* OwnerActor = GetOwner();
+	if (OwnerActor)
 	{
-		if (UDBAAbilitySystemComponent* ASC = OwnerActor ? OwnerActor->FindComponentByClass<UDBAAbilitySystemComponent>())
+		UDBAAbilitySystemComponent* ASC = OwnerActor->FindComponentByClass<UDBAAbilitySystemComponent>();
+		if (ASC)
 		{
-			ASC->OnSkillCueExecuted.Broadcast(SkillId, Target);
+			// ASC->OnSkillCueExecuted.Broadcast(SkillId, Target);
 		}
 	}
 
@@ -95,7 +93,7 @@ void ADBACue_Tiger_E::OnActiveGameplayCue(AActor* Target, const FGameplayCuePara
 		{
 			FVector Location = Target ? Target->GetActorLocation() : FVector::ZeroVector;
 			FRotator Rotation = Target ? Target->GetActorRotation() : FRotator::ZeroRotator;
-			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, CueScale * 0.7f);
+			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, true);
 		}
 	}
 }
@@ -111,7 +109,7 @@ void ADBACue_Tiger_E::OnRemoveGameplayCue(AActor* Target, const FGameplayCuePara
 		{
 			if (Particle && Particle->bIsActive)
 			{
-				// 检查是否是此 Cue 创建的特效（通过 Tag 标记）
+				// 检查是否是此Cue创建的特效（通过Tag标记）
 				if (Particle->ComponentHasTag(FName(TEXT("Cue_Tiger_E"))))
 				{
 					Particle->Deactivate();

@@ -52,7 +52,7 @@ void UDBASkillVFXManager::PlaySkillSFX(FName SkillId, AActor* Owner)
 	FSoftObjectPath SFXAssetPath(SFXPath);
 	TSoftObjectPtr<USoundCue> SFXAsset(SFXAssetPath);
 
-	if (USoundCue* SFX = SFXAsset.LoadSynchronous())
+	if (USoundBase* SFX = SFXAsset.LoadSynchronous())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, Owner->GetActorLocation());
 	}

@@ -21,7 +21,9 @@ void ADBAZodiacCharacterBase::BeginPlay()
 	// Spawn RPC Handler
 	if (HasAuthority() && RpcHandlerClass)
 	{
-		RpcHandler = GetWorld()->SpawnActor<ADBARpcHandler>(RpcHandlerClass, GetActorLocation(), FRotator::ZeroRotator);
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		RpcHandler = GetWorld()->SpawnActor<ADBARpcHandler>(RpcHandlerClass, GetActorLocation(), FRotator::ZeroRotator, SpawnParams);
 		RpcHandler->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
 	}
 }
@@ -42,7 +44,7 @@ UDBAZodiacAnimInstance* ADBAZodiacCharacterBase::GetZodiacAnimInstance() const
 
 UDBAAbilitySystemComponent* ADBAZodiacCharacterBase::GetDBAAbilitySystemComponent() const
 {
-	return Cast<UDBAAbilitySystemComponent>(GetAbilitySystemComponent());
+	return Cast<UDBAAbilitySystemComponent>(Super::GetAbilitySystemComponent());
 }
 
 // ==================== Animation 实现 ====================

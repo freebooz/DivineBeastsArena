@@ -4,6 +4,7 @@
 #include "DBA/GAS/Cues/DBACue_Snake_R.h"
 #include "DBA/GAS/DBAAbilitySystemComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystemComponent.h"
 
 ADBACue_Snake_R::ADBACue_Snake_R()
 {
@@ -50,7 +51,7 @@ bool ADBACue_Snake_R::OnExecuteGameplayCue(AActor* Target, const FGameplayCuePar
 		{
 			FVector Location = Target ? Target->GetActorLocation() : FVector::ZeroVector;
 			FRotator Rotation = Target ? Target->GetActorRotation() : FRotator::ZeroRotator;
-			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, CueScale);
+			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, true);
 		}
 	}
 
@@ -66,10 +67,12 @@ bool ADBACue_Snake_R::OnExecuteGameplayCue(AActor* Target, const FGameplayCuePar
 
 	// 通过 ASC 广播技能事件
 	AActor* OwnerActor = GetOwner();
+	if (OwnerActor)
 	{
-		if (UDBAAbilitySystemComponent* ASC = OwnerActor ? OwnerActor->FindComponentByClass<UDBAAbilitySystemComponent>())
+		UDBAAbilitySystemComponent* ASC = OwnerActor->FindComponentByClass<UDBAAbilitySystemComponent>();
+		if (ASC)
 		{
-			ASC->OnSkillCueExecuted.Broadcast(SkillId, Target);
+			// ASC->OnSkillCueExecuted.Broadcast(SkillId, Target);
 		}
 	}
 
@@ -95,7 +98,7 @@ void ADBACue_Snake_R::OnActiveGameplayCue(AActor* Target, const FGameplayCuePara
 		{
 			FVector Location = Target ? Target->GetActorLocation() : FVector::ZeroVector;
 			FRotator Rotation = Target ? Target->GetActorRotation() : FRotator::ZeroRotator;
-			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, CueScale * 0.7f);
+			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, true);
 		}
 	}
 }

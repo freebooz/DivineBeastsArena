@@ -38,7 +38,7 @@ void ADBARpcHandler::ServerCancelAbility_Implementation(FGameplayAbilitySpecHand
     {
         if (UDBAAbilitySystemComponent* ASC = Character->GetDBAAbilitySystemComponent())
         {
-            ASC->CancelAbility(Handle);
+            ASC->CancelAbilitySpec(Handle);
         }
     }
 }

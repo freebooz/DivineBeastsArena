@@ -20,7 +20,7 @@ void UDBAZodiacSkillVFXComponent_Rabbit_Passive::PlayCastingVFX(AActor* Target)
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, Location, Rotation, true);
 	}
 
-	if (USoundCue* SFX = CastingSFX.LoadSynchronous())
+	if (USoundBase* SFX = CastingSFX.LoadSynchronous())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
 	}
@@ -44,7 +44,7 @@ void UDBAZodiacSkillVFXComponent_Rabbit_Passive::PlayImpactVFX(AActor* HitTarget
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, Location, Rotation, true);
 	}
 
-	if (USoundCue* SFX = ImpactSFX.LoadSynchronous())
+	if (USoundBase* SFX = ImpactSFX.LoadSynchronous())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
 	}
@@ -71,7 +71,7 @@ void UDBAZodiacSkillVFXComponent_Rabbit_Passive::PlayProjectileVFX(FVector Start
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, Start, Rotation, true);
 	}
 
-	if (USoundCue* SFX = ProjectileSFX.LoadSynchronous())
+	if (USoundBase* SFX = ProjectileSFX.LoadSynchronous())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, Start);
 	}
@@ -101,7 +101,7 @@ void UDBAZodiacSkillVFXComponent_Rabbit_Passive::PlayChannelVFX()
 			VFX, GetOwner()->GetRootComponent(), NAME_None, Location, Rotation, EAttachLocation::KeepRelativeOffset, true);
 	}
 
-	if (USoundCue* SFX = CastingSFX.LoadSynchronous())
+	if (USoundBase* SFX = CastingSFX.LoadSynchronous())
 	{
 		UGameplayStatics::PlaySoundAttached(SFX, GetOwner()->GetRootComponent());
 	}
@@ -118,7 +118,7 @@ void UDBAZodiacSkillVFXComponent_Rabbit_Passive::StopChannelVFX()
 
 void UDBAZodiacSkillVFXComponent_Rabbit_Passive::PlayProjectileSFX()
 {
-	if (USoundCue* SFX = ProjectileSFX.LoadSynchronous())
+	if (USoundBase* SFX = ProjectileSFX.LoadSynchronous())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
 	}
@@ -126,7 +126,7 @@ void UDBAZodiacSkillVFXComponent_Rabbit_Passive::PlayProjectileSFX()
 
 void UDBAZodiacSkillVFXComponent_Rabbit_Passive::PlayImpactSFX()
 {
-	if (USoundCue* SFX = ImpactSFX.LoadSynchronous())
+	if (USoundBase* SFX = ImpactSFX.LoadSynchronous())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
 	}

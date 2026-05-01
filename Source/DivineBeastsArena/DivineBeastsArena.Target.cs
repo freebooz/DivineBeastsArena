@@ -20,6 +20,9 @@ public class DivineBeastsArenaTarget : TargetRules
 		// 额外模块名称
 		ExtraModuleNames.Add("DivineBeastsArena");
 
+		// 强制使用唯一构建环境
+		bOverrideBuildEnvironment = true;
+
 		// 全局定义
 		GlobalDefinitions.AddRange(new string[]
 		{

@@ -113,7 +113,7 @@ void UDBAZodiacVFXComponent_Dog::PlayAttackSFX()
 {
 	if (AttackSFX.IsValid())
 	{
-		USoundCue* SFX = AttackSFX.LoadSynchronous();
+		USoundBase* SFX = AttackSFX.LoadSynchronous();
 		if (SFX)
 		{
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
@@ -125,7 +125,7 @@ void UDBAZodiacVFXComponent_Dog::PlayHitSFX()
 {
 	if (HitSFX.IsValid())
 	{
-		USoundCue* SFX = HitSFX.LoadSynchronous();
+		USoundBase* SFX = HitSFX.LoadSynchronous();
 		if (SFX)
 		{
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
@@ -137,7 +137,7 @@ void UDBAZodiacVFXComponent_Dog::PlayMoveSFX()
 {
 	if (MoveSFX.IsValid())
 	{
-		USoundCue* SFX = MoveSFX.LoadSynchronous();
+		USoundBase* SFX = MoveSFX.LoadSynchronous();
 		if (SFX)
 		{
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
@@ -149,7 +149,7 @@ void UDBAZodiacVFXComponent_Dog::PlayDeathSFX()
 {
 	if (DeathSFX.IsValid())
 	{
-		USoundCue* SFX = DeathSFX.LoadSynchronous();
+		USoundBase* SFX = DeathSFX.LoadSynchronous();
 		if (SFX)
 		{
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());

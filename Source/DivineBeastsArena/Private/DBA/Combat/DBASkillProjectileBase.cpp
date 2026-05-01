@@ -118,7 +118,7 @@ void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocat
 	// 播放命中音效
 	if (ImpactSFXAsset.IsValid())
 	{
-		if (USoundCue* SFX = ImpactSFXAsset.LoadSynchronous())
+		if (USoundBase* SFX = ImpactSFXAsset.LoadSynchronous())
 		{
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, HitLocation);
 		}

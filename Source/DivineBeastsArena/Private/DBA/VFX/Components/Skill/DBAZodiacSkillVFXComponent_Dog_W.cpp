@@ -20,7 +20,7 @@ void UDBAZodiacSkillVFXComponent_Dog_W::PlayCastingVFX(AActor* Target)
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, Location, Rotation, true);
 	}
 
-	if (USoundCue* SFX = CastingSFX.LoadSynchronous())
+	if (USoundBase* SFX = CastingSFX.LoadSynchronous())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
 	}
@@ -44,7 +44,7 @@ void UDBAZodiacSkillVFXComponent_Dog_W::PlayImpactVFX(AActor* HitTarget)
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, Location, Rotation, true);
 	}
 
-	if (USoundCue* SFX = ImpactSFX.LoadSynchronous())
+	if (USoundBase* SFX = ImpactSFX.LoadSynchronous())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
 	}
@@ -71,7 +71,7 @@ void UDBAZodiacSkillVFXComponent_Dog_W::PlayProjectileVFX(FVector Start, FVector
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, Start, Rotation, true);
 	}
 
-	if (USoundCue* SFX = ProjectileSFX.LoadSynchronous())
+	if (USoundBase* SFX = ProjectileSFX.LoadSynchronous())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, Start);
 	}
@@ -101,7 +101,7 @@ void UDBAZodiacSkillVFXComponent_Dog_W::PlayChannelVFX()
 			VFX, GetOwner()->GetRootComponent(), NAME_None, Location, Rotation, EAttachLocation::KeepRelativeOffset, true);
 	}
 
-	if (USoundCue* SFX = CastingSFX.LoadSynchronous())
+	if (USoundBase* SFX = CastingSFX.LoadSynchronous())
 	{
 		UGameplayStatics::PlaySoundAttached(SFX, GetOwner()->GetRootComponent());
 	}
@@ -118,7 +118,7 @@ void UDBAZodiacSkillVFXComponent_Dog_W::StopChannelVFX()
 
 void UDBAZodiacSkillVFXComponent_Dog_W::PlayProjectileSFX()
 {
-	if (USoundCue* SFX = ProjectileSFX.LoadSynchronous())
+	if (USoundBase* SFX = ProjectileSFX.LoadSynchronous())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
 	}
@@ -126,7 +126,7 @@ void UDBAZodiacSkillVFXComponent_Dog_W::PlayProjectileSFX()
 
 void UDBAZodiacSkillVFXComponent_Dog_W::PlayImpactSFX()
 {
-	if (USoundCue* SFX = ImpactSFX.LoadSynchronous())
+	if (USoundBase* SFX = ImpactSFX.LoadSynchronous())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
 	}
