@@ -5,6 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayEffect.h"
+#include "Data/DBASkillDataRow.h"
 #include "DBAGE_Snake_Q.generated.h"
 
 UCLASS()

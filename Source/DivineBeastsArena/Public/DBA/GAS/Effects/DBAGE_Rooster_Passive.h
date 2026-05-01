@@ -5,6 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayEffect.h"
+#include "Data/DBASkillDataRow.h"
 #include "DBAGE_Rooster_Passive.generated.h"
 
 UCLASS()

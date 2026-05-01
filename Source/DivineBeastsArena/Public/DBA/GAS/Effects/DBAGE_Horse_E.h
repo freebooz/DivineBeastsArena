@@ -5,6 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayEffect.h"
+#include "Data/DBASkillDataRow.h"
 #include "DBAGE_Horse_E.generated.h"
 
 UCLASS()

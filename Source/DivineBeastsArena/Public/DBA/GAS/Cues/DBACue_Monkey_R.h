@@ -5,6 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayCueNotify_Actor.h"
+#include "Data/DBASkillDataRow.h"
 #include "DBACue_Monkey_R.generated.h"
 
 UCLASS()
@@ -25,7 +26,15 @@ public:
 	virtual void OnRemoveGameplayCue(AActor* Target, FGameplayCueParameters& Parameters) override;
 
 protected:
+	// 从技能数据表加载配置
+	void LoadSkillData();
+
+protected:
 	// 特效峰值缩放
 	UPROPERTY(EditDefaultsOnly, Category = "Cue")
 	float CueScale = 1.0f;
+
+	// 技能ID (用于查询数据)
+	UPROPERTY(EditDefaultsOnly, Category = "Cue")
+	FName SkillId = FName(TEXT("Monkey_R"));
 };

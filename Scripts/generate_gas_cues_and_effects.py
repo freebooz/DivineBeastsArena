@@ -57,6 +57,7 @@ CUE_HEADER_TEMPLATE = """// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "CoreMinimal.h"
 #include "GameplayCueNotify_Actor.h"
+#include "Data/DBASkillDataRow.h"
 #include "DBACue_{zodiac}_{skill}.generated.h"
 
 UCLASS()
@@ -77,9 +78,17 @@ public:
 	virtual void OnRemoveGameplayCue(AActor* Target, FGameplayCueParameters& Parameters) override;
 
 protected:
+	// 从技能数据表加载配置
+	void LoadSkillData();
+
+protected:
 	// 特效峰值缩放
 	UPROPERTY(EditDefaultsOnly, Category = "Cue")
 	float CueScale = 1.0f;
+
+	// 技能ID (用于查询数据)
+	UPROPERTY(EditDefaultsOnly, Category = "Cue")
+	FName SkillId = FName(TEXT("{zodiac}_{skill}"));
 }};
 """
 
@@ -88,6 +97,9 @@ CUE_CPP_TEMPLATE = """// Copyright Freebooz Games, Inc. All Rights Reserved.
 // GameplayCue - {zodiac_cn}{skill_name}
 
 #include "DBA/GAS/Cues/DBACue_{zodiac}_{skill}.h"
+#include "DBA/GAS/DBAAbilitySystemComponent.h"
+#include "Data/DBADataAsset.h"
+#include "Kismet/GameplayStatics.h"
 
 UDBACue_{zodiac}_{skill}::UDBACue_{zodiac}_{skill}()
 {{
@@ -95,24 +107,114 @@ UDBACue_{zodiac}_{skill}::UDBACue_{zodiac}_{skill}()
 	bAutoDestroyOnOwnerRemoved = true;
 	bOnlyRelevantToOwner = false;
 	RollbackPolicy = ECueRollback::CanRollback;
+
+	// 加载技能数据
+	LoadSkillData();
+}}
+
+void UDBACue_{zodiac}_{skill}::LoadSkillData()
+{{
+	// 从 DataTable 加载技能数据
+	UDataTable* SkillTable = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/Data/Skills/SkillDataTable.SkillDataTable'"));
+	if (SkillTable)
+	{{
+		static const FString ContextString = TEXT("DBACue_{zodiac}_{skill}");
+		FDBASkillDataRow* SkillRow = SkillTable->FindRow<FDBASkillDataRow>(FName(TEXT("{zodiac}_{skill}")), ContextString, false);
+		if (SkillRow)
+		{{
+			CueScale = SkillRow->BaseDamage > 0 ? 1.0f + SkillRow->DamageScaling * 0.1f : 1.0f;
+		}}
+	}}
 }}
 
 bool UDBACue_{zodiac}_{skill}::OnExecuteGameplayCue(AActor* Target, FGameplayCueParameters& Parameters)
 {{
-	// TODO: 播放施法特效
-	// 示例: PlayEffects(Target, Parameters);
+	// 获取技能数据
+	FDBASkillDataRow* SkillData = nullptr;
+	UDataTable* SkillTable = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/Data/Skills/SkillDataTable.SkillDataTable'"));
+	if (SkillTable)
+	{{
+		static const FString ContextString = TEXT("OnExecuteGameplayCue");
+		SkillData = SkillTable->FindRow<FDBASkillDataRow>(SkillId, ContextString, false);
+	}}
+
+	// 播放视觉效果
+	if (SkillData && SkillData->VFXAsset.IsValid())
+	{{
+		UParticleSystem* VFX = SkillData->VFXAsset.LoadSynchronous();
+		if (VFX)
+		{{
+			FVector Location = Target ? Target->GetActorLocation() : FVector::ZeroVector;
+			FRotator Rotation = Target ? Target->GetActorRotation() : FRotator::ZeroRotator;
+			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, CueScale);
+		}}
+	}}
+
+	// 播放音效
+	if (SkillData && SkillData->SFXAsset.IsValid())
+	{{
+		USoundCue* SFX = SkillData->SFXAsset.LoadSynchronous();
+		if (SFX)
+		{{
+			UGameplayStatics::PlaySoundAtLocation(Target, SFX, Target ? Target->GetActorLocation() : FVector::ZeroVector);
+		}}
+	}}
+
+	// 通过 ASC 广播技能事件
+	if (AActor* Owner = GetOwningActor())
+	{{
+		if (UDBAAbilitySystemComponent* ASC = Owner->FindComponentByClass<UDBAAbilitySystemComponent>())
+		{{
+			ASC->OnSkillCueExecuted.Broadcast(SkillId, Target);
+		}}
+	}}
 
 	return true;
 }}
 
 void UDBACue_{zodiac}_{skill}::OnActiveGameplayCue(AActor* Target, FGameplayCueParameters& Parameters)
 {{
-	// TODO: 激活状态特效
+	// 获取技能数据，检查是否有引导特效
+	FDBASkillDataRow* SkillData = nullptr;
+	UDataTable* SkillTable = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/Data/Skills/SkillDataTable.SkillDataTable'"));
+	if (SkillTable)
+	{{
+		static const FString ContextString = TEXT("OnActiveGameplayCue");
+		SkillData = SkillTable->FindRow<FDBASkillDataRow>(SkillId, ContextString, false);
+	}}
+
+	// 播放持续性特效（如引导、充能）
+	if (SkillData && SkillData->VFXAsset.IsValid())
+	{{
+		UParticleSystem* VFX = SkillData->VFXAsset.LoadSynchronous();
+		if (VFX)
+		{{
+			FVector Location = Target ? Target->GetActorLocation() : FVector::ZeroVector;
+			FRotator Rotation = Target ? Target->GetActorRotation() : FRotator::ZeroRotator;
+			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, CueScale * 0.7f);
+		}}
+	}}
 }}
 
 void UDBACue_{zodiac}_{skill}::OnRemoveGameplayCue(AActor* Target, FGameplayCueParameters& Parameters)
 {{
-	// TODO: 移除特效
+	// 清理特效 - 在目标位置停止所有相关粒子系统
+	if (Target)
+	{{
+		TArray<UParticleSystemComponent*> ParticleComponents;
+		Target->GetComponents<UParticleSystemComponent>(ParticleComponents);
+		for (UParticleSystemComponent* Particle : ParticleComponents)
+		{{
+			if (Particle && Particle->bIsActive)
+			{{
+				// 检查是否是此 Cue 创建的特效（通过 Tag 标记）
+				if (Particle->ComponentHasTag(FName(TEXT("Cue_{zodiac}_{skill}"))))
+				{{
+					Particle->Deactivate();
+				}}
+			}}
+		}}
+	}}
 }}
 """
 
@@ -124,6 +226,7 @@ GE_HEADER_TEMPLATE = """// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "CoreMinimal.h"
 #include "GameplayEffect.h"
+#include "Data/DBASkillDataRow.h"
 #include "DBAGE_{zodiac}_{skill}.generated.h"
 
 UCLASS()
@@ -141,18 +244,59 @@ GE_CPP_TEMPLATE = """// Copyright Freebooz Games, Inc. All Rights Reserved.
 // GameplayEffect - {zodiac_cn}{skill_name}
 
 #include "DBA/GAS/Effects/DBAGE_{zodiac}_{skill}.h"
+#include "DBA/GAS/Attributes/DBABattleAttributeSet.h"
+#include "Engine/DataTable.h"
+#include "Data/DBADataAsset.h"
 
 UDBAGE_{zodiac}_{skill}::UDBAGE_{zodiac}_{skill}()
 {{
-	// 技能效果配置
-	// DurationPolicy = EGameplayEffectDurationType::Instant;
+	// 从技能数据表加载配置
+	UDataTable* SkillTable = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/Data/Skills/SkillDataTable.SkillDataTable'"));
+	if (SkillTable)
+	{{
+		static const FString ContextString = TEXT("DBAGE_{zodiac}_{skill}");
+		FDBASkillDataRow* SkillRow = SkillTable->FindRow<FDBASkillDataRow>(FName(TEXT("{zodiac}_{skill}")), ContextString, false);
+		if (SkillRow)
+		{{
+			// 伤害修饰符
+			if (SkillRow->BaseDamage > 0)
+			{{
+				FGameplayModifierInfo DamageMod;
+				DamageMod.Attribute = UDBABattleAttributeSet::GetCurrentHealthAttribute();
+				DamageMod.ModifierOp = EGameplayModOp::Additive;
+				DamageMod.ModifierMagnitude = FScalableFloat(SkillRow->BaseDamage);
+				Modifiers.Add(DamageMod);
+			}}
 
-	// 示例: 伤害修饰
-	// FGameplayModifierInfo DamageMod;
-	// DamageMod.Attribute = UDBABattleAttributeSet::GetCurrentHealthAttribute();
-	// DamageMod.ModifierOp = EGameplayModOp::Additive;
-	// DamageMod.ModifierMagnitude = FScalableFloat(10.0f);
-	// Modifiers.Add(DamageMod);
+			// 治疗修饰符
+			if (SkillRow->HealAmount > 0)
+			{{
+				FGameplayModifierInfo HealMod;
+				HealMod.Attribute = UDBABattleAttributeSet::GetCurrentHealthAttribute();
+				HealMod.ModifierOp = EGameplayModOp::Additive;
+				HealMod.ModifierMagnitude = FScalableFloat(SkillRow->HealAmount);
+				Modifiers.Add(HealMod);
+			}}
+
+			// 护盾修饰符
+			if (SkillRow->ShieldValue > 0)
+			{{
+				FGameplayModifierInfo ShieldMod;
+				ShieldMod.Attribute = UDBABattleAttributeSet::GetCurrentHealthAttribute();
+				ShieldMod.ModifierOp = EGameplayModOp::Additive;
+				ShieldMod.ModifierMagnitude = FScalableFloat(SkillRow->ShieldValue);
+				Modifiers.Add(ShieldMod);
+			}}
+
+			// 设置持续时间
+			if (SkillRow->ControlTime > 0)
+			{{
+				DurationPolicy = EGameplayEffectDurationType::HasDuration;
+				Period = 0.0f;
+				DurationMagnitude = FScalableFloat(SkillRow->ControlTime);
+			}}
+		}}
+	}}
 }}
 """
 
@@ -243,18 +387,82 @@ def main():
 
 def generate_resonance_effects(ge_public_dir, ge_private_dir, start_count):
     """生成元素共鸣 GameplayEffect"""
+    # 共鸣效果特殊模板
+    resonance_header = """// Copyright Freebooz Games, Inc. All Rights Reserved.
+// GameplayEffect - {zodiac_cn}共鸣元素共鸣
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameplayEffect.h"
+#include "Data/DBAElementResonanceRow.h"
+#include "DBAGE_{zodiac}_Resonance.generated.h"
+
+UCLASS()
+class DIVINEBEASTSARENA_API UDBAGE_{zodiac}_Resonance : public UGameplayEffect
+{{
+	GENERATED_BODY()
+
+public:
+	UDBAGE_{zodiac}_Resonance();
+}};
+"""
+
+    resonance_cpp = """// Copyright Freebooz Games, Inc. All Rights Reserved.
+// GameplayEffect - {zodiac_cn}共鸣元素共鸣
+
+#include "DBA/GAS/Effects/DBAGE_{zodiac}_Resonance.h"
+#include "DBA/GAS/Attributes/DBABattleAttributeSet.h"
+#include "Engine/DataTable.h"
+
+UDBAGE_{zodiac}_Resonance::UDBAGE_{zodiac}_Resonance()
+{{
+	// 从元素共鸣数据表加载配置
+	UDataTable* ResonanceTable = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/Data/Elements/ElementResonanceTable.ElementResonanceTable'"));
+	if (ResonanceTable)
+	{{
+		static const FString ContextString = TEXT("DBAGE_{zodiac}_Resonance");
+		FDBADBElemenetResonanceRow* ResonanceRow = ResonanceTable->FindRow<FDBADBElemenetResonanceRow>(FName(TEXT("{zodiac}")), ContextString, false);
+		if (ResonanceRow)
+		{{
+			// 控制时间加成
+			if (ResonanceRow->ControlTimeBonus > 0)
+			{{
+				FGameplayModifierInfo ControlMod;
+				ControlMod.Attribute = UDBABattleAttributeSet::GetCurrentHealthAttribute();
+				ControlMod.ModifierOp = EGameplayModOp::Additive;
+				ControlMod.ModifierMagnitude = FScalableFloat(ResonanceRow->ControlTimeBonus);
+				Modifiers.Add(ControlMod);
+			}}
+
+			// 护盾值加成
+			if (ResonanceRow->ShieldBonus > 0)
+			{{
+				FGameplayModifierInfo ShieldMod;
+				ShieldMod.Attribute = UDBABattleAttributeSet::GetCurrentHealthAttribute();
+				ShieldMod.ModifierOp = EGameplayModOp::Additive;
+				ShieldMod.ModifierMagnitude = FScalableFloat(ResonanceRow->ShieldBonus);
+				Modifiers.Add(ShieldMod);
+			}}
+
+			// 设置持续时间
+			if (ResonanceRow->Duration > 0)
+			{{
+				DurationPolicy = EGameplayEffectDurationType::Infinite;
+			}}
+		}}
+	}}
+}}
+"""
+
     for element_id, element_cn in ELEMENTS:
-        header = GE_HEADER_TEMPLATE.format(
-            zodiac_cn=f"{element_cn}共鸣",
-            skill_name="元素共鸣",
+        header = resonance_header.format(
+            zodiac_cn=element_cn,
             zodiac=element_id,
-            skill="Resonance",
         )
-        cpp = GE_CPP_TEMPLATE.format(
-            zodiac_cn=f"{element_cn}共鸣",
-            skill_name="元素共鸣",
+        cpp = resonance_cpp.format(
+            zodiac_cn=element_cn,
             zodiac=element_id,
-            skill="Resonance",
         )
         header_path = ge_public_dir / f"DBAGE_{element_id}_Resonance.h"
         cpp_path = ge_private_dir / f"DBAGE_{element_id}_Resonance.cpp"
@@ -262,7 +470,7 @@ def generate_resonance_effects(ge_public_dir, ge_private_dir, start_count):
             f.write(header)
         with open(cpp_path, "w", encoding="utf-8") as f:
             f.write(cpp)
-        print(f"  生成: DBAGE_Resonance_{element_id}")
+        print(f"  生成: DBAGE_{element_id}_Resonance")
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayEffect.h"
+#include "Data/DBAElementResonanceRow.h"
 #include "DBAGE_Wood_Resonance.generated.h"
 
 UCLASS()
