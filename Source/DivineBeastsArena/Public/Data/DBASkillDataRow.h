@@ -5,8 +5,8 @@
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 #include "Sound/SoundCue.h"
+#include "Common/DBAEnumsCore.h"
 #include "Common/Types/DBACommonTypes.h"
-#include "DBASkillDataRow.generated.h"
 
 /**
  * 技能数据行（统一技能表）
@@ -159,3 +159,5 @@ struct DIVINEBEASTSARENA_API FDBASkillDataRow : public FTableRowBase
 	{
 	}
 };
+
+#include "DBASkillDataRow.generated.h"

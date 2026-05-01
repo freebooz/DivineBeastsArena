@@ -9,21 +9,21 @@
 #include "DBACue_Rooster_R.generated.h"
 
 UCLASS()
-class DIVINEBEASTSARENA_API UDBACue_Rooster_R : public AGameplayCueNotify_Actor
+class DIVINEBEASTSARENA_API ADBACue_Rooster_R : public AGameplayCueNotify_Actor
 {
 	GENERATED_BODY()
 
 public:
-	UDBACue_Rooster_R();
+	ADBACue_Rooster_R();
 
 	// 当 Cue 被触发时调用
-	virtual bool OnExecuteGameplayCue(AActor* Target, FGameplayCueParameters& Parameters) override;
+	virtual bool OnExecuteGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters);
 
 	// 当 Cue 生效时调用 (持续性 Cue)
-	virtual void OnActiveGameplayCue(AActor* Target, FGameplayCueParameters& Parameters) override;
+	virtual void OnActiveGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters);
 
 	// 当 Cue 结束时调用
-	virtual void OnRemoveGameplayCue(AActor* Target, FGameplayCueParameters& Parameters) override;
+	virtual void OnRemoveGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters);
 
 protected:
 	// 从技能数据表加载配置

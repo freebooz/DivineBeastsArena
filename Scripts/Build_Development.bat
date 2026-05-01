@@ -3,7 +3,7 @@ REM Copyright FreeboozStudio. All Rights Reserved.
 REM 使用源代码引擎编译项目
 
 REM 引擎路径
-set ENGINE_ROOT=E:\UnrealEngine-5.7.1-release
+set ENGINE_ROOT=D:\Program Files\Epic Games\UE_5.7
 set ENGINE_BUILD=%ENGINE_ROOT%\Engine\Build\BatchFiles
 set ENGINE_BINARIES=%ENGINE_ROOT%\Engine\Binaries\Win64
 

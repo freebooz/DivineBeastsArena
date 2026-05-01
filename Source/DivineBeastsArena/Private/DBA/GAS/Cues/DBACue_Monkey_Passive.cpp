@@ -3,21 +3,20 @@
 
 #include "DBA/GAS/Cues/DBACue_Monkey_Passive.h"
 #include "DBA/GAS/DBAAbilitySystemComponent.h"
-#include "Data/DBADataAsset.h"
 #include "Kismet/GameplayStatics.h"
 
-UDBACue_Monkey_Passive::UDBACue_Monkey_Passive()
+ADBACue_Monkey_Passive::ADBACue_Monkey_Passive()
 {
 	// 默认配置
-	bAutoDestroyOnOwnerRemoved = true;
-	bOnlyRelevantToOwner = false;
-	RollbackPolicy = ECueRollback::CanRollback;
+	// bAutoDestroyOnOwnerRemoved = true;
+	// bOnlyRelevantToOwner = false;
+	// RollbackPolicy = ECueRollback::CanRollback;
 
 	// 加载技能数据
 	LoadSkillData();
 }
 
-void UDBACue_Monkey_Passive::LoadSkillData()
+void ADBACue_Monkey_Passive::LoadSkillData()
 {
 	// 从 DataTable 加载技能数据
 	UDataTable* SkillTable = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/Data/Skills/SkillDataTable.SkillDataTable'"));
@@ -32,7 +31,7 @@ void UDBACue_Monkey_Passive::LoadSkillData()
 	}
 }
 
-bool UDBACue_Monkey_Passive::OnExecuteGameplayCue(AActor* Target, FGameplayCueParameters& Parameters)
+bool ADBACue_Monkey_Passive::OnExecuteGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters)
 {
 	// 获取技能数据
 	FDBASkillDataRow* SkillData = nullptr;
@@ -66,9 +65,9 @@ bool UDBACue_Monkey_Passive::OnExecuteGameplayCue(AActor* Target, FGameplayCuePa
 	}
 
 	// 通过 ASC 广播技能事件
-	if (AActor* Owner = GetOwningActor())
+	AActor* OwnerActor = GetOwner();
 	{
-		if (UDBAAbilitySystemComponent* ASC = Owner->FindComponentByClass<UDBAAbilitySystemComponent>())
+		if (UDBAAbilitySystemComponent* ASC = OwnerActor ? OwnerActor->FindComponentByClass<UDBAAbilitySystemComponent>())
 		{
 			ASC->OnSkillCueExecuted.Broadcast(SkillId, Target);
 		}
@@ -77,7 +76,7 @@ bool UDBACue_Monkey_Passive::OnExecuteGameplayCue(AActor* Target, FGameplayCuePa
 	return true;
 }
 
-void UDBACue_Monkey_Passive::OnActiveGameplayCue(AActor* Target, FGameplayCueParameters& Parameters)
+void ADBACue_Monkey_Passive::OnActiveGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters)
 {
 	// 获取技能数据，检查是否有引导特效
 	FDBASkillDataRow* SkillData = nullptr;
@@ -101,7 +100,7 @@ void UDBACue_Monkey_Passive::OnActiveGameplayCue(AActor* Target, FGameplayCuePar
 	}
 }
 
-void UDBACue_Monkey_Passive::OnRemoveGameplayCue(AActor* Target, FGameplayCueParameters& Parameters)
+void ADBACue_Monkey_Passive::OnRemoveGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters)
 {
 	// 清理特效 - 在目标位置停止所有相关粒子系统
 	if (Target)

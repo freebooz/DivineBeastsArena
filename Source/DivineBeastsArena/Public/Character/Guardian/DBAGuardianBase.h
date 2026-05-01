@@ -7,8 +7,6 @@
 #include "GameFramework/Actor.h"
 #include "DBAGuardianBase.generated.h"
 
-class UDBAZodiacVFXComponent;
-
 /**
  * DBAGuardianBase
  * 守卫模型基类
@@ -26,10 +24,6 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	/** 获取VFX组件 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|Guardian")
-	UDBAZodiacVFXComponent* GetVFXComponent() const { return VFXComponent; }
-
 	/** 播放攻击特效 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Guardian")
 	void PlayAttackVFX(AActor* Target);
@@ -39,9 +33,6 @@ public:
 	void PlayHitVFX(AActor* Attacker);
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DBA|Components")
-	TObjectPtr<UDBAZodiacVFXComponent> VFXComponent;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Config")
 	FName GuardianType = FName(TEXT("None"));
 

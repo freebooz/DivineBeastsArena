@@ -8,7 +8,7 @@
 
 USTRUCT(BlueprintType)
 struct FDBAAnimConfig
-{{
+{
 	GENERATED_BODY()
 
 	/** 待机动画 */
@@ -38,4 +38,4 @@ struct FDBAAnimConfig
 	/** 死亡动画 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	TSoftObjectPtr<UAnimMontage> DeathMontage;
-}};
+};

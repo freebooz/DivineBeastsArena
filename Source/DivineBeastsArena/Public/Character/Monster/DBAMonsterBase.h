@@ -7,8 +7,6 @@
 #include "GameFramework/Character.h"
 #include "DBAMonsterBase.generated.h"
 
-class UDBAZodiacVFXComponent;
-
 /**
  * DBAMonsterBase
  * 怪物模型基类
@@ -26,10 +24,6 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	/** 获取VFX组件 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|Monster")
-	UDBAZodiacVFXComponent* GetVFXComponent() const { return VFXComponent; }
-
 	/** 播放受击特效 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Monster")
 	void PlayHitVFX(AActor* Attacker);
@@ -39,9 +33,6 @@ public:
 	void PlayDeathVFX();
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DBA|Components")
-	TObjectPtr<UDBAZodiacVFXComponent> VFXComponent;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Config")
 	FName MonsterType = FName(TEXT("None"));
 

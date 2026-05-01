@@ -59,7 +59,7 @@ ANIM_STATE_ENUM = """// Copyright Freebooz Games, Inc. All Rights Reserved.
  */
 UENUM(BlueprintType)
 enum class EDBAAnimState : uint8
-{{
+{
 	Idle UMETA(DisplayName = "待机"),
 	Walk UMETA(DisplayName = "行走"),
 	Run UMETA(DisplayName = "奔跑"),
@@ -67,7 +67,7 @@ enum class EDBAAnimState : uint8
 	Skill UMETA(DisplayName = "技能"),
 	Hit UMETA(DisplayName = "受击"),
 	Death UMETA(DisplayName = "死亡"),
-}};
+};
 """
 
 # 动画配置结构体
