@@ -33,9 +33,9 @@ void ADBAZodiacCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerI
 
 UDBAZodiacAnimInstance* ADBAZodiacCharacterBase::GetZodiacAnimInstance() const
 {
-	if (USkeletalMeshComponent* Mesh = GetMesh())
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
 	{
-		return Cast<UDBAZodiacAnimInstance>(Mesh->GetAnimInstance());
+		return Cast<UDBAZodiacAnimInstance>(MeshComp->GetAnimInstance());
 	}
 	return nullptr;
 }

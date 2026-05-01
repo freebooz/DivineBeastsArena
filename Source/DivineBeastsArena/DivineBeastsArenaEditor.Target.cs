@@ -12,7 +12,7 @@ public class DivineBeastsArenaEditorTarget : TargetRules
         Type = TargetType.Editor;
 
         // 构建环境
-        BuildEnvironment = TargetBuildEnvironment.Unique;
+
 
         // 默认构建设置版本
         DefaultBuildSettings = BuildSettingsVersion.V6;
@@ -33,7 +33,8 @@ public class DivineBeastsArenaEditorTarget : TargetRules
         });
 
         // 编译设置
-        bUseLoggingInShipping = true;               // Editor 始终启用日志
+        bUseLoggingInShipping = true;
+        bOverrideBuildEnvironment = true;               // Editor 始终启用日志
         bCompileWithAccessibilitySupport = true;    // 启用无障碍支持
         bCompileAgainstEngine = true;               // 编译引擎代码
         bCompileAgainstCoreUObject = true;          // 编译 CoreUObject

@@ -7,16 +7,7 @@
 class AActor;
 
 /**
- * IDBARpcInterface
- * RPC 接口定义 - 所有可网络调用的功能都实现此接口
- */
-UINTERFACE()
-class DIVINEBEASTSARENA_API IDBARpcInterface : public UInterface
-{
-    GENERATED_BODY()
-};
-
-/**
+ * FDBAAbilityRpcParams
  * RPC 能力激活参数
  */
 USTRUCT(BlueprintType)
@@ -35,4 +26,24 @@ struct DIVINEBEASTSARENA_API FDBAAbilityRpcParams
     /** 额外参数 */
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
     FVector_NetQuantize10 TargetLocation;
+};
+
+/**
+ * UDBARpcInterface
+ * RPC 接口定义基类
+ */
+UINTERFACE(BlueprintType)
+class DIVINEBEASTSARENA_API UDBARpcInterface : public UInterface
+{
+    GENERATED_BODY()
+};
+
+/**
+ * IDBARpcInterface
+ * RPC 接口实现基类
+ */
+class DIVINEBEASTSARENA_API IDBARpcInterface
+{
+    GENERATED_BODY()
+public:
 };

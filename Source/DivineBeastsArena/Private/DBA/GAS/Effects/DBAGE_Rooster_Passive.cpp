@@ -4,7 +4,6 @@
 #include "DBA/GAS/Effects/DBAGE_Rooster_Passive.h"
 #include "DBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "Engine/DataTable.h"
-#include "Data/DBADataAsset.h"
 
 UDBAGE_Rooster_Passive::UDBAGE_Rooster_Passive()
 {

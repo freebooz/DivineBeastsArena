@@ -4,7 +4,6 @@
 #include "DBA/GAS/Effects/DBAGE_Snake_W.h"
 #include "DBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "Engine/DataTable.h"
-#include "Data/DBADataAsset.h"
 
 UDBAGE_Snake_W::UDBAGE_Snake_W()
 {

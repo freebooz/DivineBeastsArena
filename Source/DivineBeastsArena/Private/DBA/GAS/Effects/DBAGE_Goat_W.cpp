@@ -4,7 +4,6 @@
 #include "DBA/GAS/Effects/DBAGE_Goat_W.h"
 #include "DBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "Engine/DataTable.h"
-#include "Data/DBADataAsset.h"
 
 UDBAGE_Goat_W::UDBAGE_Goat_W()
 {

@@ -4,7 +4,6 @@
 #include "DBA/GAS/Effects/DBAGE_Ox_Passive.h"
 #include "DBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "Engine/DataTable.h"
-#include "Data/DBADataAsset.h"
 
 UDBAGE_Ox_Passive::UDBAGE_Ox_Passive()
 {

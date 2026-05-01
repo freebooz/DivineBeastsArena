@@ -24,10 +24,6 @@
 	],
 	"Plugins": [
 		{
-			"Name": "GameplayAbilities",
-			"Enabled": true
-		},
-		{
 			"Name": "OnlineSubsystem",
 			"Enabled": true
 		},

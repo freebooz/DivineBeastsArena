@@ -4,7 +4,6 @@
 #include "DBA/GAS/Effects/DBAGE_Dog_R.h"
 #include "DBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "Engine/DataTable.h"
-#include "Data/DBADataAsset.h"
 
 UDBAGE_Dog_R::UDBAGE_Dog_R()
 {

@@ -30,9 +30,6 @@ protected:
 	void LoadSkillData();
 
 protected:
-	// 特效峰值缩放
-	UPROPERTY(EditDefaultsOnly, Category = "Cue")
-	float CueScale = 1.0f;
 
 	// 技能ID (用于查询数据)
 	UPROPERTY(EditDefaultsOnly, Category = "Cue")

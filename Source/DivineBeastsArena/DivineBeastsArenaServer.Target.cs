@@ -12,7 +12,7 @@ public class DivineBeastsArenaServerTarget : TargetRules
 		Type = TargetType.Server;
 
 		// 构建环境
-		BuildEnvironment = TargetBuildEnvironment.Unique;
+		
 
 		// 默认构建设置版本
 		DefaultBuildSettings = BuildSettingsVersion.V6;

@@ -4,7 +4,6 @@
 #include "DBA/GAS/Effects/DBAGE_Horse_Q.h"
 #include "DBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "Engine/DataTable.h"
-#include "Data/DBADataAsset.h"
 
 UDBAGE_Horse_Q::UDBAGE_Horse_Q()
 {

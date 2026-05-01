@@ -4,7 +4,6 @@
 #include "DBA/GAS/Effects/DBAGE_Dragon_Q.h"
 #include "DBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "Engine/DataTable.h"
-#include "Data/DBADataAsset.h"
 
 UDBAGE_Dragon_Q::UDBAGE_Dragon_Q()
 {

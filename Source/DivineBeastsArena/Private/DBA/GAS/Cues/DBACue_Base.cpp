@@ -5,8 +5,6 @@
 
 ADBACue_Base::ADBACue_Base()
 {
-    bAutoDestroyOnOwnerRemoved = true;
-    bOnlyRelevantToOwner = false;
 }
 
 bool ADBACue_Base::OnExecuteGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters)
@@ -32,7 +30,7 @@ bool ADBACue_Base::OnExecuteGameplayCue(AActor* Target, const FGameplayCueParame
 
     if (SkillData && SkillData->SFXAsset.IsValid())
     {
-        if (USoundCue* SFX = SkillData->SFXAsset.LoadSynchronous())
+        if (USoundBase* SFX = Cast<USoundBase>(SkillData->SFXAsset.LoadSynchronous()))
         {
             UGameplayStatics::PlaySoundAtLocation(Target, SFX, Target ? Target->GetActorLocation() : FVector::ZeroVector);
         }

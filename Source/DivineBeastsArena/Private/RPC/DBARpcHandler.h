@@ -9,7 +9,7 @@
  * ADBARpcHandler
  * RPC 处理器 - 挂在 Pawn 或 Controller 上处理网络调用
  */
-UCLASS()
+UCLASS(Blueprintable)
 class DIVINEBEASTSARENA_API ADBARpcHandler : public AActor, public IDBARpcServer, public IDBARpcClient
 {
     GENERATED_BODY()
@@ -17,40 +17,40 @@ class DIVINEBEASTSARENA_API ADBARpcHandler : public AActor, public IDBARpcServer
 public:
     ADBARpcHandler();
 
-    // IDBARpcServer 接口实现
-    virtual void ServerTryActivateAbility_Implementation(const FDBAAbilityRpcParams& Params) override;
-    virtual bool ServerTryActivateAbility_Validate(const FDBAAbilityRpcParams& Params) override;
+    // ==================== IDBARpcServer 接口实现 ====================
+    virtual void ServerTryActivateAbility_Implementation(const FDBAAbilityRpcParams& Params);
+    virtual bool ServerTryActivateAbility_Validate(const FDBAAbilityRpcParams& Params);
 
-    virtual void ServerCancelAbility_Implementation(FGameplayAbilitySpecHandle Handle) override;
-    virtual bool ServerCancelAbility_Validate(FGameplayAbilitySpecHandle Handle) override;
+    virtual void ServerCancelAbility_Implementation(FGameplayAbilitySpecHandle Handle);
+    virtual bool ServerCancelAbility_Validate(FGameplayAbilitySpecHandle Handle);
 
-    virtual void ServerLockTarget_Implementation(AActor* TargetActor) override;
-    virtual bool ServerLockTarget_Validate(AActor* TargetActor) override;
+    virtual void ServerLockTarget_Implementation(AActor* TargetActor);
+    virtual bool ServerLockTarget_Validate(AActor* TargetActor);
 
-    virtual void ServerMoveTo_Implementation(FVector_NetQuantize10 Location) override;
-    virtual bool ServerMoveTo_Validate(FVector_NetQuantize10 Location) override;
+    virtual void ServerMoveTo_Implementation(FVector_NetQuantize10 Location);
+    virtual bool ServerMoveTo_Validate(FVector_NetQuantize10 Location);
 
-    virtual void ServerRequestAttack_Implementation() override;
-    virtual bool ServerRequestAttack_Validate() override;
+    virtual void ServerRequestAttack_Implementation();
+    virtual bool ServerRequestAttack_Validate();
 
-    virtual void ServerUltimateAbility_Implementation(const FDBAAbilityRpcParams& Params) override;
-    virtual bool ServerUltimateAbility_Validate(const FDBAAbilityRpcParams& Params) override;
+    virtual void ServerUltimateAbility_Implementation(const FDBAAbilityRpcParams& Params);
+    virtual bool ServerUltimateAbility_Validate(const FDBAAbilityRpcParams& Params);
 
-    // IDBARpcClient 接口实现
+    // ==================== IDBARpcClient 接口实现 ====================
     UFUNCTION(Client, Reliable)
-    virtual void ClientReceiveDamage_Implementation(float Damage, FVector_NetQuantize10 Position, FGameplayTag DamageType) override;
-
-    UFUNCTION(Client, Reliable)
-    virtual void ClientReceiveEffect_Implementation(FGameplayTag EffectTag, float Magnitude) override;
+    virtual void ClientReceiveDamage_Implementation(float Damage, FVector_NetQuantize10 Position, FGameplayTag DamageType);
 
     UFUNCTION(Client, Reliable)
-    virtual void ClientReplicateState_Implementation(uint8 NewState, const FVector_NetQuantize10& Location) override;
+    virtual void ClientReceiveEffect_Implementation(FGameplayTag EffectTag, float Magnitude);
 
     UFUNCTION(Client, Reliable)
-    virtual void ClientAbilityActivated_Implementation(FGameplayAbilitySpecHandle Handle) override;
+    virtual void ClientReplicateState_Implementation(uint8 NewState, const FVector_NetQuantize10& Location);
 
     UFUNCTION(Client, Reliable)
-    virtual void ClientAbilityFailed_Implementation(FGameplayAbilitySpecHandle Handle, FGameplayTag FailureTag) override;
+    virtual void ClientAbilityActivated_Implementation(FGameplayAbilitySpecHandle Handle);
+
+    UFUNCTION(Client, Reliable)
+    virtual void ClientAbilityFailed_Implementation(FGameplayAbilitySpecHandle Handle, FGameplayTag FailureTag);
 
 protected:
     /** 验证能量是否足够 */

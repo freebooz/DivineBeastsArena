@@ -4,7 +4,6 @@
 #include "DBA/GAS/Effects/DBAGE_Tiger_R.h"
 #include "DBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "Engine/DataTable.h"
-#include "Data/DBADataAsset.h"
 
 UDBAGE_Tiger_R::UDBAGE_Tiger_R()
 {

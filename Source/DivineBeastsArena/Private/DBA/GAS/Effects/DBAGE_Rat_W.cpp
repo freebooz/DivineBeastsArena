@@ -4,7 +4,6 @@
 #include "DBA/GAS/Effects/DBAGE_Rat_W.h"
 #include "DBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "Engine/DataTable.h"
-#include "Data/DBADataAsset.h"
 
 UDBAGE_Rat_W::UDBAGE_Rat_W()
 {

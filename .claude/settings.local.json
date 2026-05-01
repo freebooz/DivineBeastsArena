@@ -55,7 +55,10 @@
       "Bash(sed -i 's/#include \"DBAFixedSkillGroupPreviewWidgetBase\\\\.generated\\\\.h\"/#include \"UDBAFixedSkillGroupPreviewWidgetBase.generated.h\"/g' Source/DivineBeastsArena/Public/Client/UI/Lobby/ElementSelect/UDBAFixedSkillGroupPreviewWidgetBase.h)",
       "Bash(rm -rf Source/DivineBeastsArena/Generated/Abilities/Private/*.cpp Source/DivineBeastsArena/Generated/Abilities/Public/*.h)",
       "Bash(python Scripts/generate_zodiac_abilities.py)",
-      "Bash(E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat DivineBeastsArenaEditor Development Win64 -Project=\"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -BuildMachine -NoEngineChanges -NoHotReloadFromIDE)"
+      "Bash(E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat DivineBeastsArenaEditor Development Win64 -Project=\"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -BuildMachine -NoEngineChanges -NoHotReloadFromIDE)",
+      "Bash(rm -rf D:/DivineBeastsArena/Intermediate)",
+      "Bash(cmd //c \"D:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" DivineBeastsArenaEditor Win64 Development -Project=\"D:\\\\DivineBeastsArena\\\\DivineBeastsArena.uproject\" -BuildMachine -NoEngineChanges -NoHotReloadFromIDE)",
+      "Bash(rm -rf D:/DivineBeastsArena/Intermediate/Build/BuildRules/*)"
     ]
   }
 }

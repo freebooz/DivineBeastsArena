@@ -14,9 +14,9 @@ class DIVINEBEASTSARENA_API ADBACue_Base : public AGameplayCueNotify_Actor
 public:
     ADBACue_Base();
 
-    virtual bool OnExecuteGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters) override;
-    virtual void OnActiveGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters) override;
-    virtual void OnRemoveGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters) override;
+    virtual bool OnExecuteGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters);
+    virtual void OnActiveGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters);
+    virtual void OnRemoveGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters);
 
 protected:
     // Load skill data from DataTable

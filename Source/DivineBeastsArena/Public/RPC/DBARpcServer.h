@@ -1,25 +1,29 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 #pragma once
 #include "CoreMinimal.h"
+#include "UObject/Interface.h"
 #include "DBARpcInterface.h"
 #include "DBARpcServer.generated.h"
 
 /**
- * IDBARpcServer
+ * UDBARpcServer
  * 服务端 RPC 接口 - 客户端调用服务端
  */
-UINTERFACE()
-class DIVINEBEASTSARENA_API IDBARpcServer : public IDBARpcInterface
+UINTERFACE(BlueprintType)
+class DIVINEBEASTSARENA_API UDBARpcServer : public UDBARpcInterface
 {
     GENERATED_BODY()
 };
 
-class DIVINEBEASTSARENA_API IDBARpcServer
+/**
+ * IDBARpcServer
+ * 服务端 RPC 接口实现 - 客户端调用服务端
+ */
+class DIVINEBEASTSARENA_API IDBARpcServer : public IDBARpcInterface
 {
     GENERATED_BODY()
 
 public:
-    // 技能相关
     UFUNCTION(Server, Reliable, WithValidation)
     virtual void ServerTryActivateAbility(const FDBAAbilityRpcParams& Params) = 0;
 

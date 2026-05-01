@@ -4,7 +4,6 @@
 #include "DBA/GAS/Effects/DBAGE_Monkey_E.h"
 #include "DBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "Engine/DataTable.h"
-#include "Data/DBADataAsset.h"
 
 UDBAGE_Monkey_E::UDBAGE_Monkey_E()
 {
