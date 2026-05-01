@@ -58,7 +58,8 @@
       "Bash(E:/UnrealEngine-5.7.1-release/Engine/Build/BatchFiles/Build.bat DivineBeastsArenaEditor Development Win64 -Project=\"D:/DivineBeastsArena/DivineBeastsArena.uproject\" -BuildMachine -NoEngineChanges -NoHotReloadFromIDE)",
       "Bash(rm -rf D:/DivineBeastsArena/Intermediate)",
       "Bash(cmd //c \"D:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" DivineBeastsArenaEditor Win64 Development -Project=\"D:\\\\DivineBeastsArena\\\\DivineBeastsArena.uproject\" -BuildMachine -NoEngineChanges -NoHotReloadFromIDE)",
-      "Bash(rm -rf D:/DivineBeastsArena/Intermediate/Build/BuildRules/*)"
+      "Bash(rm -rf D:/DivineBeastsArena/Intermediate/Build/BuildRules/*)",
+      "Bash(xargs cat *)"
     ]
   }
 }

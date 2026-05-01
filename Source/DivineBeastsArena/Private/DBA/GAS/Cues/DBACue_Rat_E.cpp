@@ -57,7 +57,7 @@ bool ADBACue_Rat_E::OnExecuteGameplayCue(AActor* Target, const FGameplayCueParam
 	// 播放音效
 	if (SkillData && SkillData->SFXAsset.IsValid())
 	{
-		USoundCue* SFX = SkillData->SFXAsset.LoadSynchronous();
+		USoundBase* SFX = Cast<USoundBase>(SkillData->SFXAsset.LoadSynchronous());
 		if (SFX)
 		{
 			UGameplayStatics::PlaySoundAtLocation(Target, SFX, Target ? Target->GetActorLocation() : FVector::ZeroVector);
