@@ -4,12 +4,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameplayCueNotify_Actor.h"
+#include "DBA/GAS/Cues/DBACue_Base.h"
 #include "Data/DBASkillDataRow.h"
 #include "DBACue_Goat_E.generated.h"
 
 UCLASS()
-class DIVINEBEASTSARENA_API ADBACue_Goat_E : public AGameplayCueNotify_Actor
+class DIVINEBEASTSARENA_API ADBACue_Goat_E : public ADBACue_Base
 {
 	GENERATED_BODY()
 
@@ -37,4 +37,7 @@ protected:
 	// 技能ID (用于查询数据)
 	UPROPERTY(EditDefaultsOnly, Category = "Cue")
 	FName SkillId = FName(TEXT("Goat_E"));
+
+protected:
+	virtual FName GetSkillId() const override { return FName(TEXT("Goat_E")); }
 };

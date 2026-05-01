@@ -4,12 +4,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameplayEffect.h"
+#include "DBA/GAS/Effects/DBAGE_Base.h"
 #include "Data/DBASkillDataRow.h"
 #include "DBAGE_Dragon_W.generated.h"
 
 UCLASS()
-class DIVINEBEASTSARENA_API UDBAGE_Dragon_W : public UGameplayEffect
+class DIVINEBEASTSARENA_API UDBAGE_Dragon_W : public UDBAGE_Base
 {
 	GENERATED_BODY()
 
