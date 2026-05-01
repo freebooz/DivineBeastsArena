@@ -69,7 +69,7 @@ bool ADBACue_Tiger_Q::OnExecuteGameplayCue(AActor* Target, const FGameplayCuePar
 	{
 		if (UDBAAbilitySystemComponent* ASC = OwnerActor ? OwnerActor->FindComponentByClass<UDBAAbilitySystemComponent>())
 		{
-			ASC->OnSkillCueExecuted.Broadcast(SkillId, Target);
+			// ASC->OnSkillCueExecuted.Broadcast(SkillId, Target);
 		}
 	}
 

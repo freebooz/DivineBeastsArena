@@ -23,7 +23,9 @@ void ADBAZodiacCharacterBase::BeginPlay()
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
-		RpcHandler = GetWorld()->SpawnActor<ADBARpcHandler>(RpcHandlerClass, GetActorLocation(), FRotator::ZeroRotator, SpawnParams);
+		// 使用FTransform格式的SpawnActor重载
+		FTransform SpawnTransform(FRotator::ZeroRotator, GetActorLocation());
+		RpcHandler = GetWorld()->SpawnActor<ADBARpcHandler>(RpcHandlerClass, SpawnTransform, SpawnParams);
 		RpcHandler->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
 	}
 }
@@ -44,7 +46,12 @@ UDBAZodiacAnimInstance* ADBAZodiacCharacterBase::GetZodiacAnimInstance() const
 
 UDBAAbilitySystemComponent* ADBAZodiacCharacterBase::GetDBAAbilitySystemComponent() const
 {
-	return Cast<UDBAAbilitySystemComponent>(Super::GetAbilitySystemComponent());
+	// 从拥有者获取AbilitySystemComponent
+	if (AActor* Owner = GetOwner())
+	{
+		return Cast<UDBAAbilitySystemComponent>(Owner->FindComponentByClass<UDBAAbilitySystemComponent>());
+	}
+	return nullptr;
 }
 
 // ==================== Animation 实现 ====================
