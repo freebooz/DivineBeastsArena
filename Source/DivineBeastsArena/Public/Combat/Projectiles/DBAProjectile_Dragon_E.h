@@ -4,8 +4,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAProjectile_Dragon_E.generated.h"
 #include "DBA/Combat/DBASkillProjectileBase.h"
+#include "DBAProjectile_Dragon_E.generated.h"
 
 /**
  * ADBAProjectile_Dragon_E

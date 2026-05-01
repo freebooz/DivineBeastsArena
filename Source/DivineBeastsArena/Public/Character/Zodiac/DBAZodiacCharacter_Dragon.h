@@ -4,8 +4,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAZodiacCharacter_Dragon.generated.h"
 #include "Character/DBAZodiacCharacterBase.h"
+#include "DBAZodiacCharacter_Dragon.generated.h"
 
 /**
  * ADBAZodiacCharacter_Dragon

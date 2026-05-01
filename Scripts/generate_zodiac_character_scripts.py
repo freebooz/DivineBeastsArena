@@ -74,8 +74,8 @@ MONSTER_BASE_HEADER = """// Copyright Freebooz Games, Inc. All Rights Reserved.
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAMonsterBase.generated.h"
 #include "GameFramework/Character.h"
+#include "DBAMonsterBase.generated.h"
 
 class UDBAZodiacVFXComponent;
 
@@ -168,8 +168,8 @@ GUARDIAN_BASE_HEADER = """// Copyright Freebooz Games, Inc. All Rights Reserved.
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAGuardianBase.generated.h"
 #include "GameFramework/Actor.h"
+#include "DBAGuardianBase.generated.h"
 
 class UDBAZodiacVFXComponent;
 
@@ -261,8 +261,8 @@ MONSTER_HEADER = """// Copyright Freebooz Games, Inc. All Rights Reserved.
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAMonster_{monster}.generated.h"
 #include "Character/Monster/DBAMonsterBase.h"
+#include "DBAMonster_{monster}.generated.h"
 
 UCLASS(Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API ADBAMonster_{monster} : public ADBAMonsterBase
@@ -291,8 +291,8 @@ GUARDIAN_HEADER = """// Copyright Freebooz Games, Inc. All Rights Reserved.
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAGuardian_{guardian}.generated.h"
 #include "Character/Guardian/DBAGuardianBase.h"
+#include "DBAGuardian_{guardian}.generated.h"
 
 UCLASS(Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API ADBAGuardian_{guardian} : public ADBAGuardianBase
@@ -321,8 +321,8 @@ CHARACTER_BASE_HEADER = """// Copyright Freebooz Games, Inc. All Rights Reserved
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAZodiacCharacterBase.generated.h"
 #include "GameFramework/Character.h"
+#include "DBAZodiacCharacterBase.generated.h"
 
 class UDBAZodiacVFXComponent;
 class UDBAZodiacAnimInstance;
@@ -589,8 +589,8 @@ ANIM_INSTANCE_HEADER = """// Copyright Freebooz Games, Inc. All Rights Reserved.
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAZodiacAnimInstance.generated.h"
 #include "Animation/AnimInstance.h"
+#include "DBAZodiacAnimInstance.generated.h"
 
 /**
  * DBAZodiacAnimInstance
@@ -741,8 +741,8 @@ ZODIAC_CHARACTER_HEADER = """// Copyright Freebooz Games, Inc. All Rights Reserv
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAZodiacCharacter_{zodiac}.generated.h"
 #include "Character/DBAZodiacCharacterBase.h"
+#include "DBAZodiacCharacter_{zodiac}.generated.h"
 
 /**
  * ADBAZodiacCharacter_{zodiac}

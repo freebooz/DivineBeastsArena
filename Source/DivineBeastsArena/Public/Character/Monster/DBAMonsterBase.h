@@ -4,8 +4,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAMonsterBase.generated.h"
 #include "GameFramework/Character.h"
+#include "DBAMonsterBase.generated.h"
 
 class UDBAZodiacVFXComponent;
 

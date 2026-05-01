@@ -57,8 +57,8 @@ SKILL_VFX_COMPONENT_HEADER = """// Copyright Freebooz Games, Inc. All Rights Res
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAZodiacSkillVFXComponent_{zodiac}_{skill}.generated.h"
 #include "Components/ActorComponent.h"
+#include "DBAZodiacSkillVFXComponent_{zodiac}_{skill}.generated.h"
 
 class UParticleSystem;
 class USoundCue;

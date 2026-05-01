@@ -4,8 +4,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAMonster_Ghost.generated.h"
 #include "Character/Monster/DBAMonsterBase.h"
+#include "DBAMonster_Ghost.generated.h"
 
 UCLASS(Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API ADBAMonster_Ghost : public ADBAMonsterBase

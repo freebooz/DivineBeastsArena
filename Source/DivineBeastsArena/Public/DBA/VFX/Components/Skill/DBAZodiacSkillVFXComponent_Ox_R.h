@@ -4,8 +4,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAZodiacSkillVFXComponent_Ox_R.generated.h"
 #include "Components/ActorComponent.h"
+#include "DBAZodiacSkillVFXComponent_Ox_R.generated.h"
 
 class UParticleSystem;
 class USoundCue;

@@ -4,8 +4,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAGuardian_Statue.generated.h"
 #include "Character/Guardian/DBAGuardianBase.h"
+#include "DBAGuardian_Statue.generated.h"
 
 UCLASS(Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API ADBAGuardian_Statue : public ADBAGuardianBase

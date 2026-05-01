@@ -4,8 +4,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAZodiacAnimConfig_Ox.generated.h"
 #include "Animation/DBAAnimConfig.h"
+#include "DBAZodiacAnimConfig_Ox.generated.h"
 
 /**
  * UDBAZodiacAnimConfig_Ox

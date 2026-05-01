@@ -46,8 +46,8 @@ def generate_projectile(zodiac_id, zodiac_cn, skill_id, skill_name):
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAProjectile_{zodiac_id}_{skill_id}.generated.h"
 #include "DBA/Combat/DBASkillProjectileBase.h"
+#include "DBAProjectile_{zodiac_id}_{skill_id}.generated.h"
 
 /**
  * ADBAProjectile_{zodiac_id}_{skill_id}

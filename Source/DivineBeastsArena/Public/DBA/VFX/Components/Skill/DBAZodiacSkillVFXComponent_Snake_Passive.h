@@ -4,8 +4,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAZodiacSkillVFXComponent_Snake_Passive.generated.h"
 #include "Components/ActorComponent.h"
+#include "DBAZodiacSkillVFXComponent_Snake_Passive.generated.h"
 
 class UParticleSystem;
 class USoundCue;

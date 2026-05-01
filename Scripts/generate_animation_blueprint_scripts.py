@@ -121,8 +121,8 @@ ZODIAC_ANIM_CONFIG_H = """// Copyright Freebooz Games, Inc. All Rights Reserved.
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBAZodiacAnimConfig_{zodiac}.generated.h"
 #include "Animation/DBAAnimConfig.h"
+#include "DBAZodiacAnimConfig_{zodiac}.generated.h"
 
 /**
  * UDBAZodiacAnimConfig_{zodiac}
@@ -283,10 +283,16 @@ def main():
     project_root = Path(__file__).parent.parent / "Source" / "DivineBeastsArena"
 
     # 动画目录
-    anim_public_dir = project_root / "Public" / "Animation" / "Zodiac"
-    anim_private_dir = project_root / "Private" / "Animation" / "Zodiac"
+    anim_public_dir = project_root / "Public" / "Animation"
+    anim_private_dir = project_root / "Private" / "Animation"
     anim_public_dir.mkdir(parents=True, exist_ok=True)
     anim_private_dir.mkdir(parents=True, exist_ok=True)
+
+    # 生肖动画配置目录
+    zodiac_anim_public_dir = project_root / "Public" / "Animation" / "Zodiac"
+    zodiac_anim_private_dir = project_root / "Private" / "Animation" / "Zodiac"
+    zodiac_anim_public_dir.mkdir(parents=True, exist_ok=True)
+    zodiac_anim_private_dir.mkdir(parents=True, exist_ok=True)
 
     # 生成动画状态枚举
     with open(anim_public_dir / "DBAAnimState.h", "w", encoding="utf-8") as f:
@@ -302,8 +308,8 @@ def main():
     count = 0
     for zodiac_id, zodiac_cn in ZODIAC_TYPES:
         code = generate_zodiac_anim_config(zodiac_id, zodiac_cn)
-        header_path = anim_public_dir / f"DBAZodiacAnimConfig_{zodiac_id}.h"
-        cpp_path = anim_private_dir / f"DBAZodiacAnimConfig_{zodiac_id}.cpp"
+        header_path = zodiac_anim_public_dir / f"DBAZodiacAnimConfig_{zodiac_id}.h"
+        cpp_path = zodiac_anim_private_dir / f"DBAZodiacAnimConfig_{zodiac_id}.cpp"
         with open(header_path, "w", encoding="utf-8") as f:
             f.write(code["header"])
         with open(cpp_path, "w", encoding="utf-8") as f:
