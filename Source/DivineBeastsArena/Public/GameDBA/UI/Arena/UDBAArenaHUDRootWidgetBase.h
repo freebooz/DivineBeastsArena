@@ -56,46 +56,46 @@ protected:
 	void BP_OnApplyFiveCampTheme(uint8 FiveCamp);
 
 protected:
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
 	TObjectPtr<UDBAPlayerUnitFrameWidgetBase> PlayerUnitFrame;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
 	TObjectPtr<UDBAAbilityBarWidgetBase> AbilityBar;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
 	TObjectPtr<UDBAPassiveAndResonancePanelWidgetBase> PassiveAndResonancePanel;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
 	TObjectPtr<UDBABuffBarWidgetBase> BuffBar;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
 	TObjectPtr<UDBADebuffBarWidgetBase> DebuffBar;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
 	TObjectPtr<UDBACCBarWidgetBase> CCBar;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
 	TObjectPtr<UDBASelfCastBarWidgetBase> SelfCastBar;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
 	TObjectPtr<UDBAMomentumPanelWidgetBase> MomentumPanel;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
 	TObjectPtr<UDBAChainUltimatePanelWidgetBase> ChainUltimatePanel;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
 	TObjectPtr<UDBACombatAnnouncementWidgetBase> CombatAnnouncement;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
 	TObjectPtr<UDBACriticalStateHintWidgetBase> CriticalStateHint;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
 	TObjectPtr<UDBAUltimateReadyPromptWidgetBase> UltimateReadyPrompt;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
 	TObjectPtr<UDBAConnectionWarningWidgetBase> ConnectionWarning;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
 	TObjectPtr<UDBAArenaObjectiveTrackerWidgetBase> ObjectiveTracker;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD")

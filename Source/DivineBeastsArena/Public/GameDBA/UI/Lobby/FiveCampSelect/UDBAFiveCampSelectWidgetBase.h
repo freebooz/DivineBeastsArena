@@ -54,7 +54,7 @@ protected:
 	void BP_OnConfirmButtonStateChanged(bool bCanConfirm);
 
 protected:
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|FiveCampSelect", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|FiveCampSelect", meta = (BindWidgetOptional))
 	TObjectPtr<UDBAFiveCampInfoPanelWidgetBase> FiveCampInfoPanel;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|FiveCampSelect")

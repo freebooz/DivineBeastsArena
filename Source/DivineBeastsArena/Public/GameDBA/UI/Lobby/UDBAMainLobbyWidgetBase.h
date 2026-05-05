@@ -28,6 +28,7 @@ protected:
 	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual void TryBindWidgetController() override;
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby")
@@ -68,10 +69,10 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby")
 	TObjectPtr<UDBAMainLobbyWidgetController> WidgetController;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
 	TObjectPtr<UDBAPartyPanelWidgetBase> PartyPanel;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
 	TObjectPtr<UDBAQueueModeSelectWidgetBase> QueueModeSelect;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby")

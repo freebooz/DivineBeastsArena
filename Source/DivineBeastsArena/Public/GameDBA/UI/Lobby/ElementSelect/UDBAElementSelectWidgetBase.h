@@ -55,10 +55,10 @@ protected:
 	void BP_OnConfirmButtonStateChanged(bool bCanConfirm);
 
 protected:
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ElementSelect", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ElementSelect", meta = (BindWidgetOptional))
 	TObjectPtr<UDBAElementInfoPanelWidgetBase> ElementInfoPanel;
 
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ElementSelect", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ElementSelect", meta = (BindWidgetOptional))
 	TObjectPtr<UDBAFixedSkillGroupPreviewWidgetBase> SkillGroupPreview;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ElementSelect")

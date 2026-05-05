@@ -50,7 +50,7 @@ protected:
 	void BP_OnConfirmButtonStateChanged(bool bCanConfirm);
 
 protected:
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|HeroSelect", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|HeroSelect", meta = (BindWidgetOptional))
 	TObjectPtr<UDBAHeroInfoPanelWidgetBase> HeroInfoPanel;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|HeroSelect")

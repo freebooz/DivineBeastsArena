@@ -47,7 +47,7 @@ protected:
 	void BP_OnGatePromptShown(bool bIsLocked, const FText& UnlockCondition);
 
 protected:
-	UPROPERTY(BlueprintReadOnly, Category = "DBA|NewbieVillage", meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|NewbieVillage", meta = (BindWidgetOptional))
 	TObjectPtr<UDBANewbieTaskTrackerWidgetBase> TaskTracker;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|NewbieVillage")

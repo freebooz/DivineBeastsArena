@@ -1,9 +1,9 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/UDBAMainLobbyWidgetBase.h"
-#include "Client/UI/Lobby/UDBAMainLobbyWidgetController.h"
-#include "Client/UI/Lobby/UDBAPartyPanelWidgetBase.h"
-#include "Client/UI/Lobby/UDBAQueueModeSelectWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetController.h"
+#include "GameDBA/UI/Lobby/UDBAPartyPanelWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBAQueueModeSelectWidgetBase.h"
 
 UDBAMainLobbyWidgetBase::UDBAMainLobbyWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -14,6 +14,7 @@ UDBAMainLobbyWidgetBase::UDBAMainLobbyWidgetBase(const FObjectInitializer& Objec
 void UDBAMainLobbyWidgetBase::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
+	TryBindWidgetController();
 }
 
 void UDBAMainLobbyWidgetBase::NativeConstruct()
@@ -26,6 +27,16 @@ void UDBAMainLobbyWidgetBase::NativeConstruct()
 void UDBAMainLobbyWidgetBase::NativeDestruct()
 {
 	Super::NativeDestruct();
+}
+
+void UDBAMainLobbyWidgetBase::TryBindWidgetController()
+{
+	// 自动获取Controller - 子类实现具体逻辑
+	// 默认从WidgetTree中查找对应Controller
+	if (UObject* Controller = GetWidgetTreeParent.Get())
+	{
+		SetWidgetController(Cast<UDBAMainLobbyWidgetController>(Controller));
+	}
 }
 
 void UDBAMainLobbyWidgetBase::SetWidgetController(UDBAMainLobbyWidgetController* InController)

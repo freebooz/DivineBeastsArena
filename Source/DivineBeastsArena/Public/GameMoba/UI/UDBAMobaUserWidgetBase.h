@@ -32,4 +32,11 @@ protected:
 	/** HUD 层级（数值越大越靠前） */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MobaBase|UI")
 	int32 ZOrder = 0;
+
+	/**
+	 * 自动获取WidgetController
+	 * 子类重写此方法提供自定义Controller类型
+	 */
+	UFUNCTION(BlueprintCallable, Category = "MobaBase|UI")
+	virtual void TryBindWidgetController();
 };

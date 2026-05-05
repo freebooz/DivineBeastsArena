@@ -6,3 +6,8 @@ UDBAMobaUserWidgetBase::UDBAMobaUserWidgetBase(const FObjectInitializer& ObjectI
 	: Super(ObjectInitializer)
 {
 }
+
+void UDBAMobaUserWidgetBase::TryBindWidgetController()
+{
+	// 子类重写实现自动绑定逻辑
+}

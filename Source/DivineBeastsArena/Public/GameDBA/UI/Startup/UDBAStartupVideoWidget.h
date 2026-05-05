@@ -66,11 +66,11 @@ private:
 	TObjectPtr<UMediaPlayer> MediaPlayer;
 
 	/** 跳过提示文本 */
-	UPROPERTY( meta = (BindWidget) )
+	UPROPERTY( meta = (BindWidgetOptional) )
 	TObjectPtr<UTextBlock> SkipHintText;
 
 	/** 跳过按钮（透明全屏） */
-	UPROPERTY( meta = (BindWidget) )
+	UPROPERTY( meta = (BindWidgetOptional) )
 	TObjectPtr<UButton> SkipButton;
 
 	/** 提示文字 */
