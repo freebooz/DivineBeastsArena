@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "GameMoba/RPC/DBARpcHandler.h"
 #include "GameDBA/Core/DBAEnumsCore.h"
+#include "GameDBA/Combat/DBACombatTypes.h"
 #include "DBAZodiacCharacterBase.generated.h"
 
 class UDBAZodiacAnimInstance;
@@ -122,6 +123,21 @@ protected:
 	EDBAElementType ElementType = EDBAElementType::None;
 
 public:
+	// ==================== 移动配置 ====================
+
+	/** 最大行走速度 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Movement", meta = (UIMin = 100.0, UIMax = 1200.0))
+	float MaxWalkSpeed = 600.0f;
+
+	/** 最大奔跑速度 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Movement", meta = (UIMin = 100.0, UIMax = 1500.0))
+	float MaxRunSpeed = 900.0f;
+
+	/** 停止减速度 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Movement")
+	float BrakingDeceleration = 2048.0f;
+
+public:
 	// ==================== RPC 相关 ====================
 
 	/** RPC 处理器类 */
@@ -131,6 +147,25 @@ public:
 	/** RPC 处理器实例 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RPC")
 	ADBARpcHandler* RpcHandler;
+
+public:
+	// ==================== 死亡状态 ====================
+
+	/** 获取死亡状态 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Death")
+	EDADeathState GetDeathState() const { return DeathState; }
+
+	/** 是否已死亡 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Death")
+	bool IsDead() const { return DeathState == EDADeathState::Dead || DeathState == EDADeathState::Dying; }
+
+	/** 触发死亡 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Death")
+	void OnDeath();
+
+	/** 复活 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Death")
+	void OnRevive();
 
 public:
 	// ==================== 复制属性 ====================
@@ -146,4 +181,8 @@ public:
 	/** 当前共鸣等级 */
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Combat")
 	int32 ResonanceLevel = 0;
+
+	/** 死亡状态 */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Death")
+	EDADeathState DeathState = EDADeathState::Alive;
 };

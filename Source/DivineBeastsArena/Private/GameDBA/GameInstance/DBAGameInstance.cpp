@@ -1,7 +1,7 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 // 游戏实例实现 - 管理游戏生命周期和子系统
 
-#include "DBAGameInstance.h"
+#include "GameDBA/GameInstance/DBAGameInstance.h"
 #include "GameCore/Subsystems/DBAGameInstanceSubsystemBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameDBA/Core/DBALogChannels.h"

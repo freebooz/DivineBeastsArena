@@ -70,4 +70,8 @@ public:
     /** 服务端拒绝命中 (验证失败) */
     UFUNCTION(Client, Reliable)
     virtual void ClientHitRejected(FGameplayAbilitySpecHandle AbilityHandle) = 0;
+
+    /** 服务端确认命中（带暴击标志） */
+    UFUNCTION(Client, Reliable)
+    virtual void ClientHitConfirmedWithCritical(FGameplayAbilitySpecHandle AbilityHandle, float Damage, FGameplayTag DamageType, bool bIsCritical, FVector_NetQuantize10 HitLocation) = 0;
 };

@@ -2,6 +2,9 @@
 
 #include "GameDBA/Combat/DBADamageCalculator.h"
 #include "GameDBA/Core/DBAConstants.h"
+#include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
+#include "GameDBA/Character/DBAZodiacCharacterBase.h"
+#include "AbilitySystemComponent.h"
 
 float UDBADamageCalculator::CalculateDamage(
 	float BaseDamage,
@@ -111,4 +114,98 @@ float UDBADamageCalculator::GetChainMultiplier(int32 ChainLevel)
 bool UDBADamageCalculator::IsChainFinal(int32 ChainLevel)
 {
 	return ChainLevel >= 10;
+}
+
+float UDBADamageCalculator::CalculateFinalDamage(
+	float BaseDamage,
+	EDBAElement AttackElement,
+	EDBAElement DefenseElement,
+	int32 ResonanceLevel,
+	int32 ChainLevel,
+	float Defense,
+	float CriticalRate,
+	float CriticalMultiplier,
+	bool& OutbIsCritical)
+{
+	// 1. 计算元素克制
+	float ElementMultiplier = GetElementMultiplier(AttackElement, DefenseElement);
+	float Damage = BaseDamage * ElementMultiplier;
+
+	// 2. 计算共鸣加成
+	float ResonanceBonus = GetResonanceBonus(ResonanceLevel);
+	Damage *= (1.0f + ResonanceBonus);
+
+	// 3. 计算连锁加成
+	if (IsChainFinal(ChainLevel))
+	{
+		// 终结连锁返回特殊值，实际伤害在调用处按最大生命计算
+		// 这里不做终结连锁的最终计算，由调用者处理
+	}
+	else
+	{
+		float ChainMultiplier = GetChainMultiplier(ChainLevel);
+		Damage *= ChainMultiplier;
+	}
+
+	// 4. 计算防御减免
+	float PhysicalReduction = Defense / (Defense + 100.0f);
+	Damage *= (1.0f - PhysicalReduction);
+
+	// 5. 暴击判定
+	OutbIsCritical = FMath::FRand() < CriticalRate;
+	if (OutbIsCritical)
+	{
+		Damage *= CriticalMultiplier;
+	}
+
+	return FMath::Max(Damage, 0.0f);
+}
+
+void UDBADamageCalculator::ApplyDamageToTarget(
+	AActor* Attacker,
+	AActor* Target,
+	float FinalDamage,
+	EDBAElement Element,
+	bool bIsCritical)
+{
+	if (!Target || !Attacker)
+	{
+		return;
+	}
+
+	// 获取目标的AbilitySystemComponent
+	UAbilitySystemComponent* TargetASC = Target->FindComponentByClass<UAbilitySystemComponent>();
+	if (!TargetASC)
+	{
+		return;
+	}
+
+	// 创建GameplayEffectContext用于伤害传递
+	FGameplayEffectContextHandle EffectContext = TargetASC->MakeEffectContext();
+	EffectContext.AddSourceObject(Attacker);
+
+	// 应用伤害GameplayEffect
+	// 注意：这里需要通过GameplayEffect来应用伤害，而不是直接修改属性
+	// 具体实现取决于游戏设计的伤害效果蓝图
+	FGameplayTag DamageTag = FGameplayTag::RequestGameplayTag(FName("Damage.Physical"));
+
+	// 临时实现：直接通过AttributeSet应用伤害
+	// 在实际项目中应该通过GameplayEffect来做
+	UDBABattleAttributeSet* BattleAttrSet = Cast<UDBABattleAttributeSet>(TargetASC->GetAttributeSet(UDBABattleAttributeSet::StaticClass()));
+	if (BattleAttrSet)
+	{
+		float CurrentHealth = BattleAttrSet->GetCurrentHealth();
+		BattleAttrSet->SetCurrentHealth(FMath::Max(CurrentHealth - FinalDamage, 0.0f));
+	}
+
+	// 检查目标是否死亡
+	ADBAZodiacCharacterBase* ZodiacChar = Cast<ADBAZodiacCharacterBase>(Target);
+	if (ZodiacChar)
+	{
+		float CurrentHealth = ZodiacChar->GetCurrentHealth();
+		if (CurrentHealth <= 0.0f)
+		{
+			ZodiacChar->OnDeath();
+		}
+	}
 }

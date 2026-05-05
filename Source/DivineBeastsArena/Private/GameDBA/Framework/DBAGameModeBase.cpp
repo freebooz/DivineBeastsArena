@@ -1,7 +1,7 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 // 神兽竞技场 - 基础 GameMode 实现
 
-#include "DBAGameModeBase.h"
+#include "GameDBA/Framework/DBAGameModeBase.h"
 #include "GameDBA/Core/DBALogChannels.h"
 
 // 构造函数 - 初始化游戏模式基础配置

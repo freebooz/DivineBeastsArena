@@ -68,6 +68,9 @@ public:
     UFUNCTION(Client, Reliable)
     virtual void ClientHitRejected_Implementation(FGameplayAbilitySpecHandle AbilityHandle);
 
+    UFUNCTION(Client, Reliable)
+    virtual void ClientHitConfirmedWithCritical_Implementation(FGameplayAbilitySpecHandle AbilityHandle, float Damage, FGameplayTag DamageType, bool bIsCritical, FVector_NetQuantize10 HitLocation);
+
 protected:
     /** 验证能量是否足够 */
     bool ValidateEnergyCost(float Cost) const;
@@ -77,4 +80,13 @@ protected:
 
     /** 验证距离是否在技能范围内 */
     bool ValidateCastRange(AActor* Target, float Range) const;
+
+    /** 查找攻击目标 */
+    AActor* FindAttackTarget(ADBAZodiacCharacterBase* Character) const;
+
+    /** 计算普攻伤害 */
+    float CalculateAttackDamage(ADBAZodiacCharacterBase* Attacker, AActor* Target, bool& OutbIsCritical) const;
+
+    /** 判断是否是敌方 */
+    bool IsEnemy(AActor* ActorA, AActor* ActorB) const;
 };

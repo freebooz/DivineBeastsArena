@@ -72,4 +72,47 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Damage")
 	static bool IsChainFinal(int32 ChainLevel);
+
+	/**
+	 * 计算最终伤害（包含防御减免和暴击）
+	 *
+	 * @param BaseDamage 基础伤害
+	 * @param AttackElement 攻击方元素
+	 * @param DefenseElement 防御方元素
+	 * @param ResonanceLevel 共鸣等级 (0-4)
+	 * @param ChainLevel 连锁等级 (0-10)
+	 * @param Defense 防御力
+	 * @param CriticalRate 暴击率 (0-1)
+	 * @param CriticalMultiplier 暴击倍率
+	 * @param OutbIsCritical 输出参数，是否暴击
+	 * @return 最终伤害值
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Damage")
+	static float CalculateFinalDamage(
+		float BaseDamage,
+		EDBAElement AttackElement,
+		EDBAElement DefenseElement,
+		int32 ResonanceLevel,
+		int32 ChainLevel,
+		float Defense,
+		float CriticalRate,
+		float CriticalMultiplier,
+		bool& OutbIsCritical);
+
+	/**
+	 * 应用伤害到目标
+	 *
+	 * @param Attacker 攻击者
+	 * @param Target 目标
+	 * @param FinalDamage 最终伤害
+	 * @param Element 元素类型
+	 * @param bIsCritical 是否暴击
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Damage")
+	static void ApplyDamageToTarget(
+		AActor* Attacker,
+		AActor* Target,
+		float FinalDamage,
+		EDBAElement Element,
+		bool bIsCritical);
 };

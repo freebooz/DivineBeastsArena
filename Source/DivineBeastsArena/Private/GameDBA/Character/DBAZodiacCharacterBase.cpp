@@ -13,6 +13,15 @@ ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
 	// 配置碰撞
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
 	GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh"));
+
+	// 配置移动速度
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		Movement->MaxWalkSpeed = MaxWalkSpeed;
+		Movement->MaxWalkSpeedCrouched = MaxWalkSpeed;
+		Movement->MaxRunSpeed = MaxRunSpeed;
+		Movement->BrakingDecelerationWalking = BrakingDeceleration;
+	}
 }
 
 void ADBAZodiacCharacterBase::BeginPlay()
@@ -144,5 +153,31 @@ void ADBAZodiacCharacterBase::SetAnimMoveSpeed(float Speed)
 	if (UDBAZodiacAnimInstance* AnimInst = GetZodiacAnimInstance())
 	{
 		AnimInst->SetMoveSpeed(Speed);
+	}
+}
+
+// ==================== 死亡状态实现 ====================
+
+void ADBAZodiacCharacterBase::OnDeath()
+{
+	if (HasAuthority())
+	{
+		DeathState = EDADeathState::Dying;
+		PlayDeathAnimation();
+
+		// 延迟设置为Dead状态，等待死亡动画播放
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			DeathState = EDADeathState::Dead;
+		});
+	}
+}
+
+void ADBAZodiacCharacterBase::OnRevive()
+{
+	if (HasAuthority())
+	{
+		DeathState = EDADeathState::Alive;
+		// 重置生命值逻辑由调用者负责
 	}
 }
