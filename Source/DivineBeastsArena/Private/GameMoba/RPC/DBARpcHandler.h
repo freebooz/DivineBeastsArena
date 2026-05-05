@@ -52,6 +52,22 @@ public:
     UFUNCTION(Client, Reliable)
     virtual void ClientAbilityFailed_Implementation(FGameplayAbilitySpecHandle Handle, FGameplayTag FailureTag);
 
+    // ==================== 新增 IDBARpcInterface 客户端回调 ====================
+    UFUNCTION(Client, Reliable)
+    virtual void ClientReportHit_Implementation(FGameplayAbilitySpecHandle AbilityHandle, FVector_NetQuantize10 HitLocation, AActor* HitActor);
+
+    UFUNCTION(Client, Reliable)
+    virtual void ClientFullStateSync_Implementation(float Health, float Energy, float Shield, float UltimateEnergy, int32 ChainLevel, int32 ResonanceLevel);
+
+    UFUNCTION(Client, Reliable)
+    virtual void ClientMoveCorrection_Implementation(FVector_NetQuantize10 ServerLocation, float ServerTime);
+
+    UFUNCTION(Client, Reliable)
+    virtual void ClientHitConfirmed_Implementation(FGameplayAbilitySpecHandle AbilityHandle, float Damage, FGameplayTag DamageType);
+
+    UFUNCTION(Client, Reliable)
+    virtual void ClientHitRejected_Implementation(FGameplayAbilitySpecHandle AbilityHandle);
+
 protected:
     /** 验证能量是否足够 */
     bool ValidateEnergyCost(float Cost) const;

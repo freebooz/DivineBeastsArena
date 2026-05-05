@@ -6,6 +6,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "GameMoba/RPC/DBARpcHandler.h"
+#include "GameDBA/Core/DBAEnumsCore.h"
 #include "DBAZodiacCharacterBase.generated.h"
 
 class UDBAZodiacAnimInstance;
@@ -40,6 +41,56 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character")
 	UDBAAbilitySystemComponent* GetDBAAbilitySystemComponent() const;
 
+	/** 获取RPC处理器 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character")
+	ADBARpcHandler* GetRpcHandler() const { return RpcHandler; }
+
+public:
+	// ==================== 属性访问 ====================
+
+	/** 获取当前生命值 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	float GetCurrentHealth() const;
+
+	/** 获取最大生命值 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	float GetMaxHealth() const;
+
+	/** 获取当前能量 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	float GetCurrentEnergy() const;
+
+	/** 获取终极能量 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	float GetUltimateEnergy() const { return UltimateEnergy; }
+
+	/** 获取连锁等级 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	int32 GetChainLevel() const { return ChainLevel; }
+
+	/** 获取共鸣等级 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	int32 GetResonanceLevel() const { return ResonanceLevel; }
+
+public:
+	// ==================== 属性修改 ====================
+
+	/** 设置终极能量 (服务端调用) */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	void SetUltimateEnergy(float Value);
+
+	/** 增加终极能量 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	void AddUltimateEnergy(float Delta);
+
+	/** 增加连锁等级 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	void AddChainLevel(int32 Delta);
+
+	/** 重置连锁等级 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	void ResetChainLevel();
+
 public:
 	// ==================== 动画接口 ====================
 
@@ -62,13 +113,13 @@ public:
 protected:
 	// ==================== 配置 ====================
 
-	/** 角色元素类型 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Config")
-	FName ElementType = FName(TEXT("Fire"));
-
 	/** 角色生肖类型 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Config")
-	FName ZodiacType = FName(TEXT("None"));
+	EDBAZodiacType ZodiacType = EDBAZodiacType::None;
+
+	/** 角色元素类型 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Config")
+	EDBAElementType ElementType = EDBAElementType::None;
 
 public:
 	// ==================== RPC 相关 ====================
@@ -80,4 +131,19 @@ public:
 	/** RPC 处理器实例 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RPC")
 	ADBARpcHandler* RpcHandler;
+
+public:
+	// ==================== 复制属性 ====================
+
+	/** 终极能量 (用于终极技能) */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Combat")
+	float UltimateEnergy = 0.0f;
+
+	/** 当前连锁等级 */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Combat")
+	int32 ChainLevel = 0;
+
+	/** 当前共鸣等级 */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Combat")
+	int32 ResonanceLevel = 0;
 };

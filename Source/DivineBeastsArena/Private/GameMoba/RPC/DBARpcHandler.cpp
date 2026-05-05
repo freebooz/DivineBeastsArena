@@ -1,7 +1,7 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 #include "GameMoba/RPC/DBARpcHandler.h"
 #include "GameDBA/GAS/DBAAbilitySystemComponent.h"
-#include "Character/DBAZodiacCharacterBase.h"
+#include "GameDBA/Character/DBAZodiacCharacterBase.h"
 
 ADBARpcHandler::ADBARpcHandler()
 {
@@ -126,4 +126,29 @@ void ADBARpcHandler::ClientAbilityActivated_Implementation(FGameplayAbilitySpecH
 void ADBARpcHandler::ClientAbilityFailed_Implementation(FGameplayAbilitySpecHandle Handle, FGameplayTag FailureTag)
 {
     // 客户端显示技能失败
+}
+
+void ADBARpcHandler::ClientReportHit_Implementation(FGameplayAbilitySpecHandle AbilityHandle, FVector_NetQuantize10 HitLocation, AActor* HitActor)
+{
+    // 服务端收到客户端报告的命中，开始验证
+}
+
+void ADBARpcHandler::ClientFullStateSync_Implementation(float Health, float Energy, float Shield, float UltimateEnergy, int32 ChainLevel, int32 ResonanceLevel)
+{
+    // 客户端收到完整状态同步，用于断线重连后恢复状态
+}
+
+void ADBARpcHandler::ClientMoveCorrection_Implementation(FVector_NetQuantize10 ServerLocation, float ServerTime)
+{
+    // 客户端收到服务端位置校正，平滑移动到正确位置
+}
+
+void ADBARpcHandler::ClientHitConfirmed_Implementation(FGameplayAbilitySpecHandle AbilityHandle, float Damage, FGameplayTag DamageType)
+{
+    // 服务端确认命中，客户端播放命中特效
+}
+
+void ADBARpcHandler::ClientHitRejected_Implementation(FGameplayAbilitySpecHandle AbilityHandle)
+{
+    // 服务端拒绝命中，客户端撤销之前预判的命中效果
 }

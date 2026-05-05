@@ -51,4 +51,23 @@ class DIVINEBEASTSARENA_API IDBARpcInterface
 {
     GENERATED_BODY()
 public:
+    /** 客户端报告命中 (用于客户端预判+服务端验证) */
+    UFUNCTION(Client, Reliable)
+    virtual void ClientReportHit(FGameplayAbilitySpecHandle AbilityHandle, FVector_NetQuantize10 HitLocation, AActor* HitActor) = 0;
+
+    /** 服务端推送完整状态同步 (用于断线重连) */
+    UFUNCTION(Client, Reliable)
+    virtual void ClientFullStateSync(float Health, float Energy, float Shield, float UltimateEnergy, int32 ChainLevel, int32 ResonanceLevel) = 0;
+
+    /** 服务端推送移动校正 */
+    UFUNCTION(Client, Reliable)
+    virtual void ClientMoveCorrection(FVector_NetQuantize10 ServerLocation, float ServerTime) = 0;
+
+    /** 服务端验证命中结果 */
+    UFUNCTION(Client, Reliable)
+    virtual void ClientHitConfirmed(FGameplayAbilitySpecHandle AbilityHandle, float Damage, FGameplayTag DamageType) = 0;
+
+    /** 服务端拒绝命中 (验证失败) */
+    UFUNCTION(Client, Reliable)
+    virtual void ClientHitRejected(FGameplayAbilitySpecHandle AbilityHandle) = 0;
 };

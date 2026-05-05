@@ -3,6 +3,7 @@
 
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
 #include "GameDBA/GAS/DBAAbilitySystemComponent.h"
+#include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "Components/CapsuleComponent.h"
 
 ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
@@ -54,8 +55,66 @@ UDBAAbilitySystemComponent* ADBAZodiacCharacterBase::GetDBAAbilitySystemComponen
 	return nullptr;
 }
 
-// ==================== Animation 实现 ====================
+// ==================== 属性访问实现 ====================
 
+float ADBAZodiacCharacterBase::GetCurrentHealth() const
+{
+	if (UDBAAbilitySystemComponent* ASC = GetDBAAbilitySystemComponent())
+	{
+		return ASC->GetNumericAttributeBase(UDBABattleAttributeSet::GetCurrentHealthAttribute());
+	}
+	return 0.0f;
+}
+
+float ADBAZodiacCharacterBase::GetMaxHealth() const
+{
+	if (UDBAAbilitySystemComponent* ASC = GetDBAAbilitySystemComponent())
+	{
+		return ASC->GetNumericAttributeBase(UDBABattleAttributeSet::GetMaxHealthAttribute());
+	}
+	return 0.0f;
+}
+
+float ADBAZodiacCharacterBase::GetCurrentEnergy() const
+{
+	if (UDBAAbilitySystemComponent* ASC = GetDBAAbilitySystemComponent())
+	{
+		return ASC->GetNumericAttributeBase(UDBABattleAttributeSet::GetCurrentEnergyAttribute());
+	}
+	return 0.0f;
+}
+
+void ADBAZodiacCharacterBase::SetUltimateEnergy(float Value)
+{
+	if (HasAuthority())
+	{
+		UltimateEnergy = FMath::Clamp(Value, 0.0f, 100.0f);
+	}
+}
+
+void ADBAZodiacCharacterBase::AddUltimateEnergy(float Delta)
+{
+	if (HasAuthority())
+	{
+		UltimateEnergy = FMath::Clamp(UltimateEnergy + Delta, 0.0f, 100.0f);
+	}
+}
+
+void ADBAZodiacCharacterBase::AddChainLevel(int32 Delta)
+{
+	if (HasAuthority())
+	{
+		ChainLevel = FMath::Clamp(ChainLevel + Delta, 0, 10);
+	}
+}
+
+void ADBAZodiacCharacterBase::ResetChainLevel()
+{
+	if (HasAuthority())
+	{
+		ChainLevel = 0;
+	}
+}
 void ADBAZodiacCharacterBase::PlayAttackAnimation()
 {
 	if (UDBAZodiacAnimInstance* Anim = GetZodiacAnimInstance())
