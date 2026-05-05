@@ -4,7 +4,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBA/GAS/Abilities/DBAElementAbilityBase.h"
+#include "GameDBA/GAS/Abilities/DBAElementAbilityBase.h"
 #include "DBAGameplayAbility_Snake_W.generated.h"
 
 UCLASS()

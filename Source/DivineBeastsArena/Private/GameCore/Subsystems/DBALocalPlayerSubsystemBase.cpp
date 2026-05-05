@@ -1,0 +1,31 @@
+// Copyright FreeboozStudio. All Rights Reserved.
+
+#include "GameCore/Subsystems/DBALocalPlayerSubsystemBase.h"
+#include "GameCore/DBALogChannels.h"
+
+void UDBALocalPlayerSubsystemBase::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+	bIsInitialized = false;
+	OnSubsystemInitialize();
+	bIsInitialized = true;
+	UE_LOG(LogDBACore, Log, TEXT("[%s] 已初始化"), *GetSubsystemDisplayName());
+}
+
+void UDBALocalPlayerSubsystemBase::Deinitialize()
+{
+	UE_LOG(LogDBACore, Log, TEXT("[%s] 正在反初始化"), *GetSubsystemDisplayName());
+	CancelAllAsyncOperations();
+	OnSubsystemDeinitialize();
+	Super::Deinitialize();
+}
+
+bool UDBALocalPlayerSubsystemBase::ShouldCreateSubsystem(UObject* Outer) const
+{
+	return IsSupportedInCurrentEnvironment();
+}
+
+bool UDBALocalPlayerSubsystemBase::IsSupportedInCurrentEnvironment() const
+{
+	return true;
+}

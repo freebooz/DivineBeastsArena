@@ -2,9 +2,9 @@
 // 游戏实例实现 - 管理游戏生命周期和子系统
 
 #include "DBAGameInstance.h"
-#include "Common/Subsystems/DBAGameInstanceSubsystemBase.h"
+#include "GameCore/Subsystems/DBAGameInstanceSubsystemBase.h"
 #include "Kismet/GameplayStatics.h"
-#include "Common/DBALogChannels.h"
+#include "GameDBA/Core/DBALogChannels.h"
 
 // 构造函数 - 初始化游戏实例
 UDBAGameInstance::UDBAGameInstance()

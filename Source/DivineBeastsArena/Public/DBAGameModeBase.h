@@ -4,7 +4,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MobaBase/Framework/DBAMobaGameModeBase.h"
+#include "GameMoba/Framework/DBAMobaGameModeBase.h"
 #include "DBAGameModeBase.generated.h"
 
 /**

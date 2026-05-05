@@ -1,0 +1,18 @@
+// Copyright Freebooz Games, Inc. All Rights Reserved.
+// GameplayEffect - 羊终极技能
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameDBA/GAS/Effects/DBAGE_Base.h"
+#include "GameDBA/Data/DBASkillDataRow.h"
+#include "DBAGE_Goat_R.generated.h"
+
+UCLASS()
+class DIVINEBEASTSARENA_API UDBAGE_Goat_R : public UDBAGE_Base
+{
+	GENERATED_BODY()
+
+public:
+	UDBAGE_Goat_R();
+};
