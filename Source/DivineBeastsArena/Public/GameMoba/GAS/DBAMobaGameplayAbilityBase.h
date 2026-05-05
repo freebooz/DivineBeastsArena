@@ -139,6 +139,12 @@ public:
 	 */
 	float GetCooldownTimeRemaining(const FGameplayAbilityActorInfo* ActorInfo) const override;
 
+	/**
+	 * 应用冷却效果
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Ability|Cooldown")
+	void ApplyCooldown(float Duration);
+
 	// ========================================
 	// 伤害计算辅助函数
 	// ========================================
@@ -158,11 +164,29 @@ public:
 	float ApplyCriticalHit(float Damage, float CriticalRate, float CriticalMultiplier) const;
 
 	/**
+	 * 获取元素克制倍率
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Ability|Combat")
+	float GetElementMultiplier(EDBAElement AttackElement, EDBAElement DefenseElement) const;
+
+	/**
+	 * 获取连锁加成
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Ability|Combat")
+	float GetChainBonus(int32 ChainLevel) const;
+
+	/**
 	 * 对目标应用伤害
 	 * 服务端权威调用
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Ability|Combat")
 	void ApplyDamageToTarget(AActor* TargetActor, float BaseDamage, const FGameplayTagContainer& DamageTags);
+
+	/**
+	 * 检查是否在施法范围内
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Ability|Target")
+	bool IsInCastRange(AActor* Target, float CastRange) const;
 
 	/**
 	 * 对目标触发 GameplayCue
@@ -204,4 +228,32 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, Category = "Ability")
 	void OnServerActivate();
 	virtual void OnServerActivate_Implementation();
+
+public:
+	/** 获取技能ID */
+	UFUNCTION(BlueprintCallable, Category = "Ability|Feedback")
+	FName GetSkillID() const { return SkillID; }
+
+	/** 设置技能ID */
+	UFUNCTION(BlueprintCallable, Category = "Ability|Feedback")
+	void SetSkillID(FName InSkillID) { SkillID = InSkillID; }
+
+	/**
+	 * 技能释放回调
+	 * 在技能释放时调用，可用于触发释放特效和音效
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Ability|Feedback")
+	void NotifyAbilityReleased(AActor* Caster, FVector Location, FRotator Direction);
+
+	/**
+	 * 技能命中回调
+	 * 在技能命中目标时调用，可用于触发命中特效和伤害数字
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Ability|Feedback")
+	void NotifyAbilityHit(AActor* Target, float Damage, bool bIsCritical, FVector ImpactPoint);
+
+protected:
+	/** 技能ID */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ability|Feedback")
+	FName SkillID;
 };

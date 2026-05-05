@@ -44,6 +44,15 @@ void UDBAAbilitySystemComponent::BeginPlay()
 				1.0f,    // 每秒回复1点终极能量
 				true     // 循环执行
 			);
+
+			// 启动冷却同步计时器 (用于观战系统)
+			World->GetTimerManager().SetTimer(
+				CooldownSyncTimerHandle,
+				this,
+				&UDBAAbilitySystemComponent::SyncCooldownsToCharacter,
+				CooldownSyncInterval,
+				true     // 循环执行
+			);
 		}
 	}
 }
@@ -57,6 +66,7 @@ void UDBAAbilitySystemComponent::EndPlay(const EEndPlayReason::Type EndPlayReaso
 	{
 		World->GetTimerManager().ClearTimer(UltimateEnergyRegenTimerHandle);
 		World->GetTimerManager().ClearTimer(ChainResetTimerHandle);
+		World->GetTimerManager().ClearTimer(CooldownSyncTimerHandle);
 	}
 
 	Super::EndPlay(EndPlayReason);
@@ -175,7 +185,17 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 	}
 
 	// 共鸣等级：2个以上同元素技能触发共鸣
-	SetResonanceLevel(SameElementCount >= 5 ? 4 : SameElementCount >= 4 ? 3 : SameElementCount >= 3 ? 2 : SameElementCount >= 2 ? 1 : 0);
+	SetResonanceLevel(CalculateResonanceLevel(SameElementCount));
+}
+
+// CalculateResonanceLevel - 计算共鸣等级
+int32 UDBAAbilitySystemComponent::CalculateResonanceLevel(int32 SameElementCount)
+{
+	if (SameElementCount >= 5) return 4;
+	if (SameElementCount >= 4) return 3;
+	if (SameElementCount >= 3) return 2;
+	if (SameElementCount >= 2) return 1;
+	return 0;
 }
 
 // RemoveAllGrantedAbilities - 移除所有已授予的能力
@@ -478,6 +498,119 @@ void UDBAAbilitySystemComponent::CheckChainReset()
 	if (CurrentTime - LastHitTime >= DBAConstants::ChainTimeout)
 	{
 		ResetChainLevel();
+	}
+}
+
+// GetSkillCooldowns - 获取技能冷却状态
+void UDBAAbilitySystemComponent::GetSkillCooldowns(TArray<float>& OutCooldowns) const
+{
+	OutCooldowns.Reset();
+
+	// 固定槽位数: Q, W, E, R, Ultimate
+	const int32 ExpectedSlots = 5;
+	OutCooldowns.Init(0.0f, ExpectedSlots);
+
+	// 遍历所有已授予的技能，按 InputID 映射到正确的槽位
+	for (const FGameplayAbilitySpecHandle& Handle : GrantedAbilityHandles)
+	{
+		FGameplayAbilitySpec* Spec = const_cast<UDBAAbilitySystemComponent*>(this)->FindAbilitySpecFromHandle(Handle);
+		if (Spec && Spec->Ability)
+		{
+			if (UDBAMobaGameplayAbilityBase* Ability = Cast<UDBAMobaGameplayAbilityBase>(Spec->Ability))
+			{
+				int32 InputID = Spec->InputID;
+				int32 SlotIndex = INDEX_NONE;
+
+				// 根据 InputID 确定槽位
+				// EDBAAbilityInputID: Skill01=4, Skill02=5, Skill03=6, Skill04=7, Ultimate=8
+				switch (InputID)
+				{
+				case 4: SlotIndex = 0; break;  // Q
+				case 5: SlotIndex = 1; break;  // W
+				case 6: SlotIndex = 2; break;  // E
+				case 7: SlotIndex = 3; break;  // R
+				case 8: SlotIndex = 4; break;  // Ultimate
+				default: break;
+				}
+
+				if (SlotIndex != INDEX_NONE)
+				{
+					float Remaining = Ability->GetCooldownTimeRemaining(&Spec->ActorInfo);
+					OutCooldowns[SlotIndex] = Remaining;
+				}
+			}
+		}
+	}
+}
+
+// NormalizeSkillCooldowns - 规范化冷却数组顺序
+void UDBAAbilitySystemComponent::NormalizeSkillCooldowns(const TArray<float>& InCooldowns, TArray<float>& OutNormalized)
+{
+	OutNormalized.Reset();
+
+	// 输出固定 5 个槽位: Q, W, E, R, Ultimate
+	const int32 ExpectedSlots = 5;
+	OutNormalized.Init(0.0f, ExpectedSlots);
+
+	// 如果输入数量足够，复制前 5 个
+	for (int32 i = 0; i < ExpectedSlots && i < InCooldowns.Num(); ++i)
+	{
+		OutNormalized[i] = InCooldowns[i];
+	}
+}
+
+// SyncCooldownsToCharacter - 同步冷却到角色用于观战显示
+void UDBAAbilitySystemComponent::SyncCooldownsToCharacter()
+{
+	// 服务端权威
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		return;
+	}
+
+	// 获取拥有者角色
+	if (AActor* Owner = GetOwner())
+	{
+		if (ADBAZodiacCharacterBase* Character = Cast<ADBAZodiacCharacterBase>(Owner))
+		{
+			TArray<float> Cooldowns;
+			GetSkillCooldowns(Cooldowns);
+
+			// 检查是否有变化
+			bool bHasChanged = false;
+			if (CachedSkillCooldowns.Num() != Cooldowns.Num())
+			{
+				bHasChanged = true;
+			}
+			else
+			{
+				for (int32 i = 0; i < Cooldowns.Num(); ++i)
+				{
+					if (!FMath::NearlyEqual(CachedSkillCooldowns[i], Cooldowns[i], 0.01f))
+					{
+						bHasChanged = true;
+						break;
+					}
+				}
+			}
+
+			// 只有变化时才更新
+			if (bHasChanged)
+			{
+				// 更新缓存
+				CachedSkillCooldowns = Cooldowns;
+
+				// 更新角色的冷却数组
+				Character->UpdateSkillCooldowns(Cooldowns);
+
+				// 广播冷却更新事件
+				for (int32 i = 0; i < Cooldowns.Num(); ++i)
+				{
+					OnSkillCooldownUpdated.Broadcast(i, Cooldowns[i]);
+				}
+				OnAllSkillCooldownsUpdated.Broadcast(Cooldowns);
+			}
+		}
 	}
 }
 

@@ -11,6 +11,28 @@ class UDBAArenaHUDRootWidgetBase;
 class UDBAMainLobbyWidgetBase;
 
 /**
+ * EDBAUIState
+ * UI状态枚举
+ */
+UENUM(BlueprintType)
+enum class EDBAUIState : uint8
+{
+	None,
+	MainMenu,
+	Lobby,
+	HeroSelect,
+	Loading,
+	InGame,
+	Pause
+};
+
+/**
+ * FOnUIStateChanged
+ * UI状态改变委托
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUIStateChanged, EDBAUIState, NewState);
+
+/**
  * DBAGameUIManager
  *
  * 游戏UI状态管理器
@@ -28,6 +50,18 @@ public:
 	virtual void Deinitialize() override;
 
 public:
+	/** 获取当前状态 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	EDBAUIState GetCurrentState() const { return CurrentState; }
+
+	/** 切换UI状态 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	void TransitionTo(EDBAUIState NewState);
+
+	/** 注册状态改变回调 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	void RegisterStateChangeCallback(FOnUIStateChanged Delegate);
+
 	/** 显示主大厅 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	void ShowMainLobby();
@@ -58,6 +92,14 @@ protected:
 	virtual void CreateArenaHUDWidget();
 
 protected:
+	/** 当前UI状态 */
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
+	EDBAUIState CurrentState = EDBAUIState::None;
+
+	/** 状态改变回调 */
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
+	FOnUIStateChanged OnStateChanged;
+
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
 	TObjectPtr<UDBAMainLobbyWidgetBase> MainLobbyWidget;
 

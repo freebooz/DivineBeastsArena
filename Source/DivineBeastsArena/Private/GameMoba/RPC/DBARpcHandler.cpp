@@ -4,6 +4,9 @@
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
 #include "GameDBA/Combat/DBADamageCalculator.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
+#include "GameDBA/Combat/Feedback/DBAEffectPlayer.h"
+#include "GameDBA/Combat/Feedback/DBAFloatingDamageComponent.h"
+#include "GameDBA/Core/DBAEnumsCore.h"
 #include "Kismet/GameplayStatics.h"
 #include "NavigationSystem.h"
 #include "AbilitySystemComponent.h"
@@ -349,14 +352,64 @@ void ADBARpcHandler::ClientHitConfirmedWithCritical_Implementation(
     bool bIsCritical,
     FVector_NetQuantize10 HitLocation)
 {
-    // 服务端确认命中，客户端播放命中特效
-    // 如果是暴击，播放暴击特效
+    // 服务端确认命中，客户端播放命中特效和伤害数字
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    // 获取特效播放器
+    UDBAEffectPlayer* EffectPlayer = UDBAEffectPlayer::Get(World);
+    if (!EffectPlayer)
+    {
+        return;
+    }
+
+    // 从 DamageType 解析元素类型
+    // 注意: EDBAElementType 只包含 Metal, Wood, Water, Fire, Earth
+    // Ice 映射到 Water (冰属水), Lightning 映射到 Metal (金)
+    uint8 ElementValue = 0;
+    if (DamageType.IsValid())
+    {
+        FString TagStr = DamageType.ToString();
+        if (TagStr.Contains(TEXT("Fire")))
+        {
+            ElementValue = static_cast<uint8>(EDBAElementType::Fire);
+        }
+        else if (TagStr.Contains(TEXT("Ice")))
+        {
+            ElementValue = static_cast<uint8>(EDBAElementType::Water); // Ice -> Water
+        }
+        else if (TagStr.Contains(TEXT("Lightning")))
+        {
+            ElementValue = static_cast<uint8>(EDBAElementType::Metal); // Lightning -> Metal
+        }
+        else if (TagStr.Contains(TEXT("Earth")))
+        {
+            ElementValue = static_cast<uint8>(EDBAElementType::Earth);
+        }
+        else if (TagStr.Contains(TEXT("Water")))
+        {
+            ElementValue = static_cast<uint8>(EDBAElementType::Water);
+        }
+        else if (TagStr.Contains(TEXT("Wood")))
+        {
+            ElementValue = static_cast<uint8>(EDBAElementType::Wood);
+        }
+    }
+
+    // 生成伤害数字 (在HitLocation位置)
+    FVector ImpactPoint(HitLocation);
+    EffectPlayer->SpawnDamageNumber(nullptr, Damage, bIsCritical, ElementValue, ImpactPoint);
+
+    // 如果是暴击，触发屏幕震动
     if (bIsCritical)
     {
-        // TODO: 播放暴击特效和伤害数字
-    }
-    else
-    {
-        // TODO: 播放普通命中特效
+        // 获取拥有者(Pawn)作为震动目标
+        if (APawn* OwnerPawn = Cast<APawn>(GetOwner()))
+        {
+            EffectPlayer->TriggerScreenShake(OwnerPawn, NAME_None, 1.5f);
+        }
     }
 }

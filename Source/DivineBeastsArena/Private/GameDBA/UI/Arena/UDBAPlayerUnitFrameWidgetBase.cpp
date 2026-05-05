@@ -102,24 +102,51 @@ void UDBAPlayerUnitFrameWidgetBase::UpdateEnergy(float InCachedCurrentEnergy, fl
 	// 计算能量条百分比
 	float Percentage = CachedMaxEnergy > 0.0f ? CachedCurrentEnergy / CachedMaxEnergy : 0.0f;
 	BP_OnUpdateEnergy(CachedCurrentEnergy, CachedMaxEnergy, Percentage);
+
+	// 更新能量条Widget
+	if (EnergyBar)
+	{
+		EnergyBar->SetPercent(Percentage);
+	}
 }
 
-/**
- * 更新玩家等级
- * 缓存等级并通过 Blueprint 事件更新显示
- * @param Level 当前等级
- */
+void UDBAPlayerUnitFrameWidgetBase::UpdateXP(float InCachedCurrentXP, float InCachedMaxXP)
+{
+	CachedCurrentXP = InCachedCurrentXP;
+	CachedMaxXP = InCachedMaxXP;
+
+	// 计算经验条百分比
+	float Percentage = CachedMaxXP > 0.0f ? CachedCurrentXP / CachedMaxXP : 0.0f;
+	BP_OnUpdateXP(CachedCurrentXP, CachedMaxXP, Percentage);
+
+	// 更新经验条Widget
+	if (XPBar)
+	{
+		XPBar->SetPercent(Percentage);
+	}
+}
+
+void UDBAPlayerUnitFrameWidgetBase::UpdateUltimateEnergy(float Energy)
+{
+	CachedUltimateEnergy = FMath::Clamp(Energy, 0.0f, 100.0f);
+
+	// 计算终极能量百分比
+	float Percentage = CachedUltimateEnergy / 100.0f;
+	BP_OnUpdateUltimateEnergy(CachedUltimateEnergy, Percentage);
+
+	// 更新终极能量条Widget
+	if (UltimateEnergyBar)
+	{
+		UltimateEnergyBar->SetPercent(Percentage);
+	}
+}
+
 void UDBAPlayerUnitFrameWidgetBase::UpdateLevel(int32 Level)
 {
 	CurrentLevel = Level;
 	BP_OnUpdateLevel(CurrentLevel);
 }
 
-/**
- * 应用五大阵营主题
- * 根据阵营更新玩家单元框的配色
- * @param FiveCamp 阵营类型（0-4 对应五大阵营）
- */
 void UDBAPlayerUnitFrameWidgetBase::ApplyFiveCampTheme(uint8 FiveCamp)
 {
 	BP_OnApplyFiveCampTheme(FiveCamp);

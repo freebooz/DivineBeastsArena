@@ -100,15 +100,15 @@ bool UDBAElementAbilityBase::CommitAbilityCost(const FGameplayAbilitySpecHandle 
 		FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
 		EffectContext.AddSourceObject(ActorInfo->AvatarActor.Get());
 
-		// 防御性检查：确保 EffectContext 和 AvatarActor 有效
-		ensure(EffectContext.IsValid());
-		ensure(ActorInfo->AvatarActor.IsValid());
-
 		if (!EffectContext.IsValid() || !ActorInfo->AvatarActor.IsValid())
 		{
 			UE_LOG(LogDBACombat, Error, TEXT("[DBAElementAbilityBase] CommitEnergyCost - EffectContext 或 AvatarActor 无效"));
 			return false;
 		}
+
+		// 防御性检查：确保 EffectContext 和 AvatarActor 有效 (仅在验证后调用)
+		ensure(EffectContext.IsValid());
+		ensure(ActorInfo->AvatarActor.IsValid());
 
 		// 创建能量消耗 GE Spec（使用内置的 CostGameplayEffect 机制）
 		TSubclassOf<UGameplayEffect> EnergyCostEffectClass = UDBEEnergyCostEffect::StaticClass();

@@ -144,6 +144,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Resonance")
 	void SetResonanceLevel(int32 Level);
 
+	/** 计算共鸣等级 (基于同元素技能数量) */
+	int32 CalculateResonanceLevel(int32 SameElementCount);
+
 	// ========================================
 	// 技能激活合法性校验
 	// ========================================
@@ -256,4 +259,68 @@ protected:
 	 * 6 秒未命中敌人
 	 */
 	void CheckChainReset();
-};
+
+public:
+	/** 冷却更新委托 - 用于观战系统同步 */
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+		FOnSkillCooldownUpdated,
+		int32, SkillSlot,
+		float, RemainingTime
+	);
+
+	/** 冷却数组更新委托 - 广播完整冷却状态 */
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
+		FOnAllSkillCooldownsUpdated,
+		const TArray<float>&, Cooldowns
+	);
+
+	/** 冷却更新事件 */
+	UPROPERTY(BlueprintAssignable, Category = "DBA|Ability|Cooldown")
+	FOnSkillCooldownUpdated OnSkillCooldownUpdated;
+
+	/** 所有冷却更新事件 */
+	UPROPERTY(BlueprintAssignable, Category = "DBA|Ability|Cooldown")
+	FOnAllSkillCooldownsUpdated OnAllSkillCooldownsUpdated;
+
+	/**
+	 * 获取技能冷却状态
+	 * @param OutCooldowns 输出冷却数组 [Q, W, E, R, Ultimate]
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Ability|Cooldown")
+	void GetSkillCooldowns(TArray<float>& OutCooldowns) const;
+
+	/**
+	 * 更新角色冷却同步
+	 * 服务端调用，同步冷却到角色用于观战显示
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Ability|Cooldown")
+	void SyncCooldownsToCharacter();
+
+	/**
+	 * 规范化冷却数组顺序
+	 * 确保输出数组总是 [Q, W, E, R, Ultimate] 顺序
+	 * @param InCooldowns 输入冷却数组（无序）
+	 * @param OutNormalized 输出规范化后的冷却数组
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Ability|Cooldown")
+	void NormalizeSkillCooldowns(const TArray<float>& InCooldowns, TArray<float>& OutNormalized);
+
+protected:
+	/** 冷却更新定时器 */
+	FTimerHandle CooldownSyncTimerHandle;
+
+	/** 冷却同步间隔 (秒) */
+	UPROPERTY()
+	float CooldownSyncInterval = 0.5f;
+
+	/** 缓存的冷却数组 (用于检测变化) */
+	UPROPERTY()
+	TArray<float> CachedSkillCooldowns;
+
+	/**
+	 * 技能顺序映射表
+	 * 从 InputID 到数组索引的映射
+	 * 索引: 0=Q, 1=W, 2=E, 3=R, 4=Ultimate
+	 */
+	UPROPERTY()
+	TMap<int32, int32> SkillInputIDToSlotIndexMap;

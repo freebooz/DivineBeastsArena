@@ -8,6 +8,7 @@
 #include "GameMoba/RPC/DBARpcHandler.h"
 #include "GameDBA/Core/DBAEnumsCore.h"
 #include "GameDBA/Combat/DBACombatTypes.h"
+#include "GameDBA/Spectator/DBAObserverTypes.h"
 #include "DBAZodiacCharacterBase.generated.h"
 
 class UDBAZodiacAnimInstance;
@@ -185,4 +186,61 @@ public:
 	/** 死亡状态 */
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Death")
 	EDADeathState DeathState = EDADeathState::Alive;
+
+public:
+	// ==================== 队伍信息 ====================
+
+	/** 获取队伍ID */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Team")
+	int32 GetTeamID() const { return TeamID; }
+
+	/** 设置队伍ID */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Team")
+	void SetTeamID(int32 NewTeamID);
+
+	/** 是否是队友 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Team")
+	bool IsTeammate(const ADBAZodiacCharacterBase* Other) const;
+
+public:
+	/** 队伍ID (复制) */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Team")
+	int32 TeamID;
+
+	/** 英雄ID (用于观战显示) */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Config")
+	FName HeroID;
+
+public:
+	// ==================== 观战数据接口 ====================
+
+	/** 获取观战数据 (用于观战系统) */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Spectator")
+	void GetSpectatorData(FDBAObserverViewTarget& OutData) const;
+
+	/** 获取技能冷却数组 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Spectator")
+	TArray<float> GetSkillCooldowns() const { return SkillCooldowns; }
+
+	/** 获取技能最大冷却数组 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Spectator")
+	TArray<float> GetSkillMaxCooldowns() const { return SkillMaxCooldowns; }
+
+	/** 是否终极技能就绪 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Spectator")
+	bool IsUltimateReady() const { return UltimateEnergy >= 100.0f; }
+
+public:
+	/** 技能冷却数组 (观战用) */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Spectator")
+	TArray<float> SkillCooldowns;
+
+	/** 技能最大冷却数组 (观战用) */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Spectator")
+	TArray<float> SkillMaxCooldowns;
+
+public:
+	/** 更新技能冷却 (服务端调用) */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Spectator")
+	void UpdateSkillCooldowns(const TArray<float>& NewCooldowns);
 };

@@ -22,6 +22,52 @@ void UDBAGameUIManager::Deinitialize()
 	Super::Deinitialize();
 }
 
+void UDBAGameUIManager::TransitionTo(EDBAUIState NewState)
+{
+	if (CurrentState == NewState)
+	{
+		return;
+	}
+
+	// 处理旧状态的清理
+	switch (CurrentState)
+	{
+	case EDBAUIState::MainMenu:
+	case EDBAUIState::Lobby:
+		HideMainLobby();
+		break;
+	case EDBAUIState::InGame:
+		HideArenaHUD();
+		break;
+	default:
+		break;
+	}
+
+	CurrentState = NewState;
+
+	// 触发回调
+	OnStateChanged.Broadcast(NewState);
+
+	// 处理新状态的初始化
+	switch (NewState)
+	{
+	case EDBAUIState::MainMenu:
+	case EDBAUIState::Lobby:
+		ShowMainLobby();
+		break;
+	case EDBAUIState::InGame:
+		ShowArenaHUD();
+		break;
+	default:
+		break;
+	}
+}
+
+void UDBAGameUIManager::RegisterStateChangeCallback(FOnUIStateChanged Delegate)
+{
+	OnStateChanged.Add(Delegate);
+}
+
 void UDBAGameUIManager::ShowMainLobby()
 {
 	if (!MainLobbyWidget)

@@ -181,3 +181,57 @@ void ADBAZodiacCharacterBase::OnRevive()
 		// 重置生命值逻辑由调用者负责
 	}
 }
+
+void ADBAZodiacCharacterBase::UpdateSkillCooldowns(const TArray<float>& NewCooldowns)
+{
+	if (HasAuthority())
+	{
+		SkillCooldowns = NewCooldowns;
+
+		// 更新最大冷却数组 (如果比当前记录的更大)
+		for (int32 i = 0; i < NewCooldowns.Num(); ++i)
+		{
+			if (i >= SkillMaxCooldowns.Num())
+			{
+				SkillMaxCooldowns.Add(NewCooldowns[i]);
+			}
+			else if (NewCooldowns[i] > SkillMaxCooldowns[i])
+			{
+				SkillMaxCooldowns[i] = NewCooldowns[i];
+			}
+		}
+	}
+}
+
+void ADBAZodiacCharacterBase::GetSpectatorData(FDBAObserverViewTarget& OutData) const
+{
+	OutData.TargetCharacter = this;
+	OutData.PlayerName = GetFName();
+	OutData.TeamID = TeamID;
+	OutData.HeroID = HeroID;
+	OutData.CurrentHP = GetCurrentHealth();
+	OutData.MaxHP = GetMaxHealth();
+	OutData.CurrentEnergy = GetCurrentEnergy();
+	OutData.MaxEnergy = 100.0f; // TODO: 从属性获取
+	OutData.UltimateEnergy = UltimateEnergy;
+	OutData.bUltimateReady = IsUltimateReady();
+	OutData.SkillCooldowns = SkillCooldowns;
+	OutData.SkillMaxCooldowns = SkillMaxCooldowns;
+}
+
+void ADBAZodiacCharacterBase::SetTeamID(int32 NewTeamID)
+{
+	if (HasAuthority())
+	{
+		TeamID = NewTeamID;
+	}
+}
+
+bool ADBAZodiacCharacterBase::IsTeammate(const ADBAZodiacCharacterBase* Other) const
+{
+	if (!Other)
+	{
+		return false;
+	}
+	return TeamID == Other->TeamID;
+}

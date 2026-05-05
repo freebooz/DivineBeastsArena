@@ -5,6 +5,7 @@
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "Character/DBAZodiacCharacterBase.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/Core/DBAEnumsCore.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "GameplayCueManager.h"
@@ -160,6 +161,128 @@ float UDBAMobaGameplayAbilityBase::GetCooldownTimeRemaining(const FGameplayAbili
 	return 0.0f;
 }
 
+void UDBAMobaGameplayAbilityBase::ApplyCooldown(float Duration)
+{
+	if (!HasAuthority(&GetCurrentActorInfo()->ActivationInfo))
+	{
+		return; // 仅服务端应用冷却
+	}
+
+	if (!CooldownTag.IsValid())
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	if (!ASC)
+	{
+		return;
+	}
+
+	// 应用冷却 GameplayEffect
+	UClass* CooldownGEClass = LoadClass<UObject>(nullptr, TEXT("/GameDBA/GAS/Effects/DBAGE_Cooldown.DBAGE_Cooldown_C"));
+	if (!CooldownGEClass)
+	{
+		// 如果找不到GE类，手动添加冷却Tag作为后备
+		FGameplayTag Tag = CooldownTag;
+		ASC->AddLooseGameplayTag(Tag);
+
+		// 设置定时器移除Tag
+		FTimerHandle Handle;
+		FTimerDelegate Delegate;
+		Delegate.BindLambda([ASC, Tag]()
+		{
+			ASC->RemoveLooseGameplayTag(Tag);
+		});
+		GetWorld()->GetTimerManager().SetTimer(Handle, Delegate, Duration, false);
+
+		return;
+	}
+
+	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+	EffectContext.AddSourceObject(ASC->GetOwnerActor());
+
+	ASC->ApplyGameplayEffectToSelf(CooldownGEClass.GetDefaultObject(), 1.0f, EffectContext);
+}
+
+float UDBAMobaGameplayAbilityBase::GetElementMultiplier(EDBAElement AttackElement, EDBAElement DefenseElement) const
+{
+	if (AttackElement == EDBAElement::None || DefenseElement == EDBAElement::None)
+	{
+		return 1.0f;
+	}
+
+	// 五行相克: 火→金→木→土→水→火
+	const EDBAElement CounterMap[5] = {
+		EDBAElement::Fire,   // 金克木
+		EDBAElement::Wood,    // 木克土
+		EDBAElement::Earth,   // 土克水
+		EDBAElement::Water,   // 水克火
+		EDBAElement::Gold     // 火克金
+	};
+
+	// 检查攻击方是否克制防守方
+	for (int32 i = 0; i < 5; ++i)
+	{
+		if (AttackElement == CounterMap[i])
+		{
+			EDBAElement DefendedElement = CounterMap[(i + 1) % 5];
+			if (DefenseElement == DefendedElement)
+			{
+				return 1.2f; // 克制
+			}
+		}
+	}
+
+	// 检查攻击方是否被防守方克制
+	for (int32 i = 0; i < 5; ++i)
+	{
+		if (CounterMap[i] == DefenseElement)
+		{
+			if (AttackElement == CounterMap[(i + 1) % 5])
+			{
+				return 0.8f; // 被克制
+			}
+		}
+	}
+
+	return 1.0f;
+}
+
+float UDBAMobaGameplayAbilityBase::GetChainBonus(int32 ChainLevel) const
+{
+	if (ChainLevel >= 10)
+	{
+		return 0.0f; // 终结连锁不适用普通倍率
+	}
+	if (ChainLevel >= 6)
+	{
+		return 1.35f;
+	}
+	if (ChainLevel >= 1)
+	{
+		return 1.20f;
+	}
+	return 1.0f;
+}
+
+bool UDBAMobaGameplayAbilityBase::IsInCastRange(AActor* Target, float CastRange) const
+{
+	if (!Target)
+	{
+		return false;
+	}
+
+	const FGameplayAbilityActorInfo* ActorInfo = GetCurrentActorInfo();
+	if (!ActorInfo || !ActorInfo->OwnerActor.IsValid())
+	{
+		return false;
+	}
+
+	float Distance = FVector::Dist(ActorInfo->OwnerActor->GetActorLocation(), Target->GetActorLocation());
+	return Distance <= CastRange;
+}
+
 void UDBAMobaGameplayAbilityBase::OnServerActivate_Implementation()
 {
 	// 服务端权威技能激活逻辑
@@ -225,14 +348,14 @@ float UDBAMobaGameplayAbilityBase::ApplyCriticalHit(float Damage, float Critical
 
 void UDBAMobaGameplayAbilityBase::ApplyDamageToTarget(AActor* TargetActor, float BaseDamage, const FGameplayTagContainer& InDamageTags)
 {
-	// 防御性检查：确保目标有效
-	ensure(TargetActor != nullptr);
-
 	if (!TargetActor)
 	{
 		UE_LOG(LogDBACombat, Warning, TEXT("[DBAMobaGameplayAbilityBase] ApplyDamageToTarget 失败：目标为空"));
 		return;
 	}
+
+	// 防御性检查：确保目标有效 (仅在非空后调用，确保后续逻辑假设成立)
+	ensure(TargetActor != nullptr);
 
 	// 注意：ApplyDamageToTarget 应仅在服务端调用
 	// 此函数不进行 Authority 检查，调用者需确保在服务端上下文中调用
@@ -284,14 +407,14 @@ void UDBAMobaGameplayAbilityBase::ApplyDamageToTarget(AActor* TargetActor, float
 
 void UDBAMobaGameplayAbilityBase::TriggerGameplayCueOnTarget(FGameplayTag CueTag, AActor* TargetActor, float Magnitude)
 {
-	// 防御性检查
-	ensure(CueTag.IsValid());
-
 	if (!CueTag.IsValid())
 	{
 		UE_LOG(LogDBACombat, Warning, TEXT("[DBAMobaGameplayAbilityBase] TriggerGameplayCueOnTarget 失败：CueTag 无效"));
 		return;
 	}
+
+	// 防御性检查：确保CueTag有效 (仅在验证通过后调用，确保后续逻辑假设成立)
+	ensure(CueTag.IsValid());
 
 	FGameplayCueParameters CueParams;
 	CueParams.SourceObject = GetAvatarActorFromActorInfo();
@@ -337,4 +460,54 @@ ADBARpcHandler* UDBAMobaGameplayAbilityBase::GetRpcHandler() const
 		return Character->RpcHandler;
 	}
 	return nullptr;
+}
+
+void UDBAMobaGameplayAbilityBase::NotifyAbilityReleased(AActor* Caster, FVector Location, FRotator Direction)
+{
+	UE_LOG(LogDBACombat, Verbose, TEXT("[UDBAMobaGameplayAbilityBase] NotifyAbilityReleased - SkillID: %s, Location: %s"),
+		*SkillID.ToString(), *Location.ToString());
+
+	// 触发释放事件的GameplayTag
+	FGameplayTag ReleaseEventTag = FGameplayTag::RequestGameplayTag(FName("Event.Ability.Released"));
+	FGameplayTagContainer TagContainer;
+	TagContainer.AddTag(ReleaseEventTag);
+
+	// 通过EventData传递信息
+	FGameplayEventData EventData;
+	EventData.EventTag = ReleaseEventTag;
+	EventData.Instigator = Caster;
+	EventData.Target = nullptr;
+	EventData.OptionalObject = nullptr;
+	EventData.OptionalObject2 = nullptr;
+	EventData.ContextHandle = MakeEffectContext(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo());
+	EventData.ImmediateData = FGameplayTagContainer();
+}
+
+void UDBAMobaGameplayAbilityBase::NotifyAbilityHit(AActor* Target, float Damage, bool bIsCritical, FVector ImpactPoint)
+{
+	UE_LOG(LogDBACombat, Verbose, TEXT("[UDBAMobaGameplayAbilityBase] NotifyAbilityHit - SkillID: %s, Target: %s, Damage: %.1f, bCritical: %s"),
+		*SkillID.ToString(), Target ? *Target->GetName() : TEXT("None"), Damage, bIsCritical ? TEXT("true") : TEXT("false"));
+
+	// 触发命中事件的GameplayTag
+	FGameplayTag HitEventTag = bIsCritical ?
+		FGameplayTag::RequestGameplayTag(FName("Event.Combat.Critical")) :
+		FGameplayTag::RequestGameplayTag(FName("Event.Combat.Damage"));
+
+	FGameplayEventData EventData;
+	EventData.EventTag = HitEventTag;
+	EventData.Instigator = GetAvatarActorFromActorInfo();
+	EventData.Target = Target;
+	EventData.OptionalObject = nullptr;
+	EventData.OptionalObject2 = nullptr;
+	EventData.ContextHandle = MakeEffectContext(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo());
+
+	// 通过Magnitude传递伤害值
+	EventData.EventMagnitude = Damage;
+
+	// 传递额外数据
+	FGameplayTag SkillTag = FGameplayTag::RequestGameplayTag(FName("Event.Combat.Skill"));
+	FGameplayTagContainer TagContainer;
+	TagContainer.AddTag(HitEventTag);
+	TagContainer.AddTag(SkillTag);
+	EventData.InstigatorTags = TagContainer;
 }
