@@ -2,7 +2,7 @@
 // 生肖能力基类实现 - 所有生肖相关能力的基类
 
 #include "DBA/GAS/Abilities/DBAZodiacAbilityBase.h"
-#include "Character/DBAZodiacCharacterBase.h"
+#include "DBA/Character/DBAZodiacCharacterBase.h"
 
 // 构造函数 - 初始化生肖能力默认属性
 UDBAZodiacAbilityBase::UDBAZodiacAbilityBase()

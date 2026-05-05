@@ -8,7 +8,7 @@
 #include "DBAZodiacSkillVFXComponent_Pig_W.generated.h"
 
 class UParticleSystem;
-class USoundCue;
+class USoundBase;
 class UAnimMontage;
 
 /**
@@ -100,15 +100,15 @@ protected:
 
 	/** 施法音效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|Skill")
-	TSoftObjectPtr<USoundCue> CastingSFX;
+	TSoftObjectPtr<USoundBase> CastingSFX;
 
 	/** 飞行弹道音效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|Skill")
-	TSoftObjectPtr<USoundCue> ProjectileSFX;
+	TSoftObjectPtr<USoundBase> ProjectileSFX;
 
 	/** 命中音效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|Skill")
-	TSoftObjectPtr<USoundCue> ImpactSFX;
+	TSoftObjectPtr<USoundBase> ImpactSFX;
 
 	// ==================== 动画资源 ====================
 

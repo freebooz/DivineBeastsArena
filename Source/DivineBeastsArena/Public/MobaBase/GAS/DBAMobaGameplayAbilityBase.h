@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
-#include "RPC/DBARpcInterface.h"
+#include "MobaBase/RPC/DBARpcInterface.h"
 #include "DBAMobaGameplayAbilityBase.generated.h"
 
 class UDBAMobaAbilitySystemComponentBase;

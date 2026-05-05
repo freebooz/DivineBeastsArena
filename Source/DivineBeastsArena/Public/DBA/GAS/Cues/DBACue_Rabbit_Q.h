@@ -5,7 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "DBA/GAS/Cues/DBACue_Base.h"
-#include "Data/DBASkillDataRow.h"
+#include "DBA/Data/DBASkillDataRow.h"
 #include "DBACue_Rabbit_Q.generated.h"
 
 UCLASS()

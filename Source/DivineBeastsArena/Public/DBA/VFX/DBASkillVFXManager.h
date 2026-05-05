@@ -8,7 +8,7 @@
 #include "DBASkillVFXManager.generated.h"
 
 class UParticleSystem;
-class USoundCue;
+class USoundBase;
 class UAnimMontage;
 
 /**
@@ -78,9 +78,9 @@ protected:
 
 	/** 技能施法音效映射 */
 	UPROPERTY()
-	TMap<FName, TSoftObjectPtr<USoundCue>> SkillCastingSFX;
+	TMap<FName, TSoftObjectPtr<USoundBase>> SkillCastingSFX;
 
 	/** 技能命中音效映射 */
 	UPROPERTY()
-	TMap<FName, TSoftObjectPtr<USoundCue>> SkillImpactSFX;
+	TMap<FName, TSoftObjectPtr<USoundBase>> SkillImpactSFX;
 };

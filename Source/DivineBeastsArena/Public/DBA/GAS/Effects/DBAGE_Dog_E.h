@@ -5,7 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "DBA/GAS/Effects/DBAGE_Base.h"
-#include "Data/DBASkillDataRow.h"
+#include "DBA/Data/DBASkillDataRow.h"
 #include "DBAGE_Dog_E.generated.h"
 
 UCLASS()

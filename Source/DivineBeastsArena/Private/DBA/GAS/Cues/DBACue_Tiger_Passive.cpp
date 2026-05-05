@@ -107,7 +107,7 @@ void ADBACue_Tiger_Passive::OnRemoveGameplayCue(AActor* Target, const FGameplayC
 		Target->GetComponents<UParticleSystemComponent>(ParticleComponents);
 		for (UParticleSystemComponent* Particle : ParticleComponents)
 		{
-			if (Particle && Particle->bIsActive)
+			if (Particle && Particle->IsActive())
 			{
 				// 检查是否是此Cue创建的特效（通过Tag标记）
 				if (Particle->ComponentHasTag(FName(TEXT("Cue_Tiger_Passive"))))

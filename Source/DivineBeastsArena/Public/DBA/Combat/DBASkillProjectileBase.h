@@ -9,7 +9,7 @@
 
 class UProjectileMovementComponent;
 class UParticleSystemComponent;
-class USoundCue;
+class USoundBase;
 
 /**
  * DBASkillProjectileBase
@@ -92,11 +92,11 @@ public:
 
 	/** 飞行音效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|SFX")
-	TSoftObjectPtr<USoundCue> FlySFXAsset;
+	TSoftObjectPtr<USoundBase> FlySFXAsset;
 
 	/** 命中音效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|SFX")
-	TSoftObjectPtr<USoundCue> ImpactSFXAsset;
+	TSoftObjectPtr<USoundBase> ImpactSFXAsset;
 
 protected:
 	/** 投射物拥有者 */

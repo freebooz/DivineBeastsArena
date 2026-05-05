@@ -43,7 +43,7 @@ VFX_COMPONENT_HEADER = """// Copyright Freebooz Games, Inc. All Rights Reserved.
 #include "DBAZodiacVFXComponent_{zodiac}.generated.h"
 
 class UParticleSystem;
-class USoundCue;
+class USoundBase;
 class UAnimMontage;
 
 /**
@@ -157,19 +157,19 @@ protected:
 
 	/** 攻击音效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|{zodiac_cn}")
-	TSoftObjectPtr<USoundCue> AttackSFX;
+	TSoftObjectPtr<USoundBase> AttackSFX;
 
 	/** 受击音效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|{zodiac_cn}")
-	TSoftObjectPtr<USoundCue> HitSFX;
+	TSoftObjectPtr<USoundBase> HitSFX;
 
 	/** 移动音效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|{zodiac_cn}")
-	TSoftObjectPtr<USoundCue> MoveSFX;
+	TSoftObjectPtr<USoundBase> MoveSFX;
 
 	/** 死亡音效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|{zodiac_cn}")
-	TSoftObjectPtr<USoundCue> DeathSFX;
+	TSoftObjectPtr<USoundBase> DeathSFX;
 
 	// ==================== 动画资源 ====================
 
@@ -315,7 +315,7 @@ void UDBAZodiacVFXComponent_{zodiac}::PlayAttackSFX()
 {{
 	if (AttackSFX.IsValid())
 	{{
-		USoundCue* SFX = AttackSFX.LoadSynchronous();
+		USoundBase* SFX = AttackSFX.LoadSynchronous();
 		if (SFX)
 		{{
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
@@ -327,7 +327,7 @@ void UDBAZodiacVFXComponent_{zodiac}::PlayHitSFX()
 {{
 	if (HitSFX.IsValid())
 	{{
-		USoundCue* SFX = HitSFX.LoadSynchronous();
+		USoundBase* SFX = HitSFX.LoadSynchronous();
 		if (SFX)
 		{{
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
@@ -339,7 +339,7 @@ void UDBAZodiacVFXComponent_{zodiac}::PlayMoveSFX()
 {{
 	if (MoveSFX.IsValid())
 	{{
-		USoundCue* SFX = MoveSFX.LoadSynchronous();
+		USoundBase* SFX = MoveSFX.LoadSynchronous();
 		if (SFX)
 		{{
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
@@ -351,7 +351,7 @@ void UDBAZodiacVFXComponent_{zodiac}::PlayDeathSFX()
 {{
 	if (DeathSFX.IsValid())
 	{{
-		USoundCue* SFX = DeathSFX.LoadSynchronous();
+		USoundBase* SFX = DeathSFX.LoadSynchronous();
 		if (SFX)
 		{{
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());

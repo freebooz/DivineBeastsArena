@@ -105,14 +105,14 @@ ADBAProjectile_{zodiac_id}_{skill_id}::ADBAProjectile_{zodiac_id}_{skill_id}()
 		ImpactVFXAsset = ImpactVFXFinder.Object;
 	}}
 
-	static ConstructorHelpers::FObjectFinder<USoundCue> FlySFXFinder(
+	static ConstructorHelpers::FObjectFinder<USoundBase> FlySFXFinder(
 		TEXT("/Game/Audio/SFX/Projectiles/{zodiac_id}/S_{zodiac_id}_{skill_id}_Fly.S_{zodiac_id}_{skill_id}_Fly"));
 	if (FlySFXFinder.Succeeded())
 	{{
 		FlySFXAsset = FlySFXFinder.Object;
 	}}
 
-	static ConstructorHelpers::FObjectFinder<USoundCue> ImpactSFXFinder(
+	static ConstructorHelpers::FObjectFinder<USoundBase> ImpactSFXFinder(
 		TEXT("/Game/Audio/SFX/Projectiles/{zodiac_id}/S_{zodiac_id}_{skill_id}_Impact.S_{zodiac_id}_{skill_id}_Impact"));
 	if (ImpactSFXFinder.Succeeded())
 	{{

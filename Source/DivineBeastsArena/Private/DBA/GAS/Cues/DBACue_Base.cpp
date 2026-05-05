@@ -1,6 +1,6 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 #include "DBA/GAS/Cues/DBACue_Base.h"
-#include "Data/DBASkillDataRow.h"
+#include "DBA/Data/DBASkillDataRow.h"
 #include "Kismet/GameplayStatics.h"
 
 ADBACue_Base::ADBACue_Base()
@@ -24,7 +24,7 @@ bool ADBACue_Base::OnExecuteGameplayCue(AActor* Target, const FGameplayCueParame
         {
             FVector Location = Target ? Target->GetActorLocation() : FVector::ZeroVector;
             FRotator Rotation = Target ? Target->GetActorRotation() : FRotator::ZeroRotator;
-            UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, CueScale);
+            UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, true);
         }
     }
 

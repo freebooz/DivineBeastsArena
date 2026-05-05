@@ -4,6 +4,7 @@
 #include "DBA/GAS/Cues/DBACue_Tiger_R.h"
 #include "DBA/GAS/DBAAbilitySystemComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystemComponent.h"
 
 ADBACue_Tiger_R::ADBACue_Tiger_R()
 {
@@ -50,7 +51,7 @@ bool ADBACue_Tiger_R::OnExecuteGameplayCue(AActor* Target, const FGameplayCuePar
 		{
 			FVector Location = Target ? Target->GetActorLocation() : FVector::ZeroVector;
 			FRotator Rotation = Target ? Target->GetActorRotation() : FRotator::ZeroRotator;
-			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, CueScale);
+			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, true);
 		}
 	}
 
@@ -95,7 +96,7 @@ void ADBACue_Tiger_R::OnActiveGameplayCue(AActor* Target, const FGameplayCuePara
 		{
 			FVector Location = Target ? Target->GetActorLocation() : FVector::ZeroVector;
 			FRotator Rotation = Target ? Target->GetActorRotation() : FRotator::ZeroRotator;
-			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, CueScale * 0.7f);
+			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, true);
 		}
 	}
 }
@@ -109,7 +110,7 @@ void ADBACue_Tiger_R::OnRemoveGameplayCue(AActor* Target, const FGameplayCuePara
 		Target->GetComponents<UParticleSystemComponent>(ParticleComponents);
 		for (UParticleSystemComponent* Particle : ParticleComponents)
 		{
-			if (Particle && Particle->bIsActive)
+			if (Particle && Particle->IsActive())
 			{
 				// 检查是否是此 Cue 创建的特效（通过 Tag 标记）
 				if (Particle->ComponentHasTag(FName(TEXT("Cue_Tiger_R"))))

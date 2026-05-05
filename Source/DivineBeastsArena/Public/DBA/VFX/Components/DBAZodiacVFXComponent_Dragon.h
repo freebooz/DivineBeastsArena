@@ -8,7 +8,7 @@
 #include "DBAZodiacVFXComponent_Dragon.generated.h"
 
 class UParticleSystem;
-class USoundCue;
+class USoundBase;
 class UAnimMontage;
 
 /**
@@ -122,19 +122,19 @@ protected:
 
 	/** 攻击音效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|云巡龙君")
-	TSoftObjectPtr<USoundCue> AttackSFX;
+	TSoftObjectPtr<USoundBase> AttackSFX;
 
 	/** 受击音效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|云巡龙君")
-	TSoftObjectPtr<USoundCue> HitSFX;
+	TSoftObjectPtr<USoundBase> HitSFX;
 
 	/** 移动音效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|云巡龙君")
-	TSoftObjectPtr<USoundCue> MoveSFX;
+	TSoftObjectPtr<USoundBase> MoveSFX;
 
 	/** 死亡音效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|云巡龙君")
-	TSoftObjectPtr<USoundCue> DeathSFX;
+	TSoftObjectPtr<USoundBase> DeathSFX;
 
 	// ==================== 动画资源 ====================
 

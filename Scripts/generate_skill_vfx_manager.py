@@ -51,7 +51,7 @@ SKILL_VFX_MANAGER_HEADER = """// Copyright Freebooz Games, Inc. All Rights Reser
 #include "DBA skillVFXManager.generated.h"
 
 class UParticleSystem;
-class USoundCue;
+class USoundBase;
 class UAnimMontage;
 
 /**
@@ -133,11 +133,11 @@ protected:
 
 	/** 技能施法音效映射 */
 	UPROPERTY()
-	TMap<FName, TSoftObjectPtr<USoundCue>> SkillCastingSFX;
+	TMap<FName, TSoftObjectPtr<USoundBase>> SkillCastingSFX;
 
 	/** 技能命中音效映射 */
 	UPROPERTY()
-	TMap<FName, TSoftObjectPtr<USoundCue>> SkillImpactSFX;
+	TMap<FName, TSoftObjectPtr<USoundBase>> SkillImpactSFX;
 
 	/** 技能动画映射 */
 	UPROPERTY()
@@ -246,7 +246,7 @@ void UDBA skillVFXManager::PlaySkillSFX(FName SkillId, AActor* Owner)
 	FString SFXPath = GetSkillSFXPath(SkillId);
 
 	// 加载音效
-	USoundCue* SFX = LoadObject<USoundCue>(nullptr, *SFXPath);
+	USoundBase* SFX = LoadObject<USoundBase>(nullptr, *SFXPath);
 	if (SFX && Owner)
 	{{
 		UGameplayStatics::PlaySoundAtLocation(Owner, SFX, Owner->GetActorLocation());
@@ -275,7 +275,7 @@ void UDBA skillVFXManager::PreloadAllSkillResources()
 
 			// 加载施法音效
 			FString SFXPath = GetSkillSFXPath(SkillId);
-			TSoftObjectPtr<USoundCue> SFX(SFXPath);
+			TSoftObjectPtr<USoundBase> SFX(SFXPath);
 			SFX.LoadSynchronous();
 			SkillCastingSFX.Add(SkillId, SFX);
 

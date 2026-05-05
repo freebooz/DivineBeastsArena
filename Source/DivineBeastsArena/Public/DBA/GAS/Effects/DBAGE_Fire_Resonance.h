@@ -5,7 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "DBA/GAS/Effects/DBAGE_Base.h"
-#include "Data/DBAElementResonanceRow.h"
+#include "DBA/Data/DBAElementResonanceRow.h"
 #include "DBAGE_Fire_Resonance.generated.h"
 
 UCLASS()

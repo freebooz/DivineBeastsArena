@@ -5,7 +5,7 @@
 #include "DBA/GAS/DBAAbilitySystemComponent.h"
 #include "DBA/GAS/Effects/DBEResonanceBuffEffect.h"
 #include "Common/DBALogChannels.h"
-#include "Data/DBAResonanceBonusData.h"
+#include "DBA/Data/DBAResonanceBonusData.h"
 
 // 构造函数 - 初始化共鸣能力
 UDBAResonanceAbilityBase::UDBAResonanceAbilityBase()

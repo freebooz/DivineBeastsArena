@@ -112,7 +112,7 @@ void ADBACue_Snake_R::OnRemoveGameplayCue(AActor* Target, const FGameplayCuePara
 		Target->GetComponents<UParticleSystemComponent>(ParticleComponents);
 		for (UParticleSystemComponent* Particle : ParticleComponents)
 		{
-			if (Particle && Particle->bIsActive)
+			if (Particle && Particle->IsActive())
 			{
 				// 检查是否是此 Cue 创建的特效（通过 Tag 标记）
 				if (Particle->ComponentHasTag(FName(TEXT("Cue_Snake_R"))))

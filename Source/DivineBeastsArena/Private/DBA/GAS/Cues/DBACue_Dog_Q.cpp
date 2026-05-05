@@ -50,7 +50,7 @@ bool ADBACue_Dog_Q::OnExecuteGameplayCue(AActor* Target, const FGameplayCueParam
 		{
 			FVector Location = Target ? Target->GetActorLocation() : FVector::ZeroVector;
 			FRotator Rotation = Target ? Target->GetActorRotation() : FRotator::ZeroRotator;
-			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, CueScale);
+			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, true);
 		}
 	}
 
@@ -95,7 +95,7 @@ void ADBACue_Dog_Q::OnActiveGameplayCue(AActor* Target, const FGameplayCueParame
 		{
 			FVector Location = Target ? Target->GetActorLocation() : FVector::ZeroVector;
 			FRotator Rotation = Target ? Target->GetActorRotation() : FRotator::ZeroRotator;
-			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, CueScale * 0.7f);
+			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, true);
 		}
 	}
 }
@@ -109,7 +109,7 @@ void ADBACue_Dog_Q::OnRemoveGameplayCue(AActor* Target, const FGameplayCueParame
 		Target->GetComponents<UParticleSystemComponent>(ParticleComponents);
 		for (UParticleSystemComponent* Particle : ParticleComponents)
 		{
-			if (Particle && Particle->bIsActive)
+			if (Particle && Particle->IsActive())
 			{
 				// 检查是否是此 Cue 创建的特效（通过 Tag 标记）
 				if (Particle->ComponentHasTag(FName(TEXT("Cue_Dog_Q"))))
