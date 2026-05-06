@@ -11,7 +11,7 @@
  * 全局唯一标识符
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAPartyId
+struct GAMECORE_API FDBAPartyId
 {
 	GENERATED_BODY()
 
@@ -115,7 +115,7 @@ enum class EDBAPartyState : uint8
  * 队伍成员信息
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAPartyMember
+struct GAMECORE_API FDBAPartyMember
 {
 	GENERATED_BODY()
 
@@ -158,7 +158,7 @@ struct DIVINEBEASTSARENA_API FDBAPartyMember
  * 队伍信息
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAPartyInfo
+struct GAMECORE_API FDBAPartyInfo
 {
 	GENERATED_BODY()
 
@@ -221,7 +221,7 @@ struct DIVINEBEASTSARENA_API FDBAPartyInfo
  * 队伍邀请信息
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAPartyInvite
+struct GAMECORE_API FDBAPartyInvite
 {
 	GENERATED_BODY()
 

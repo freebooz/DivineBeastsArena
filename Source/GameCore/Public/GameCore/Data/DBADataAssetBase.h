@@ -11,7 +11,7 @@
  * DBA 通用 DataAsset 基类
  */
 UCLASS(BlueprintType)
-class DIVINEBEASTSARENA_API UDBADataAssetBase : public UPrimaryDataAsset
+class GAMECORE_API UDBADataAssetBase : public UPrimaryDataAsset
 {
     GENERATED_BODY()
 

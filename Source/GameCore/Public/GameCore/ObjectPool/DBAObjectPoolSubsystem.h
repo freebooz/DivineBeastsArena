@@ -54,7 +54,7 @@
  * - 关卡切换时会清空所有池
  */
 UCLASS()
-class DIVINEBEASTSARENA_API UDBAObjectPoolSubsystem : public UDBAWorldSubsystemBase
+class GAMECORE_API UDBAObjectPoolSubsystem : public UDBAWorldSubsystemBase
 {
 	GENERATED_BODY()
 

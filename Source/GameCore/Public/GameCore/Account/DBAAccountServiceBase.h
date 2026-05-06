@@ -42,7 +42,7 @@ class UDBAProfileSaveGame;
  * - 异步回调必须切回 GameThread
  */
 UCLASS(Abstract)
-class DIVINEBEASTSARENA_API UDBAAccountServiceBase : public UDBAGameInstanceSubsystemBase
+class GAMECORE_API UDBAAccountServiceBase : public UDBAGameInstanceSubsystemBase
 {
 	GENERATED_BODY()
 

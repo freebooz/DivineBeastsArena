@@ -23,7 +23,7 @@
  * - 不连接任何外部服务
  */
 UCLASS()
-class DIVINEBEASTSARENA_API UDBAMockAccountService : public UDBAAccountServiceBase
+class GAMECORE_API UDBAMockAccountService : public UDBAAccountServiceBase
 {
 	GENERATED_BODY()
 

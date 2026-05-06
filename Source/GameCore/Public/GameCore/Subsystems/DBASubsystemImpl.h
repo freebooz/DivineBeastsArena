@@ -17,7 +17,7 @@
  *
  * 这样可以避免代码重复，同时保持各自的 UE 子系统继承链完整
  */
-class DIVINEBEASTSARENA_API DBASubsystemImpl
+class GAMECORE_API DBASubsystemImpl
 {
 protected:
 	/**

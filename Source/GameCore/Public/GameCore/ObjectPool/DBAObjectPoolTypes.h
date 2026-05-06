@@ -56,7 +56,7 @@ class UDBAPoolableObject : public UInterface
 	GENERATED_BODY()
 };
 
-class DIVINEBEASTSARENA_API IDBAPoolableObject
+class GAMECORE_API IDBAPoolableObject
 {
 	GENERATED_BODY()
 
@@ -95,7 +95,7 @@ public:
  * 用于配置对象池的行为
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAObjectPoolConfig
+struct GAMECORE_API FDBAObjectPoolConfig
 {
 	GENERATED_BODY()
 
@@ -155,7 +155,7 @@ struct DIVINEBEASTSARENA_API FDBAObjectPoolConfig
  * 用于调试和性能监控
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAObjectPoolStats
+struct GAMECORE_API FDBAObjectPoolStats
 {
 	GENERATED_BODY()
 
@@ -196,7 +196,7 @@ struct DIVINEBEASTSARENA_API FDBAObjectPoolStats
  * 单个对象池数据
  */
 USTRUCT()
-struct DIVINEBEASTSARENA_API FObjectPoolData
+struct GAMECORE_API FObjectPoolData
 {
 	GENERATED_BODY()
 

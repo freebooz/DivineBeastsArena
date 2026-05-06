@@ -13,7 +13,7 @@
  * 提供通用的 Widget 功能
  */
 UCLASS(Abstract, Blueprintable, BlueprintType)
-class DIVINEBEASTSARENA_API UDBAWidgetBase : public UObject
+class GAMECORE_API UDBAWidgetBase : public UObject
 {
 	GENERATED_BODY()
 

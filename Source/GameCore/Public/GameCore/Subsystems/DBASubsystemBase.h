@@ -20,7 +20,7 @@
  * 所有 DBA 子系统必须继承此类或其派生类
  */
 UCLASS(Abstract)
-class DIVINEBEASTSARENA_API UDBASubsystemBase : public USubsystem, public DBASubsystemImpl
+class GAMECORE_API UDBASubsystemBase : public USubsystem, public DBASubsystemImpl
 {
 	GENERATED_BODY()
 

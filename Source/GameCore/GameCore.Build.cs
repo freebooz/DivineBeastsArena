@@ -15,6 +15,8 @@ public class GameCore : ModuleRules
 			"Core",
 			"CoreUObject",
 			"Engine",
+			"GameplayTags",
+			"UMG",
 		});
 
 		// 私有依赖模块
@@ -22,6 +24,9 @@ public class GameCore : ModuleRules
 		{
 			"Slate",
 			"SlateCore",
+			"HTTP",
+			"Json",
+			"JsonUtilities",
 		});
 
 		// 公共 Include 路径

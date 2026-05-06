@@ -10,7 +10,7 @@
  * 队列 ID
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAQueueId
+struct GAMECORE_API FDBAQueueId
 {
 	GENERATED_BODY()
 
@@ -104,7 +104,7 @@ enum class EDBAQueueState : uint8
  * 队列信息
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAQueueInfo
+struct GAMECORE_API FDBAQueueInfo
 {
 	GENERATED_BODY()
 
@@ -151,7 +151,7 @@ struct DIVINEBEASTSARENA_API FDBAQueueInfo
  * 队列更新信息
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAQueueUpdate
+struct GAMECORE_API FDBAQueueUpdate
 {
 	GENERATED_BODY()
 

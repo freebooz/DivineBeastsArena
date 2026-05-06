@@ -11,7 +11,7 @@
  * 准备确认 ID
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAReadyCheckId
+struct GAMECORE_API FDBAReadyCheckId
 {
 	GENERATED_BODY()
 
@@ -86,7 +86,7 @@ enum class EDBAReadyCheckState : uint8
  * 玩家准备状态
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAPlayerReadyStatus
+struct GAMECORE_API FDBAPlayerReadyStatus
 {
 	GENERATED_BODY()
 
@@ -125,7 +125,7 @@ struct DIVINEBEASTSARENA_API FDBAPlayerReadyStatus
  * 准备确认信息
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAReadyCheckInfo
+struct GAMECORE_API FDBAReadyCheckInfo
 {
 	GENERATED_BODY()
 

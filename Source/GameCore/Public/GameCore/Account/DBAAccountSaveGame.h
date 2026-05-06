@@ -23,7 +23,7 @@
  * - 跨设备同步：同一账户可在不同设备登录（在线模式）
  */
 UCLASS()
-class DIVINEBEASTSARENA_API UDBAAccountSaveGame : public USaveGame
+class GAMECORE_API UDBAAccountSaveGame : public USaveGame
 {
 	GENERATED_BODY()
 
@@ -169,7 +169,7 @@ protected:
  * - 可选云同步：在线模式可以同步到云端（未来功能）
  */
 UCLASS()
-class DIVINEBEASTSARENA_API UDBAProfileSaveGame : public USaveGame
+class GAMECORE_API UDBAProfileSaveGame : public USaveGame
 {
 	GENERATED_BODY()
 
