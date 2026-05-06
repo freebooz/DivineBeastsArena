@@ -14,7 +14,7 @@ class AActor;
  * 客户端调用服务端技能激活时传递的参数
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAAbilityRpcParams
+struct GAMEMOBA_API FDBAAbilityRpcParams
 {
     GENERATED_BODY()
 
@@ -37,7 +37,7 @@ struct DIVINEBEASTSARENA_API FDBAAbilityRpcParams
  * 定义客户端和服务端之间的RPC调用规范
  */
 UINTERFACE(BlueprintType)
-class DIVINEBEASTSARENA_API UDBARpcInterface : public UInterface
+class GAMEMOBA_API UDBARpcInterface : public UInterface
 {
     GENERATED_BODY()
 };
@@ -47,7 +47,7 @@ class DIVINEBEASTSARENA_API UDBARpcInterface : public UInterface
  * RPC接口实现基类
  * 提供RPC接口的公共功能
  */
-class DIVINEBEASTSARENA_API IDBARpcInterface
+class GAMEMOBA_API IDBARpcInterface
 {
     GENERATED_BODY()
 public:

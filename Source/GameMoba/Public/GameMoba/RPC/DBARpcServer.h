@@ -13,7 +13,7 @@ class AActor;
  * 服务端RPC接口 - 客户端调用服务端
  */
 UINTERFACE(BlueprintType)
-class DIVINEBEASTSARENA_API UDBARpcServer : public UDBARpcInterface
+class GAMEMOBA_API UDBARpcServer : public UDBARpcInterface
 {
     GENERATED_BODY()
 };
@@ -22,7 +22,7 @@ class DIVINEBEASTSARENA_API UDBARpcServer : public UDBARpcInterface
  * IDBARpcServer
  * 服务端RPC接口实现 - 客户端调用服务端
  */
-class DIVINEBEASTSARENA_API IDBARpcServer : public IDBARpcInterface
+class GAMEMOBA_API IDBARpcServer : public IDBARpcInterface
 {
     GENERATED_BODY()
 

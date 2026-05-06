@@ -10,7 +10,7 @@
  * RPC 处理器 - 挂在 Pawn 或 Controller 上处理网络调用
  */
 UCLASS(Blueprintable)
-class DIVINEBEASTSARENA_API ADBARpcHandler : public AActor, public IDBARpcServer, public IDBARpcClient
+class GAMEMOBA_API ADBARpcHandler : public AActor, public IDBARpcServer, public IDBARpcClient
 {
     GENERATED_BODY()
 
