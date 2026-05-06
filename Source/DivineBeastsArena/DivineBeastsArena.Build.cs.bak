@@ -22,8 +22,6 @@ public class DivineBeastsArena : ModuleRules
             "GameplayTags",             // GameplayTag 系统
             "GameplayTasks",            // GameplayTask 系统
             "UMG",                      // UI 系统
-            "GameCore",                 // 基础层 (L1)
-            "GameMoba",                 // MOBA逻辑层 (L2)
         });
 
         // 私有依赖模块（仅在 Private 实现中使用，不暴露给其他模块）
@@ -83,8 +81,6 @@ public class DivineBeastsArena : ModuleRules
             "DivineBeastsArena/Public",
             "DivineBeastsArena/Public/RPC",
             "DivineBeastsArena/Generated/Abilities/Public",
-            "GameCore/Public",           // GameCore (L1)
-            "GameMoba/Public",           // GameMoba (L2)
         });
 
         // 私有 Include 路径

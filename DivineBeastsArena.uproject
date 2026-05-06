@@ -5,6 +5,28 @@
 	"Description": "Divine Beasts Arena - MOBA Game",
 	"Modules": [
 		{
+			"Name": "GameCore",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
+			"AdditionalDependencies": [
+				"Engine",
+				"CoreUObject"
+			]
+		},
+		{
+			"Name": "GameMoba",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
+			"AdditionalDependencies": [
+				"Engine",
+				"CoreUObject",
+				"GameplayAbilities",
+				"GameplayTags",
+				"GameplayTasks",
+				"GameCore"
+			]
+		},
+		{
 			"Name": "DivineBeastsArena",
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
@@ -18,7 +40,9 @@
 				"GameplayTasks",
 				"UMG",
 				"Slate",
-				"SlateCore"
+				"SlateCore",
+				"GameCore",
+				"GameMoba"
 			]
 		}
 	],

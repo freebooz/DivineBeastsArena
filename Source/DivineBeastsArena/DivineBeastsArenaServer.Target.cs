@@ -22,6 +22,8 @@ public class DivineBeastsArenaServerTarget : TargetRules
 
 		// 额外模块名称
 		ExtraModuleNames.Add("DivineBeastsArena");
+		ExtraModuleNames.Add("GameCore");
+		ExtraModuleNames.Add("GameMoba");
 
 		// 全局定义
 		GlobalDefinitions.AddRange(new string[]
