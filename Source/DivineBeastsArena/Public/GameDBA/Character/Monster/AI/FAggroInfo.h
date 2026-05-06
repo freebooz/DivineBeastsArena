@@ -35,7 +35,7 @@ public:
 	FAggroInfo(AActor* InTarget, float InThreat)
 		: Target(InTarget)
 		, Threat(InThreat)
-		, LastThreatTime(GetWorld()->GetTimeSeconds())
+		, LastThreatTime(GetWorldTime(InTarget))
 	{}
 
 	bool IsValid() const
@@ -46,12 +46,18 @@ public:
 	void UpdateThreat(float NewThreat)
 	{
 		Threat = NewThreat;
-		LastThreatTime = GetWorld()->GetTimeSeconds();
+		LastThreatTime = GetWorldTime(Target.Get());
 	}
 
 	void AddThreat(float Delta)
 	{
 		Threat += Delta;
-		LastThreatTime = GetWorld()->GetTimeSeconds();
+		LastThreatTime = GetWorldTime(Target.Get());
+	}
+
+private:
+	static float GetWorldTime(const AActor* Actor)
+	{
+		return Actor && Actor->GetWorld() ? Actor->GetWorld()->GetTimeSeconds() : 0.0f;
 	}
 };

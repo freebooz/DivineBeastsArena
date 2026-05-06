@@ -5,10 +5,6 @@
 #include "CoreMinimal.h"
 #include "DBACommonEnums.generated.h"
 
-/**
- * 元素类型枚举
- * 定义游戏中的自然元素
- */
 UENUM(BlueprintType)
 enum class EDBAElement : uint8
 {
@@ -17,13 +13,14 @@ enum class EDBAElement : uint8
 	Water UMETA(DisplayName = "水"),
 	Wood UMETA(DisplayName = "木"),
 	Gold UMETA(DisplayName = "金"),
-	Earth UMETA(DisplayName = "土")
+	Earth UMETA(DisplayName = "土"),
+
+	// Legacy GameDBA name kept for source compatibility.
+	Metal = Gold UMETA(DisplayName = "金"),
+
+	MAX = 6 UMETA(Hidden)
 };
 
-/**
- * 五大阵营枚举
- * 定义游戏中的阵营系统
- */
 UENUM(BlueprintType)
 enum class EDBAFiveCamp : uint8
 {
@@ -32,13 +29,18 @@ enum class EDBAFiveCamp : uint8
 	West UMETA(DisplayName = "西方"),
 	South UMETA(DisplayName = "南方"),
 	North UMETA(DisplayName = "北方"),
-	Center UMETA(DisplayName = "中央")
+	Center UMETA(DisplayName = "中央"),
+
+	// Legacy GameDBA names kept for source compatibility.
+	QingLong = East UMETA(DisplayName = "青龙阵营"),
+	BaiHu = West UMETA(DisplayName = "白虎阵营"),
+	ZhuQue = South UMETA(DisplayName = "朱雀阵营"),
+	XuanWu = North UMETA(DisplayName = "玄武阵营"),
+	QiLin = Center UMETA(DisplayName = "麒麟阵营"),
+
+	MAX = 6 UMETA(Hidden)
 };
 
-/**
- * 十二生肖枚举
- * 定义游戏中的生肖系统
- */
 UENUM(BlueprintType)
 enum class EDBAZodiac : uint8
 {
@@ -54,28 +56,10 @@ enum class EDBAZodiac : uint8
 	Monkey UMETA(DisplayName = "猴"),
 	Rooster UMETA(DisplayName = "鸡"),
 	Dog UMETA(DisplayName = "狗"),
-	Pig UMETA(DisplayName = "猪")
+	Pig UMETA(DisplayName = "猪"),
+	MAX = 13 UMETA(Hidden)
 };
 
-// ============================================================================
-// 枚举别名 - 向后兼容 (GameDBA 使用更完整的定义)
-// ============================================================================
-/** EDBAZodiacType 是 EDBAZodiac 的别名，指向 GameDBA 中的标准定义 */
-using EDBAZodiacType = EDBAZodiac;
-
-/** EDBAElementType 是 EDBAElement 的别名 */
-using EDBAElementType = EDBAElement;
-
-/** EDBAFiveCampType 是 EDBAFiveCamp 的别名 */
-using EDBAFiveCampType = EDBAFiveCamp;
-
-// ============================================================================
-// 额外枚举 - GameCore 特有
-// ============================================================================
-
-/**
- * 技能槽位枚举
- */
 UENUM(BlueprintType)
 enum class EDBASkillSlot : uint8
 {
@@ -88,9 +72,6 @@ enum class EDBASkillSlot : uint8
 	Ultimate UMETA(DisplayName = "终极技能")
 };
 
-/**
- * 被动技能类型枚举
- */
 UENUM(BlueprintType)
 enum class EDBAPassiveType : uint8
 {
@@ -100,9 +81,6 @@ enum class EDBAPassiveType : uint8
 	FiveCampBonus UMETA(DisplayName = "阵营加成")
 };
 
-/**
- * 游戏模式状态枚举
- */
 UENUM(BlueprintType)
 enum class EDBAGameModeState : uint8
 {

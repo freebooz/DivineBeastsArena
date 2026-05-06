@@ -5,10 +5,10 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "GameMoba/RPC/DBARpcInterface.h"
+#include "Math/Vector.h"
 #include "DBAClientPredictionComponent.generated.h"
 
 struct FDBAMovePrediction;
-struct FVector;
 
 /**
  * DBAClientPredictionComponent

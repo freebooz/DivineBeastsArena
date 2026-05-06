@@ -54,6 +54,7 @@ public class DivineBeastsArena : ModuleRules
         // MediaAssets 模块（启动视频需要）
         // 注意：即使在服务器构建中链接此模块，视频功能也不会被执行（ShouldCreateSubsystem 返回 false）
         PrivateDependencyModuleNames.Add("MediaAssets");
+        PrivateDependencyModuleNames.Add("Niagara");
 
         // Editor 专用模块
         if (Target.Type == TargetType.Editor)
@@ -92,6 +93,7 @@ public class DivineBeastsArena : ModuleRules
         {
             "DivineBeastsArena/Private",
             "DivineBeastsArena/Internal",
+            "DivineBeastsArena/Public/GameDBA/GAS/Abilities",
         });
 
         // 预编译宏定义

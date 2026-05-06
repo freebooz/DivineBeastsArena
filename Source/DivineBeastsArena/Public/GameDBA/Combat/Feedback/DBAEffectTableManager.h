@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameInstanceSubsystem.h"
+#include "Subsystems/GameInstanceSubsystem.h"
 #include "NiagaraSystem.h"
 #include "Sound/SoundBase.h"
 #include "Camera/CameraShakeBase.h"

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/GameInstanceSubsystem.h"
+#include "Subsystems/GameInstanceSubsystem.h"
 #include "GameDBA/Spectator/DBAObserverTypes.h"
 #include "DBASpectatorManager.generated.h"
 
