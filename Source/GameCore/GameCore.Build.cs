@@ -16,6 +16,7 @@ public class GameCore : ModuleRules
 			"CoreUObject",
 			"Engine",
 			"GameplayTags",
+			"InputCore",
 			"UMG",
 		});
 
