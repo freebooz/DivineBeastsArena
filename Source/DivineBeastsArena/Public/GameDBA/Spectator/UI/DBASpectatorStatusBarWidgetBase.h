@@ -4,7 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameCore/UI/DBAUserWidgetBase.h"
-#include "GameDBA/Spectator/UI/DBASpectatorStatusBarWidgetBase.generated.h"
+#include "GameDBA/Spectator/DBAObserverTypes.h"
+#include "DBASpectatorStatusBarWidgetBase.generated.h"
 
 class UProgressBar;
 class UTextBlock;

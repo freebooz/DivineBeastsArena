@@ -96,9 +96,13 @@ TArray<FDBAObserverInfo> UDBASpectatorManager::GetObserverList() const
 	return Result;
 }
 
-FDBAObserverInfo* UDBASpectatorManager::GetObserverInfo(APlayerController* ObserverController)
+FDBAObserverInfo UDBASpectatorManager::GetObserverInfo(APlayerController* ObserverController) const
 {
-	return ObserverMap.Find(ObserverController);
+	if (const FDBAObserverInfo* Info = ObserverMap.Find(ObserverController))
+	{
+		return *Info;
+	}
+	return FDBAObserverInfo();
 }
 
 void UDBASpectatorManager::CycleToNextTarget(APlayerController* ObserverController)

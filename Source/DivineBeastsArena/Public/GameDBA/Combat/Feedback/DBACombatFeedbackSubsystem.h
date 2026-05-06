@@ -97,33 +97,28 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Feedback")
 	void DispatchCombatEvent(const FDBACombatEventData& EventData);
 
-	/** 监听事件 (Blueprint) */
-	UFUNCTION(BlueprintCallable, Category = "DBA|Feedback")
+	/** 监听事件 */
 	void ListenForEvent(FGameplayTag EventTag, const FOnCombatEvent& Delegate);
 
 	/** 停止监听 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|Feedback")
 	void StopListeningForEvent(FGameplayTag EventTag, const FOnCombatEvent& Delegate);
 
 	/** 获取元素对应颜色 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|Feedback")
 	static FLinearColor GetElementColor(EDBAElementType Element);
 
 public:
-	/** 元素颜色配置表 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Feedback|Config")
+	/** 元素颜色配置表 (非Blueprint属性) */
 	TArray<FDBAElementColorPair> ElementColors;
 
 protected:
 	/** 根据GameplayTag获取监听者列表 */
-	TArray<FOnCombatEvent*>* GetListenersForTag(FGameplayTag Tag);
+	TArray<FOnCombatEvent>* GetListenersForTag(FGameplayTag Tag);
 
 	/** 清除所有监听 */
 	void ClearAllListeners();
 
 private:
-	/** 标签到委托的映射 */
-	UPROPERTY()
+	/** 标签到监听者的映射 (内部使用，无需复制) */
 	TMap<FGameplayTag, TArray<FOnCombatEvent>> EventListeners;
 
 	/** 游戏实例引用 */

@@ -58,9 +58,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	void TransitionTo(EDBAUIState NewState);
 
-	/** 注册状态改变回调 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
-	void RegisterStateChangeCallback(FOnUIStateChanged Delegate);
+	/** 注册状态改变回调 (C++内部使用) */
+	void RegisterStateChangeCallback(const FOnUIStateChanged& Delegate);
 
 	/** 显示主大厅 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")

@@ -324,3 +324,4 @@ protected:
 	 */
 	UPROPERTY()
 	TMap<int32, int32> SkillInputIDToSlotIndexMap;
+};

@@ -74,7 +74,7 @@ FLinearColor UDBACombatFeedbackSubsystem::GetElementColor(EDBAElementType Elemen
 	return FLinearColor::White;
 }
 
-TArray<FOnCombatEvent*>* UDBACombatFeedbackSubsystem::GetListenersForTag(FGameplayTag Tag)
+TArray<FOnCombatEvent>* UDBACombatFeedbackSubsystem::GetListenersForTag(FGameplayTag Tag)
 {
 	if (TArray<FOnCombatEvent>* Listeners = EventListeners.Find(Tag))
 	{

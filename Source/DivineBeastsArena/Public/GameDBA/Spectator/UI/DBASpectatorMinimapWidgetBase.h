@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameCore/UI/DBAUserWidgetBase.h"
-#include "GameDBA/Spectator/UI/DBASpectatorMinimapWidgetBase.generated.h"
+#include "DBASpectatorMinimapWidgetBase.generated.h"
 
 class UImage;
 class UCanvasPanel;

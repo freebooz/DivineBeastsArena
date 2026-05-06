@@ -94,7 +94,7 @@ public:
 
 	/** 查询技能特效 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Effect|Table")
-	FDBASkillEffectRow* GetSkillEffect(FName SkillID) const;
+	FDBASkillEffectRow GetSkillEffect(FName SkillID) const;
 
 	/** 获取所有技能ID */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Effect|Table")

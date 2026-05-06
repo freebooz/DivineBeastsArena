@@ -160,5 +160,3 @@ struct DIVINEBEASTSARENA_API FDBASkillDataRow : public FTableRowBase
 	{
 	}
 };
-
-#include "DBASkillDataRow.generated.h"

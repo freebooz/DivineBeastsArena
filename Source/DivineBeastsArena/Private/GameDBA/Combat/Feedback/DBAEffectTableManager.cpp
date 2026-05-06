@@ -72,13 +72,13 @@ TSoftObjectPtr<UDataTable> UDBAEffectTableManager::AsyncLoadSkillEffectTable(con
 	return TablePath;
 }
 
-FDBASkillEffectRow* UDBAEffectTableManager::GetSkillEffect(FName SkillID) const
+FDBASkillEffectRow UDBAEffectTableManager::GetSkillEffect(FName SkillID) const
 {
 	if (const FDBASkillEffectRow* Row = CachedEffects.Find(SkillID))
 	{
-		return const_cast<FDBASkillEffectRow*>(Row);
+		return *Row;
 	}
-	return nullptr;
+	return FDBASkillEffectRow();
 }
 
 TArray<FName> UDBAEffectTableManager::GetAllSkillIDs() const

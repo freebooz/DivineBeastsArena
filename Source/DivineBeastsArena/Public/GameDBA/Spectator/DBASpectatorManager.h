@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameInstanceSubsystem.h"
+#include "Engine/GameInstanceSubsystem.h"
 #include "GameDBA/Spectator/DBAObserverTypes.h"
 #include "DBASpectatorManager.generated.h"
 
@@ -53,7 +53,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnObserverDisconnected, const FUniq
  * FOnMatchPausedDelegate
  * 比赛暂停委托
  */
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchPaused, bool bIsPaused);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMatchPaused, bool, bIsPaused);
 
 /**
  * DBASpectatorManager
@@ -90,7 +90,7 @@ public:
 
 	/** 获取观战者信息 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Spectator")
-	FDBAObserverInfo* GetObserverInfo(APlayerController* ObserverController);
+	FDBAObserverInfo GetObserverInfo(APlayerController* ObserverController) const;
 
 	/** 切换视角到下一个玩家 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Spectator")

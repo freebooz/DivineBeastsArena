@@ -59,7 +59,7 @@ public:
 
 	/** 设置是否显示 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Overhead")
-	void SetOverheadVisible(bool bVisible);
+	void SetOverheadVisible(bool bShouldBeVisible);
 
 protected:
 	/** 创建头顶Widget */

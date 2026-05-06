@@ -12,7 +12,7 @@
  * 用于配置NavMesh代理的尺寸和行为
  */
 USTRUCT(BlueprintType)
-struct FDBA NavigationAgent
+struct FDBA_NavigationAgent
 {
 	GENERATED_BODY()
 
