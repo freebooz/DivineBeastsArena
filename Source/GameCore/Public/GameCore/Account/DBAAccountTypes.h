@@ -201,6 +201,51 @@ struct GAMECORE_API FDBAAccountInfo
 };
 
 /**
+ * v4/v4.1 角色核心同步属性
+ */
+USTRUCT(BlueprintType)
+struct GAMECORE_API FDBACharacterCoreAttributes
+{
+	GENERATED_BODY()
+
+	/** 最大生命值 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Core Attributes")
+	float MaxHealth = 1800.0f;
+
+	/** 攻击力 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Core Attributes")
+	float AttackPower = 100.0f;
+
+	/** 防御力 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Core Attributes")
+	float Defense = 40.0f;
+
+	/** 移动速度 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Core Attributes")
+	float MoveSpeed = 380.0f;
+
+	/** 最大能量 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Core Attributes")
+	float MaxEnergy = 100.0f;
+
+	/** 能量回复 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Core Attributes")
+	float EnergyRegen = 10.0f;
+
+	/** 暴击率 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Core Attributes")
+	float CriticalRate = 5.0f;
+
+	/** 暴击倍率 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Core Attributes")
+	float CriticalMultiplier = 200.0f;
+
+	FDBACharacterCoreAttributes()
+	{
+	}
+};
+
+/**
  * 角色摘要信息
  * 用于角色选择界面显示
  */
@@ -216,6 +261,26 @@ struct GAMECORE_API FDBACharacterSummary
 	/** 角色名称 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	FString CharacterName;
+
+	/** v4 创建选择：生肖 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Creation")
+	EDBAZodiac Zodiac = EDBAZodiac::None;
+
+	/** v4 创建选择：主元素（金木水火土） */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Creation")
+	EDBAElement PrimaryElement = EDBAElement::None;
+
+	/** v4 创建选择：五大阵营 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Creation")
+	EDBAFiveCamp FiveCamp = EDBAFiveCamp::None;
+
+	/** 系统自动生成的固定技能组 ID，例如 Rat_Water */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Creation")
+	FName FixedSkillGroupId = NAME_None;
+
+	/** v4/v4.1 核心同步属性 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Core Attributes")
+	FDBACharacterCoreAttributes CoreAttributes;
 
 	/** 默认生肖 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
@@ -382,9 +447,21 @@ struct GAMECORE_API FDBACharacterCreateRequest
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	FString CharacterName;
 
-	/** 默认生肖 */
+	/** 兼容字段：默认生肖 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	EDBAZodiac DefaultZodiac = EDBAZodiac::Rat;
+
+	/** v4 创建选择：生肖 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Creation")
+	EDBAZodiac Zodiac = EDBAZodiac::None;
+
+	/** v4 创建选择：主元素（金木水火土） */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Creation")
+	EDBAElement PrimaryElement = EDBAElement::None;
+
+	/** v4 创建选择：五大阵营；None 表示由系统默认分配 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Creation")
+	EDBAFiveCamp FiveCamp = EDBAFiveCamp::None;
 
 	/** 默认自然元素之力 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
