@@ -32,10 +32,12 @@ public:
 public:
 	FAggroInfo() {}
 
-	FAggroInfo(AActor* InTarget, float InThreat)
+	FAggroInfo() {}
+
+	FAggroInfo(AActor* InTarget, float InThreat, float InWorldTime)
 		: Target(InTarget)
 		, Threat(InThreat)
-		, LastThreatTime(GetWorld()->GetTimeSeconds())
+		, LastThreatTime(InWorldTime)
 	{}
 
 	bool IsValid() const
@@ -43,15 +45,15 @@ public:
 		return Target.IsValid() && Threat > 0.0f;
 	}
 
-	void UpdateThreat(float NewThreat)
+	void UpdateThreat(float NewThreat, float CurrentWorldTime)
 	{
 		Threat = NewThreat;
-		LastThreatTime = GetWorld()->GetTimeSeconds();
+		LastThreatTime = CurrentWorldTime;
 	}
 
-	void AddThreat(float Delta)
+	void AddThreat(float Delta, float CurrentWorldTime)
 	{
 		Threat += Delta;
-		LastThreatTime = GetWorld()->GetTimeSeconds();
+		LastThreatTime = CurrentWorldTime;
 	}
 };
