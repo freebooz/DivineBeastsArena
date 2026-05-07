@@ -32,7 +32,7 @@ enum class EDBAGraphicsQuality : uint8
  * 按键绑定
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAKeyBinding
+struct GAMECORE_API FDBAKeyBinding
 {
 	GENERATED_BODY()
 
@@ -65,7 +65,7 @@ struct DIVINEBEASTSARENA_API FDBAKeyBinding
  * 图形设置
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAGraphicsSettings
+struct GAMECORE_API FDBAGraphicsSettings
 {
 	GENERATED_BODY()
 
@@ -102,7 +102,7 @@ struct DIVINEBEASTSARENA_API FDBAGraphicsSettings
  * 音频设置
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAAudioSettings
+struct GAMECORE_API FDBAAudioSettings
 {
 	GENERATED_BODY()
 
@@ -135,7 +135,7 @@ struct DIVINEBEASTSARENA_API FDBAAudioSettings
  * 游戏设置
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAGameplaySettings
+struct GAMECORE_API FDBAGameplaySettings
 {
 	GENERATED_BODY()
 
@@ -173,7 +173,7 @@ struct DIVINEBEASTSARENA_API FDBAGameplaySettings
  * 存储 UI 元素的位置和大小
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAUILayoutData
+struct GAMECORE_API FDBAUILayoutData
 {
 	GENERATED_BODY()
 
@@ -196,7 +196,7 @@ struct DIVINEBEASTSARENA_API FDBAUILayoutData
  * 包含玩家的所有设置和偏好
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAPlayerProfile
+struct GAMECORE_API FDBAPlayerProfile
 {
 	GENERATED_BODY()
 

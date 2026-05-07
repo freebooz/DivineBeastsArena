@@ -11,7 +11,7 @@
  * 匹配会话 ID
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAMatchSessionId
+struct GAMECORE_API FDBAMatchSessionId
 {
 	GENERATED_BODY()
 
@@ -90,7 +90,7 @@ enum class EDBAMatchSessionState : uint8
  * 包含玩家在匹配中的所有必要信息
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAPlayerMatchInfo
+struct GAMECORE_API FDBAPlayerMatchInfo
 {
 	GENERATED_BODY()
 
@@ -136,7 +136,7 @@ struct DIVINEBEASTSARENA_API FDBAPlayerMatchInfo
  * 匹配会话信息
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAMatchSessionInfo
+struct GAMECORE_API FDBAMatchSessionInfo
 {
 	GENERATED_BODY()
 
@@ -194,7 +194,7 @@ struct DIVINEBEASTSARENA_API FDBAMatchSessionInfo
  * 匹配找到通知
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAMatchFoundNotification
+struct GAMECORE_API FDBAMatchFoundNotification
 {
 	GENERATED_BODY()
 

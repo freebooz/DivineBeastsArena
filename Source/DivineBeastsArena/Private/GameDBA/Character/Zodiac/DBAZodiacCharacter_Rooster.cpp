@@ -3,13 +3,12 @@
 
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Rooster.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "AssetRegistry/AssetRegistry.h"
 
 ADBAZodiacCharacter_Rooster::ADBAZodiacCharacter_Rooster()
 {
 	// 设置元素类型
-	ElementType = FName(TEXT("Water"));
-	ZodiacType = FName(TEXT("Rooster"));
+	ElementType = EDBAElementType::Water;
+	ZodiacType = EDBAZodiacType::Rooster;
 
 	// 加载骨骼网格体
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/Models/Zodiac/Rooster/SK_Rooster_Mesh.SK_Rooster_Mesh"));

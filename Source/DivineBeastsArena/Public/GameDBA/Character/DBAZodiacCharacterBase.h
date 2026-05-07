@@ -5,7 +5,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "GameMoba/RPC/DBARpcHandler.h"
 #include "GameDBA/Core/DBAEnumsCore.h"
 #include "GameDBA/Combat/DBACombatTypes.h"
 #include "GameDBA/Spectator/DBAObserverTypes.h"

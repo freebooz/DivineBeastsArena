@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameInstanceSubsystem.h"
+#include "Engine/GameInstanceSubsystem.h"
 #include "GameplayTags.h"
 #include "GameDBA/Core/DBAEnumsCore.h"
 #include "DBACombatFeedbackSubsystem.generated.h"

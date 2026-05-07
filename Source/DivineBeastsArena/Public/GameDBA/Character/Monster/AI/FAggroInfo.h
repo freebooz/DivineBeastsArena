@@ -32,8 +32,6 @@ public:
 public:
 	FAggroInfo() {}
 
-	FAggroInfo() {}
-
 	FAggroInfo(AActor* InTarget, float InThreat, float InWorldTime)
 		: Target(InTarget)
 		, Threat(InThreat)

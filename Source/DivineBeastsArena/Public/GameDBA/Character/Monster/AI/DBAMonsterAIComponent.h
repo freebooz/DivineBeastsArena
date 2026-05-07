@@ -29,7 +29,7 @@ public:
 protected:
 	virtual void InitializeComponent() override;
 	virtual void UninitializeComponent() override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
 	// ===== AI状态 =====

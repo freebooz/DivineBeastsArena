@@ -34,7 +34,7 @@
  * - 派生类必须通过 IsSupportedInCurrentEnvironment() 判断是否支持当前环境
  */
 UCLASS(Abstract)
-class DIVINEBEASTSARENA_API UDBAWorldSubsystemBase : public UWorldSubsystem, public DBASubsystemImpl
+class GAMECORE_API UDBAWorldSubsystemBase : public UWorldSubsystem, public DBASubsystemImpl
 {
 	GENERATED_BODY()
 

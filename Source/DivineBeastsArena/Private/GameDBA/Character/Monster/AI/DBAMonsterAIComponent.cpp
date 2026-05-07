@@ -7,6 +7,7 @@
 #include "NavigationSystem.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/Character.h"
 
 UDBAMonsterAIComponent::UDBAMonsterAIComponent()
 {
@@ -60,7 +61,6 @@ void UDBAMonsterAIComponent::MoveToLocation(FVector Destination)
 			FAIMoveRequest MoveRequest;
 			MoveRequest.SetGoalLocation(Destination);
 			MoveRequest.SetAcceptanceRadius(AcceptanceRadius);
-			MoveRequest.SetNavAgentLocation(GetOwner()->GetActorLocation());
 			AIController->MoveTo(MoveRequest);
 		}
 	}
@@ -68,9 +68,9 @@ void UDBAMonsterAIComponent::MoveToLocation(FVector Destination)
 	// 如果没有 AIController，使用 CharacterMovement
 	if (!AIController)
 	{
-		if (APawn* Pawn = Cast<APawn>(GetOwner()))
+		if (ACharacter* Character = Cast<ACharacter>(GetOwner()))
 		{
-			if (UCharacterMovementComponent* Movement = Pawn->GetCharacterMovement())
+			if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
 			{
 				UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
 				if (NavSys)
@@ -118,9 +118,9 @@ void UDBAMonsterAIComponent::StopMovement()
 	{
 		AIController2->StopMovement();
 	}
-	else if (APawn* Pawn = Cast<APawn>(GetOwner()))
+	else if (ACharacter* Character = Cast<ACharacter>(GetOwner()))
 	{
-		if (UCharacterMovementComponent* Movement = Pawn->GetCharacterMovement())
+		if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
 		{
 			Movement->Velocity = FVector::ZeroVector;
 		}
@@ -133,20 +133,20 @@ bool UDBAMonsterAIComponent::IsMoving() const
 	{
 		if (UPathFollowingComponent* PathFollowing = AIController->GetPathFollowingComponent())
 		{
-			return PathFollowing->IsMoving();
+			return PathFollowing->GetMoveStatus() != EPathFollowingStatus::Idle;
 		}
 	}
 	else if (AAIController* AIController2 = Cast<AAIController>(GetOwner()->GetOwner()))
 	{
 		if (UPathFollowingComponent* PathFollowing = AIController2->GetPathFollowingComponent())
 		{
-			return PathFollowing->IsMoving();
+			return PathFollowing->GetMoveStatus() != EPathFollowingStatus::Idle;
 		}
 	}
 
-	if (APawn* Pawn = Cast<APawn>(GetOwner()))
+	if (ACharacter* Character = Cast<ACharacter>(GetOwner()))
 	{
-		if (UCharacterMovementComponent* Movement = Pawn->GetCharacterMovement())
+		if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
 		{
 			return !Movement->Velocity.IsZero();
 		}
@@ -168,8 +168,8 @@ void UDBAMonsterAIComponent::TransitionTo(EMonsterAIState NewState)
 	CurrentState = NewState;
 
 	// 根据新状态更新移动速度
-	APawn* Pawn = Cast<APawn>(GetOwner());
-	if (UCharacterMovementComponent* Movement = Pawn ? Pawn->GetCharacterMovement() : nullptr)
+	ACharacter* Character = Cast<ACharacter>(GetOwner());
+	if (UCharacterMovementComponent* Movement = Character ? Character->GetCharacterMovement() : nullptr)
 	{
 		if (NewState == EMonsterAIState::Chase || NewState == EMonsterAIState::Attack)
 		{

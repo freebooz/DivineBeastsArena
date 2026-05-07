@@ -49,7 +49,7 @@ enum class EDBAAccountStatus : uint8
  * 全局唯一标识符
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAAccountId
+struct GAMECORE_API FDBAAccountId
 {
 	GENERATED_BODY()
 
@@ -104,7 +104,7 @@ struct DIVINEBEASTSARENA_API FDBAAccountId
  * 角色是账户下的持久化实体，对局内可以选择不同的 Zodiac / Element / FiveCamp
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBACharacterId
+struct GAMECORE_API FDBACharacterId
 {
 	GENERATED_BODY()
 
@@ -154,7 +154,7 @@ struct DIVINEBEASTSARENA_API FDBACharacterId
  * 账户基础信息
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAAccountInfo
+struct GAMECORE_API FDBAAccountInfo
 {
 	GENERATED_BODY()
 
@@ -205,7 +205,7 @@ struct DIVINEBEASTSARENA_API FDBAAccountInfo
  * 用于角色选择界面显示
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBACharacterSummary
+struct GAMECORE_API FDBACharacterSummary
 {
 	GENERATED_BODY()
 
@@ -256,7 +256,7 @@ struct DIVINEBEASTSARENA_API FDBACharacterSummary
  * 包含角色的完整数据
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBACharacterProfile
+struct GAMECORE_API FDBACharacterProfile
 {
 	GENERATED_BODY()
 
@@ -312,7 +312,7 @@ struct DIVINEBEASTSARENA_API FDBACharacterProfile
  * 登录请求
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBALoginRequest
+struct GAMECORE_API FDBALoginRequest
 {
 	GENERATED_BODY()
 
@@ -345,7 +345,7 @@ struct DIVINEBEASTSARENA_API FDBALoginRequest
  * 登录响应
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBALoginResponse
+struct GAMECORE_API FDBALoginResponse
 {
 	GENERATED_BODY()
 
@@ -374,7 +374,7 @@ struct DIVINEBEASTSARENA_API FDBALoginResponse
  * 角色创建请求
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBACharacterCreateRequest
+struct GAMECORE_API FDBACharacterCreateRequest
 {
 	GENERATED_BODY()
 
@@ -403,7 +403,7 @@ struct DIVINEBEASTSARENA_API FDBACharacterCreateRequest
  * 角色创建响应
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBACharacterCreateResponse
+struct GAMECORE_API FDBACharacterCreateResponse
 {
 	GENERATED_BODY()
 

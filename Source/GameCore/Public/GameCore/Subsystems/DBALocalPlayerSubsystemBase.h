@@ -39,7 +39,7 @@
  * - 适合处理玩家特定的输入、UI、设置
  */
 UCLASS(Abstract)
-class DIVINEBEASTSARENA_API UDBALocalPlayerSubsystemBase : public ULocalPlayerSubsystem, public DBASubsystemImpl
+class GAMECORE_API UDBALocalPlayerSubsystemBase : public ULocalPlayerSubsystem, public DBASubsystemImpl
 {
 	GENERATED_BODY()
 

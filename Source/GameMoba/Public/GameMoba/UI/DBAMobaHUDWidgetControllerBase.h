@@ -4,7 +4,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/UObject.h"
 #include "DBAMobaHUDWidgetControllerBase.generated.h"
 
 /**

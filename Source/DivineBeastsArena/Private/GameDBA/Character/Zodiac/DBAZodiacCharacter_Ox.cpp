@@ -3,13 +3,12 @@
 
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Ox.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "AssetRegistry/AssetRegistry.h"
 
 ADBAZodiacCharacter_Ox::ADBAZodiacCharacter_Ox()
 {
 	// 设置元素类型
-	ElementType = FName(TEXT("Water"));
-	ZodiacType = FName(TEXT("Ox"));
+	ElementType = EDBAElementType::Water;
+	ZodiacType = EDBAZodiacType::Ox;
 
 	// 加载骨骼网格体
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/Models/Zodiac/Ox/SK_Ox_Mesh.SK_Ox_Mesh"));

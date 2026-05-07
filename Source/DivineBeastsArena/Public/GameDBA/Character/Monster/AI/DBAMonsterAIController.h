@@ -51,10 +51,4 @@ protected:
 private:
 	/** 初始化AI组件 */
 	void InitializeAIComponent();
-
-	/** 运行行为树 */
-	void RunBehaviorTree();
-
-	/** 停止行为树 */
-	void StopBehaviorTree();
 };

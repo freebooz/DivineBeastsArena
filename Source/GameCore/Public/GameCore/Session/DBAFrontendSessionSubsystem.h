@@ -74,7 +74,7 @@ enum class EDBAFrontendSessionState : uint8
  * - 本地模拟使用本地 Dedicated Server（如果可用）
  */
 UCLASS()
-class DIVINEBEASTSARENA_API UDBAFrontendSessionSubsystem : public UDBAGameInstanceSubsystemBase
+class GAMECORE_API UDBAFrontendSessionSubsystem : public UDBAGameInstanceSubsystemBase
 {
 	GENERATED_BODY()
 

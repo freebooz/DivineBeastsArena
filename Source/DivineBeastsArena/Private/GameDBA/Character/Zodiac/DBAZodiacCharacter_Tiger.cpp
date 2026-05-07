@@ -3,13 +3,12 @@
 
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Tiger.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "AssetRegistry/AssetRegistry.h"
 
 ADBAZodiacCharacter_Tiger::ADBAZodiacCharacter_Tiger()
 {
 	// 设置元素类型
-	ElementType = FName(TEXT("Wood"));
-	ZodiacType = FName(TEXT("Tiger"));
+	ElementType = EDBAElementType::Wood;
+	ZodiacType = EDBAZodiacType::Tiger;
 
 	// 加载骨骼网格体
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/Models/Zodiac/Tiger/SK_Tiger_Mesh.SK_Tiger_Mesh"));

@@ -1,6 +1,7 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 // 神兽竞技场 - 主模块构建配置
 
+using System.IO;
 using UnrealBuildTool;
 
 public class DivineBeastsArena : ModuleRules
@@ -77,21 +78,24 @@ public class DivineBeastsArena : ModuleRules
             });
         }
 
-        // 公共 Include 路径
+        // 公共 Include 路径 - 使用 UE5 标准的相对路径格式
+        string GameCorePublic = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "GameCore", "Public")).Replace('\\', '/');
+        string GameMobaPublic = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "GameMoba", "Public")).Replace('\\', '/');
+
         PublicIncludePaths.AddRange(new string[]
         {
-            "DivineBeastsArena/Public",
-            "DivineBeastsArena/Public/RPC",
-            "DivineBeastsArena/Generated/Abilities/Public",
-            "GameCore/Public",           // GameCore (L1)
-            "GameMoba/Public",           // GameMoba (L2)
+            Path.Combine(ModuleDirectory, "Public").Replace('\\', '/'),
+            Path.Combine(ModuleDirectory, "Public", "RPC").Replace('\\', '/'),
+            Path.Combine(ModuleDirectory, "Generated", "Abilities", "Public").Replace('\\', '/'),
+            GameCorePublic,
+            GameMobaPublic,
         });
 
         // 私有 Include 路径
         PrivateIncludePaths.AddRange(new string[]
         {
-            "DivineBeastsArena/Private",
-            "DivineBeastsArena/Internal",
+            Path.Combine(ModuleDirectory, "Private").Replace('\\', '/'),
+            Path.Combine(ModuleDirectory, "Internal").Replace('\\', '/'),
         });
 
         // 预编译宏定义
@@ -109,7 +113,7 @@ public class DivineBeastsArena : ModuleRules
 
         // 优化设置
         bUseUnity = true;                           // 启用 Unity 构建加速编译
-        bLegacyPublicIncludePaths = false;          // 禁用旧版公共 Include 路径
+        // bLegacyPublicIncludePaths = false; // 使用 UE5 默认值
 
         // C++ 标准
         CppStandard = CppStandardVersion.Cpp20;

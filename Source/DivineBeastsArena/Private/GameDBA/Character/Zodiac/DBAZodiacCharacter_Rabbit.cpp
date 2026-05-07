@@ -3,13 +3,12 @@
 
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Rabbit.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "AssetRegistry/AssetRegistry.h"
 
 ADBAZodiacCharacter_Rabbit::ADBAZodiacCharacter_Rabbit()
 {
 	// 设置元素类型
-	ElementType = FName(TEXT("Gold"));
-	ZodiacType = FName(TEXT("Rabbit"));
+	ElementType = EDBAElementType::Metal;
+	ZodiacType = EDBAZodiacType::Rabbit;
 
 	// 加载骨骼网格体
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/Models/Zodiac/Rabbit/SK_Rabbit_Mesh.SK_Rabbit_Mesh"));

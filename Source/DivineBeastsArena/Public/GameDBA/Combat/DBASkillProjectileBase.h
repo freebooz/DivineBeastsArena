@@ -29,7 +29,7 @@ public:
 
 	/** 初始化投射物 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Projectile")
-	void InitializeProjectile(
+	virtual void InitializeProjectile(
 		FName InSkillId,
 		AActor* InOwner,
 		AActor* InTarget,

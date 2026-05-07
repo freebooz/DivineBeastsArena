@@ -10,7 +10,7 @@
  * 客户端 RPC 接口 - 服务端通知客户端
  */
 UINTERFACE(BlueprintType)
-class DIVINEBEASTSARENA_API UDBARpcClient : public UDBARpcInterface
+class GAMEMOBA_API UDBARpcClient : public UDBARpcInterface
 {
     GENERATED_BODY()
 };
@@ -19,7 +19,7 @@ class DIVINEBEASTSARENA_API UDBARpcClient : public UDBARpcInterface
  * IDBARpcClient
  * 客户端 RPC 接口实现 - 服务端通知客户端
  */
-class DIVINEBEASTSARENA_API IDBARpcClient : public IDBARpcInterface
+class GAMEMOBA_API IDBARpcClient : public IDBARpcInterface
 {
     GENERATED_BODY()
 

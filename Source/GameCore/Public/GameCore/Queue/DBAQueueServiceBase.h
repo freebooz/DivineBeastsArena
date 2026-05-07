@@ -37,7 +37,7 @@
  * - Dedicated Server 只验证客户端提供的 Match 信息
  */
 UCLASS(Abstract)
-class DIVINEBEASTSARENA_API UDBAQueueServiceBase : public UDBAGameInstanceSubsystemBase
+class GAMECORE_API UDBAQueueServiceBase : public UDBAGameInstanceSubsystemBase
 {
 	GENERATED_BODY()
 

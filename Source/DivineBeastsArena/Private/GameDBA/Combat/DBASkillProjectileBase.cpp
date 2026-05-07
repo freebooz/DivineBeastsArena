@@ -5,6 +5,7 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "GameFramework/DamageEvents.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 

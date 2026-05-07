@@ -191,7 +191,7 @@ void UDBADamageCalculator::ApplyDamageToTarget(
 
 	// 临时实现：直接通过AttributeSet应用伤害
 	// 在实际项目中应该通过GameplayEffect来做
-	UDBABattleAttributeSet* BattleAttrSet = Cast<UDBABattleAttributeSet>(TargetASC->GetAttributeSet(UDBABattleAttributeSet::StaticClass()));
+	UDBABattleAttributeSet* BattleAttrSet = const_cast<UDBABattleAttributeSet*>(Cast<const UDBABattleAttributeSet>(TargetASC->GetAttributeSet(UDBABattleAttributeSet::StaticClass())));
 	if (BattleAttrSet)
 	{
 		float CurrentHealth = BattleAttrSet->GetCurrentHealth();

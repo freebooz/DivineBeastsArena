@@ -19,7 +19,7 @@
  * - Travel 失败时必须返回前台
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBATravelContext
+struct GAMECORE_API FDBATravelContext
 {
 	GENERATED_BODY()
 
@@ -174,7 +174,7 @@ enum class EDBATravelFailureReason : uint8
  * Travel 结果
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBATravelResult
+struct GAMECORE_API FDBATravelResult
 {
 	GENERATED_BODY()
 
@@ -203,7 +203,7 @@ struct DIVINEBEASTSARENA_API FDBATravelResult
  * 返回前台请求
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAReturnToFrontendRequest
+struct GAMECORE_API FDBAReturnToFrontendRequest
 {
 	GENERATED_BODY()
 

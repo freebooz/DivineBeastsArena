@@ -8,7 +8,6 @@
 #include "DBAClientPredictionComponent.generated.h"
 
 struct FDBAMovePrediction;
-struct FVector;
 
 /**
  * DBAClientPredictionComponent

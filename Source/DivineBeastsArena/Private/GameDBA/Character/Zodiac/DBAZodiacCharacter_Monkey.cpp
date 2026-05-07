@@ -3,13 +3,12 @@
 
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Monkey.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "AssetRegistry/AssetRegistry.h"
 
 ADBAZodiacCharacter_Monkey::ADBAZodiacCharacter_Monkey()
 {
 	// 设置元素类型
-	ElementType = FName(TEXT("Fire"));
-	ZodiacType = FName(TEXT("Monkey"));
+	ElementType = EDBAElementType::Fire;
+	ZodiacType = EDBAZodiacType::Monkey;
 
 	// 加载骨骼网格体
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/Models/Zodiac/Monkey/SK_Monkey_Mesh.SK_Monkey_Mesh"));

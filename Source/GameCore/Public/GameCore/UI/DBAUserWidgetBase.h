@@ -13,7 +13,7 @@
  * 用于所有可在屏幕上显示的 UI 控件
  */
 UCLASS(Abstract, Blueprintable, BlueprintType)
-class DIVINEBEASTSARENA_API UDBAUserWidgetBase : public UUserWidget
+class GAMECORE_API UDBAUserWidgetBase : public UUserWidget
 {
 	GENERATED_BODY()
 

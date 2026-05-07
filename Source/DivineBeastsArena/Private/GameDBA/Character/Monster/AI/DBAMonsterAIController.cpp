@@ -3,6 +3,8 @@
 
 #include "GameDBA/Character/Monster/AI/DBAMonsterAIController.h"
 #include "GameDBA/Character/Monster/AI/DBAMonsterAIComponent.h"
+#include "AIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/Pawn.h"
 
 ADBAMonsterAIController::ADBAMonsterAIController()
@@ -29,7 +31,7 @@ void ADBAMonsterAIController::OnPossess(APawn* InPawn)
 	// 运行行为树
 	if (BehaviorTree)
 	{
-		UseBlackboard(BlackboardAsset, BlackboardComponent);
+		UseBlackboard(BlackboardAsset, BlackboardComponent.Get());
 		RunBehaviorTree(BehaviorTree);
 	}
 }
@@ -47,15 +49,4 @@ void ADBAMonsterAIController::InitializeAIComponent()
 		AIComponent = Cast<UDBAMonsterAIComponent>(
 			OwningPawn->GetComponentByClass(UDBAMonsterAIComponent::StaticClass()));
 	}
-}
-
-void ADBAMonsterAIController::RunBehaviorTree()
-{
-	// RunBehaviorTree 已通过 OnPossess 调用
-}
-
-void ADBAMonsterAIController::StopBehaviorTree()
-{
-	// 使用 AAIController 的 StopLogic 方法停止行为树
-	StopLogic(TEXT("UnPossess"));
 }

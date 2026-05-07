@@ -3,13 +3,12 @@
 
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Dragon.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "AssetRegistry/AssetRegistry.h"
 
 ADBAZodiacCharacter_Dragon::ADBAZodiacCharacter_Dragon()
 {
 	// 设置元素类型
-	ElementType = FName(TEXT("Fire"));
-	ZodiacType = FName(TEXT("Dragon"));
+	ElementType = EDBAElementType::Fire;
+	ZodiacType = EDBAZodiacType::Dragon;
 
 	// 加载骨骼网格体
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/Models/Zodiac/Dragon/SK_Dragon_Mesh.SK_Dragon_Mesh"));

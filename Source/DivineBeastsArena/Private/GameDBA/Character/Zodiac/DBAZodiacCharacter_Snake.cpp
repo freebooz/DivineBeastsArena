@@ -3,13 +3,12 @@
 
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Snake.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "AssetRegistry/AssetRegistry.h"
 
 ADBAZodiacCharacter_Snake::ADBAZodiacCharacter_Snake()
 {
 	// 设置元素类型
-	ElementType = FName(TEXT("Water"));
-	ZodiacType = FName(TEXT("Snake"));
+	ElementType = EDBAElementType::Water;
+	ZodiacType = EDBAZodiacType::Snake;
 
 	// 加载骨骼网格体
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/Models/Zodiac/Snake/SK_Snake_Mesh.SK_Snake_Mesh"));

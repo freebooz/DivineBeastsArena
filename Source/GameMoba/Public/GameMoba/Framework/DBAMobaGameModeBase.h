@@ -24,9 +24,9 @@ protected:
 	//~ Begin AGameModeBase Interface
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 	virtual void InitGameState() override;
-	virtual void StartMatch() override;
-	virtual void HandleMatchHasStarted() override;
-	virtual void HandleMatchHasEnded() override;
+	virtual void StartMatch();
+	virtual void HandleMatchHasStarted();
+	virtual void HandleMatchHasEnded();
 	//~ End AGameModeBase Interface
 
 protected:

@@ -43,7 +43,7 @@
  * - 外部服务回调必须检查 UObject 生命周期
  */
 UCLASS(Abstract)
-class DIVINEBEASTSARENA_API UDBAGameInstanceSubsystemBase : public UGameInstanceSubsystem, public DBASubsystemImpl
+class GAMECORE_API UDBAGameInstanceSubsystemBase : public UGameInstanceSubsystem, public DBASubsystemImpl
 {
 	GENERATED_BODY()
 

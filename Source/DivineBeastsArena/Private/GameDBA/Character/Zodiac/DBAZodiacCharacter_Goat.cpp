@@ -3,13 +3,12 @@
 
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Goat.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "AssetRegistry/AssetRegistry.h"
 
 ADBAZodiacCharacter_Goat::ADBAZodiacCharacter_Goat()
 {
 	// 设置元素类型
-	ElementType = FName(TEXT("Gold"));
-	ZodiacType = FName(TEXT("Goat"));
+	ElementType = EDBAElementType::Metal;
+	ZodiacType = EDBAZodiacType::Goat;
 
 	// 加载骨骼网格体
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/Models/Zodiac/Goat/SK_Goat_Mesh.SK_Goat_Mesh"));

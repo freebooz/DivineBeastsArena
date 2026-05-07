@@ -3,13 +3,12 @@
 
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Rat.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "AssetRegistry/AssetRegistry.h"
 
 ADBAZodiacCharacter_Rat::ADBAZodiacCharacter_Rat()
 {
 	// 设置元素类型
-	ElementType = FName(TEXT("Fire"));
-	ZodiacType = FName(TEXT("Rat"));
+	ElementType = EDBAElementType::Fire;
+	ZodiacType = EDBAZodiacType::Rat;
 
 	// 加载骨骼网格体
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/Models/Zodiac/Rat/SK_Rat_Mesh.SK_Rat_Mesh"));

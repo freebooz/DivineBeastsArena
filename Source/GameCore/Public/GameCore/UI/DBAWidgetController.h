@@ -13,7 +13,7 @@
  * 负责管理 Widget 的数据和业务逻辑
  */
 UCLASS(Abstract, Blueprintable, BlueprintType)
-class DIVINEBEASTSARENA_API UDBAWidgetController : public UObject
+class GAMECORE_API UDBAWidgetController : public UObject
 {
 	GENERATED_BODY()
 

@@ -4,6 +4,7 @@
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
 #include "GameDBA/GAS/DBAAbilitySystemComponent.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
+#include "GameDBA/RPC/DBARpcHandler.h"
 #include "Components/CapsuleComponent.h"
 
 ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
@@ -33,10 +34,11 @@ void ADBAZodiacCharacterBase::BeginPlay()
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
-		// 使用FTransform格式的SpawnActor重载
-		FTransform SpawnTransform(FRotator::ZeroRotator, GetActorLocation());
-		RpcHandler = GetWorld()->SpawnActor<ADBARpcHandler>(RpcHandlerClass, SpawnTransform, SpawnParams);
-		RpcHandler->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
+		RpcHandler = GetWorld()->SpawnActor<ADBARpcHandler>(GetActorLocation(), FRotator::ZeroRotator, SpawnParams);
+		if (RpcHandler)
+		{
+			RpcHandler->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
+		}
 	}
 }
 
@@ -57,9 +59,9 @@ UDBAZodiacAnimInstance* ADBAZodiacCharacterBase::GetZodiacAnimInstance() const
 UDBAAbilitySystemComponent* ADBAZodiacCharacterBase::GetDBAAbilitySystemComponent() const
 {
 	// 从拥有者获取AbilitySystemComponent
-	if (AActor* Owner = GetOwner())
+	if (AActor* OwnerActor = GetOwner())
 	{
-		return Cast<UDBAAbilitySystemComponent>(Owner->FindComponentByClass<UDBAAbilitySystemComponent>());
+		return Cast<UDBAAbilitySystemComponent>(OwnerActor->FindComponentByClass<UDBAAbilitySystemComponent>());
 	}
 	return nullptr;
 }
@@ -205,7 +207,7 @@ void ADBAZodiacCharacterBase::UpdateSkillCooldowns(const TArray<float>& NewCoold
 
 void ADBAZodiacCharacterBase::GetSpectatorData(FDBAObserverViewTarget& OutData) const
 {
-	OutData.TargetCharacter = this;
+	OutData.TargetCharacter = MakeWeakObjectPtr(this);
 	OutData.PlayerName = GetFName();
 	OutData.TeamID = TeamID;
 	OutData.HeroID = HeroID;

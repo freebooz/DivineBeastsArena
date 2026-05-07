@@ -11,7 +11,7 @@
  * 包含一场匹配的基本信息
  */
 USTRUCT(BlueprintType)
-struct DIVINEBEASTSARENA_API FDBAMatchFoundInfo
+struct GAMECORE_API FDBAMatchFoundInfo
 {
 	GENERATED_BODY()
 

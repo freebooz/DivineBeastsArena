@@ -9,6 +9,7 @@
 class UDBAEffectTableManager;
 class UDBAFloatingDamageComponent;
 class UNiagaraSystem;
+struct FDBASkillEffectRow;
 
 /**
  * UDBAEffectPlayer

@@ -3,13 +3,12 @@
 
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Dog.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "AssetRegistry/AssetRegistry.h"
 
 ADBAZodiacCharacter_Dog::ADBAZodiacCharacter_Dog()
 {
 	// 设置元素类型
-	ElementType = FName(TEXT("Wood"));
-	ZodiacType = FName(TEXT("Dog"));
+	ElementType = EDBAElementType::Wood;
+	ZodiacType = EDBAZodiacType::Dog;
 
 	// 加载骨骼网格体
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/Models/Zodiac/Dog/SK_Dog_Mesh.SK_Dog_Mesh"));

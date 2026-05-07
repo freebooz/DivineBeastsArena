@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Components/SceneComponent.h"
-#include "NiagaraSystem.h"
 #include "DBAFloatingDamageComponent.generated.h"
 
 class UNiagaraComponent;
