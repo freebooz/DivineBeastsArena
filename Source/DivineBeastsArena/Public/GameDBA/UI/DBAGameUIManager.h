@@ -3,12 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameCore/Subsystems/DBASubsystemBase.h"
+#include "GameCore/Session/DBALoginFlowSubsystem.h"
+#include "GameCore/Subsystems/DBAGameInstanceSubsystemBase.h"
 #include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetBase.h"
 #include "DBAGameUIManager.generated.h"
 
 class UDBAArenaHUDRootWidgetBase;
 class UDBAMainLobbyWidgetBase;
+class UUserWidget;
 
 /**
  * EDBAUIState
@@ -38,16 +40,17 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUIStateChanged, EDBAUIState, NewS
  * 游戏UI状态管理器
  * 统一管理所有游戏界面的显示/隐藏和切换
  */
-UCLASS(Abstract, Blueprintable)
-class DIVINEBEASTSARENA_API UDBAGameUIManager : public UDBASubsystemBase
+UCLASS(Blueprintable)
+class DIVINEBEASTSARENA_API UDBAGameUIManager : public UDBAGameInstanceSubsystemBase
 {
 	GENERATED_BODY()
 
 public:
 	UDBAGameUIManager();
 
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-	virtual void Deinitialize() override;
+protected:
+	virtual void OnSubsystemInitialize() override;
+	virtual void OnSubsystemDeinitialize() override;
 
 public:
 	/** 获取当前状态 */
@@ -90,6 +93,12 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	virtual void CreateArenaHUDWidget();
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	virtual void ShowLoginFlowWidget();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	virtual void HideLoginFlowWidget();
+
 protected:
 	/** 当前UI状态 */
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
@@ -105,13 +114,44 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
 	TObjectPtr<UDBAArenaHUDRootWidgetBase> ArenaHUDWidget;
 
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
+	TObjectPtr<UUserWidget> LoginWidget;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
+	TObjectPtr<UUserWidget> CharacterSelectWidget;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
+	TObjectPtr<UUserWidget> CharacterCreateWidget;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
 	TSubclassOf<UDBAMainLobbyWidgetBase> MainLobbyWidgetClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
 	TSubclassOf<UDBAArenaHUDRootWidgetBase> ArenaHUDWidgetClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
+	TSubclassOf<UUserWidget> LoginWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
+	TSubclassOf<UUserWidget> CharacterSelectWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
+	TSubclassOf<UUserWidget> CharacterCreateWidgetClass;
+
 private:
+	UPROPERTY()
+	EDBALoginFlowState CachedLoginFlowState = EDBALoginFlowState::Startup;
+
+	UFUNCTION()
+	void HandleLoginFlowStateChanged(EDBALoginFlowState NewState);
+
+	void RefreshLoginFlowWidgetVisibility();
+	void HideAllFlowWidgets();
+
+	UUserWidget* EnsureFlowWidgetCreated(TSubclassOf<UUserWidget> WidgetClass, TObjectPtr<UUserWidget>& WidgetInstance);
+	void SetFlowWidgetVisible(UUserWidget* WidgetToShow);
+
 	bool bMainLobbyVisible = false;
 	bool bArenaHUDVisible = false;
+	bool bFlowWidgetVisible = false;
 };
