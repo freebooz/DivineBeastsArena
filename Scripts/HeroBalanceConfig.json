@@ -1,0 +1,294 @@
+{
+  "version": "V15",
+  "last_updated": "2026-05-08",
+  "heroes": [
+    {
+      "zodiac_type": "Rat",
+      "character_name": "子鼠·夜影灵牙",
+      "short_name": "影牙",
+      "core_role": "潜行刺客 / 侦察收割",
+      "core_stats": {
+        "survivability": 2,
+        "damage": 5,
+        "control": 2,
+        "mobility": 5,
+        "support": 2,
+        "difficulty": 5,
+        "team_fight_impact": 3
+      },
+      "position_info": {
+        "recommended_lane": "打野 / 游走",
+        "team_role": "探穴侦察、绕后切入、残血收尾"
+      },
+      "strengths_weaknesses": {
+        "advantages": "爆发高、侦察灵活、收尾强",
+        "weaknesses": "身板脆、依赖时机",
+        "best_partners": "金翎、天犬、铁角"
+      }
+    },
+    {
+      "zodiac_type": "Ox",
+      "character_name": "丑牛·撼山铁角",
+      "short_name": "铁角",
+      "core_role": "重装坦克 / 开团先锋",
+      "core_stats": {
+        "survivability": 5,
+        "damage": 2,
+        "control": 5,
+        "mobility": 2,
+        "support": 4,
+        "difficulty": 3,
+        "team_fight_impact": 5
+      },
+      "position_info": {
+        "recommended_lane": "上路 / 辅助前排",
+        "team_role": "正面开团、举盾护队、反身保护"
+      },
+      "strengths_weaknesses": {
+        "advantages": "开团强、承伤高、保护稳",
+        "weaknesses": "机动低、输出低",
+        "best_partners": "苍龙、玉灵、玉角"
+      }
+    },
+    {
+      "zodiac_type": "Tiger",
+      "character_name": "寅虎·啸山白虎",
+      "short_name": "白虎",
+      "core_role": "爆发战士 / 目标压制",
+      "core_stats": {
+        "survivability": 3,
+        "damage": 5,
+        "control": 3,
+        "mobility": 4,
+        "support": 1,
+        "difficulty": 4,
+        "team_fight_impact": 4
+      },
+      "position_info": {
+        "recommended_lane": "上路 / 打野",
+        "team_role": "侧翼突进、单点压制、追击收割"
+      },
+      "strengths_weaknesses": {
+        "advantages": "单点爆发强、追击强",
+        "weaknesses": "怕被集火控制",
+        "best_partners": "金翎、雷蹄、玉角"
+      }
+    },
+    {
+      "zodiac_type": "Rabbit",
+      "character_name": "卯兔·踏月玉灵",
+      "short_name": "玉灵",
+      "core_role": "机动输出 / 月影拉扯",
+      "core_stats": {
+        "survivability": 2,
+        "damage": 4,
+        "control": 2,
+        "mobility": 5,
+        "support": 2,
+        "difficulty": 5,
+        "team_fight_impact": 3
+      },
+      "position_info": {
+        "recommended_lane": "中路 / 游走",
+        "team_role": "位移拉扯、月影迷惑、持续消耗"
+      },
+      "strengths_weaknesses": {
+        "advantages": "灵活、拉扯强、操作上限高",
+        "weaknesses": "容错低、怕硬控",
+        "best_partners": "天犬、玉角、铁角"
+      }
+    },
+    {
+      "zodiac_type": "Dragon",
+      "character_name": "辰龙·御雷苍龙",
+      "short_name": "苍龙",
+      "core_role": "法师核心 / 雷云控场",
+      "core_stats": {
+        "survivability": 3,
+        "damage": 5,
+        "control": 4,
+        "mobility": 2,
+        "support": 3,
+        "difficulty": 4,
+        "team_fight_impact": 5
+      },
+      "position_info": {
+        "recommended_lane": "中路",
+        "team_role": "雷云控场、团战法核、雷门辅助"
+      },
+      "strengths_weaknesses": {
+        "advantages": "团战输出强、控场强",
+        "weaknesses": "依赖站位和预判",
+        "best_partners": "铁角、幽鳞、玉角"
+      }
+    },
+    {
+      "zodiac_type": "Snake",
+      "character_name": "巳蛇·幽毒灵蛇",
+      "short_name": "幽鳞",
+      "core_role": "灵动控场 / 区域节奏",
+      "core_stats": {
+        "survivability": 3,
+        "damage": 3,
+        "control": 5,
+        "mobility": 4,
+        "support": 2,
+        "difficulty": 4,
+        "team_fight_impact": 5
+      },
+      "position_info": {
+        "recommended_lane": "中路 / 辅助控制",
+        "team_role": "区域控场、蛇纹减速、优雅脱身"
+      },
+      "strengths_weaknesses": {
+        "advantages": "区域控制强、节奏压制强",
+        "weaknesses": "爆发一般",
+        "best_partners": "苍龙、铁角、金翎"
+      }
+    },
+    {
+      "zodiac_type": "Horse",
+      "character_name": "午马·赤焰雷蹄",
+      "short_name": "雷蹄",
+      "core_role": "高机动先锋 / 跑图支援",
+      "core_stats": {
+        "survivability": 3,
+        "damage": 4,
+        "control": 3,
+        "mobility": 5,
+        "support": 4,
+        "difficulty": 3,
+        "team_fight_impact": 4
+      },
+      "position_info": {
+        "recommended_lane": "打野 / 上路",
+        "team_role": "快速支援、路径铺设、远程开团"
+      },
+      "strengths_weaknesses": {
+        "advantages": "支援快、开团好、节奏强",
+        "weaknesses": "持续站场一般",
+        "best_partners": "白虎、玉角、天犬"
+      }
+    },
+    {
+      "zodiac_type": "Goat",
+      "character_name": "未羊·玉角灵铃",
+      "short_name": "玉角",
+      "core_role": "治疗辅助 / 团队保护",
+      "core_stats": {
+        "survivability": 3,
+        "damage": 1,
+        "control": 2,
+        "mobility": 3,
+        "support": 5,
+        "difficulty": 3,
+        "team_fight_impact": 5
+      },
+      "position_info": {
+        "recommended_lane": "辅助",
+        "team_role": "治疗、护盾、净化、团队祝福"
+      },
+      "strengths_weaknesses": {
+        "advantages": "团队续航强、保护强",
+        "weaknesses": "输出低、依赖队友",
+        "best_partners": "铁角、獠牙、白虎"
+      }
+    },
+    {
+      "zodiac_type": "Monkey",
+      "character_name": "申猴·百戏灵猴",
+      "short_name": "灵猴",
+      "core_role": "高机动扰乱 / 假身换位",
+      "core_stats": {
+        "survivability": 2,
+        "damage": 4,
+        "control": 3,
+        "mobility": 5,
+        "support": 1,
+        "difficulty": 5,
+        "team_fight_impact": 4
+      },
+      "position_info": {
+        "recommended_lane": "打野 / 游走",
+        "team_role": "假身换位、连跳扰乱、后排干扰"
+      },
+      "strengths_weaknesses": {
+        "advantages": "操作秀、扰乱强、机动高",
+        "weaknesses": "容错低、怕稳定控制",
+        "best_partners": "金翎、天犬、玉角"
+      }
+    },
+    {
+      "zodiac_type": "Rooster",
+      "character_name": "酉鸡·破晓金翎",
+      "short_name": "金翎",
+      "core_role": "侦测辅助 / 视野控制",
+      "core_stats": {
+        "survivability": 3,
+        "damage": 2,
+        "control": 3,
+        "mobility": 3,
+        "support": 5,
+        "difficulty": 3,
+        "team_fight_impact": 4
+      },
+      "position_info": {
+        "recommended_lane": "辅助",
+        "team_role": "视野预警、显形照场、反埋伏"
+      },
+      "strengths_weaknesses": {
+        "advantages": "反隐强、视野强、团队价值高",
+        "weaknesses": "正面伤害不足",
+        "best_partners": "影牙、白虎、灵猴"
+      }
+    },
+    {
+      "zodiac_type": "Dog",
+      "character_name": "戌狗·守门天犬",
+      "short_name": "天犬",
+      "core_role": "守护辅助 / 反突进",
+      "core_stats": {
+        "survivability": 4,
+        "damage": 2,
+        "control": 4,
+        "mobility": 3,
+        "support": 5,
+        "difficulty": 3,
+        "team_fight_impact": 5
+      },
+      "position_info": {
+        "recommended_lane": "辅助 / 上路",
+        "team_role": "护主救援、反突进、守门结界"
+      },
+      "strengths_weaknesses": {
+        "advantages": "保护强、反突进强",
+        "weaknesses": "开团不如铁角",
+        "best_partners": "玉灵、苍龙、金翎"
+      }
+    },
+    {
+      "zodiac_type": "Pig",
+      "character_name": "亥猪·岩甲獠牙",
+      "short_name": "獠牙",
+      "core_role": "站场坦克 / 稳定承伤",
+      "core_stats": {
+        "survivability": 5,
+        "damage": 3,
+        "control": 4,
+        "mobility": 2,
+        "support": 3,
+        "difficulty": 2,
+        "team_fight_impact": 5
+      },
+      "position_info": {
+        "recommended_lane": "上路 / 前排辅助",
+        "team_role": "稳定站场、岩甲承伤、福印稳阵"
+      },
+      "strengths_weaknesses": {
+        "advantages": "站场强、耐打、团战稳定",
+        "weaknesses": "机动低、手短",
+        "best_partners": "玉角、苍龙、金翎"
+      }
+    }
+  ]
+}
