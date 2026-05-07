@@ -3,7 +3,7 @@
 
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Tiger.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Engine/AssetRegistry.h"
+#include "AssetRegistry/AssetRegistry.h"
 
 ADBAZodiacCharacter_Tiger::ADBAZodiacCharacter_Tiger()
 {

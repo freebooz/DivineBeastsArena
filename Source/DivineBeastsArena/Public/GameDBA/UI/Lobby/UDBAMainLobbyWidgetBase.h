@@ -28,7 +28,7 @@ protected:
 	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
-	virtual void TryBindWidgetController() override;
+	virtual void TryBindWidgetController();
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby")

@@ -5,6 +5,7 @@
 #include "GameDBA/Character/Monster/DBAMonsterBase.h"
 #include "AIController.h"
 #include "NavigationSystem.h"
+#include "Navigation/PathFollowingComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 UDBAMonsterAIComponent::UDBAMonsterAIComponent()

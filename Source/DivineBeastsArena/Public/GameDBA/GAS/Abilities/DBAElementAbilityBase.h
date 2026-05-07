@@ -23,15 +23,15 @@ public:
 	 * 获取技能所属的自然元素类型
 	 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Element")
-	EDBAElement GetElementType() const { return ElementType; }
+	EDBAElement GetElementType() const { return AbilityElementType; }
 
 	/** 所属自然元素之力 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Element")
-	EDBAElement ElementType = EDBAElement::None;
+	EDBAElement AbilityElementType = EDBAElement::None;
 
 	/** 是否消耗 CurrentEnergy */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Element")
-	float EnergyCost;
+	float AbilityEnergyCost;
 
 protected:
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;

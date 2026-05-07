@@ -4,7 +4,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameDBA/Animation/AnimInstance.h"
+#include "Animation/AnimInstance.h"
 #include "DBAZodiacAnimInstance.generated.h"
 
 /**

@@ -58,8 +58,7 @@ public:
 	 * 移除所有已授予的 Ability
 	 * 用于重新选择英雄或对局结束
 	 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|Ability")
-	void RemoveAllGrantedAbilities();
+	virtual void RemoveAllGrantedAbilities() override;
 
 	// ========================================
 	// UltimateEnergy 管理
@@ -215,13 +214,6 @@ protected:
 	 */
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Resonance")
 	int32 ResonanceLevel;
-
-	/**
-	 * 已授予的 Ability Handle 列表
-	 * 用于移除 Ability
-	 */
-	UPROPERTY()
-	TArray<FGameplayAbilitySpecHandle> GrantedAbilityHandles;
 
 	/**
 	 * Ability Class 到 Handle 的快速查找映射

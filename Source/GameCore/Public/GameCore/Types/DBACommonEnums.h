@@ -58,18 +58,6 @@ enum class EDBAZodiac : uint8
 };
 
 // ============================================================================
-// 枚举别名 - 向后兼容 (GameDBA 使用更完整的定义)
-// ============================================================================
-/** EDBAZodiacType 是 EDBAZodiac 的别名，指向 GameDBA 中的标准定义 */
-using EDBAZodiacType = EDBAZodiac;
-
-/** EDBAElementType 是 EDBAElement 的别名 */
-using EDBAElementType = EDBAElement;
-
-/** EDBAFiveCampType 是 EDBAFiveCamp 的别名 */
-using EDBAFiveCampType = EDBAFiveCamp;
-
-// ============================================================================
 // 额外枚举 - GameCore 特有
 // ============================================================================
 

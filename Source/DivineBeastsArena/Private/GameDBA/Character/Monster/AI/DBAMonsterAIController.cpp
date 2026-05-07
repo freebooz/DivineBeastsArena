@@ -8,7 +8,6 @@
 ADBAMonsterAIController::ADBAMonsterAIController()
 {
 	// AI控制器不需要Tick
-	bWantsBeginPlay = false;
 }
 
 void ADBAMonsterAIController::BeginPlay()
@@ -28,12 +27,15 @@ void ADBAMonsterAIController::OnPossess(APawn* InPawn)
 	}
 
 	// 运行行为树
-	RunBehaviorTree();
+	if (BehaviorTree)
+	{
+		UseBlackboard(BlackboardAsset, BlackboardComponent);
+		RunBehaviorTree(BehaviorTree);
+	}
 }
 
 void ADBAMonsterAIController::OnUnPossess()
 {
-	StopBehaviorTree();
 	Super::OnUnPossess();
 }
 
@@ -49,16 +51,11 @@ void ADBAMonsterAIController::InitializeAIComponent()
 
 void ADBAMonsterAIController::RunBehaviorTree()
 {
-	if (BehaviorTree && !Brain)
-	{
-		RunBehaviorTree(BehaviorTree);
-	}
+	// RunBehaviorTree 已通过 OnPossess 调用
 }
 
 void ADBAMonsterAIController::StopBehaviorTree()
 {
-	if (Brain)
-	{
-		Brain->StopLogic(TEXT("UnPossess"));
-	}
+	// 使用 AAIController 的 StopLogic 方法停止行为树
+	StopLogic(TEXT("UnPossess"));
 }

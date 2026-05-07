@@ -28,5 +28,5 @@ protected:
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 
 	/** 服务端激活回调 - RPC集成 */
-	virtual void OnServerActivate_Implementation() override;
+	virtual void OnServerActivate_Implementation();
 };
