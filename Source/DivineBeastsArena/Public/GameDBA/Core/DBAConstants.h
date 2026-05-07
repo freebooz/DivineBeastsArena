@@ -74,6 +74,109 @@ namespace DBAConstants
 	constexpr int32 MaxHeroLevel = 18;
 
 	// ========================================
+	// 十二生肖技能名称定稿 (V15)
+	// ========================================
+
+	namespace DBASkillNames
+	{
+		// 子鼠·夜影灵牙｜影牙
+		constexpr const TCHAR* Rat_Passive = TEXT("灵鼠印");
+		constexpr const TCHAR* Rat_Skill01 = TEXT("钻影");
+		constexpr const TCHAR* Rat_Skill02 = TEXT("飞牙");
+		constexpr const TCHAR* Rat_Skill03 = TEXT("鼠遁");
+		constexpr const TCHAR* Rat_Skill04 = TEXT("探穴");
+		constexpr const TCHAR* Rat_Ultimate = TEXT("子夜现身");
+
+		// 丑牛·撼山铁角｜铁角
+		constexpr const TCHAR* Ox_Passive = TEXT("牛劲");
+		constexpr const TCHAR* Ox_Skill01 = TEXT("角挑");
+		constexpr const TCHAR* Ox_Skill02 = TEXT("铁蹄震");
+		constexpr const TCHAR* Ox_Skill03 = TEXT("巨盾阵");
+		constexpr const TCHAR* Ox_Skill04 = TEXT("回身顶");
+		constexpr const TCHAR* Ox_Ultimate = TEXT("蛮牛开山");
+
+		// 寅虎·啸山白虎｜白虎
+		constexpr const TCHAR* Tiger_Passive = TEXT("虎威");
+		constexpr const TCHAR* Tiger_Skill01 = TEXT("虎跃");
+		constexpr const TCHAR* Tiger_Skill02 = TEXT("三裂爪");
+		constexpr const TCHAR* Tiger_Skill03 = TEXT("虎啸提气");
+		constexpr const TCHAR* Tiger_Skill04 = TEXT("追风爪");
+		constexpr const TCHAR* Tiger_Ultimate = TEXT("白虎点将");
+
+		// 卯兔·踏月玉灵｜玉灵
+		constexpr const TCHAR* Rabbit_Passive = TEXT("轻月");
+		constexpr const TCHAR* Rabbit_Skill01 = TEXT("踏月返");
+		constexpr const TCHAR* Rabbit_Skill02 = TEXT("月牙轮");
+		constexpr const TCHAR* Rabbit_Skill03 = TEXT("月闪");
+		constexpr const TCHAR* Rabbit_Skill04 = TEXT("留月影");
+		constexpr const TCHAR* Rabbit_Ultimate = TEXT("玉兔拜月");
+
+		// 辰龙·御雷苍龙｜苍龙
+		constexpr const TCHAR* Dragon_Passive = TEXT("龙雷印");
+		constexpr const TCHAR* Dragon_Skill01 = TEXT("雷龙");
+		constexpr const TCHAR* Dragon_Skill02 = TEXT("云雷阵");
+		constexpr const TCHAR* Dragon_Skill03 = TEXT("龙鳞护");
+		constexpr const TCHAR* Dragon_Skill04 = TEXT("雷门");
+		constexpr const TCHAR* Dragon_Ultimate = TEXT("苍龙唤雷");
+
+		// 巳蛇·幽毒灵蛇｜幽鳞
+		constexpr const TCHAR* Snake_Passive = TEXT("蛇纹");
+		constexpr const TCHAR* Snake_Skill01 = TEXT("蛇探");
+		constexpr const TCHAR* Snake_Skill02 = TEXT("蛇环");
+		constexpr const TCHAR* Snake_Skill03 = TEXT("蜕影步");
+		constexpr const TCHAR* Snake_Skill04 = TEXT("花步");
+		constexpr const TCHAR* Snake_Ultimate = TEXT("百花蛇舞");
+
+		// 午马·赤焰雷蹄｜雷蹄
+		constexpr const TCHAR* Horse_Passive = TEXT("奔势");
+		constexpr const TCHAR* Horse_Skill01 = TEXT("雷蹄冲");
+		constexpr const TCHAR* Horse_Skill02 = TEXT("赤焰旋");
+		constexpr const TCHAR* Horse_Skill03 = TEXT("驰援");
+		constexpr const TCHAR* Horse_Skill04 = TEXT("踏火印");
+		constexpr const TCHAR* Horse_Ultimate = TEXT("奔雷入阵");
+
+		// 未羊·玉角灵铃｜玉角
+		constexpr const TCHAR* Goat_Passive = TEXT("铃愿");
+		constexpr const TCHAR* Goat_Skill01 = TEXT("回春铃");
+		constexpr const TCHAR* Goat_Skill02 = TEXT("暖玉盾");
+		constexpr const TCHAR* Goat_Skill03 = TEXT("清铃音");
+		constexpr const TCHAR* Goat_Skill04 = TEXT("愿光环");
+		constexpr const TCHAR* Goat_Ultimate = TEXT("灵铃赐福");
+
+		// 申猴·百戏灵猴｜灵猴
+		constexpr const TCHAR* Monkey_Passive = TEXT("猴戏");
+		constexpr const TCHAR* Monkey_Skill01 = TEXT("翻跃");
+		constexpr const TCHAR* Monkey_Skill02 = TEXT("猴影");
+		constexpr const TCHAR* Monkey_Skill03 = TEXT("云跳");
+		constexpr const TCHAR* Monkey_Skill04 = TEXT("摘星手");
+		constexpr const TCHAR* Monkey_Ultimate = TEXT("百猴闹场");
+
+		// 酉鸡·破晓金翎｜金翎
+		constexpr const TCHAR* Rooster_Passive = TEXT("晨鸣");
+		constexpr const TCHAR* Rooster_Skill01 = TEXT("金鸡鸣");
+		constexpr const TCHAR* Rooster_Skill02 = TEXT("金羽标");
+		constexpr const TCHAR* Rooster_Skill03 = TEXT("明照");
+		constexpr const TCHAR* Rooster_Skill04 = TEXT("晨羽阵");
+		constexpr const TCHAR* Rooster_Ultimate = TEXT("破晓照天");
+
+		// 戌狗·守门天犬｜天犬
+		constexpr const TCHAR* Dog_Passive = TEXT("犬护");
+		constexpr const TCHAR* Dog_Skill01 = TEXT("扑援");
+		constexpr const TCHAR* Dog_Skill02 = TEXT("犬盾拍");
+		constexpr const TCHAR* Dog_Skill03 = TEXT("灵鼻踪");
+		constexpr const TCHAR* Dog_Skill04 = TEXT("护心圈");
+		constexpr const TCHAR* Dog_Ultimate = TEXT("天犬守门");
+
+		// 亥猪·岩甲獠牙｜獠牙
+		constexpr const TCHAR* Pig_Passive = TEXT("厚甲");
+		constexpr const TCHAR* Pig_Skill01 = TEXT("獠拱");
+		constexpr const TCHAR* Pig_Skill02 = TEXT("岩甲蓄");
+		constexpr const TCHAR* Pig_Skill03 = TEXT("锤震");
+		constexpr const TCHAR* Pig_Skill04 = TEXT("福印");
+		constexpr const TCHAR* Pig_Ultimate = TEXT("福山不动");
+	}
+
+	// ========================================
 	// 元素克制倍率
 	// ========================================
 

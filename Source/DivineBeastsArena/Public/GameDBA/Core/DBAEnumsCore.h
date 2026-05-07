@@ -25,9 +25,9 @@ enum class EDBAZodiacType : uint8
 	Horse       UMETA(DisplayName = "马"),
 	Goat        UMETA(DisplayName = "羊"),
 	Monkey      UMETA(DisplayName = "猴"),
-	Rooster     UMETA(DisplayName = "曜鸣神鸡"),
-	Dog         UMETA(DisplayName = "狗"),
-	Pig         UMETA(DisplayName = "福岳灵猪"),
+	Rooster     UMETA(DisplayName = "酉鸡·破晓金翎"),
+	Dog         UMETA(DisplayName = "戌狗·守门天犬"),
+	Pig         UMETA(DisplayName = "亥猪·岩甲獠牙"),
 
 	MAX         UMETA(Hidden)
 };

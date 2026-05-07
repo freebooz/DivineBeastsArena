@@ -39,8 +39,8 @@ public:
     UFUNCTION(Server, Reliable, WithValidation)
     virtual void ServerLockTarget(AActor* TargetActor) = 0;
 
-    // 移动到位置
-    UFUNCTION(Server, Reliable, WithValidation)
+    // 移动到位置 (不可靠 - 高频调用)
+    UFUNCTION(Server, Unreliable, WithValidation)
     virtual void ServerMoveTo(FVector_NetQuantize10 Location) = 0;
 
     // 请求攻击
