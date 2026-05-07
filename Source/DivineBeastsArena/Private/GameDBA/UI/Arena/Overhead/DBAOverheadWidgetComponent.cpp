@@ -1,7 +1,7 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "GameDBA/UI/Arena/Overhead/DBAOverheadWidgetComponent.h"
-#include "Blueprint/WidgetLayoutBuilder.h"
+#include "Blueprint/UserWidget.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Components/ProgressBar.h"
@@ -11,7 +11,6 @@ UDBAOverheadWidgetComponent::UDBAOverheadWidgetComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bTickEvenWhenPaused = false;
-	SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void UDBAOverheadWidgetComponent::BeginPlay()
@@ -22,7 +21,7 @@ void UDBAOverheadWidgetComponent::BeginPlay()
 
 void UDBAOverheadWidgetComponent::CreateOverheadWidget()
 {
-	if (!OverheadWidgetClass.IsValid())
+	if (!OverheadWidgetClass)
 	{
 		return;
 	}
@@ -56,11 +55,11 @@ void UDBAOverheadWidgetComponent::SetCharacterName(const FText& Name)
 	}
 }
 
-void UDBAOverheadWidgetComponent::SetOverheadVisible(bool bVisible)
+void UDBAOverheadWidgetComponent::SetOverheadVisible(bool bShouldBeVisible)
 {
 	if (OverheadWidget)
 	{
-		OverheadWidget->SetVisibility(bVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+		OverheadWidget->SetVisibility(bShouldBeVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 	}
 }
 
@@ -94,3 +93,4 @@ void UDBAOverheadWidgetComponent::UpdateWidgetPosition()
 		}
 	}
 }
+

@@ -3,11 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Subsystems/EngineSubsystem.h"
+#include "Subsystems/WorldSubsystem.h"
 #include "DBAEffectPlayer.generated.h"
 
 class UDBAEffectTableManager;
 class UDBAFloatingDamageComponent;
+class UNiagaraComponent;
 class UNiagaraSystem;
 struct FDBASkillEffectRow;
 
@@ -17,7 +18,7 @@ struct FDBASkillEffectRow;
  * 统一管理所有技能反馈的播放
  */
 UCLASS(Abstract, Blueprintable)
-class DIVINEBEASTSARENA_API UDBAEffectPlayer : public USubsystem
+class DIVINEBEASTSARENA_API UDBAEffectPlayer : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
@@ -62,10 +63,10 @@ public:
 
 protected:
 	/** 获取技能特效数据 */
-	const FDBASkillEffectRow* GetSkillEffectData(FName SkillID) const;
+	bool GetSkillEffectData(FName SkillID, FDBASkillEffectRow& OutEffectData) const;
 
 	/** 安全播放Niagara特效 */
-	UNiagaraComponent* SafeSpawnNiagaraEffect(TSubclassOf<UNiagaraSystem> SystemClass, FVector Location, FRotator Rotation = FRotator::ZeroRotator);
+	UNiagaraComponent* SafeSpawnNiagaraEffect(UNiagaraSystem* System, FVector Location, FRotator Rotation = FRotator::ZeroRotator);
 
 	/** 安全播放音效 */
 	void SafePlaySound(USoundBase* SoundBase, FVector Location, bool bIs3D = true);

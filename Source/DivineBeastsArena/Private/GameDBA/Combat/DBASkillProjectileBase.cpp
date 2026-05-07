@@ -4,8 +4,9 @@
 #include "GameDBA/Combat/DBASkillProjectileBase.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-#include "GameFramework/DamageEvents.h"
+#include "Engine/DamageEvents.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 

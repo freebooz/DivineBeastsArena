@@ -1,6 +1,10 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "GameDBA/Spectator/UI/DBASpectatorStatusBarWidgetBase.h"
+#include "Components/Image.h"
+#include "Components/Widget.h"
+#include "Components/ProgressBar.h"
+#include "Components/TextBlock.h"
 
 UDBASpectatorStatusBarWidgetBase::UDBASpectatorStatusBarWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -12,21 +16,20 @@ void UDBASpectatorStatusBarWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// 初始化成员UI数组
+	// 鍒濆鍖栨垚鍛楿I鏁扮粍
 	MemberUIs.Reset();
 	MemberUIs.SetNum(MaxMemberCount);
 }
 
 void UDBASpectatorStatusBarWidgetBase::UpdateStatus(const TArray<FDBAObserverViewTarget>& TeamMembers, int32 CurrentIndex)
 {
-	// 动态更新所有成员状态
-	const int32 UpdateCount = FMath::Min(TeamMembers.Num(), MaxMemberCount);
+		const int32 UpdateCount = FMath::Min(TeamMembers.Num(), MaxMemberCount);
 	for (int32 i = 0; i < UpdateCount; ++i)
 	{
 		UpdateMemberStatus(i, TeamMembers[i]);
 	}
 
-	// 隐藏多余的成员UI
+	// 闅愯棌澶氫綑鐨勬垚鍛楿I
 	for (int32 i = TeamMembers.Num(); i < MaxMemberCount; ++i)
 	{
 		if (MemberUIs[i].Container)
@@ -38,43 +41,39 @@ void UDBASpectatorStatusBarWidgetBase::UpdateStatus(const TArray<FDBAObserverVie
 
 void UDBASpectatorStatusBarWidgetBase::UpdateMemberStatus(int32 Index, const FDBAObserverViewTarget& Member)
 {
-	// 检查索引有效性
-	if (Index < 0 || Index >= MemberUIs.Num())
+		if (Index < 0 || Index >= MemberUIs.Num())
 	{
 		return;
 	}
 
 	FDBASpectatorMemberUI& MemberUI = MemberUIs[Index];
 
-	// 更新名字
+	// 鏇存柊鍚嶅瓧
 	if (MemberUI.NameText)
 	{
 		MemberUI.NameText->SetText(FText::FromName(Member.PlayerName));
 	}
 
-	// 更新HP条
-	if (MemberUI.HPBar)
+		if (MemberUI.HPBar)
 	{
 		MemberUI.HPBar->SetPercent(Member.GetHPPercent());
 	}
 
-	// 更新Energy条
-	if (MemberUI.EnergyBar)
+		if (MemberUI.EnergyBar)
 	{
 		MemberUI.EnergyBar->SetPercent(Member.GetEnergyPercent());
 	}
 
-	// 更新活动指示器
-	if (MemberUI.ActiveIndicator)
+		if (MemberUI.ActiveIndicator)
 	{
-		// Member.IsCurrentTarget 来自 FDBAObserverViewTarget
-		// 如果有 CurrentTargetIndex 传入，应该在调用前处理
-		MemberUI.ActiveIndicator->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		// Member.IsCurrentTarget 鏉ヨ嚜 FDBAObserverViewTarget
+				MemberUI.ActiveIndicator->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 
-	// 显示容器
+	// 鏄剧ず瀹瑰櫒
 	if (MemberUI.Container)
 	{
 		MemberUI.Container->SetVisibility(ESlateVisibility::Visible);
 	}
 }
+

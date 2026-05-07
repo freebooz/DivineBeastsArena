@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/UDBAQueueStatusWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBAQueueStatusWidgetBase.h"
 
 UDBAQueueStatusWidgetBase::UDBAQueueStatusWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -59,6 +59,7 @@ void UDBAQueueStatusWidgetBase::UpdateWaitTime(float InElapsedTime)
 	int32 Minutes = FMath::FloorToInt(InElapsedTime / 60.0f);
 	int32 Seconds = FMath::FloorToInt(InElapsedTime) % 60;
 
-	FText WaitTimeText = FText::FromString(FString::Printf(TEXT("%d 分 %02d 秒"), Minutes, Seconds));
+	FText WaitTimeText = FText::FromString(FString::Printf(TEXT("%d:%02d"), Minutes, Seconds));
 	BP_OnWaitTimeUpdated(WaitTimeText);
 }
+

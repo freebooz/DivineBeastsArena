@@ -1,13 +1,12 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 // 技能投射物 - 镇魄灵犬技能Q
 
-#include "Combat/Projectiles/DBAProjectile_Dog_Q.h"
+#include "GameDBA/Combat/DBAProjectile_Dog_Q.h"
 #include "Components/SphereComponent.h"
 
 ADBAProjectile_Dog_Q::ADBAProjectile_Dog_Q()
 {
-	// 设置投射物属性
-	Speed = 1200.0f;
+	// 设置投射物属�?	Speed = 1200.0f;
 	Radius = 30.0f;
 	Damage = 50.0f;
 
@@ -26,14 +25,14 @@ ADBAProjectile_Dog_Q::ADBAProjectile_Dog_Q()
 		ImpactVFXAsset = ImpactVFXFinder.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<USoundCue> FlySFXFinder(
+	static ConstructorHelpers::FObjectFinder<USoundBase> FlySFXFinder(
 		TEXT("/Game/Audio/SFX/Projectiles/Dog/S_Dog_Q_Fly.S_Dog_Q_Fly"));
 	if (FlySFXFinder.Succeeded())
 	{
 		FlySFXAsset = FlySFXFinder.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<USoundCue> ImpactSFXFinder(
+	static ConstructorHelpers::FObjectFinder<USoundBase> ImpactSFXFinder(
 		TEXT("/Game/Audio/SFX/Projectiles/Dog/S_Dog_Q_Impact.S_Dog_Q_Impact"));
 	if (ImpactSFXFinder.Succeeded())
 	{

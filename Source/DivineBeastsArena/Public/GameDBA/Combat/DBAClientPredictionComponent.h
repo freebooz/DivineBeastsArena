@@ -7,8 +7,6 @@
 #include "GameMoba/RPC/DBARpcInterface.h"
 #include "DBAClientPredictionComponent.generated.h"
 
-struct FDBAMovePrediction;
-
 /**
  * DBAClientPredictionComponent
  *
@@ -72,5 +70,4 @@ protected:
 	float CorrectionSmoothingTime = 0.1f;
 
 private:
-	TArray<FDBAMovePrediction> MoveHistory;
 };

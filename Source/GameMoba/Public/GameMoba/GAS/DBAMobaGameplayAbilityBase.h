@@ -18,7 +18,7 @@ class GAMEMOBA_API UDBAMobaGameplayAbilityBase : public UGameplayAbility
 	GENERATED_BODY()
 
 public:
-	UDBAMobaGameplayAbilityBase(const FObjectInitializer& ObjectInitializer);
+	UDBAMobaGameplayAbilityBase(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 protected:
 	//~ Begin UGameplayAbility Interface
@@ -38,6 +38,9 @@ public:
 	/** 获取冷却时间 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Ability|Base")
 	float GetCooldownDuration() const { return CooldownDuration; }
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Ability|Base")
+	float GetEnergyCost() const { return EnergyCost; }
 
 protected:
 	/** 技能图标 */

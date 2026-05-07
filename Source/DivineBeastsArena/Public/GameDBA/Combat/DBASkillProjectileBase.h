@@ -5,10 +5,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "DBASkillProjectileBase.generated.h"
 
-class UProjectileMovementComponent;
-class UParticleSystemComponent;
 class USoundBase;
 
 /**

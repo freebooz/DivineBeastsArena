@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/UDBAAbilityBarWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBAAbilityBarWidgetBase.h"
 
 UDBAAbilityBarWidgetBase::UDBAAbilityBarWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -31,3 +31,4 @@ void UDBAAbilityBarWidgetBase::UpdateAbility(int32 SlotIndex, float Cooldown, fl
 void UDBAAbilityBarWidgetBase::SetAbilityEnabled(int32 SlotIndex, bool bEnabled)
 {
 }
+

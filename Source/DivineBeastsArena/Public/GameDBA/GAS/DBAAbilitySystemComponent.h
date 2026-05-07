@@ -31,6 +31,8 @@ class DIVINEBEASTSARENA_API UDBAAbilitySystemComponent : public UDBAMobaAbilityS
 	GENERATED_BODY()
 
 public:
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSkillCueExecuted, FName, SkillId, AActor*, Target);
+
 	UDBAAbilitySystemComponent(const FObjectInitializer& ObjectInitializer);
 
 	//~ Begin UActorComponent Interface
@@ -58,7 +60,7 @@ public:
 	 * 移除所有已授予的 Ability
 	 * 用于重新选择英雄或对局结束
 	 */
-	virtual void RemoveAllGrantedAbilities() override;
+	virtual void RemoveAllGrantedAbilities();
 
 	// ========================================
 	// UltimateEnergy 管理
@@ -269,6 +271,9 @@ public:
 	/** 冷却更新事件 */
 	UPROPERTY(BlueprintAssignable, Category = "DBA|Ability|Cooldown")
 	FOnSkillCooldownUpdated OnSkillCooldownUpdated;
+
+	UPROPERTY(BlueprintAssignable, Category = "DBA|Cue")
+	FOnSkillCueExecuted OnSkillCueExecuted;
 
 	/** 所有冷却更新事件 */
 	UPROPERTY(BlueprintAssignable, Category = "DBA|Ability|Cooldown")

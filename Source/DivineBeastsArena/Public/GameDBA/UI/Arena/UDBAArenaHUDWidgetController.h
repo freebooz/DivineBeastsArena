@@ -1,9 +1,9 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameMoba/UI/UDBAMobaHUDWidgetControllerBase.h"
+#include "GameMoba/UI/DBAMobaHUDWidgetControllerBase.h"
 #include "UDBAArenaHUDWidgetController.generated.h"
 
 UCLASS(BlueprintType)
@@ -42,3 +42,4 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD")
 	float MaxEnergy;
 };
+

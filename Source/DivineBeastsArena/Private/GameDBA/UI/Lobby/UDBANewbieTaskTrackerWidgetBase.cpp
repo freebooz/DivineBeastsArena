@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/UDBANewbieTaskTrackerWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBANewbieTaskTrackerWidgetBase.h"
 
 UDBANewbieTaskTrackerWidgetBase::UDBANewbieTaskTrackerWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -31,8 +31,8 @@ void UDBANewbieTaskTrackerWidgetBase::RefreshTaskList()
 
 	FDBANewbieTaskData Task1;
 	Task1.TaskId = FName(TEXT("NewbieTask_001"));
-	Task1.TaskTitle = FText::FromString(TEXT("熟悉操作"));
-	Task1.TaskDescription = FText::FromString(TEXT("使用 WASD 移动角色"));
+	Task1.TaskTitle = FText::FromString(TEXT("鐔熸倝鎿嶄綔"));
+	Task1.TaskDescription = FText::FromString(TEXT("浣跨敤 WASD 绉诲姩瑙掕壊"));
 	Task1.CurrentProgress = 1;
 	Task1.TargetProgress = 1;
 	Task1.bIsCompleted = true;
@@ -40,8 +40,8 @@ void UDBANewbieTaskTrackerWidgetBase::RefreshTaskList()
 
 	FDBANewbieTaskData Task2;
 	Task2.TaskId = FName(TEXT("NewbieTask_002"));
-	Task2.TaskTitle = FText::FromString(TEXT("释放技能"));
-	Task2.TaskDescription = FText::FromString(TEXT("使用技能攻击训练假人"));
+	Task2.TaskTitle = FText::GetEmpty();
+	Task2.TaskDescription = FText::GetEmpty();
 	Task2.CurrentProgress = 3;
 	Task2.TargetProgress = 5;
 	Task2.bIsCompleted = false;
@@ -87,3 +87,4 @@ void UDBANewbieTaskTrackerWidgetBase::ToggleCollapse()
 {
 	bIsCollapsed = !bIsCollapsed;
 }
+

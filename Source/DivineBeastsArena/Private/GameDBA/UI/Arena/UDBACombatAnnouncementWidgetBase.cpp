@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/UDBACombatAnnouncementWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBACombatAnnouncementWidgetBase.h"
 
 UDBACombatAnnouncementWidgetBase::UDBACombatAnnouncementWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -24,3 +24,4 @@ void UDBACombatAnnouncementWidgetBase::ShowAnnouncement(const FText& Text, float
 void UDBACombatAnnouncementWidgetBase::ClearAnnouncement()
 {
 }
+

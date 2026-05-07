@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/UDBAInteractionPromptWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBAInteractionPromptWidgetBase.h"
 
 UDBAInteractionPromptWidgetBase::UDBAInteractionPromptWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -49,3 +49,4 @@ void UDBAInteractionPromptWidgetBase::UpdateInteractionProgress(float Progress)
 	InteractionProgress = FMath::Clamp(Progress, 0.0f, 1.0f);
 	BP_OnUpdateProgress(InteractionProgress);
 }
+

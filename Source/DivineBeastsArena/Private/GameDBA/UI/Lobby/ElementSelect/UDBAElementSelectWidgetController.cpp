@@ -1,39 +1,34 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/ElementSelect/UDBAElementSelectWidgetController.h"
+#include "GameDBA/UI/Lobby/ElementSelect/UDBAElementSelectWidgetController.h"
 
 /**
- * 构造函数
- * 初始化元素选择 Widget 控制器
- */
+ * 鏋勯€犲嚱鏁? * 鍒濆鍖栧厓绱犻€夋嫨 Widget 鎺у埗鍣? */
 UDBAElementSelectWidgetController::UDBAElementSelectWidgetController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 }
 
 /**
- * 确认元素选择
- * 用户选择元素后调用此方法确认选择
- * @param Element 选择的元素类型
- */
+ * 纭鍏冪礌閫夋嫨
+ * 鐢ㄦ埛閫夋嫨鍏冪礌鍚庤皟鐢ㄦ鏂规硶纭閫夋嫨
+ * @param Element 閫夋嫨鐨勫厓绱犵被鍨? */
 void UDBAElementSelectWidgetController::ConfirmElementSelection(EDBAElement Element)
 {
 	HandleElementConfirmed(true, Element);
 }
 
 /**
- * 请求返回上一页
- * 用于取消当前选择并返回上一界面
+ * 璇锋眰杩斿洖涓婁竴椤? * 鐢ㄤ簬鍙栨秷褰撳墠閫夋嫨骞惰繑鍥炰笂涓€鐣岄潰
  */
 void UDBAElementSelectWidgetController::RequestBack()
 {
 }
 
 /**
- * 处理元素确认回调
- * @param bSuccess 是否成功确认
- * @param Element 确认的元素类型
- * 成功时广播 OnElementConfirmed 事件
+ * 澶勭悊鍏冪礌纭鍥炶皟
+ * @param bSuccess 鏄惁鎴愬姛纭
+ * @param Element 纭鐨勫厓绱犵被鍨? * 鎴愬姛鏃跺箍鎾?OnElementConfirmed 浜嬩欢
  */
 void UDBAElementSelectWidgetController::HandleElementConfirmed(bool bSuccess, EDBAElement Element)
 {
@@ -42,3 +37,4 @@ void UDBAElementSelectWidgetController::HandleElementConfirmed(bool bSuccess, ED
 		OnElementConfirmed.Broadcast(Element);
 	}
 }
+

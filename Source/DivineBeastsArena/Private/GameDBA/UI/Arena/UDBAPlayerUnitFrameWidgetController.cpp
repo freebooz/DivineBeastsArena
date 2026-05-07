@@ -1,19 +1,16 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/UDBAPlayerUnitFrameWidgetController.h"
+#include "GameDBA/UI/Arena/UDBAPlayerUnitFrameWidgetController.h"
 
 /**
- * 构造函数
- * 初始化玩家单元框控制器
- */
+ * 鏋勯€犲嚱鏁? * 鍒濆鍖栫帺瀹跺崟鍏冩鎺у埗鍣? */
 UDBAPlayerUnitFrameWidgetController::UDBAPlayerUnitFrameWidgetController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 }
 
 /**
- * 获取当前生命值
- * @return 当前 HP（待从 GAS 属性系统获取）
+ * 鑾峰彇褰撳墠鐢熷懡鍊? * @return 褰撳墠 HP锛堝緟浠?GAS 灞炴€х郴缁熻幏鍙栵級
  */
 float UDBAPlayerUnitFrameWidgetController::GetCurrentHP() const
 {
@@ -21,8 +18,7 @@ float UDBAPlayerUnitFrameWidgetController::GetCurrentHP() const
 }
 
 /**
- * 获取最大生命值
- * @return 最大 HP（待从 GAS 属性系统获取）
+ * 鑾峰彇鏈€澶х敓鍛藉€? * @return 鏈€澶?HP锛堝緟浠?GAS 灞炴€х郴缁熻幏鍙栵級
  */
 float UDBAPlayerUnitFrameWidgetController::GetMaxHP() const
 {
@@ -30,8 +26,7 @@ float UDBAPlayerUnitFrameWidgetController::GetMaxHP() const
 }
 
 /**
- * 获取当前能量值
- * @return 当前能量（待从 GAS 属性系统获取）
+ * 鑾峰彇褰撳墠鑳介噺鍊? * @return 褰撳墠鑳介噺锛堝緟浠?GAS 灞炴€х郴缁熻幏鍙栵級
  */
 float UDBAPlayerUnitFrameWidgetController::GetCurrentEnergy() const
 {
@@ -39,8 +34,7 @@ float UDBAPlayerUnitFrameWidgetController::GetCurrentEnergy() const
 }
 
 /**
- * 获取最大能量值
- * @return 最大能量（待从 GAS 属性系统获取）
+ * 鑾峰彇鏈€澶ц兘閲忓€? * @return 鏈€澶ц兘閲忥紙寰呬粠 GAS 灞炴€х郴缁熻幏鍙栵級
  */
 float UDBAPlayerUnitFrameWidgetController::GetMaxEnergy() const
 {
@@ -48,10 +42,11 @@ float UDBAPlayerUnitFrameWidgetController::GetMaxEnergy() const
 }
 
 /**
- * 获取当前等级
- * @return 英雄等级（待从 GAS 属性系统获取）
+ * 鑾峰彇褰撳墠绛夌骇
+ * @return 鑻遍泟绛夌骇锛堝緟浠?GAS 灞炴€х郴缁熻幏鍙栵級
  */
 int32 UDBAPlayerUnitFrameWidgetController::GetCurrentLevel() const
 {
 	return 12;
 }
+

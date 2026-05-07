@@ -1,6 +1,6 @@
-// Copyright FreeboozStudio Games, Inc. All Rights Reserved.
+﻿// Copyright FreeboozStudio Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/UDBAUltimateReadyPromptWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBAUltimateReadyPromptWidgetBase.h"
 
 UDBAUltimateReadyPromptWidgetBase::UDBAUltimateReadyPromptWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -24,3 +24,4 @@ void UDBAUltimateReadyPromptWidgetBase::ShowUltimateReady()
 void UDBAUltimateReadyPromptWidgetBase::HideUltimateReady()
 {
 }
+

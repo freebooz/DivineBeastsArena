@@ -1,4 +1,4 @@
-// Copyright FreeboozStudio. All Rights Reserved.
+﻿// Copyright FreeboozStudio. All Rights Reserved.
 
 #pragma once
 
@@ -9,9 +9,8 @@
 #include "DBAZodiacAbilityBase.generated.h"
 
 /**
- * 生肖技能基类 (Passive 等)
- * 决定英雄身份、外观剪影、动画基调
- */
+ * 鐢熻倴鎶€鑳藉熀绫?(Passive 绛?
+ * 鍐冲畾鑻遍泟韬唤銆佸瑙傚壀褰便€佸姩鐢诲熀璋? */
 UCLASS(Abstract)
 class DIVINEBEASTSARENA_API UDBAZodiacAbilityBase : public UDBAMobaGameplayAbilityBase
 {
@@ -20,13 +19,11 @@ class DIVINEBEASTSARENA_API UDBAZodiacAbilityBase : public UDBAMobaGameplayAbili
 public:
 	UDBAZodiacAbilityBase();
 
-	/** 所属生肖标识 */
+	/** 鎵€灞炵敓鑲栨爣璇?*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Zodiac")
 	EDBAZodiacType ZodiacType;
 
 protected:
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
-
-	/** 服务端激活回调 - RPC集成 */
-	virtual void OnServerActivate_Implementation();
 };
+

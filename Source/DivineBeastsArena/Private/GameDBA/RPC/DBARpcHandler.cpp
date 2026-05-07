@@ -1,4 +1,4 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 // RPC Handler Implementation
 
 #include "GameDBA/RPC/DBARpcHandler.h"
@@ -17,7 +17,7 @@ ADBARpcHandler::ADBARpcHandler()
 void ADBARpcHandler::ServerTryActivateAbility_Implementation(const FDBAAbilityRpcParams& Params)
 {
 	// TODO: Implement ability activation
-	UE_LOG(LogDBA, Warning, TEXT("ServerTryActivateAbility called"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("ServerTryActivateAbility called"));
 }
 
 bool ADBARpcHandler::ServerTryActivateAbility_Validate(const FDBAAbilityRpcParams& Params)
@@ -27,7 +27,7 @@ bool ADBARpcHandler::ServerTryActivateAbility_Validate(const FDBAAbilityRpcParam
 
 void ADBARpcHandler::ServerCancelAbility_Implementation(FGameplayAbilitySpecHandle Handle)
 {
-	UE_LOG(LogDBA, Warning, TEXT("ServerCancelAbility called"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("ServerCancelAbility called"));
 }
 
 bool ADBARpcHandler::ServerCancelAbility_Validate(FGameplayAbilitySpecHandle Handle)
@@ -37,7 +37,7 @@ bool ADBARpcHandler::ServerCancelAbility_Validate(FGameplayAbilitySpecHandle Han
 
 void ADBARpcHandler::ServerLockTarget_Implementation(AActor* TargetActor)
 {
-	UE_LOG(LogDBA, Warning, TEXT("ServerLockTarget called"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("ServerLockTarget called"));
 }
 
 bool ADBARpcHandler::ServerLockTarget_Validate(AActor* TargetActor)
@@ -47,7 +47,7 @@ bool ADBARpcHandler::ServerLockTarget_Validate(AActor* TargetActor)
 
 void ADBARpcHandler::ServerMoveTo_Implementation(FVector_NetQuantize10 Location)
 {
-	UE_LOG(LogDBA, Warning, TEXT("ServerMoveTo called"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("ServerMoveTo called"));
 }
 
 bool ADBARpcHandler::ServerMoveTo_Validate(FVector_NetQuantize10 Location)
@@ -57,7 +57,7 @@ bool ADBARpcHandler::ServerMoveTo_Validate(FVector_NetQuantize10 Location)
 
 void ADBARpcHandler::ServerRequestAttack_Implementation()
 {
-	UE_LOG(LogDBA, Warning, TEXT("ServerRequestAttack called"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("ServerRequestAttack called"));
 }
 
 bool ADBARpcHandler::ServerRequestAttack_Validate()
@@ -67,7 +67,7 @@ bool ADBARpcHandler::ServerRequestAttack_Validate()
 
 void ADBARpcHandler::ServerUltimateAbility_Implementation(const FDBAAbilityRpcParams& Params)
 {
-	UE_LOG(LogDBA, Warning, TEXT("ServerUltimateAbility called"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("ServerUltimateAbility called"));
 }
 
 bool ADBARpcHandler::ServerUltimateAbility_Validate(const FDBAAbilityRpcParams& Params)
@@ -79,59 +79,59 @@ bool ADBARpcHandler::ServerUltimateAbility_Validate(const FDBAAbilityRpcParams& 
 
 void ADBARpcHandler::ClientReceiveDamage_Implementation(float Damage, FVector_NetQuantize10 Position, FGameplayTag DamageType)
 {
-	UE_LOG(LogDBA, Warning, TEXT("ClientReceiveDamage: %f"), Damage);
+	UE_LOG(LogDBANetwork, Warning, TEXT("ClientReceiveDamage: %f"), Damage);
 }
 
 void ADBARpcHandler::ClientReceiveEffect_Implementation(FGameplayTag EffectTag, float Magnitude)
 {
-	UE_LOG(LogDBA, Warning, TEXT("ClientReceiveEffect: %s"), *EffectTag.ToString());
+	UE_LOG(LogDBANetwork, Warning, TEXT("ClientReceiveEffect: %s"), *EffectTag.ToString());
 }
 
 void ADBARpcHandler::ClientReplicateState_Implementation(uint8 NewState, const FVector_NetQuantize10& Location)
 {
-	UE_LOG(LogDBA, Warning, TEXT("ClientReplicateState: %d"), NewState);
+	UE_LOG(LogDBANetwork, Warning, TEXT("ClientReplicateState: %d"), NewState);
 }
 
 void ADBARpcHandler::ClientAbilityActivated_Implementation(FGameplayAbilitySpecHandle Handle)
 {
-	UE_LOG(LogDBA, Warning, TEXT("ClientAbilityActivated"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("ClientAbilityActivated"));
 }
 
 void ADBARpcHandler::ClientAbilityFailed_Implementation(FGameplayAbilitySpecHandle Handle, FGameplayTag FailureTag)
 {
-	UE_LOG(LogDBA, Warning, TEXT("ClientAbilityFailed: %s"), *FailureTag.ToString());
+	UE_LOG(LogDBANetwork, Warning, TEXT("ClientAbilityFailed: %s"), *FailureTag.ToString());
 }
 
 // ==================== IDBARpcInterface Interface ====================
 
 void ADBARpcHandler::ClientReportHit_Implementation(FGameplayAbilitySpecHandle AbilityHandle, FVector_NetQuantize10 HitLocation, AActor* HitActor)
 {
-	UE_LOG(LogDBA, Warning, TEXT("ClientReportHit"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("ClientReportHit"));
 }
 
 void ADBARpcHandler::ClientFullStateSync_Implementation(float Health, float Energy, float Shield, float UltimateEnergy, int32 ChainLevel, int32 ResonanceLevel)
 {
-	UE_LOG(LogDBA, Warning, TEXT("ClientFullStateSync"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("ClientFullStateSync"));
 }
 
 void ADBARpcHandler::ClientMoveCorrection_Implementation(FVector_NetQuantize10 ServerLocation, float ServerTime)
 {
-	UE_LOG(LogDBA, Warning, TEXT("ClientMoveCorrection"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("ClientMoveCorrection"));
 }
 
 void ADBARpcHandler::ClientHitConfirmed_Implementation(FGameplayAbilitySpecHandle AbilityHandle, float Damage, FGameplayTag DamageType)
 {
-	UE_LOG(LogDBA, Warning, TEXT("ClientHitConfirmed"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("ClientHitConfirmed"));
 }
 
 void ADBARpcHandler::ClientHitRejected_Implementation(FGameplayAbilitySpecHandle AbilityHandle)
 {
-	UE_LOG(LogDBA, Warning, TEXT("ClientHitRejected"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("ClientHitRejected"));
 }
 
 void ADBARpcHandler::ClientHitConfirmedWithCritical_Implementation(FGameplayAbilitySpecHandle AbilityHandle, float Damage, FGameplayTag DamageType, bool bIsCritical, FVector_NetQuantize10 HitLocation)
 {
-	UE_LOG(LogDBA, Warning, TEXT("ClientHitConfirmedWithCritical"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("ClientHitConfirmedWithCritical"));
 }
 
 // ==================== Helper Methods ====================
@@ -153,13 +153,13 @@ bool ADBARpcHandler::ValidateCastRange(AActor* Target, float Range) const
 		return false;
 	}
 
-	AActor* Owner = GetOwner();
-	if (!Owner)
+	AActor* OwnerActor = GetOwner();
+	if (!OwnerActor)
 	{
 		return false;
 	}
 
-	float Distance = FVector::Dist(Owner->GetActorLocation(), Target->GetActorLocation());
+	float Distance = FVector::Dist(OwnerActor->GetActorLocation(), Target->GetActorLocation());
 	return Distance <= Range;
 }
 

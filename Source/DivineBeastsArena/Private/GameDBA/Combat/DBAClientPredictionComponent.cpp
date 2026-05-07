@@ -1,8 +1,9 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "GameDBA/Combat/DBAClientPredictionComponent.h"
+
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
-#include "GameMoba/RPC/DBARpcInterface.h"
+#include "GameDBA/RPC/DBARpcHandler.h"
 
 UDBAClientPredictionComponent::UDBAClientPredictionComponent()
 	: Super()
@@ -25,14 +26,13 @@ void UDBAClientPredictionComponent::TryPredictAbility(FName SkillId, AActor* Tar
 {
 	if (ADBAZodiacCharacterBase* Character = Cast<ADBAZodiacCharacterBase>(GetOwner()))
 	{
-		if (IDBARpcServer* RpcServer = Cast<IDBARpcServer>(Character))
+		if (ADBARpcHandler* RpcHandler = Character->GetRpcHandler())
 		{
 			FDBAAbilityRpcParams Params;
 			Params.AbilityHandle = FGameplayAbilitySpecHandle();
 			Params.TargetActor = Target;
 			Params.TargetLocation = TargetLocation;
-
-			RpcServer->ServerTryActivateAbility(Params);
+			RpcHandler->ServerTryActivateAbility(Params);
 		}
 	}
 }
@@ -41,10 +41,10 @@ void UDBAClientPredictionComponent::TryPredictMove(FVector TargetLocation)
 {
 	if (ADBAZodiacCharacterBase* Character = Cast<ADBAZodiacCharacterBase>(GetOwner()))
 	{
-		if (IDBARpcServer* RpcServer = Cast<IDBARpcServer>(Character))
+		if (ADBARpcHandler* RpcHandler = Character->GetRpcHandler())
 		{
 			PredictedLocation = TargetLocation;
-			RpcServer->ServerMoveTo(TargetLocation);
+			RpcHandler->ServerMoveTo(FVector_NetQuantize10(TargetLocation));
 		}
 	}
 }
@@ -58,7 +58,6 @@ void UDBAClientPredictionComponent::ApplyServerCorrection(FVector ServerLocation
 
 void UDBAClientPredictionComponent::OnAbilityActivated(FGameplayAbilitySpecHandle Handle, bool bSuccess)
 {
-	// 处理技能激活结果
 }
 
 void UDBAClientPredictionComponent::OnMoveCorrected(FVector CorrectedLocation)

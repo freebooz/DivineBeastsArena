@@ -1,7 +1,8 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "GameDBA/Spectator/UI/DBASpectatorHUDWidgetBase.h"
 #include "GameDBA/Spectator/Components/DBASpectatorComponent.h"
+#include "GameDBA/Spectator/DBASpectatorManager.h"
 #include "GameDBA/Spectator/UI/DBASpectatorStatusBarWidgetBase.h"
 #include "GameDBA/Spectator/UI/DBASpectatorMinimapWidgetBase.h"
 
@@ -15,7 +16,7 @@ void UDBASpectatorHUDWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// 默认暂停提示隐藏
+	// 榛樿鏆傚仠鎻愮ず闅愯棌
 	if (PauseOverlay)
 	{
 		PauseOverlay->SetVisibility(ESlateVisibility::Hidden);
@@ -37,22 +38,20 @@ void UDBASpectatorHUDWidgetBase::NativeTick(const FGeometry& MyGeometry, float I
 		return;
 	}
 
-	// 检查视角目标是否变化
-	FDBAObserverViewTarget NewTarget = SpectatorComponent->GetCurrentViewTarget();
+		FDBAObserverViewTarget NewTarget = SpectatorComponent->GetCurrentViewTarget();
 	if (NewTarget.TargetCharacter != CachedViewTarget.TargetCharacter)
 	{
 		CachedViewTarget = NewTarget;
 		OnViewTargetUpdated(NewTarget);
 
-		// 更新当前玩家名称
+		// 鏇存柊褰撳墠鐜╁鍚嶇О
 		if (CurrentPlayerNameText)
 		{
 			CurrentPlayerNameText->SetText(FText::FromName(NewTarget.PlayerName));
 		}
 	}
 
-	// 检查暂停状态
-	UDBASpectatorManager* Manager = SpectatorComponent->GetSpectatorManager();
+		UDBASpectatorManager* Manager = SpectatorComponent->GetSpectatorManager();
 	if (Manager)
 	{
 		bool bCurrentPauseState = Manager->IsPaused();
@@ -61,7 +60,7 @@ void UDBASpectatorHUDWidgetBase::NativeTick(const FGeometry& MyGeometry, float I
 			bCachedIsPaused = bCurrentPauseState;
 			OnPauseStateChanged(bCachedIsPaused);
 
-			// 更新暂停提示UI
+			// 鏇存柊鏆傚仠鎻愮ずUI
 			if (PauseOverlay)
 			{
 				PauseOverlay->SetVisibility(bCachedIsPaused ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
@@ -82,8 +81,7 @@ void UDBASpectatorHUDWidgetBase::BindSpectatorComponent(UDBASpectatorComponent* 
 
 	if (SpectatorComponent.IsValid())
 	{
-		// 初始化数据
-		CachedViewTarget = SpectatorComponent->GetCurrentViewTarget();
+				CachedViewTarget = SpectatorComponent->GetCurrentViewTarget();
 		OnViewTargetUpdated(CachedViewTarget);
 	}
 }
@@ -95,3 +93,4 @@ void UDBASpectatorHUDWidgetBase::UnbindSpectatorComponent()
 		SpectatorComponent = nullptr;
 	}
 }
+

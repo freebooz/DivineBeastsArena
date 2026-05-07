@@ -1,13 +1,12 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 // 技能投射物 - 月华灵兔技能E
 
-#include "Combat/Projectiles/DBAProjectile_Rabbit_E.h"
+#include "GameDBA/Combat/DBAProjectile_Rabbit_E.h"
 #include "Components/SphereComponent.h"
 
 ADBAProjectile_Rabbit_E::ADBAProjectile_Rabbit_E()
 {
-	// 设置投射物属性
-	Speed = 1200.0f;
+	// 设置投射物属�?	Speed = 1200.0f;
 	Radius = 30.0f;
 	Damage = 50.0f;
 
@@ -26,14 +25,14 @@ ADBAProjectile_Rabbit_E::ADBAProjectile_Rabbit_E()
 		ImpactVFXAsset = ImpactVFXFinder.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<USoundCue> FlySFXFinder(
+	static ConstructorHelpers::FObjectFinder<USoundBase> FlySFXFinder(
 		TEXT("/Game/Audio/SFX/Projectiles/Rabbit/S_Rabbit_E_Fly.S_Rabbit_E_Fly"));
 	if (FlySFXFinder.Succeeded())
 	{
 		FlySFXAsset = FlySFXFinder.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<USoundCue> ImpactSFXFinder(
+	static ConstructorHelpers::FObjectFinder<USoundBase> ImpactSFXFinder(
 		TEXT("/Game/Audio/SFX/Projectiles/Rabbit/S_Rabbit_E_Impact.S_Rabbit_E_Impact"));
 	if (ImpactSFXFinder.Succeeded())
 	{

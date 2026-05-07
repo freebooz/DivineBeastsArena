@@ -1,10 +1,10 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "GameDBA/Combat/Feedback/DBAEffectTableManager.h"
 #include "Engine/World.h"
 #include "Engine/AssetManager.h"
 #include "Kismet/GameplayStatics.h"
-#include "GameInstance.h"
+#include "Engine/GameInstance.h"
 
 UDBAEffectTableManager::UDBAEffectTableManager()
 {
@@ -29,14 +29,13 @@ void UDBAEffectTableManager::LoadSkillEffectTable(const TSoftObjectPtr<UDataTabl
 		return;
 	}
 
-	// 同步加载
+	// 鍚屾鍔犺浇
 	UDataTable* LoadedTable = TablePath.LoadSynchronous();
 	if (LoadedTable)
 	{
 		SkillEffectTable = LoadedTable;
 
-		// 缓存所有数据
-		CachedEffects.Empty();
+		// 缂撳瓨鎵€鏈夋暟鎹?		CachedEffects.Empty();
 		TArray<FName> RowNames = LoadedTable->GetRowNames();
 		for (const FName& RowName : RowNames)
 		{
@@ -57,7 +56,7 @@ TSoftObjectPtr<UDataTable> UDBAEffectTableManager::AsyncLoadSkillEffectTable(con
 
 	PendingTablePath = TablePath;
 
-	// 使用Asset Manager异步加载
+	// 浣跨敤Asset Manager寮傛鍔犺浇
 	if (UAssetManager* Manager = UAssetManager::GetIfInitialized())
 	{
 		TArray<FSoftObjectPath> Paths;
@@ -88,13 +87,13 @@ TArray<FName> UDBAEffectTableManager::GetAllSkillIDs() const
 	return Keys;
 }
 
-void UDBAEffectTableManager::OnAsyncLoadComplete(const TSoftObjectPtr<UDataTable>& TablePath)
+void UDBAEffectTableManager::OnAsyncLoadComplete(TSoftObjectPtr<UDataTable> TablePath)
 {
 	if (UDataTable* LoadedTable = TablePath.Get())
 	{
 		SkillEffectTable = LoadedTable;
 
-		// 重新缓存
+		// 閲嶆柊缂撳瓨
 		CachedEffects.Empty();
 		TArray<FName> RowNames = LoadedTable->GetRowNames();
 		for (const FName& RowName : RowNames)

@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/UDBACCBarWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBACCBarWidgetBase.h"
 
 UDBACCBarWidgetBase::UDBACCBarWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -30,3 +30,4 @@ void UDBACCBarWidgetBase::RemoveCCEffect(const FString& CCId)
 void UDBACCBarWidgetBase::ClearAllCCEffects()
 {
 }
+

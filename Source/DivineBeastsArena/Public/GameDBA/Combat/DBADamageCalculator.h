@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameCore/Types/DBACommonEnums.h"
 #include "GameDBA/Core/DBAEnumsCore.h"
 #include "DBADamageCalculator.generated.h"
 

@@ -1,8 +1,9 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// 技能VFX/SFX挂载组件 - 镇岳神牛技能Q
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// 鎶€鑳絍FX/SFX鎸傝浇缁勪欢 - 闀囧渤绁炵墰鎶€鑳絈
 
 #include "GameDBA/VFX/Components/Skill/DBAZodiacSkillVFXComponent_Ox_Q.h"
 #include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystem.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 
@@ -25,7 +26,7 @@ void UDBAZodiacSkillVFXComponent_Ox_Q::PlayCastingVFX(AActor* Target)
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
 	}
 
-	// 播放施法动画
+	// 鎾斁鏂芥硶鍔ㄧ敾
 	if (UAnimMontage* Montage = CastingMontage.LoadSynchronous())
 	{
 		if (USkeletalMeshComponent* Mesh = GetOwner()->FindComponentByClass<USkeletalMeshComponent>())
@@ -49,7 +50,7 @@ void UDBAZodiacSkillVFXComponent_Ox_Q::PlayImpactVFX(AActor* HitTarget)
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
 	}
 
-	// 播放命中动画
+	// 鎾斁鍛戒腑鍔ㄧ敾
 	if (UAnimMontage* Montage = ImpactMontage.LoadSynchronous())
 	{
 		if (USkeletalMeshComponent* Mesh = HitTarget->FindComponentByClass<USkeletalMeshComponent>())
@@ -63,12 +64,11 @@ void UDBAZodiacSkillVFXComponent_Ox_Q::PlayProjectileVFX(FVector Start, FVector 
 {
 	if (UParticleSystem* VFX = ProjectileVFX.LoadSynchronous())
 	{
-		// 计算方向
+		// 璁＄畻鏂瑰悜
 		FVector Direction = (End - Start).GetSafeNormal();
 		FRotator Rotation = Direction.Rotation();
 
-		// 在起点生成飞行特效
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, Start, Rotation, true);
+		// 鍦ㄨ捣鐐圭敓鎴愰琛岀壒鏁?		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, Start, Rotation, true);
 	}
 
 	if (USoundBase* SFX = ProjectileSFX.LoadSynchronous())
@@ -85,7 +85,7 @@ void UDBAZodiacSkillVFXComponent_Ox_Q::PlayAOEVFX(FVector Center, float Radius)
 		UParticleSystemComponent* PSystem = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, Center, Rotation, true);
 		if (PSystem)
 		{
-			// 缩放特效范围
+			// 缂╂斁鐗规晥鑼冨洿
 			PSystem->SetVectorParameter(FName(TEXT("Radius")), FVector(Radius));
 		}
 	}
@@ -103,7 +103,7 @@ void UDBAZodiacSkillVFXComponent_Ox_Q::PlayChannelVFX()
 
 	if (USoundBase* SFX = CastingSFX.LoadSynchronous())
 	{
-		UGameplayStatics::PlaySoundAttached(SFX, GetOwner()->GetRootComponent());
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
 	}
 }
 
@@ -129,5 +129,14 @@ void UDBAZodiacSkillVFXComponent_Ox_Q::PlayImpactSFX()
 	if (USoundBase* SFX = ImpactSFX.LoadSynchronous())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
+	}
+}
+
+
+void UDBAZodiacSkillVFXComponent_Ox_Q::PlayCastingSFX()
+{
+	if (USoundBase* SFX = CastingSFX.LoadSynchronous())
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner() ? GetOwner()->GetActorLocation() : FVector::ZeroVector);
 	}
 }

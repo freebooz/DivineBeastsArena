@@ -1,7 +1,7 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/Loading/UDBALoadingScreenWidgetBase.h"
-#include "Client/UI/Lobby/Loading/UDBALoadingWidgetController.h"
+#include "GameDBA/UI/Lobby/Loading/UDBALoadingScreenWidgetBase.h"
+#include "GameDBA/UI/Lobby/Loading/UDBALoadingWidgetController.h"
 
 UDBALoadingScreenWidgetBase::UDBALoadingScreenWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -48,3 +48,4 @@ void UDBALoadingScreenWidgetBase::ShowTips(const FText& TipsText)
 	CurrentTips = TipsText;
 	BP_OnTipsUpdated(TipsText);
 }
+

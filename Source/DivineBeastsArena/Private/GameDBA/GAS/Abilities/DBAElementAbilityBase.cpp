@@ -1,133 +1,30 @@
-// Copyright FreeboozStudio. All Rights Reserved.
-// 元素能力基类实现 - 所有元素相关能力的基类
+﻿// Copyright FreeboozStudio. All Rights Reserved.
 
 #include "GameDBA/GAS/Abilities/DBAElementAbilityBase.h"
-#include "GameDBA/GAS/DBAAbilitySystemComponent.h"
-#include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
-#include "GameDBA/GAS/Effects/DBEEnergyCostEffect.h"
-#include "GameDBA/Core/DBALogChannels.h"
 
-// 构造函数 - 初始化元素能力默认属性
+#include "AbilitySystemComponent.h"
+#include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
+
 UDBAElementAbilityBase::UDBAElementAbilityBase()
 {
-    // 默认元素类型为金
-	ElementType = EDBAElement::Gold;
-	// 默认能量消耗为0
+	AbilityElementType = EDBAElement::None;
+	AbilityEnergyCost = 0.0f;
 	EnergyCost = 0.0f;
 }
 
-// CanActivateAbility - 检查能力是否可以激活
 bool UDBAElementAbilityBase::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
 {
-    // 调用父类检查
 	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
 	{
 		return false;
 	}
-
-	// 防御性检查：确保 ActorInfo 有效
-	if (!ActorInfo || !ActorInfo->AbilitySystemComponent.IsValid())
-	{
-		UE_LOG(LogDBACombat, Warning, TEXT("[DBAElementAbilityBase] CanActivateAbility 失败：ActorInfo 无效"));
-		return false;
-	}
-	{
-        // 获取能力系统组件
-		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
-		if (!ASC)
-		{
-			return false;
-		}
-
-		// 获取战斗属性集
-		const UDBABattleAttributeSet* CombatAttrSet = ASC->GetSet<UDBABattleAttributeSet>();
-		if (!CombatAttrSet)
-		{
-			UE_LOG(LogDBACombat, Warning, TEXT("[DBAElementAbilityBase] 无法获取 DBABattleAttributeSet"));
-			return false;
-		}
-
-		// 获取当前能量和最大能量
-		float CurrentEnergy = CombatAttrSet->GetCurrentEnergy();
-		float MaxEnergy = CombatAttrSet->GetMaxEnergy();
-
-		// 检查能量是否足够
-		if (CurrentEnergy < EnergyCost)
-		{
-			UE_LOG(LogDBACombat, Warning, TEXT("[DBAElementAbilityBase] 能量不足：需要 %.1f，当前 %.1f / %.1f"), EnergyCost, CurrentEnergy, MaxEnergy);
-			return false;
-		}
-	}
-
-	return true;
+	const UAbilitySystemComponent* ASC = ActorInfo ? ActorInfo->AbilitySystemComponent.Get() : nullptr;
+	const UDBABattleAttributeSet* AttrSet = ASC ? ASC->GetSet<UDBABattleAttributeSet>() : nullptr;
+	return AttrSet && AttrSet->GetCurrentEnergy() >= FMath::Max(AbilityEnergyCost, EnergyCost);
 }
 
-// CommitAbilityCost - 提交能力消耗（能量消耗）
-bool UDBAElementAbilityBase::CommitAbilityCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, OUT FGameplayTagContainer* OptionalRelevantTags)
+bool UDBAElementAbilityBase::CommitAbilityCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, FGameplayTagContainer* OptionalRelevantTags)
 {
-	// 防御性检查：确保 ActorInfo 有效
-	if (!ActorInfo || !ActorInfo->AbilitySystemComponent.IsValid())
-	{
-		UE_LOG(LogDBACombat, Warning, TEXT("[DBAElementAbilityBase] CommitAbilityCost 失败：ActorInfo 无效"));
-		return false;
-	}
-	{
-		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
-		if (!ASC)
-		{
-			return false;
-		}
-
-		// 获取战斗属性集
-		const UDBABattleAttributeSet* CombatAttrSet = ASC->GetSet<UDBABattleAttributeSet>();
-		if (!CombatAttrSet)
-		{
-			return false;
-		}
-
-		// 获取当前能量
-		float CurrentEnergy = CombatAttrSet->GetCurrentEnergy();
-
-		// 再次检查能量是否足够
-		if (CurrentEnergy < EnergyCost)
-		{
-			UE_LOG(LogDBACombat, Warning, TEXT("[DBAElementAbilityBase] 能量不足：需要 %.1f，当前 %.1f"), EnergyCost, CurrentEnergy);
-			return false;
-		}
-
-		// 通过 GameplayEffect 应用能量消耗，确保预测和复制系统正常工作
-		// 创建能量消耗 GameplayEffect Spec 并应用
-		FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
-		EffectContext.AddSourceObject(ActorInfo->AvatarActor.Get());
-
-		if (!EffectContext.IsValid() || !ActorInfo->AvatarActor.IsValid())
-		{
-			UE_LOG(LogDBACombat, Error, TEXT("[DBAElementAbilityBase] CommitEnergyCost - EffectContext 或 AvatarActor 无效"));
-			return false;
-		}
-
-		// 防御性检查：确保 EffectContext 和 AvatarActor 有效 (仅在验证后调用)
-		ensure(EffectContext.IsValid());
-		ensure(ActorInfo->AvatarActor.IsValid());
-
-		// 创建能量消耗 GE Spec（使用内置的 CostGameplayEffect 机制）
-		TSubclassOf<UGameplayEffect> EnergyCostEffectClass = UDBEEnergyCostEffect::StaticClass();
-		FGameplayEffectSpec EffectSpec(EnergyCostEffectClass.GetDefaultObject(), EffectContext, EnergyCost);
-
-		// 应用到自身
-		FActiveGameplayEffectHandle ActiveHandle = ASC->ApplyGameplayEffectSpecToSelf(EffectSpec);
-
-		// 检查能量消耗是否成功
-		if (ActiveHandle.IsValid())
-		{
-			UE_LOG(LogDBACombat, Log, TEXT("[DBAElementAbilityBase] 能量消耗成功：%.1f"), EnergyCost);
-		}
-		else
-		{
-			UE_LOG(LogDBACombat, Warning, TEXT("[DBAElementAbilityBase] 能量消耗失败"));
-			return false;
-		}
-
-		return true;
-	}
+	return Super::CommitAbilityCost(Handle, ActorInfo, ActivationInfo, OptionalRelevantTags);
 }

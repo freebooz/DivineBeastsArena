@@ -5,6 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "DBAZodiacSkillVFXComponent_Pig_W.generated.h"
 
 class UParticleSystem;

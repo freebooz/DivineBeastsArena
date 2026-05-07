@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/UDBAChainUltimatePanelWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBAChainUltimatePanelWidgetBase.h"
 
 UDBAChainUltimatePanelWidgetBase::UDBAChainUltimatePanelWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -24,3 +24,4 @@ void UDBAChainUltimatePanelWidgetBase::UpdateChainCount(int32 Count)
 void UDBAChainUltimatePanelWidgetBase::ShowChainReady()
 {
 }
+

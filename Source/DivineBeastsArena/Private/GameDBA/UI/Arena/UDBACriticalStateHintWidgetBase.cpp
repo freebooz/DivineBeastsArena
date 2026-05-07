@@ -1,6 +1,6 @@
-// Copyright FreeboozStudio Games, Inc. All Rights Reserved.
+﻿// Copyright FreeboozStudio Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/UDBACriticalStateHintWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBACriticalStateHintWidgetBase.h"
 
 UDBACriticalStateHintWidgetBase::UDBACriticalStateHintWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -28,3 +28,4 @@ void UDBACriticalStateHintWidgetBase::ShowCriticalEnergy(bool bLowEnergy)
 void UDBACriticalStateHintWidgetBase::HideAllHints()
 {
 }
+

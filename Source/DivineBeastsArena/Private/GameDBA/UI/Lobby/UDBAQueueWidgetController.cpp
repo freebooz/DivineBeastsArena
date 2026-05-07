@@ -1,20 +1,18 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/UDBAQueueWidgetController.h"
+#include "GameDBA/UI/Lobby/UDBAQueueWidgetController.h"
 #include "GameDBA/Core/DBALogChannels.h"
 
 /**
- * 构造函数
- * 初始化排队 Widget 控制器
- */
+ * 鏋勯€犲嚱鏁? * 鍒濆鍖栨帓闃?Widget 鎺у埗鍣? */
 UDBAQueueWidgetController::UDBAQueueWidgetController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 }
 
 /**
- * 请求加入队列
- * @param Mode 排队模式
+ * 璇锋眰鍔犲叆闃熷垪
+ * @param Mode 鎺掗槦妯″紡
  */
 void UDBAQueueWidgetController::RequestJoinQueue(int32 Mode)
 {
@@ -22,7 +20,7 @@ void UDBAQueueWidgetController::RequestJoinQueue(int32 Mode)
 }
 
 /**
- * 请求离开队列
+ * 璇锋眰绂诲紑闃熷垪
  */
 void UDBAQueueWidgetController::RequestLeaveQueue()
 {
@@ -30,7 +28,7 @@ void UDBAQueueWidgetController::RequestLeaveQueue()
 }
 
 /**
- * 请求接受匹配
+ * 璇锋眰鎺ュ彈鍖归厤
  */
 void UDBAQueueWidgetController::RequestAcceptMatch()
 {
@@ -38,9 +36,10 @@ void UDBAQueueWidgetController::RequestAcceptMatch()
 }
 
 /**
- * 请求拒绝匹配
+ * 璇锋眰鎷掔粷鍖归厤
  */
 void UDBAQueueWidgetController::RequestDeclineMatch()
 {
 	UE_LOG(LogDBAUI, Log, TEXT("[UDBAQueueWidgetController] RequestDeclineMatch"));
 }
+

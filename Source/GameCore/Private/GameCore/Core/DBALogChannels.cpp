@@ -1,6 +1,6 @@
 // Copyright FreeboozStudio. All Rights Reserved.
 
-#include "GameDBA/Core/DBALogChannels.h"
+#include "GameCore/Core/DBALogChannels.h"
 
 DEFINE_LOG_CATEGORY(LogDBACore);
 DEFINE_LOG_CATEGORY(LogDBAFrontend);

@@ -1,11 +1,9 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/UDBAArenaHUDWidgetController.h"
+#include "GameDBA/UI/Arena/UDBAArenaHUDWidgetController.h"
 
 /**
- * 构造函数
- * 初始化玩家属性默认值
- */
+ * 鏋勯€犲嚱鏁? * 鍒濆鍖栫帺瀹跺睘鎬ч粯璁ゅ€? */
 UDBAArenaHUDWidgetController::UDBAArenaHUDWidgetController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 	, CurrentHP(1000.0f)
@@ -16,10 +14,7 @@ UDBAArenaHUDWidgetController::UDBAArenaHUDWidgetController(const FObjectInitiali
 }
 
 /**
- * 更新玩家生命值
- * @param InCurrentHP 当前生命值
- * @param InMaxHP 最大生命值
- * 更新后广播 OnPlayerHPChanged 事件通知 UI 更新
+ * 鏇存柊鐜╁鐢熷懡鍊? * @param InCurrentHP 褰撳墠鐢熷懡鍊? * @param InMaxHP 鏈€澶х敓鍛藉€? * 鏇存柊鍚庡箍鎾?OnPlayerHPChanged 浜嬩欢閫氱煡 UI 鏇存柊
  */
 void UDBAArenaHUDWidgetController::UpdatePlayerHP(float InCurrentHP, float InMaxHP)
 {
@@ -29,10 +24,7 @@ void UDBAArenaHUDWidgetController::UpdatePlayerHP(float InCurrentHP, float InMax
 }
 
 /**
- * 更新玩家能量值
- * @param InCurrentEnergy 当前能量值
- * @param InMaxEnergy 最大能量值
- * 更新后广播 OnPlayerEnergyChanged 事件通知 UI 更新
+ * 鏇存柊鐜╁鑳介噺鍊? * @param InCurrentEnergy 褰撳墠鑳介噺鍊? * @param InMaxEnergy 鏈€澶ц兘閲忓€? * 鏇存柊鍚庡箍鎾?OnPlayerEnergyChanged 浜嬩欢閫氱煡 UI 鏇存柊
  */
 void UDBAArenaHUDWidgetController::UpdatePlayerEnergy(float InCurrentEnergy, float InMaxEnergy)
 {
@@ -42,13 +34,10 @@ void UDBAArenaHUDWidgetController::UpdatePlayerEnergy(float InCurrentEnergy, flo
 }
 
 /**
- * 更新终极能量值
- * @param InCurrentEnergy 当前终极能量值
- * @param InMaxEnergy 最大终极能量值（固定100）
- * 更新后广播 OnUltimateEnergyChanged 事件通知 UI 更新
- * 用于大招充能显示和就绪提示
- */
+ * 鏇存柊缁堟瀬鑳介噺鍊? * @param InCurrentEnergy 褰撳墠缁堟瀬鑳介噺鍊? * @param InMaxEnergy 鏈€澶х粓鏋佽兘閲忓€硷紙鍥哄畾100锛? * 鏇存柊鍚庡箍鎾?OnUltimateEnergyChanged 浜嬩欢閫氱煡 UI 鏇存柊
+ * 鐢ㄤ簬澶ф嫑鍏呰兘鏄剧ず鍜屽氨缁彁绀? */
 void UDBAArenaHUDWidgetController::UpdateUltimateEnergy(float InCurrentEnergy, float InMaxEnergy)
 {
 	OnUltimateEnergyChanged.Broadcast(InCurrentEnergy, InMaxEnergy);
 }
+

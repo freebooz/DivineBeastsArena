@@ -1,10 +1,9 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "GameDBA/UI/DBAGameUIManager.h"
-#include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetBase.h"
+
 #include "GameDBA/UI/Arena/UDBAArenaHUDRootWidgetBase.h"
-#include "Blueprint/WidgetLayoutBuilder.h"
-#include "Components/CanvasPanel.h"
+#include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetBase.h"
 
 UDBAGameUIManager::UDBAGameUIManager()
 	: Super()
@@ -29,7 +28,6 @@ void UDBAGameUIManager::TransitionTo(EDBAUIState NewState)
 		return;
 	}
 
-	// 处理旧状态的清理
 	switch (CurrentState)
 	{
 	case EDBAUIState::MainMenu:
@@ -44,11 +42,8 @@ void UDBAGameUIManager::TransitionTo(EDBAUIState NewState)
 	}
 
 	CurrentState = NewState;
-
-	// 触发回调
 	OnStateChanged.Broadcast(NewState);
 
-	// 处理新状态的初始化
 	switch (NewState)
 	{
 	case EDBAUIState::MainMenu:
@@ -63,9 +58,9 @@ void UDBAGameUIManager::TransitionTo(EDBAUIState NewState)
 	}
 }
 
-void UDBAGameUIManager::RegisterStateChangeCallback(FOnUIStateChanged Delegate)
+void UDBAGameUIManager::RegisterStateChangeCallback(const FOnUIStateChanged& Delegate)
 {
-	OnStateChanged.Add(Delegate);
+	(void)Delegate;
 }
 
 void UDBAGameUIManager::ShowMainLobby()
@@ -74,11 +69,9 @@ void UDBAGameUIManager::ShowMainLobby()
 	{
 		CreateMainLobbyWidget();
 	}
-
 	if (MainLobbyWidget && !bMainLobbyVisible)
 	{
 		MainLobbyWidget->AddToViewport(0);
-		MainLobbyWidget->Activate();
 		bMainLobbyVisible = true;
 	}
 }
@@ -87,7 +80,6 @@ void UDBAGameUIManager::HideMainLobby()
 {
 	if (MainLobbyWidget && bMainLobbyVisible)
 	{
-		MainLobbyWidget->Deactivate();
 		MainLobbyWidget->RemoveFromParent();
 		bMainLobbyVisible = false;
 	}
@@ -99,11 +91,9 @@ void UDBAGameUIManager::ShowArenaHUD()
 	{
 		CreateArenaHUDWidget();
 	}
-
 	if (ArenaHUDWidget && !bArenaHUDVisible)
 	{
 		ArenaHUDWidget->AddToViewport(100);
-		ArenaHUDWidget->Activate();
 		bArenaHUDVisible = true;
 	}
 }
@@ -112,7 +102,6 @@ void UDBAGameUIManager::HideArenaHUD()
 {
 	if (ArenaHUDWidget && bArenaHUDVisible)
 	{
-		ArenaHUDWidget->Deactivate();
 		ArenaHUDWidget->RemoveFromParent();
 		bArenaHUDVisible = false;
 	}
@@ -126,11 +115,10 @@ void UDBAGameUIManager::ClearAllUI()
 
 void UDBAGameUIManager::CreateMainLobbyWidget()
 {
-	if (!MainLobbyWidgetClass.IsValid())
+	if (!MainLobbyWidgetClass)
 	{
 		return;
 	}
-
 	if (UWorld* World = GetWorld())
 	{
 		if (APlayerController* PC = World->GetFirstPlayerController())
@@ -142,11 +130,10 @@ void UDBAGameUIManager::CreateMainLobbyWidget()
 
 void UDBAGameUIManager::CreateArenaHUDWidget()
 {
-	if (!ArenaHUDWidgetClass.IsValid())
+	if (!ArenaHUDWidgetClass)
 	{
 		return;
 	}
-
 	if (UWorld* World = GetWorld())
 	{
 		if (APlayerController* PC = World->GetFirstPlayerController())

@@ -1,6 +1,5 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// GameplayCue - 鼠E技能
-
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// GameplayCue - 榧燛鎶€鑳?
 #pragma once
 
 #include "CoreMinimal.h"
@@ -16,25 +15,26 @@ class DIVINEBEASTSARENA_API ADBACue_Rat_E : public ADBACue_Base
 public:
 	ADBACue_Rat_E();
 
-	// 当 Cue 被触发时调用
+	// 褰?Cue 琚Е鍙戞椂璋冪敤
 	virtual bool OnExecuteGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters);
 
-	// 当 Cue 生效时调用 (持续性 Cue)
+	// 褰?Cue 鐢熸晥鏃惰皟鐢?(鎸佺画鎬?Cue)
 	virtual void OnActiveGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters);
 
-	// 当 Cue 结束时调用
+	// Called when this cue is removed.
 	virtual void OnRemoveGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters);
 
 protected:
-	// 从技能数据表加载配置
+	// 浠庢妧鑳芥暟鎹〃鍔犺浇閰嶇疆
 	void LoadSkillData();
 
 protected:
 
-	// 技能ID (用于查询数据)
+	// 鎶€鑳絀D (鐢ㄤ簬鏌ヨ鏁版嵁)
 	UPROPERTY(EditDefaultsOnly, Category = "Cue")
 	FName SkillId = FName(TEXT("Rat_E"));
 
 protected:
 	virtual FName GetSkillId() const override { return FName(TEXT("Rat_E")); }
 };
+

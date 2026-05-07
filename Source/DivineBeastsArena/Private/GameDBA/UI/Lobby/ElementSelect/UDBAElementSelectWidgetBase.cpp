@@ -1,9 +1,9 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/ElementSelect/UDBAElementSelectWidgetBase.h"
-#include "Client/UI/Lobby/ElementSelect/UDBAElementInfoPanelWidgetBase.h"
-#include "Client/UI/Lobby/ElementSelect/UDBAFixedSkillGroupPreviewWidgetBase.h"
-#include "Client/UI/Lobby/ElementSelect/UDBAElementSelectWidgetController.h"
+#include "GameDBA/UI/Lobby/ElementSelect/UDBAElementSelectWidgetBase.h"
+#include "GameDBA/UI/Lobby/ElementSelect/UDBAElementInfoPanelWidgetBase.h"
+#include "GameDBA/UI/Lobby/ElementSelect/UDBAFixedSkillGroupPreviewWidgetBase.h"
+#include "GameDBA/UI/Lobby/ElementSelect/UDBAElementSelectWidgetController.h"
 
 UDBAElementSelectWidgetBase::UDBAElementSelectWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -97,3 +97,4 @@ void UDBAElementSelectWidgetBase::OnBackButtonClicked()
 		WidgetController->RequestBack();
 	}
 }
+

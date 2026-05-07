@@ -5,7 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "Particles/ParticleSystem.h"
-#include "Sound/SoundCue.h"
+#include "Sound/SoundBase.h"
 
 UDBASkillVFXManager::UDBASkillVFXManager()
 {
@@ -50,7 +50,7 @@ void UDBASkillVFXManager::PlaySkillSFX(FName SkillId, AActor* Owner)
 
 	// 动态加载SFX资源
 	FSoftObjectPath SFXAssetPath(SFXPath);
-	TSoftObjectPtr<USoundCue> SFXAsset(SFXAssetPath);
+	TSoftObjectPtr<USoundBase> SFXAsset(SFXAssetPath);
 
 	if (USoundBase* SFX = SFXAsset.LoadSynchronous())
 	{

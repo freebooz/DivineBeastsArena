@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/HeroSelect/UDBAHeroSelectWidgetController.h"
+#include "GameDBA/UI/Lobby/HeroSelect/UDBAHeroSelectWidgetController.h"
 
 UDBAHeroSelectWidgetController::UDBAHeroSelectWidgetController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -23,3 +23,4 @@ void UDBAHeroSelectWidgetController::HandleZodiacConfirmed(bool bSuccess, EDBAZo
 		OnZodiacConfirmed.Broadcast(Zodiac);
 	}
 }
+

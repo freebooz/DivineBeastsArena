@@ -3,7 +3,7 @@
 
 #include "GameMoba/GAS/DBAMobaAbilitySystemComponentBase.h"
 #include "AbilitySystemInterface.h"
-#include "GameplayAbilitiesComponent.h"
+#include "AbilitySystemComponent.h"
 
 UDBAMobaAbilitySystemComponentBase::UDBAMobaAbilitySystemComponentBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -23,9 +23,6 @@ void UDBAMobaAbilitySystemComponentBase::InitializeAbilities(AActor* InOwnerActo
 		return;
 	}
 
-	OwnerActor = InOwnerActor;
-	AvatarActor = InAvatarActor;
-
 	InitAbilityActorInfo(InOwnerActor, InAvatarActor);
 	bAbilitiesInitialized = true;
 }
@@ -34,7 +31,7 @@ void UDBAMobaAbilitySystemComponentBase::RemoveAllGrantedAbilities()
 {
 	for (const FGameplayAbilitySpecHandle& Handle : GrantedAbilityHandles)
 	{
-		RemoveAbility(Handle);
+		ClearAbility(Handle);
 	}
 	GrantedAbilityHandles.Empty();
 }

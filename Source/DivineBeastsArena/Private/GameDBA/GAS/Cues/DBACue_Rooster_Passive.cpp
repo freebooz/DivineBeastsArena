@@ -1,122 +1,28 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
-// GameplayCue - 鸡被动技能
 
 #include "GameDBA/GAS/Cues/DBACue_Rooster_Passive.h"
-#include "GameDBA/GAS/DBAAbilitySystemComponent.h"
-#include "Kismet/GameplayStatics.h"
 
 ADBACue_Rooster_Passive::ADBACue_Rooster_Passive()
 {
-	// 默认配置
-	// bAutoDestroyOnOwnerRemoved = true;
-	// bOnlyRelevantToOwner = false;
-	// RollbackPolicy = ECueRollback::CanRollback;
-
-	// 加载技能数据
 	LoadSkillData();
 }
 
 void ADBACue_Rooster_Passive::LoadSkillData()
 {
-	// 从 DataTable 加载技能数据
-	UDataTable* SkillTable = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/Data/Skills/SkillDataTable.SkillDataTable'"));
-	if (SkillTable)
-	{
-		static const FString ContextString = TEXT("DBACue_Rooster_Passive");
-		FDBASkillDataRow* SkillRow = SkillTable->FindRow<FDBASkillDataRow>(FName(TEXT("Rooster_Passive")), ContextString, false);
-		if (SkillRow)
-		{
-			CueScale = SkillRow->BaseDamage > 0 ? 1.0f + SkillRow->DamageScaling * 0.1f : 1.0f;
-		}
-	}
+	Super::LoadSkillData();
 }
 
 bool ADBACue_Rooster_Passive::OnExecuteGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters)
 {
-	// 获取技能数据
-	FDBASkillDataRow* SkillData = nullptr;
-	UDataTable* SkillTable = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/Data/Skills/SkillDataTable.SkillDataTable'"));
-	if (SkillTable)
-	{
-		static const FString ContextString = TEXT("OnExecuteGameplayCue");
-		SkillData = SkillTable->FindRow<FDBASkillDataRow>(SkillId, ContextString, false);
-	}
-
-	// 播放视觉效果
-	if (SkillData && SkillData->VFXAsset.IsValid())
-	{
-		UParticleSystem* VFX = SkillData->VFXAsset.LoadSynchronous();
-		if (VFX)
-		{
-			FVector Location = Target ? Target->GetActorLocation() : FVector::ZeroVector;
-			FRotator Rotation = Target ? Target->GetActorRotation() : FRotator::ZeroRotator;
-			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, true);
-		}
-	}
-
-	// 播放音效
-	if (SkillData && SkillData->SFXAsset.IsValid())
-	{
-		USoundBase* SFX = Cast<USoundBase>(SkillData->SFXAsset.LoadSynchronous());
-		if (SFX)
-		{
-			UGameplayStatics::PlaySoundAtLocation(Target, SFX, Target ? Target->GetActorLocation() : FVector::ZeroVector);
-		}
-	}
-
-	// 通过 ASC 广播技能事件
-	AActor* OwnerActor = GetOwner();
-	{
-		if (UDBAAbilitySystemComponent* ASC = OwnerActor ? OwnerActor->FindComponentByClass<UDBAAbilitySystemComponent>())
-		{
-			ASC->OnSkillCueExecuted.Broadcast(SkillId, Target);
-		}
-	}
-
-	return true;
+	return Super::OnExecuteGameplayCue(Target, Parameters);
 }
 
 void ADBACue_Rooster_Passive::OnActiveGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters)
 {
-	// 获取技能数据，检查是否有引导特效
-	FDBASkillDataRow* SkillData = nullptr;
-	UDataTable* SkillTable = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/Data/Skills/SkillDataTable.SkillDataTable'"));
-	if (SkillTable)
-	{
-		static const FString ContextString = TEXT("OnActiveGameplayCue");
-		SkillData = SkillTable->FindRow<FDBASkillDataRow>(SkillId, ContextString, false);
-	}
-
-	// 播放持续性特效（如引导、充能）
-	if (SkillData && SkillData->VFXAsset.IsValid())
-	{
-		UParticleSystem* VFX = SkillData->VFXAsset.LoadSynchronous();
-		if (VFX)
-		{
-			FVector Location = Target ? Target->GetActorLocation() : FVector::ZeroVector;
-			FRotator Rotation = Target ? Target->GetActorRotation() : FRotator::ZeroRotator;
-			UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, true);
-		}
-	}
+	Super::OnActiveGameplayCue(Target, Parameters);
 }
 
 void ADBACue_Rooster_Passive::OnRemoveGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters)
 {
-	// 清理特效 - 在目标位置停止所有相关粒子系统
-	if (Target)
-	{
-		TArray<UParticleSystemComponent*> ParticleComponents;
-		Target->GetComponents<UParticleSystemComponent>(ParticleComponents);
-		for (UParticleSystemComponent* Particle : ParticleComponents)
-		{
-			if (Particle && Particle->IsActive())
-			{
-				// 检查是否是此 Cue 创建的特效（通过 Tag 标记）
-				if (Particle->ComponentHasTag(FName(TEXT("Cue_Rooster_Passive"))))
-				{
-					Particle->Deactivate();
-				}
-			}
-		}
-	}
+	Super::OnRemoveGameplayCue(Target, Parameters);
 }

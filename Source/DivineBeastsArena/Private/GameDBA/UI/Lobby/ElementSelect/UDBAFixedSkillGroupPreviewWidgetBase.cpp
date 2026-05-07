@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/ElementSelect/UDBAFixedSkillGroupPreviewWidgetBase.h"
+#include "GameDBA/UI/Lobby/ElementSelect/UDBAFixedSkillGroupPreviewWidgetBase.h"
 
 UDBAFixedSkillGroupPreviewWidgetBase::UDBAFixedSkillGroupPreviewWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -14,15 +14,15 @@ void UDBAFixedSkillGroupPreviewWidgetBase::SetZodiacAndElement(EDBAZodiac Zodiac
 	CurrentZodiac = Zodiac;
 	CurrentElement = Element;
 
-	FText PassiveName = FText::FromString(TEXT("鼠王之敏"));
-	FText Skill01Name = FText::FromString(TEXT("金刃斩"));
-	FText Skill02Name = FText::FromString(TEXT("金盾护体"));
-	FText Skill03Name = FText::FromString(TEXT("金光闪"));
-	FText Skill04Name = FText::FromString(TEXT("金锁链"));
-	FText UltimateName = FText::FromString(TEXT("鼠王降临"));
+	FText PassiveName = FText::FromString(TEXT("榧犵帇涔嬫晱"));
+	FText Skill01Name = FText::GetEmpty();
+	FText Skill02Name = FText::FromString(TEXT("閲戠浘鎶や綋"));
+	FText Skill03Name = FText::GetEmpty();
+	FText Skill04Name = FText::GetEmpty();
+	FText UltimateName = FText::FromString(TEXT("榧犵帇闄嶄复"));
 
 	int32 ResonanceLevel = 4;
-	FText ResonanceDescription = FText::FromString(TEXT("控制时间 +1.0秒，护盾值 +20%"));
+	FText ResonanceDescription = FText::FromString(TEXT("鎺у埗鏃堕棿 +1.0绉掞紝鎶ょ浘鍊?+20%"));
 
 	BP_OnUpdateSkillGroupPreview(
 		Zodiac,
@@ -37,3 +37,4 @@ void UDBAFixedSkillGroupPreviewWidgetBase::SetZodiacAndElement(EDBAZodiac Zodiac
 		ResonanceDescription
 	);
 }
+

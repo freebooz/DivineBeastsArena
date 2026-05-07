@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/UDBADebuffBarWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBADebuffBarWidgetBase.h"
 
 UDBADebuffBarWidgetBase::UDBADebuffBarWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -30,3 +30,4 @@ void UDBADebuffBarWidgetBase::RemoveDebuff(const FString& DebuffId)
 void UDBADebuffBarWidgetBase::ClearAllDebuffs()
 {
 }
+

@@ -1,8 +1,8 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/HeroSelect/UDBAHeroSelectWidgetBase.h"
-#include "Client/UI/Lobby/HeroSelect/UDBAHeroInfoPanelWidgetBase.h"
-#include "Client/UI/Lobby/HeroSelect/UDBAHeroSelectWidgetController.h"
+#include "GameDBA/UI/Lobby/HeroSelect/UDBAHeroSelectWidgetBase.h"
+#include "GameDBA/UI/Lobby/HeroSelect/UDBAHeroInfoPanelWidgetBase.h"
+#include "GameDBA/UI/Lobby/HeroSelect/UDBAHeroSelectWidgetController.h"
 
 UDBAHeroSelectWidgetBase::UDBAHeroSelectWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -92,3 +92,4 @@ void UDBAHeroSelectWidgetBase::OnBackButtonClicked()
 		WidgetController->RequestBack();
 	}
 }
+

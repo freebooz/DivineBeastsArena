@@ -1,15 +1,16 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "GameDBA/Combat/Feedback/DBAEffectPlayer.h"
+
+#include "Camera/PlayerCameraManager.h"
 #include "GameDBA/Combat/Feedback/DBAEffectTableManager.h"
-#include "NiagaraFunctionLibrary.h"
-#include "Kismet/GameplayStatics.h"
+#include "GameDBA/Combat/Feedback/DBAFloatingDamageComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerController.h"
+#include "Kismet/GameplayStatics.h"
+#include "NiagaraFunctionLibrary.h"
 
-UDBAEffectPlayer::UDBAEffectPlayer()
-{
-}
+UDBAEffectPlayer::UDBAEffectPlayer() {}
 
 void UDBAEffectPlayer::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -26,136 +27,74 @@ void UDBAEffectPlayer::Deinitialize()
 
 UDBAEffectPlayer* UDBAEffectPlayer::Get(UWorld* World)
 {
-	if (!World)
-	{
-		return nullptr;
-	}
-
-	return World->GetSubsystem<UDBAEffectPlayer>();
+	return World ? World->GetSubsystem<UDBAEffectPlayer>() : nullptr;
 }
 
 void UDBAEffectPlayer::PlayReleaseEffect(AActor* Caster, FName SkillID, FVector Location, FRotator Direction)
 {
-	const FDBASkillEffectRow* EffectData = GetSkillEffectData(SkillID);
-	if (!EffectData)
+	FDBASkillEffectRow EffectData;
+	if (GetSkillEffectData(SkillID, EffectData))
 	{
-		return;
-	}
-
-	// 播放释放特效
-	if (EffectData->ReleaseEffect.IsValid())
-	{
-		TSubclassOf<UNiagaraSystem> ReleaseSystem = EffectData->ReleaseEffect.Get();
-		if (ReleaseSystem)
-		{
-			SafeSpawnNiagaraEffect(ReleaseSystem, Location, Direction);
-		}
+		SafeSpawnNiagaraEffect(EffectData.ReleaseEffect.Get(), Location, Direction);
 	}
 }
 
 void UDBAEffectPlayer::PlayHitEffect(AActor* Target, FName SkillID, FVector ImpactPoint)
 {
-	const FDBASkillEffectRow* EffectData = GetSkillEffectData(SkillID);
-	if (!EffectData)
+	FDBASkillEffectRow EffectData;
+	if (GetSkillEffectData(SkillID, EffectData))
 	{
-		return;
-	}
-
-	// 播放命中特效
-	if (EffectData->HitEffect.IsValid())
-	{
-		TSubclassOf<UNiagaraSystem> HitSystem = EffectData->HitEffect.Get();
-		if (HitSystem)
-		{
-			SafeSpawnNiagaraEffect(HitSystem, ImpactPoint, FRotator::ZeroRotator);
-		}
+		SafeSpawnNiagaraEffect(EffectData.HitEffect.Get(), ImpactPoint, FRotator::ZeroRotator);
 	}
 }
 
 void UDBAEffectPlayer::PlaySound(AActor* Target, FName SkillID, bool bIsHit)
 {
-	const FDBASkillEffectRow* EffectData = GetSkillEffectData(SkillID);
-	if (!EffectData)
+	FDBASkillEffectRow EffectData;
+	if (!GetSkillEffectData(SkillID, EffectData))
 	{
 		return;
 	}
 
-	USoundBase* Sound = bIsHit ? EffectData->HitSound.Get() : EffectData->CastSound.Get();
+	USoundBase* Sound = bIsHit ? EffectData.HitSound.Get() : EffectData.CastSound.Get();
 	if (Sound)
 	{
-		FVector Location = Target ? Target->GetActorLocation() : FVector::ZeroVector;
-		SafePlaySound(Sound, Location, true);
+		SafePlaySound(Sound, Target ? Target->GetActorLocation() : FVector::ZeroVector, true);
 	}
 }
 
 void UDBAEffectPlayer::TriggerScreenShake(AActor* Target, FName SkillID, float Scale)
 {
-	const FDBASkillEffectRow* EffectData = GetSkillEffectData(SkillID);
-	if (!EffectData)
-	{
-		return;
-	}
-
-	if (!EffectData->ScreenShakeClass.Get())
+	FDBASkillEffectRow EffectData;
+	if (!GetSkillEffectData(SkillID, EffectData) || !EffectData.ScreenShakeClass)
 	{
 		return;
 	}
 
 	APlayerController* PC = nullptr;
-	if (Target)
+	if (const ACharacter* Character = Cast<ACharacter>(Target))
 	{
-		if (ACharacter* Character = Cast<ACharacter>(Target))
-		{
-			PC = Character->GetController<APlayerController>();
-		}
-		else if (APawn* Pawn = Cast<APawn>(Target))
-		{
-			PC = Pawn->GetController<APlayerController>();
-		}
+		PC = Character->GetController<APlayerController>();
 	}
-
-	if (!PC)
+	else if (const APawn* Pawn = Cast<APawn>(Target))
 	{
-		if (UWorld* World = GetWorld())
-		{
-			PC = World->GetFirstPlayerController();
-		}
+		PC = Pawn->GetController<APlayerController>();
 	}
-
-	if (PC)
+	if (!PC && GetWorld())
 	{
-		PC->ClientPlayCameraShake(EffectData->ScreenShakeClass.Get(), EffectData->ShakeScale * Scale);
+		PC = GetWorld()->GetFirstPlayerController();
+	}
+	if (PC && PC->PlayerCameraManager)
+	{
+		PC->PlayerCameraManager->StartCameraShake(EffectData.ScreenShakeClass, EffectData.ShakeScale * Scale);
 	}
 }
 
 void UDBAEffectPlayer::SpawnDamageNumber(AActor* Target, float Damage, bool bIsCritical, uint8 ElementValue, FVector ImpactPoint)
 {
-	if (!Target)
-	{
-		return;
-	}
-
-	// 尝试获取Target身上的FloatingDamageComponent
-	UDBAFloatingDamageComponent* DamageComponent = Target->FindComponentByClass<UDBAFloatingDamageComponent>();
-	if (DamageComponent)
+	if (UDBAFloatingDamageComponent* DamageComponent = Target ? Target->FindComponentByClass<UDBAFloatingDamageComponent>() : nullptr)
 	{
 		DamageComponent->SpawnDamageNumber(Damage, bIsCritical, ElementValue, ImpactPoint);
-		return;
-	}
-
-	// 如果Target没有，找世界中的
-	if (UWorld* World = GetWorld())
-	{
-		TArray<UActorComponent*> Components;
-		World->GetComponents(UDBAFloatingDamageComponent::StaticClass(), Components);
-		for (UActorComponent* Component : Components)
-		{
-			if (UDBAFloatingDamageComponent* DamageComp = Cast<UDBAFloatingDamageComponent>(Component))
-			{
-				DamageComp->SpawnDamageNumber(Damage, bIsCritical, ElementValue, ImpactPoint);
-				break;
-			}
-		}
 	}
 }
 
@@ -164,55 +103,37 @@ void UDBAEffectPlayer::SetEffectTableManager(UDBAEffectTableManager* Manager)
 	EffectTableManager = Manager;
 }
 
-const FDBASkillEffectRow* UDBAEffectPlayer::GetSkillEffectData(FName SkillID) const
+bool UDBAEffectPlayer::GetSkillEffectData(FName SkillID, FDBASkillEffectRow& OutEffectData) const
 {
-	if (EffectTableManager.IsValid())
+	if (!EffectTableManager.IsValid())
 	{
-		return EffectTableManager->GetSkillEffect(SkillID);
+		return false;
 	}
-	return nullptr;
+	OutEffectData = EffectTableManager->GetSkillEffect(SkillID);
+	return OutEffectData.IsLoaded() || OutEffectData.ScreenShakeClass != nullptr;
 }
 
-UNiagaraComponent* UDBAEffectPlayer::SafeSpawnNiagaraEffect(TSubclassOf<UNiagaraSystem> SystemClass, FVector Location, FRotator Rotation)
+UNiagaraComponent* UDBAEffectPlayer::SafeSpawnNiagaraEffect(UNiagaraSystem* System, FVector Location, FRotator Rotation)
 {
-	if (!SystemClass)
+	if (!System || !GetWorld())
 	{
 		return nullptr;
 	}
-
-	if (UWorld* World = GetWorld())
-	{
-		return UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			World,
-			SystemClass,
-			Location,
-			Rotation,
-			FVector(1.0f),
-			true,
-			true,
-			ENCPoolMethod::AutoRelease,
-			true
-		);
-	}
-	return nullptr;
+	return UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), System, Location, Rotation, FVector(1.0f), true, true, ENCPoolMethod::AutoRelease, true);
 }
 
 void UDBAEffectPlayer::SafePlaySound(USoundBase* SoundBase, FVector Location, bool bIs3D)
 {
-	if (!SoundBase)
+	if (!SoundBase || !GetWorld())
 	{
 		return;
 	}
-
-	if (UWorld* World = GetWorld())
+	if (bIs3D)
 	{
-		if (bIs3D)
-		{
-			UGameplayStatics::SpawnSoundAtLocation(World, SoundBase, Location);
-		}
-		else
-		{
-			UGameplayStatics::SpawnSound2D(World, SoundBase);
-		}
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), SoundBase, Location);
+	}
+	else
+	{
+		UGameplayStatics::SpawnSound2D(GetWorld(), SoundBase);
 	}
 }

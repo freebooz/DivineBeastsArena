@@ -5,6 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "DBAZodiacSkillVFXComponent_Rat_Passive.generated.h"
 
 class UParticleSystem;

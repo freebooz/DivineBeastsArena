@@ -31,7 +31,8 @@ void ADBAMonsterAIController::OnPossess(APawn* InPawn)
 	// 运行行为树
 	if (BehaviorTree)
 	{
-		UseBlackboard(BlackboardAsset, BlackboardComponent.Get());
+		UBlackboardComponent* BBComp = GetBlackboardComponent();
+		UseBlackboard(BlackboardAsset, BBComp);
 		RunBehaviorTree(BehaviorTree);
 	}
 }

@@ -1,5 +1,5 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// 怪物AI组件实现
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// 鎬墿AI缁勪欢瀹炵幇
 
 #include "GameDBA/Character/Monster/AI/DBAMonsterAIComponent.h"
 #include "GameDBA/Character/Monster/DBAMonsterBase.h"
@@ -8,11 +8,12 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Character.h"
+#include "EngineUtils.h"
 
 UDBAMonsterAIComponent::UDBAMonsterAIComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	PrimaryComponentTick.TickInterval = 0.1f; // AI Tick 频率 10Hz
+	PrimaryComponentTick.TickInterval = 0.1f; // AI Tick 棰戠巼 10Hz
 
 	SetIsReplicated(true);
 }
@@ -21,7 +22,7 @@ void UDBAMonsterAIComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
 
-	// 初始化出生点
+	// 鍒濆鍖栧嚭鐢熺偣
 	AActor* Owner = GetOwner();
 	if (Owner)
 	{
@@ -43,7 +44,7 @@ void UDBAMonsterAIComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 	DOREPLIFETIME(UDBAMonsterAIComponent, AggroList);
 }
 
-// ===== 导航实现 =====
+// ===== 瀵艰埅瀹炵幇 =====
 
 void UDBAMonsterAIComponent::MoveToLocation(FVector Destination)
 {
@@ -65,7 +66,7 @@ void UDBAMonsterAIComponent::MoveToLocation(FVector Destination)
 		}
 	}
 
-	// 如果没有 AIController，使用 CharacterMovement
+	// 濡傛灉娌℃湁 AIController锛屼娇鐢?CharacterMovement
 	if (!AIController)
 	{
 		if (ACharacter* Character = Cast<ACharacter>(GetOwner()))
@@ -133,14 +134,14 @@ bool UDBAMonsterAIComponent::IsMoving() const
 	{
 		if (UPathFollowingComponent* PathFollowing = AIController->GetPathFollowingComponent())
 		{
-			return PathFollowing->GetMoveStatus() != EPathFollowingStatus::Idle;
+			return PathFollowing->GetStatus() != EPathFollowingStatus::Idle;
 		}
 	}
 	else if (AAIController* AIController2 = Cast<AAIController>(GetOwner()->GetOwner()))
 	{
 		if (UPathFollowingComponent* PathFollowing = AIController2->GetPathFollowingComponent())
 		{
-			return PathFollowing->GetMoveStatus() != EPathFollowingStatus::Idle;
+			return PathFollowing->GetStatus() != EPathFollowingStatus::Idle;
 		}
 	}
 
@@ -155,7 +156,7 @@ bool UDBAMonsterAIComponent::IsMoving() const
 	return false;
 }
 
-// ===== 状态转换 =====
+// ===== 鐘舵€佽浆鎹?=====
 
 void UDBAMonsterAIComponent::TransitionTo(EMonsterAIState NewState)
 {
@@ -167,7 +168,7 @@ void UDBAMonsterAIComponent::TransitionTo(EMonsterAIState NewState)
 	EMonsterAIState OldState = CurrentState;
 	CurrentState = NewState;
 
-	// 根据新状态更新移动速度
+	// 鏍规嵁鏂扮姸鎬佹洿鏂扮Щ鍔ㄩ€熷害
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 	if (UCharacterMovementComponent* Movement = Character ? Character->GetCharacterMovement() : nullptr)
 	{
@@ -182,4 +183,150 @@ void UDBAMonsterAIComponent::TransitionTo(EMonsterAIState NewState)
 	}
 }
 
-// 其他方法保持原有实现...
+// 鍏朵粬鏂规硶淇濇寔鍘熸湁瀹炵幇...
+
+void UDBAMonsterAIComponent::FindTarget()
+{
+	AActor* BestTarget = GetTopAggroTarget();
+	if (!BestTarget)
+	{
+		const TArray<AActor*> Targets = FindAllValidTargets();
+		BestTarget = Targets.Num() > 0 ? Targets[0] : nullptr;
+	}
+	CurrentTarget = BestTarget;
+	TransitionTo(CurrentTarget ? EMonsterAIState::Chase : EMonsterAIState::Idle);
+}
+
+void UDBAMonsterAIComponent::ClearTarget()
+{
+	CurrentTarget = nullptr;
+	TransitionTo(EMonsterAIState::Idle);
+}
+
+void UDBAMonsterAIComponent::AttackTarget()
+{
+	if (!CurrentTarget || !IsInAttackRange())
+	{
+		return;
+	}
+	LastAttackTime = GetWorld() ? GetWorld()->GetTimeSeconds() : LastAttackTime;
+}
+
+bool UDBAMonsterAIComponent::IsInAttackRange() const
+{
+	const AActor* Owner = GetOwner();
+	return Owner && CurrentTarget && FVector::Dist(Owner->GetActorLocation(), CurrentTarget->GetActorLocation()) <= AttackRange;
+}
+
+bool UDBAMonsterAIComponent::IsInDetectionRange() const
+{
+	const AActor* Owner = GetOwner();
+	return Owner && CurrentTarget && FVector::Dist(Owner->GetActorLocation(), CurrentTarget->GetActorLocation()) <= DetectionRadius;
+}
+
+void UDBAMonsterAIComponent::AddAggro(AActor* Target, float Amount)
+{
+	if (!Target || Amount <= 0.0f)
+	{
+		return;
+	}
+	for (FAggroInfo& Info : AggroList)
+	{
+		if (Info.Target == Target)
+		{
+			Info.AddThreat(Amount, GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f);
+			return;
+		}
+	}
+	AggroList.Add(FAggroInfo(Target, Amount, GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f));
+}
+
+void UDBAMonsterAIComponent::RemoveAggro(AActor* Target)
+{
+	AggroList.RemoveAll([Target](const FAggroInfo& Info) { return Info.Target == Target; });
+}
+
+AActor* UDBAMonsterAIComponent::GetTopAggroTarget()
+{
+	AActor* BestTarget = nullptr;
+	float BestAggro = -1.0f;
+	for (const FAggroInfo& Info : AggroList)
+	{
+		if (Info.Target.IsValid() && Info.Threat > BestAggro)
+		{
+			BestAggro = Info.Threat;
+			BestTarget = Info.Target.Get();
+		}
+	}
+	return BestTarget;
+}
+
+void UDBAMonsterAIComponent::ClearAggroList()
+{
+	AggroList.Empty();
+}
+
+int32 UDBAMonsterAIComponent::GetPatrolPointCount() const
+{
+	return PatrolPoints_CPP.Num();
+}
+
+FVector UDBAMonsterAIComponent::GetPatrolPoint(int32 Index) const
+{
+	return PatrolPoints_CPP.IsValidIndex(Index) ? PatrolPoints_CPP[Index] : SpawnLocation;
+}
+
+FVector UDBAMonsterAIComponent::GetNextPatrolPoint()
+{
+	if (PatrolPoints_CPP.Num() == 0)
+	{
+		return SpawnLocation;
+	}
+	const FVector Result = PatrolPoints_CPP[CurrentPatrolIndex];
+	CurrentPatrolIndex = bLoopPatrol ? (CurrentPatrolIndex + 1) % PatrolPoints_CPP.Num() : FMath::Min(CurrentPatrolIndex + 1, PatrolPoints_CPP.Num() - 1);
+	return Result;
+}
+
+void UDBAMonsterAIComponent::UpdateAggroList()
+{
+	AggroList.RemoveAll([](const FAggroInfo& Info) { return !Info.Target.IsValid() || Info.Threat <= 0.0f; });
+	LastAggroUpdateTime = GetWorld() ? GetWorld()->GetTimeSeconds() : LastAggroUpdateTime;
+}
+
+bool UDBAMonsterAIComponent::HasLineOfSightTo(FVector TargetLocation) const
+{
+	return true;
+}
+
+TArray<AActor*> UDBAMonsterAIComponent::FindAllValidTargets() const
+{
+	TArray<AActor*> Result;
+	const AActor* Owner = GetOwner();
+	if (!Owner || !GetWorld())
+	{
+		return Result;
+	}
+	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	{
+		AActor* Actor = *It;
+		if (Actor && Actor != Owner && FVector::Dist(Owner->GetActorLocation(), Actor->GetActorLocation()) <= DetectionRadius)
+		{
+			Result.Add(Actor);
+		}
+	}
+	return Result;
+}
+
+void UDBAMonsterAIComponent::RefreshAggroTarget()
+{
+	CurrentTarget = GetTopAggroTarget();
+}
+
+void UDBAMonsterAIComponent::OnRep_CurrentState(EMonsterAIState OldState)
+{
+}
+
+void UDBAMonsterAIComponent::OnRep_CurrentTarget(AActor* OldTarget)
+{
+}
+

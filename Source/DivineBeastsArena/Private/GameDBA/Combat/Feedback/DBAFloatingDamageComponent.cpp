@@ -1,4 +1,4 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "GameDBA/Combat/Feedback/DBAFloatingDamageComponent.h"
 #include "GameDBA/Core/DBAEnumsCore.h"
@@ -13,21 +13,19 @@ UDBAFloatingDamageComponent::UDBAFloatingDamageComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bTickEvenWhenPaused = false;
-	SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void UDBAFloatingDamageComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 缓存PlayerController
+	// 缂撳瓨PlayerController
 	if (UWorld* World = GetWorld())
 	{
 		CachedPlayerController = World->GetFirstPlayerController();
 	}
 
-	// 预初始化对象池
-	ActiveDamageEntries.Reserve(PoolSize);
+	// 棰勫垵濮嬪寲瀵硅薄姹?	ActiveDamageEntries.Reserve(PoolSize);
 	AvailableDamageEntries.Reserve(PoolSize);
 }
 
@@ -35,16 +33,16 @@ void UDBAFloatingDamageComponent::TickComponent(float DeltaTime, ELevelTick Tick
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// 更新所有活跃的伤害数字
+	// 鏇存柊鎵€鏈夋椿璺冪殑浼ゅ鏁板瓧
 	for (int32 i = ActiveDamageEntries.Num() - 1; i >= 0; --i)
 	{
 		FDBAFloatingDamageEntry& Entry = ActiveDamageEntries[i];
 		UpdateDamageEntry(Entry, DeltaTime);
 
-		// 更新World位置
+		// 鏇存柊World浣嶇疆
 		Entry.WorldLocation += Entry.Velocity * DeltaTime;
 
-		// 时间衰减
+		// 鏃堕棿琛板噺
 		Entry.RemainingTime -= DeltaTime;
 		if (Entry.RemainingTime <= 0.0f)
 		{
@@ -56,48 +54,49 @@ void UDBAFloatingDamageComponent::TickComponent(float DeltaTime, ELevelTick Tick
 
 void UDBAFloatingDamageComponent::SpawnDamageNumber(float Damage, bool bIsCritical, uint8 ElementValue, FVector ImpactPoint)
 {
-	// 从对象池获取或创建新条目
+	// 浠庡璞℃睜鑾峰彇鎴栧垱寤烘柊鏉＄洰
 	FDBAFloatingDamageEntry Entry;
 	if (AvailableDamageEntries.Num() > 0)
 	{
-		Entry = AvailableDamageEntries.Pop(false);
+		Entry = AvailableDamageEntries.Pop(EAllowShrinking::No);
 	}
 	else if (ActiveDamageEntries.Num() < PoolSize)
 	{
-		// 允许超过池大小一点点
+		// 鍏佽瓒呰繃姹犲ぇ灏忎竴鐐圭偣
 	}
 	else
 	{
-		// 复用最旧的
-		Entry = ActiveDamageEntries.PopFront();
+		// 澶嶇敤鏈€鏃х殑
+		Entry = ActiveDamageEntries[0];
+		ActiveDamageEntries.RemoveAt(0);
 	}
 
-	// 计算颜色
+	// 璁＄畻棰滆壊
 	FLinearColor DamageColor = FLinearColor::White;
 	if (bIsCritical)
 	{
-		DamageColor = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f); // 红色
+		DamageColor = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f); // 绾㈣壊
 	}
 	else if (ElementValue > 0 && ElementValue <= 5)
 	{
-		// 根据元素类型设置颜色
+		// 鏍规嵁鍏冪礌绫诲瀷璁剧疆棰滆壊
 		// EDBAElementType: None=0, Metal=1, Wood=2, Water=3, Fire=4, Earth=5
 		switch (static_cast<EDBAElementType>(ElementValue))
 		{
 		case EDBAElementType::Fire:
-			DamageColor = FLinearColor(1.0f, 0.27f, 0.0f, 1.0f);    // 橙红
+			DamageColor = FLinearColor(1.0f, 0.27f, 0.0f, 1.0f);    // 姗欑孩
 			break;
 		case EDBAElementType::Water:
-			DamageColor = FLinearColor(0.0f, 0.75f, 1.0f, 1.0f);   // 冰蓝
+			DamageColor = FLinearColor(0.0f, 0.75f, 1.0f, 1.0f);   // 鍐拌摑
 			break;
 		case EDBAElementType::Metal:
-			DamageColor = FLinearColor(1.0f, 0.84f, 0.0f, 1.0f);   // 金黄
+			DamageColor = FLinearColor(1.0f, 0.84f, 0.0f, 1.0f);   // 閲戦粍
 			break;
 		case EDBAElementType::Earth:
-			DamageColor = FLinearColor(0.55f, 0.27f, 0.07f, 1.0f); // 棕色
+			DamageColor = FLinearColor(0.55f, 0.27f, 0.07f, 1.0f); // 妫曡壊
 			break;
 		case EDBAElementType::Wood:
-			DamageColor = FLinearColor(0.2f, 0.8f, 0.2f, 1.0f);    // 绿色
+			DamageColor = FLinearColor(0.2f, 0.8f, 0.2f, 1.0f);    // 缁胯壊
 			break;
 		default:
 			DamageColor = FLinearColor::White;
@@ -105,8 +104,7 @@ void UDBAFloatingDamageComponent::SpawnDamageNumber(float Damage, bool bIsCritic
 		}
 	}
 
-	// 初始化条目
-	Entry = FDBAFloatingDamageEntry(ImpactPoint, Damage, DamageColor, bIsCritical);
+	// 鍒濆鍖栨潯鐩?	Entry = FDBAFloatingDamageEntry(ImpactPoint, Damage, DamageColor, bIsCritical);
 	Entry.RemainingTime = DamageDuration;
 	Entry.TotalTime = DamageDuration;
 
@@ -114,7 +112,7 @@ void UDBAFloatingDamageComponent::SpawnDamageNumber(float Damage, bool bIsCritic
 	ActiveDamageEntries.Add(Entry);
 }
 
-void UDBAFloatingDamageComponent::SetDamageNumberSystem(TSubclassOf<UNiagaraSystem> InDamageNumberSystem)
+void UDBAFloatingDamageComponent::SetDamageNumberSystem(UNiagaraSystem* InDamageNumberSystem)
 {
 	DamageNumberSystem = InDamageNumberSystem;
 }
@@ -130,7 +128,7 @@ void UDBAFloatingDamageComponent::ClearAllDamageNumbers()
 
 void UDBAFloatingDamageComponent::SpawnDamageNumberEntry(const FDBAFloatingDamageEntry& Entry)
 {
-	if (!DamageNumberSystem.IsValid())
+	if (!DamageNumberSystem)
 	{
 		return;
 	}
@@ -139,7 +137,7 @@ void UDBAFloatingDamageComponent::SpawnDamageNumberEntry(const FDBAFloatingDamag
 	{
 		UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			World,
-			DamageNumberSystem.Get(),
+			DamageNumberSystem,
 			Entry.WorldLocation,
 			FRotator::ZeroRotator,
 			FVector(1.0f),
@@ -151,7 +149,7 @@ void UDBAFloatingDamageComponent::SpawnDamageNumberEntry(const FDBAFloatingDamag
 
 		if (NiagaraComp)
 		{
-			// 设置User参数
+			// 璁剧疆User鍙傛暟
 			NiagaraComp->SetVariableLinearColor(FName("DamageColor"), Entry.Color);
 			NiagaraComp->SetVariableFloat(FName("DamageValue"), Entry.Damage);
 			NiagaraComp->SetVariableBool(FName("bIsCritical"), Entry.bIsCritical);
@@ -161,7 +159,7 @@ void UDBAFloatingDamageComponent::SpawnDamageNumberEntry(const FDBAFloatingDamag
 
 void UDBAFloatingDamageComponent::UpdateDamageEntry(FDBAFloatingDamageEntry& Entry, float DeltaTime)
 {
-	// 向上飘动的速度会逐渐减小
+	// 鍚戜笂椋樺姩鐨勯€熷害浼氶€愭笎鍑忓皬
 	Entry.Velocity.Z = FMath::Max(Entry.Velocity.Z - 200.0f * DeltaTime, 0.0f);
 }
 
@@ -178,3 +176,4 @@ void UDBAFloatingDamageComponent::RecycleDamageEntry(FDBAFloatingDamageEntry& En
 		AvailableDamageEntries.Add(Entry);
 	}
 }
+

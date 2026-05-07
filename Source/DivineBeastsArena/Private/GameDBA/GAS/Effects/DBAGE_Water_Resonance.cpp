@@ -1,21 +1,20 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// GameplayEffect - 水共鸣元素共鸣
-
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// GameplayEffect - 姘村叡楦ｅ厓绱犲叡楦?
 #include "GameDBA/GAS/Effects/DBAGE_Water_Resonance.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "Engine/DataTable.h"
 
 UDBAGE_Water_Resonance::UDBAGE_Water_Resonance()
 {
-	// 从元素共鸣数据表加载配置
+	// 浠庡厓绱犲叡楦ｆ暟鎹〃鍔犺浇閰嶇疆
 	UDataTable* ResonanceTable = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/Data/Elements/ElementResonanceTable.ElementResonanceTable'"));
 	if (ResonanceTable)
 	{
 		static const FString ContextString = TEXT("DBAGE_Water_Resonance");
-		FDBADBElemenetResonanceRow* ResonanceRow = ResonanceTable->FindRow<FDBADBElemenetResonanceRow>(FName(TEXT("Water")), ContextString, false);
+		FDBAElementResonanceRow* ResonanceRow = ResonanceTable->FindRow<FDBAElementResonanceRow>(FName(TEXT("Water")), ContextString, false);
 		if (ResonanceRow)
 		{
-			// 控制时间加成
+			// 鎺у埗鏃堕棿鍔犳垚
 			if (ResonanceRow->ControlTimeBonus > 0)
 			{
 				FGameplayModifierInfo ControlMod;
@@ -25,8 +24,7 @@ UDBAGE_Water_Resonance::UDBAGE_Water_Resonance()
 				Modifiers.Add(ControlMod);
 			}
 
-			// 护盾值加成
-			if (ResonanceRow->ShieldBonus > 0)
+			// 鎶ょ浘鍊煎姞鎴?			if (ResonanceRow->ShieldBonus > 0)
 			{
 				FGameplayModifierInfo ShieldMod;
 				ShieldMod.Attribute = UDBABattleAttributeSet::GetCurrentHealthAttribute();
@@ -34,12 +32,7 @@ UDBAGE_Water_Resonance::UDBAGE_Water_Resonance()
 				ShieldMod.ModifierMagnitude = FScalableFloat(ResonanceRow->ShieldBonus);
 				Modifiers.Add(ShieldMod);
 			}
-
-			// 设置持续时间
-			if (ResonanceRow->Duration > 0)
-			{
-				DurationPolicy = EGameplayEffectDurationType::Infinite;
-			}
 		}
 	}
 }
+

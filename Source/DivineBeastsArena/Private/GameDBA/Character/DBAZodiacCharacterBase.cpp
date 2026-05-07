@@ -1,26 +1,28 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// 生肖角色模型基类
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// 鐢熻倴瑙掕壊妯″瀷鍩虹被
 
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
 #include "GameDBA/GAS/DBAAbilitySystemComponent.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "GameDBA/RPC/DBARpcHandler.h"
 #include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameDBA/Animation/DBAZodiacAnimInstance.h"
+#include "Net/UnrealNetwork.h"
 
 ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// 配置碰撞
+	// 閰嶇疆纰版挒
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
 	GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh"));
 
-	// 配置移动速度
+	// 閰嶇疆绉诲姩閫熷害
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
 		Movement->MaxWalkSpeed = MaxWalkSpeed;
 		Movement->MaxWalkSpeedCrouched = MaxWalkSpeed;
-		Movement->MaxRunSpeed = MaxRunSpeed;
 		Movement->BrakingDecelerationWalking = BrakingDeceleration;
 	}
 }
@@ -34,7 +36,7 @@ void ADBAZodiacCharacterBase::BeginPlay()
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
-		RpcHandler = GetWorld()->SpawnActor<ADBARpcHandler>(GetActorLocation(), FRotator::ZeroRotator, SpawnParams);
+		RpcHandler = GetWorld()->SpawnActor<ADBARpcHandler>(RpcHandlerClass.Get(), FTransform(FRotator::ZeroRotator, GetActorLocation()), SpawnParams);
 		if (RpcHandler)
 		{
 			RpcHandler->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
@@ -58,7 +60,7 @@ UDBAZodiacAnimInstance* ADBAZodiacCharacterBase::GetZodiacAnimInstance() const
 
 UDBAAbilitySystemComponent* ADBAZodiacCharacterBase::GetDBAAbilitySystemComponent() const
 {
-	// 从拥有者获取AbilitySystemComponent
+	// 浠庢嫢鏈夎€呰幏鍙朅bilitySystemComponent
 	if (AActor* OwnerActor = GetOwner())
 	{
 		return Cast<UDBAAbilitySystemComponent>(OwnerActor->FindComponentByClass<UDBAAbilitySystemComponent>());
@@ -66,7 +68,7 @@ UDBAAbilitySystemComponent* ADBAZodiacCharacterBase::GetDBAAbilitySystemComponen
 	return nullptr;
 }
 
-// ==================== 属性访问实现 ====================
+// ==================== 灞炴€ц闂疄鐜?====================
 
 float ADBAZodiacCharacterBase::GetCurrentHealth() const
 {
@@ -158,7 +160,7 @@ void ADBAZodiacCharacterBase::SetAnimMoveSpeed(float Speed)
 	}
 }
 
-// ==================== 死亡状态实现 ====================
+// ==================== 姝讳骸鐘舵€佸疄鐜?====================
 
 void ADBAZodiacCharacterBase::OnDeath()
 {
@@ -167,7 +169,7 @@ void ADBAZodiacCharacterBase::OnDeath()
 		DeathState = EDADeathState::Dying;
 		PlayDeathAnimation();
 
-		// 延迟设置为Dead状态，等待死亡动画播放
+		// 寤惰繜璁剧疆涓篋ead鐘舵€侊紝绛夊緟姝讳骸鍔ㄧ敾鎾斁
 		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
 		{
 			DeathState = EDADeathState::Dead;
@@ -180,7 +182,7 @@ void ADBAZodiacCharacterBase::OnRevive()
 	if (HasAuthority())
 	{
 		DeathState = EDADeathState::Alive;
-		// 重置生命值逻辑由调用者负责
+		// Revive health is controlled by the caller.
 	}
 }
 
@@ -190,7 +192,7 @@ void ADBAZodiacCharacterBase::UpdateSkillCooldowns(const TArray<float>& NewCoold
 	{
 		SkillCooldowns = NewCooldowns;
 
-		// 更新最大冷却数组 (如果比当前记录的更大)
+		// 鏇存柊鏈€澶у喎鍗存暟缁?(濡傛灉姣斿綋鍓嶈褰曠殑鏇村ぇ)
 		for (int32 i = 0; i < NewCooldowns.Num(); ++i)
 		{
 			if (i >= SkillMaxCooldowns.Num())
@@ -207,14 +209,14 @@ void ADBAZodiacCharacterBase::UpdateSkillCooldowns(const TArray<float>& NewCoold
 
 void ADBAZodiacCharacterBase::GetSpectatorData(FDBAObserverViewTarget& OutData) const
 {
-	OutData.TargetCharacter = MakeWeakObjectPtr(this);
+	OutData.TargetCharacter = MakeWeakObjectPtr(const_cast<ADBAZodiacCharacterBase*>(this));
 	OutData.PlayerName = GetFName();
 	OutData.TeamID = TeamID;
 	OutData.HeroID = HeroID;
 	OutData.CurrentHP = GetCurrentHealth();
 	OutData.MaxHP = GetMaxHealth();
 	OutData.CurrentEnergy = GetCurrentEnergy();
-	OutData.MaxEnergy = 100.0f; // TODO: 从属性获取
+	OutData.MaxEnergy = 100.0f; // Set ultimate energy data.
 	OutData.UltimateEnergy = UltimateEnergy;
 	OutData.bUltimateReady = IsUltimateReady();
 	OutData.SkillCooldowns = SkillCooldowns;
@@ -236,4 +238,20 @@ bool ADBAZodiacCharacterBase::IsTeammate(const ADBAZodiacCharacterBase* Other) c
 		return false;
 	}
 	return TeamID == Other->TeamID;
+}
+
+
+
+
+void ADBAZodiacCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ADBAZodiacCharacterBase, UltimateEnergy);
+	DOREPLIFETIME(ADBAZodiacCharacterBase, ChainLevel);
+	DOREPLIFETIME(ADBAZodiacCharacterBase, ResonanceLevel);
+	DOREPLIFETIME(ADBAZodiacCharacterBase, DeathState);
+	DOREPLIFETIME(ADBAZodiacCharacterBase, TeamID);
+	DOREPLIFETIME(ADBAZodiacCharacterBase, HeroID);
+	DOREPLIFETIME(ADBAZodiacCharacterBase, SkillCooldowns);
+	DOREPLIFETIME(ADBAZodiacCharacterBase, SkillMaxCooldowns);
 }

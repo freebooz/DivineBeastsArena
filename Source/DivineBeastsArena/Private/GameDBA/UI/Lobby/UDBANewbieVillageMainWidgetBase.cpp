@@ -1,7 +1,7 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/UDBANewbieVillageMainWidgetBase.h"
-#include "Client/UI/Lobby/UDBANewbieTaskTrackerWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBANewbieVillageMainWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBANewbieTaskTrackerWidgetBase.h"
 
 UDBANewbieVillageMainWidgetBase::UDBANewbieVillageMainWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -46,7 +46,8 @@ void UDBANewbieVillageMainWidgetBase::EnterMainLobby()
 {
 	if (!bIsMainLobbyUnlocked)
 	{
-		ShowGatePrompt(true, FText::FromString(TEXT("完成新手任务后解锁")));
+		ShowGatePrompt(true, FText::GetEmpty());
 		return;
 	}
 }
+

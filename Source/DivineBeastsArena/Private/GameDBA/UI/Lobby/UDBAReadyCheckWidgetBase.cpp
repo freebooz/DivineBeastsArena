@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/UDBAReadyCheckWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBAReadyCheckWidgetBase.h"
 
 UDBAReadyCheckWidgetBase::UDBAReadyCheckWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -69,3 +69,4 @@ void UDBAReadyCheckWidgetBase::UpdateRemainingTime(float InRemainingTime)
 {
 	CachedRemainingTime = InRemainingTime;
 }
+

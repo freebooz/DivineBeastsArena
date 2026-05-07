@@ -1,13 +1,12 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 // 技能投射物 - 曜鸣神鸡技能E
 
-#include "Combat/Projectiles/DBAProjectile_Rooster_E.h"
+#include "GameDBA/Combat/DBAProjectile_Rooster_E.h"
 #include "Components/SphereComponent.h"
 
 ADBAProjectile_Rooster_E::ADBAProjectile_Rooster_E()
 {
-	// 设置投射物属性
-	Speed = 1200.0f;
+	// 设置投射物属�?	Speed = 1200.0f;
 	Radius = 30.0f;
 	Damage = 50.0f;
 
@@ -26,14 +25,14 @@ ADBAProjectile_Rooster_E::ADBAProjectile_Rooster_E()
 		ImpactVFXAsset = ImpactVFXFinder.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<USoundCue> FlySFXFinder(
+	static ConstructorHelpers::FObjectFinder<USoundBase> FlySFXFinder(
 		TEXT("/Game/Audio/SFX/Projectiles/Rooster/S_Rooster_E_Fly.S_Rooster_E_Fly"));
 	if (FlySFXFinder.Succeeded())
 	{
 		FlySFXAsset = FlySFXFinder.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<USoundCue> ImpactSFXFinder(
+	static ConstructorHelpers::FObjectFinder<USoundBase> ImpactSFXFinder(
 		TEXT("/Game/Audio/SFX/Projectiles/Rooster/S_Rooster_E_Impact.S_Rooster_E_Impact"));
 	if (ImpactSFXFinder.Succeeded())
 	{

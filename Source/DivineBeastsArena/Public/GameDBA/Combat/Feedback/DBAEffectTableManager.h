@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/GameInstanceSubsystem.h"
+#include "Subsystems/GameInstanceSubsystem.h"
 #include "NiagaraSystem.h"
 #include "Sound/SoundBase.h"
 #include "Camera/CameraShakeBase.h"
@@ -30,11 +30,11 @@ struct DIVINEBEASTSARENA_API FDBASkillEffectRow
 
 	/** 释放特效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSoftClassPtr<UNiagaraSystem> ReleaseEffect;
+	TSoftObjectPtr<UNiagaraSystem> ReleaseEffect;
 
 	/** 命中特效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSoftClassPtr<UNiagaraSystem> HitEffect;
+	TSoftObjectPtr<UNiagaraSystem> HitEffect;
 
 	/** 释放音效 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
@@ -106,7 +106,7 @@ public:
 
 protected:
 	/** 异步加载完成回调 */
-	void OnAsyncLoadComplete(const TSoftObjectPtr<UDataTable>& TablePath);
+	void OnAsyncLoadComplete(TSoftObjectPtr<UDataTable> TablePath);
 
 private:
 	/** 技能特效表 */

@@ -1,5 +1,5 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// VFX/SFX 挂载组件 - 裂风虎君
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// VFX/SFX 鎸傝浇缁勪欢 - 瑁傞铏庡悰
 
 #pragma once
 
@@ -13,8 +13,8 @@ class UAnimMontage;
 
 /**
  * UDBAZodiacVFXComponent_Tiger
- * 生肖角色 VFX/SFX 挂载组件
- * 负责管理裂风虎君的视觉和音效资源
+ * 鐢熻倴瑙掕壊 VFX/SFX 鎸傝浇缁勪欢
+ * 璐熻矗绠＄悊瑁傞铏庡悰鐨勮瑙夊拰闊虫晥璧勬簮
  */
 UCLASS(Blueprintable, BlueprintType, meta = (DisplayName = "DBA Zodiac VFX Component Tiger"))
 class DIVINEBEASTSARENA_API UDBAZodiacVFXComponent_Tiger : public UActorComponent
@@ -25,140 +25,143 @@ public:
 	UDBAZodiacVFXComponent_Tiger();
 
 public:
-	// ==================== VFX 接口 ====================
+	// ==================== VFX 鎺ュ彛 ====================
 
-	/** 播放攻击特效 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|VFX|裂风虎君")
+	/** 鎾斁鏀诲嚮鐗规晥 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|VFX|瑁傞铏庡悰")
 	void PlayAttackVFX(AActor* Target);
 
-	/** 播放受击特效 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|VFX|裂风虎君")
+	/** 鎾斁鍙楀嚮鐗规晥 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|VFX|瑁傞铏庡悰")
 	void PlayHitVFX(AActor* Attacker);
 
-	/** 播放移动特效 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|VFX|裂风虎君")
+	/** 鎾斁绉诲姩鐗规晥 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|VFX|瑁傞铏庡悰")
 	void PlayMoveVFX(const FVector& Direction);
 
-	/** 播放死亡特效 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|VFX|裂风虎君")
+	/** 鎾斁姝讳骸鐗规晥 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|VFX|瑁傞铏庡悰")
 	void PlayDeathVFX();
 
-	/** 播放重生特效 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|VFX|裂风虎君")
+	/** 鎾斁閲嶇敓鐗规晥 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|VFX|瑁傞铏庡悰")
 	void PlayRespawnVFX();
 
-	// ==================== SFX 接口 ====================
+	// ==================== SFX 鎺ュ彛 ====================
 
-	/** 播放攻击音效 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|SFX|裂风虎君")
+	/** 鎾斁鏀诲嚮闊虫晥 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|SFX|瑁傞铏庡悰")
 	void PlayAttackSFX();
 
-	/** 播放受击音效 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|SFX|裂风虎君")
+	/** 鎾斁鍙楀嚮闊虫晥 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|SFX|瑁傞铏庡悰")
 	void PlayHitSFX();
 
-	/** 播放移动音效 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|SFX|裂风虎君")
+	/** 鎾斁绉诲姩闊虫晥 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|SFX|瑁傞铏庡悰")
 	void PlayMoveSFX();
 
-	/** 播放死亡音效 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|SFX|裂风虎君")
+	/** 鎾斁姝讳骸闊虫晥 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|SFX|瑁傞铏庡悰")
 	void PlayDeathSFX();
 
-	/** 播放技能音效 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|SFX|裂风虎君")
+	/** 鎾斁鎶€鑳介煶鏁?*/
+	UFUNCTION(BlueprintCallable, Category = "DBA|SFX|瑁傞铏庡悰")
 	void PlaySkillSFX(FName SkillId);
 
-	// ==================== 动画接口 ====================
+	// ==================== 鍔ㄧ敾鎺ュ彛 ====================
 
-	/** 播放攻击动画 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|Animation|裂风虎君")
+	/** 鎾斁鏀诲嚮鍔ㄧ敾 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Animation|瑁傞铏庡悰")
 	void PlayAttackAnimation();
 
-	/** 播放受击动画 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|Animation|裂风虎君")
+	/** 鎾斁鍙楀嚮鍔ㄧ敾 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Animation|瑁傞铏庡悰")
 	void PlayHitAnimation();
 
-	/** 播放移动动画 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|Animation|裂风虎君")
+	/** 鎾斁绉诲姩鍔ㄧ敾 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Animation|瑁傞铏庡悰")
 	void PlayMoveAnimation(float Speed);
 
-	/** 播放死亡动画 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|Animation|裂风虎君")
+	/** 鎾斁姝讳骸鍔ㄧ敾 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Animation|瑁傞铏庡悰")
 	void PlayDeathAnimation();
 
-	/** 播放技能动画 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|Animation|裂风虎君")
+	/** 鎾斁鎶€鑳藉姩鐢?*/
+	UFUNCTION(BlueprintCallable, Category = "DBA|Animation|瑁傞铏庡悰")
 	void PlaySkillAnimation(FName SkillId);
 
-	/** 获取动画蓝图 */
-	UFUNCTION(BlueprintPure, Category = "DBA|Animation|裂风虎君")
+	/** 鑾峰彇鍔ㄧ敾钃濆浘 */
+	UFUNCTION(BlueprintPure, Category = "DBA|Animation|瑁傞铏庡悰")
 	UAnimBlueprint* GetAnimBlueprint() const;
 
 protected:
-	// ==================== VFX 资源 ====================
+	void LoadDefaultAssets();
 
-	/** 攻击特效 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX|裂风虎君")
+	// ==================== VFX 璧勬簮 ====================
+
+	/** 鏀诲嚮鐗规晥 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX|瑁傞铏庡悰")
 	TSoftObjectPtr<UParticleSystem> AttackVFX;
 
-	/** 受击特效 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX|裂风虎君")
+	/** 鍙楀嚮鐗规晥 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX|瑁傞铏庡悰")
 	TSoftObjectPtr<UParticleSystem> HitVFX;
 
-	/** 移动特效 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX|裂风虎君")
+	/** 绉诲姩鐗规晥 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX|瑁傞铏庡悰")
 	TSoftObjectPtr<UParticleSystem> MoveVFX;
 
-	/** 死亡特效 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX|裂风虎君")
+	/** 姝讳骸鐗规晥 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX|瑁傞铏庡悰")
 	TSoftObjectPtr<UParticleSystem> DeathVFX;
 
-	/** 重生特效 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX|裂风虎君")
+	/** 閲嶇敓鐗规晥 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX|瑁傞铏庡悰")
 	TSoftObjectPtr<UParticleSystem> RespawnVFX;
 
-	// ==================== SFX 资源 ====================
+	// ==================== SFX 璧勬簮 ====================
 
-	/** 攻击音效 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|裂风虎君")
+	/** 鏀诲嚮闊虫晥 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|瑁傞铏庡悰")
 	TSoftObjectPtr<USoundBase> AttackSFX;
 
-	/** 受击音效 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|裂风虎君")
+	/** 鍙楀嚮闊虫晥 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|瑁傞铏庡悰")
 	TSoftObjectPtr<USoundBase> HitSFX;
 
-	/** 移动音效 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|裂风虎君")
+	/** 绉诲姩闊虫晥 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|瑁傞铏庡悰")
 	TSoftObjectPtr<USoundBase> MoveSFX;
 
-	/** 死亡音效 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|裂风虎君")
+	/** 姝讳骸闊虫晥 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SFX|瑁傞铏庡悰")
 	TSoftObjectPtr<USoundBase> DeathSFX;
 
-	// ==================== 动画资源 ====================
+	// ==================== 鍔ㄧ敾璧勬簮 ====================
 
-	/** 动画蓝图 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|裂风虎君")
+	/** 鍔ㄧ敾钃濆浘 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|瑁傞铏庡悰")
 	TSoftClassPtr<UAnimInstance> AnimBlueprintClass;
 
-	/** 攻击动画 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|裂风虎君")
+	/** 鏀诲嚮鍔ㄧ敾 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|瑁傞铏庡悰")
 	TSoftObjectPtr<UAnimMontage> AttackMontage;
 
-	/** 受击动画 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|裂风虎君")
+	/** 鍙楀嚮鍔ㄧ敾 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|瑁傞铏庡悰")
 	TSoftObjectPtr<UAnimMontage> HitMontage;
 
-	/** 死亡动画 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|裂风虎君")
+	/** 姝讳骸鍔ㄧ敾 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|瑁傞铏庡悰")
 	TSoftObjectPtr<UAnimMontage> DeathMontage;
 
-	/** 技能动画映射 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|裂风虎君")
+	/** 鎶€鑳藉姩鐢绘槧灏?*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|瑁傞铏庡悰")
 	TMap<FName, TSoftObjectPtr<UAnimMontage>> SkillMontages;
 
-	/** 角色元素类型 (用于加载对应元素特效) */
+	/** 瑙掕壊鍏冪礌绫诲瀷 (鐢ㄤ簬鍔犺浇瀵瑰簲鍏冪礌鐗规晥) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Config")
 	FName ElementType = FName(TEXT("Wood"));
 };
+

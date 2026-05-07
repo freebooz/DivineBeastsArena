@@ -1,6 +1,6 @@
-// Copyright FreeboozStudio Games, Inc. All Rights Reserved.
+﻿// Copyright FreeboozStudio Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/UDBAArenaObjectiveTrackerWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBAArenaObjectiveTrackerWidgetBase.h"
 
 UDBAArenaObjectiveTrackerWidgetBase::UDBAArenaObjectiveTrackerWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -24,3 +24,4 @@ void UDBAArenaObjectiveTrackerWidgetBase::UpdateObjective(const FText& Objective
 void UDBAArenaObjectiveTrackerWidgetBase::CompleteObjective()
 {
 }
+

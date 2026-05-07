@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/UDBAPassiveAndResonancePanelWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBAPassiveAndResonancePanelWidgetBase.h"
 
 UDBAPassiveAndResonancePanelWidgetBase::UDBAPassiveAndResonancePanelWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -26,3 +26,4 @@ void UDBAPassiveAndResonancePanelWidgetBase::UpdateResonanceLevel(int32 Level)
 {
 	BP_OnResonanceLevelUpdated(Level);
 }
+

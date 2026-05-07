@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/UDBAInvitePanelWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBAInvitePanelWidgetBase.h"
 
 UDBAInvitePanelWidgetBase::UDBAInvitePanelWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -39,3 +39,4 @@ void UDBAInvitePanelWidgetBase::ClosePanel()
 {
 	RemoveFromParent();
 }
+

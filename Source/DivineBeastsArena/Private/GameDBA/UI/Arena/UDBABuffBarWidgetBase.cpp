@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/UDBABuffBarWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBABuffBarWidgetBase.h"
 
 UDBABuffBarWidgetBase::UDBABuffBarWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -30,3 +30,4 @@ void UDBABuffBarWidgetBase::RemoveBuff(const FString& BuffId)
 void UDBABuffBarWidgetBase::ClearAllBuffs()
 {
 }
+

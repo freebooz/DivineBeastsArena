@@ -1,11 +1,10 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/UDBAPlayerUnitFrameWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBAPlayerUnitFrameWidgetBase.h"
 
 /**
- * 构造函数
- * 初始化玩家单元框 Widget
- * @param ObjectInitializer 对象初始化器
+ * 鏋勯€犲嚱鏁? * 鍒濆鍖栫帺瀹跺崟鍏冩 Widget
+ * @param ObjectInitializer 瀵硅薄鍒濆鍖栧櫒
  */
 UDBAPlayerUnitFrameWidgetBase::UDBAPlayerUnitFrameWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -18,8 +17,8 @@ UDBAPlayerUnitFrameWidgetBase::UDBAPlayerUnitFrameWidgetBase(const FObjectInitia
 }
 
 /**
- * 原生构建回调
- * 当 Widget 构建到屏幕时调用
+ * 鍘熺敓鏋勫缓鍥炶皟
+ * 褰?Widget 鏋勫缓鍒板睆骞曟椂璋冪敤
  */
 void UDBAPlayerUnitFrameWidgetBase::NativeConstruct()
 {
@@ -27,45 +26,36 @@ void UDBAPlayerUnitFrameWidgetBase::NativeConstruct()
 }
 
 /**
- * 原生销毁回调
- * 当 Widget 从屏幕移除时调用，用于清理
- */
+ * 鍘熺敓閿€姣佸洖璋? * 褰?Widget 浠庡睆骞曠Щ闄ゆ椂璋冪敤锛岀敤浜庢竻鐞? */
 void UDBAPlayerUnitFrameWidgetBase::NativeDestruct()
 {
 	Super::NativeDestruct();
 }
 
 /**
- * 原生 Tick 回调
- * 每帧更新玩家单元框状态
- * @param MyGeometry 当前 Widget 几何信息
- * @param InDeltaTime 帧间隔时间
- */
+ * 鍘熺敓 Tick 鍥炶皟
+ * 姣忓抚鏇存柊鐜╁鍗曞厓妗嗙姸鎬? * @param MyGeometry 褰撳墠 Widget 鍑犱綍淇℃伅
+ * @param InDeltaTime 甯ч棿闅旀椂闂? */
 void UDBAPlayerUnitFrameWidgetBase::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 }
 
 /**
- * Widget 被激活时的回调
- * 当玩家单元框显示时调用
- */
+ * Widget 琚縺娲绘椂鐨勫洖璋? * 褰撶帺瀹跺崟鍏冩鏄剧ず鏃惰皟鐢? */
 void UDBAPlayerUnitFrameWidgetBase::NativeOnActivated()
 {
 }
 
 /**
- * Widget 被停用时的回调
- * 当玩家单元框隐藏时调用
- */
+ * Widget 琚仠鐢ㄦ椂鐨勫洖璋? * 褰撶帺瀹跺崟鍏冩闅愯棌鏃惰皟鐢? */
 void UDBAPlayerUnitFrameWidgetBase::NativeOnDeactivated()
 {
 }
 
 /**
- * 设置 Widget 控制器
- * 将控制器与 Widget 关联
- * @param InController 玩家单元框控制器指针
+ * 璁剧疆 Widget 鎺у埗鍣? * 灏嗘帶鍒跺櫒涓?Widget 鍏宠仈
+ * @param InController 鐜╁鍗曞厓妗嗘帶鍒跺櫒鎸囬拡
  */
 void UDBAPlayerUnitFrameWidgetBase::SetWidgetController(UDBAPlayerUnitFrameWidgetController* InController)
 {
@@ -73,37 +63,31 @@ void UDBAPlayerUnitFrameWidgetBase::SetWidgetController(UDBAPlayerUnitFrameWidge
 }
 
 /**
- * 更新玩家生命值
- * 缓存当前值并计算血条百分比，通过 Blueprint 事件更新显示
- * @param InCachedCurrentHP 当前生命值
- * @param InCachedMaxHP 最大生命值
- */
+ * 鏇存柊鐜╁鐢熷懡鍊? * 缂撳瓨褰撳墠鍊煎苟璁＄畻琛€鏉＄櫨鍒嗘瘮锛岄€氳繃 Blueprint 浜嬩欢鏇存柊鏄剧ず
+ * @param InCachedCurrentHP 褰撳墠鐢熷懡鍊? * @param InCachedMaxHP 鏈€澶х敓鍛藉€? */
 void UDBAPlayerUnitFrameWidgetBase::UpdateHP(float InCachedCurrentHP, float InCachedMaxHP)
 {
 	CachedCurrentHP = InCachedCurrentHP;
 	CachedMaxHP = InCachedMaxHP;
 
-	// 计算血条百分比
+	// 璁＄畻琛€鏉＄櫨鍒嗘瘮
 	float Percentage = CachedMaxHP > 0.0f ? CachedCurrentHP / CachedMaxHP : 0.0f;
 	BP_OnUpdateHP(CachedCurrentHP, CachedMaxHP, Percentage);
 }
 
 /**
- * 更新玩家能量值
- * 缓存当前值并计算能量条百分比，通过 Blueprint 事件更新显示
- * @param InCachedCurrentEnergy 当前能量值
- * @param InCachedMaxEnergy 最大能量值
- */
+ * 鏇存柊鐜╁鑳介噺鍊? * 缂撳瓨褰撳墠鍊煎苟璁＄畻鑳介噺鏉＄櫨鍒嗘瘮锛岄€氳繃 Blueprint 浜嬩欢鏇存柊鏄剧ず
+ * @param InCachedCurrentEnergy 褰撳墠鑳介噺鍊? * @param InCachedMaxEnergy 鏈€澶ц兘閲忓€? */
 void UDBAPlayerUnitFrameWidgetBase::UpdateEnergy(float InCachedCurrentEnergy, float InCachedMaxEnergy)
 {
 	CachedCurrentEnergy = InCachedCurrentEnergy;
 	CachedMaxEnergy = InCachedMaxEnergy;
 
-	// 计算能量条百分比
+	// 璁＄畻鑳介噺鏉＄櫨鍒嗘瘮
 	float Percentage = CachedMaxEnergy > 0.0f ? CachedCurrentEnergy / CachedMaxEnergy : 0.0f;
 	BP_OnUpdateEnergy(CachedCurrentEnergy, CachedMaxEnergy, Percentage);
 
-	// 更新能量条Widget
+	// 鏇存柊鑳介噺鏉idget
 	if (EnergyBar)
 	{
 		EnergyBar->SetPercent(Percentage);
@@ -115,11 +99,11 @@ void UDBAPlayerUnitFrameWidgetBase::UpdateXP(float InCachedCurrentXP, float InCa
 	CachedCurrentXP = InCachedCurrentXP;
 	CachedMaxXP = InCachedMaxXP;
 
-	// 计算经验条百分比
+	// 璁＄畻缁忛獙鏉＄櫨鍒嗘瘮
 	float Percentage = CachedMaxXP > 0.0f ? CachedCurrentXP / CachedMaxXP : 0.0f;
 	BP_OnUpdateXP(CachedCurrentXP, CachedMaxXP, Percentage);
 
-	// 更新经验条Widget
+	// 鏇存柊缁忛獙鏉idget
 	if (XPBar)
 	{
 		XPBar->SetPercent(Percentage);
@@ -130,11 +114,10 @@ void UDBAPlayerUnitFrameWidgetBase::UpdateUltimateEnergy(float Energy)
 {
 	CachedUltimateEnergy = FMath::Clamp(Energy, 0.0f, 100.0f);
 
-	// 计算终极能量百分比
-	float Percentage = CachedUltimateEnergy / 100.0f;
+		float Percentage = CachedUltimateEnergy / 100.0f;
 	BP_OnUpdateUltimateEnergy(CachedUltimateEnergy, Percentage);
 
-	// 更新终极能量条Widget
+	// 鏇存柊缁堟瀬鑳介噺鏉idget
 	if (UltimateEnergyBar)
 	{
 		UltimateEnergyBar->SetPercent(Percentage);
@@ -151,3 +134,5 @@ void UDBAPlayerUnitFrameWidgetBase::ApplyFiveCampTheme(uint8 FiveCamp)
 {
 	BP_OnApplyFiveCampTheme(FiveCamp);
 }
+
+

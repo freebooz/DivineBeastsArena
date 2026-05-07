@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/UDBAQueueModeSelectWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBAQueueModeSelectWidgetBase.h"
 
 UDBAQueueModeSelectWidgetBase::UDBAQueueModeSelectWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -31,29 +31,29 @@ void UDBAQueueModeSelectWidgetBase::RefreshModeList()
 
 	FDBAQueueModeSelectData QuickMatch;
 	QuickMatch.Mode = EDBAQueueModeSelectMode::QuickMatch;
-	QuickMatch.ModeName = FText::FromString(TEXT("快速匹配"));
-	QuickMatch.ModeDescription = FText::FromString(TEXT("5v5 经典模式，快速匹配"));
-	QuickMatch.MapName = FText::FromString(TEXT("神兽竞技场"));
-	QuickMatch.EstimatedWaitTime = FText::FromString(TEXT("2-5 分钟"));
+	QuickMatch.ModeName = FText::GetEmpty();
+	QuickMatch.ModeDescription = FText::GetEmpty();
+	QuickMatch.MapName = FText::GetEmpty();
+	QuickMatch.EstimatedWaitTime = FText::FromString(TEXT("2-5 鍒嗛挓"));
 	QuickMatch.bIsAvailable = true;
 	ModeList.Add(QuickMatch);
 
 	FDBAQueueModeSelectData Ranked;
 	Ranked.Mode = EDBAQueueModeSelectMode::Ranked;
-	Ranked.ModeName = FText::FromString(TEXT("排位赛"));
-	Ranked.ModeDescription = FText::FromString(TEXT("5v5 排位赛，严格匹配"));
-	Ranked.MapName = FText::FromString(TEXT("神兽竞技场"));
-	Ranked.EstimatedWaitTime = FText::FromString(TEXT("5-10 分钟"));
+	Ranked.ModeName = FText::GetEmpty();
+	Ranked.ModeDescription = FText::FromString(TEXT("5v5 鎺掍綅璧涳紝涓ユ牸鍖归厤"));
+	Ranked.MapName = FText::GetEmpty();
+	Ranked.EstimatedWaitTime = FText::FromString(TEXT("5-10 鍒嗛挓"));
 	Ranked.bIsAvailable = false;
-	Ranked.UnavailableReason = FText::FromString(TEXT("需要等级 10 以上"));
+	Ranked.UnavailableReason = FText::FromString(TEXT("闇€瑕佺瓑绾?10 浠ヤ笂"));
 	ModeList.Add(Ranked);
 
 	FDBAQueueModeSelectData Practice;
 	Practice.Mode = EDBAQueueModeSelectMode::Practice;
-	Practice.ModeName = FText::FromString(TEXT("练习模式"));
-	Practice.ModeDescription = FText::FromString(TEXT("单人练习，AI 对手"));
-	Practice.MapName = FText::FromString(TEXT("训练场"));
-	Practice.EstimatedWaitTime = FText::FromString(TEXT("立即开始"));
+	Practice.ModeName = FText::FromString(TEXT("缁冧範妯″紡"));
+	Practice.ModeDescription = FText::FromString(TEXT("鍗曚汉缁冧範锛孉I 瀵规墜"));
+	Practice.MapName = FText::GetEmpty();
+	Practice.EstimatedWaitTime = FText::GetEmpty();
 	Practice.bIsAvailable = true;
 	ModeList.Add(Practice);
 
@@ -83,3 +83,4 @@ void UDBAQueueModeSelectWidgetBase::CancelSelect()
 {
 	SetVisibility(ESlateVisibility::Collapsed);
 }
+

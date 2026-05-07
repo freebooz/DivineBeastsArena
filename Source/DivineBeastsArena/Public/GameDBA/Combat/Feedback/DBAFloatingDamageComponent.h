@@ -87,7 +87,7 @@ public:
 
 	/** 设置Niagara系统类 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Feedback|DamageNumber")
-	void SetDamageNumberSystem(TSubclassOf<UNiagaraSystem> InDamageNumberSystem);
+	void SetDamageNumberSystem(UNiagaraSystem* InDamageNumberSystem);
 
 	/** 清空所有伤害数字 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Feedback|DamageNumber")
@@ -110,7 +110,7 @@ protected:
 private:
 	/** Niagara系统 - 伤害数字 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Feedback|DamageNumber", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<UNiagaraSystem> DamageNumberSystem;
+	TObjectPtr<UNiagaraSystem> DamageNumberSystem;
 
 	/** 伤害数字池大小 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Feedback|DamageNumber", meta = (AllowPrivateAccess = "true", UIMin = 8, UIMax = 64))

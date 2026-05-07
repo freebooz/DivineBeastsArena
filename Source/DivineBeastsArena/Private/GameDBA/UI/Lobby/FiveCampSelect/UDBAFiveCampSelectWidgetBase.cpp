@@ -1,8 +1,8 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/FiveCampSelect/UDBAFiveCampSelectWidgetBase.h"
-#include "Client/UI/Lobby/FiveCampSelect/UDBAFiveCampInfoPanelWidgetBase.h"
-#include "Client/UI/Lobby/FiveCampSelect/UDBAFiveCampSelectWidgetController.h"
+#include "GameDBA/UI/Lobby/FiveCampSelect/UDBAFiveCampSelectWidgetBase.h"
+#include "GameDBA/UI/Lobby/FiveCampSelect/UDBAFiveCampInfoPanelWidgetBase.h"
+#include "GameDBA/UI/Lobby/FiveCampSelect/UDBAFiveCampSelectWidgetController.h"
 
 UDBAFiveCampSelectWidgetBase::UDBAFiveCampSelectWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -93,3 +93,4 @@ void UDBAFiveCampSelectWidgetBase::OnBackButtonClicked()
 		WidgetController->RequestBack();
 	}
 }
+

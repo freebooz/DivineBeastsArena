@@ -1,4 +1,4 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -10,9 +10,8 @@ class UDBASpectatorManager;
 
 /**
  * UDBASpectatorComponent
- * 观战组件
- * 挂在观战者Pawn或观战者Controller上
- * 负责管理观战者的视角状态和输入处理
+ * 瑙傛垬缁勪欢
+ * 鎸傚湪瑙傛垬鑰匬awn鎴栬鎴樿€匔ontroller涓? * 璐熻矗绠＄悊瑙傛垬鑰呯殑瑙嗚鐘舵€佸拰杈撳叆澶勭悊
  */
 UCLASS(Blueprintable, BlueprintType, meta = (DisplayName = "DBA Spectator Component"))
 class DIVINEBEASTSARENA_API UDBASpectatorComponent : public UActorComponent
@@ -27,85 +26,95 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-	/** 连接到观战模式 */
+	/** 杩炴帴鍒拌鎴樻ā寮?*/
 	UFUNCTION(BlueprintCallable, Category = "DBA|Spectator")
 	void JoinSpectatorMode(FString MatchID);
 
-	/** 断开观战模式 */
+	/** 鏂紑瑙傛垬妯″紡 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Spectator")
 	void LeaveSpectatorMode();
 
-	/** 切换到下一个玩家视角 */
+	/** 鍒囨崲鍒颁笅涓€涓帺瀹惰瑙?*/
 	UFUNCTION(BlueprintCallable, Category = "DBA|Spectator|View")
 	void CycleNextTarget();
 
-	/** 切换到上一个玩家视角 */
+	/** 鍒囨崲鍒颁笂涓€涓帺瀹惰瑙?*/
 	UFUNCTION(BlueprintCallable, Category = "DBA|Spectator|View")
 	void CyclePreviousTarget();
 
-	/** 切换到指定索引玩家 */
+	/** 鍒囨崲鍒版寚瀹氱储寮曠帺瀹?*/
 	UFUNCTION(BlueprintCallable, Category = "DBA|Spectator|View")
 	bool JumpToTarget(int32 TargetIndex);
 
-	/** 切换视角模式 */
+	/** 鍒囨崲瑙嗚妯″紡 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Spectator|View")
 	void SetViewMode(EDBAObserverViewMode NewViewMode);
 
-	/** 获取当前视角目标 */
+	/** 鑾峰彇褰撳墠瑙嗚鐩爣 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Spectator|View")
 	FDBAObserverViewTarget GetCurrentViewTarget() const;
 
-	/** 获取所有可用视角目标 */
+	/** 鑾峰彇鎵€鏈夊彲鐢ㄨ瑙掔洰鏍?*/
 	UFUNCTION(BlueprintCallable, Category = "DBA|Spectator|View")
 	TArray<FDBAObserverViewTarget> GetAllViewTargets() const;
 
-	/** 获取当前观战管理器 */
+	/** 鑾峰彇褰撳墠瑙傛垬绠＄悊鍣?*/
 	UFUNCTION(BlueprintCallable, Category = "DBA|Spectator")
 	UDBASpectatorManager* GetSpectatorManager() const;
 
 protected:
-	/** 输入: 切换到下一个 */
+	/** 杈撳叆: 鍒囨崲鍒颁笅涓€涓?*/
 	void Input_CycleNext();
 
-	/** 输入: 切换到上一个 */
+	/** 杈撳叆: 鍒囨崲鍒颁笂涓€涓?*/
 	void Input_CyclePrevious();
 
-	/** 输入: 切换到自由视角 */
+	/** 杈撳叆: 鍒囨崲鍒拌嚜鐢辫瑙?*/
 	void Input_ToggleFreeView();
 
-	/** 输入: 数字键切换 */
+	/** 杈撳叆: 鏁板瓧閿垏鎹?*/
 	void Input_NumericSwitch(int32 Index);
+	void Input_NumericSwitch1();
+	void Input_NumericSwitch2();
+	void Input_NumericSwitch3();
+	void Input_NumericSwitch4();
+	void Input_NumericSwitch5();
+	void Input_NumericSwitch6();
+	void Input_NumericSwitch7();
+	void Input_NumericSwitch8();
+	void Input_NumericSwitch9();
 
-	/** 输入: 暂停/恢复 */
+	/** 杈撳叆: 鏆傚仠/鎭㈠ */
 	void Input_TogglePause();
 
 private:
-	/** 获取所属PlayerController */
+	/** 鑾峰彇鎵€灞濸layerController */
 	APlayerController* GetOwningPlayerController() const;
 
 public:
-	/** 当前视角模式 */
+	/** 褰撳墠瑙嗚妯″紡 */
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|Spectator|View")
 	EDBAObserverViewMode CurrentViewMode;
 
-	/** 当前视角目标 */
+	/** 褰撳墠瑙嗚鐩爣 */
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|Spectator|View")
 	FDBAObserverViewTarget CurrentViewTarget;
 
-	/** 是否已连接 */
+	/** 鏄惁宸茶繛鎺?*/
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|Spectator")
 	bool bIsConnected;
 
 protected:
-	/** 输入组件引用 */
+	/** 杈撳叆缁勪欢寮曠敤 */
 	UPROPERTY()
 	TWeakObjectPtr<UInputComponent> CachedInputComponent;
 
-	/** 观战管理器引用 */
+	/** 瑙傛垬绠＄悊鍣ㄥ紩鐢?*/
 	UPROPERTY()
 	TWeakObjectPtr<UDBASpectatorManager> SpectatorManager;
 
-	/** 观战者控制器引用 */
+	/** 瑙傛垬鑰呮帶鍒跺櫒寮曠敤 */
 	UPROPERTY()
 	TWeakObjectPtr<APlayerController> OwningPlayerController;
 };
+

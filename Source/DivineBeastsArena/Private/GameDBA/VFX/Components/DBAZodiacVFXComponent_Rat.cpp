@@ -1,45 +1,47 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// VFX/SFX 挂载组件 - 夜隐灵鼠
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// VFX/SFX 鎸傝浇缁勪欢 - 澶滈殣鐏甸紶
 
 #include "GameDBA/VFX/Components/DBAZodiacVFXComponent_Rat.h"
 #include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystem.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "GameDBA/Animation/DBAZodiacAnimInstance.h"
 #include "Engine/World.h"
 
 UDBAZodiacVFXComponent_Rat::UDBAZodiacVFXComponent_Rat()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
-	// 设置元素类型
+	// 璁剧疆鍏冪礌绫诲瀷
 	ElementType = FName(TEXT("Fire"));
 
-	// 加载默认资源路径
+	// 鍔犺浇榛樿璧勬簮璺緞
 	LoadDefaultAssets();
 }
 
 void UDBAZodiacVFXComponent_Rat::LoadDefaultAssets()
 {
-	// VFX 资源路径 - 设计师需要在UE编辑器中配置实际资源
+	// VFX 璧勬簮璺緞 - 璁捐甯堥渶瑕佸湪UE缂栬緫鍣ㄤ腑閰嶇疆瀹為檯璧勬簮
 	// AttackVFX.LoadSynchronous();
 	// HitVFX.LoadSynchronous();
 	// MoveVFX.LoadSynchronous();
 	// DeathVFX.LoadSynchronous();
 	// RespawnVFX.LoadSynchronous();
 
-	// SFX 资源路径
+	// SFX 璧勬簮璺緞
 	// AttackSFX.LoadSynchronous();
 	// HitSFX.LoadSynchronous();
 	// MoveSFX.LoadSynchronous();
 	// DeathSFX.LoadSynchronous();
 
-	// 动画资源路径
+	// 鍔ㄧ敾璧勬簮璺緞
 	// AnimBlueprintClass.LoadSynchronous();
 	// AttackMontage.LoadSynchronous();
 	// HitMontage.LoadSynchronous();
 	// DeathMontage.LoadSynchronous();
 }
 
-// ==================== VFX 实现 ====================
+// ==================== VFX 瀹炵幇 ====================
 
 void UDBAZodiacVFXComponent_Rat::PlayAttackVFX(AActor* Target)
 {
@@ -107,7 +109,7 @@ void UDBAZodiacVFXComponent_Rat::PlayRespawnVFX()
 	}
 }
 
-// ==================== SFX 实现 ====================
+// ==================== SFX 瀹炵幇 ====================
 
 void UDBAZodiacVFXComponent_Rat::PlayAttackSFX()
 {
@@ -159,7 +161,7 @@ void UDBAZodiacVFXComponent_Rat::PlayDeathSFX()
 
 void UDBAZodiacVFXComponent_Rat::PlaySkillSFX(FName SkillId)
 {
-	// 根据技能ID播放对应音效 - 设计师需要在UE编辑器中配置资源
+	// 鏍规嵁鎶€鑳絀D鎾斁瀵瑰簲闊虫晥 - 璁捐甯堥渶瑕佸湪UE缂栬緫鍣ㄤ腑閰嶇疆璧勬簮
 	// FString Key = SkillId.ToString();
 	// if (Key.Contains("Passive")) { }
 	// else if (Key.Contains("Q")) { }
@@ -168,7 +170,7 @@ void UDBAZodiacVFXComponent_Rat::PlaySkillSFX(FName SkillId)
 	// else if (Key.Contains("R")) { }
 }
 
-// ==================== 动画实现 ====================
+// ==================== 鍔ㄧ敾瀹炵幇 ====================
 
 void UDBAZodiacVFXComponent_Rat::PlayAttackAnimation()
 {
@@ -198,7 +200,10 @@ void UDBAZodiacVFXComponent_Rat::PlayMoveAnimation(float Speed)
 	{
 		if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
 		{
-			AnimInstance->SetFloatValue(FName(TEXT("Speed")), Speed);
+			if (UDBAZodiacAnimInstance* ZodiacAnimInstance = Cast<UDBAZodiacAnimInstance>(AnimInstance))
+			{
+				ZodiacAnimInstance->SetMoveSpeed(Speed);
+			}
 		}
 	}
 }
@@ -218,7 +223,7 @@ void UDBAZodiacVFXComponent_Rat::PlaySkillAnimation(FName SkillId)
 {
 	if (USkeletalMeshComponent* Mesh = GetOwner()->FindComponentByClass<USkeletalMeshComponent>())
 	{
-		if (UAnimMontage** MontagePtr = SkillMontages.Find(SkillId))
+		if (TSoftObjectPtr<UAnimMontage>* MontagePtr = SkillMontages.Find(SkillId))
 		{
 			if (UAnimMontage* Montage = MontagePtr->LoadSynchronous())
 			{
@@ -236,3 +241,5 @@ UAnimBlueprint* UDBAZodiacVFXComponent_Rat::GetAnimBlueprint() const
 	}
 	return nullptr;
 }
+
+

@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/UDBAMatchFoundWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBAMatchFoundWidgetBase.h"
 
 UDBAMatchFoundWidgetBase::UDBAMatchFoundWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -46,3 +46,4 @@ void UDBAMatchFoundWidgetBase::ShowMatchFound(const FText& InModeName, const FTe
 void UDBAMatchFoundWidgetBase::AutoNavigateToReadyCheck()
 {
 }
+

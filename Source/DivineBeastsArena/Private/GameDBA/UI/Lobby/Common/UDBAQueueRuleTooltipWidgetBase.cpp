@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/Common/UDBAQueueRuleTooltipWidgetBase.h"
+#include "GameDBA/UI/Lobby/Common/UDBAQueueRuleTooltipWidgetBase.h"
 
 UDBAQueueRuleTooltipWidgetBase::UDBAQueueRuleTooltipWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -16,3 +16,4 @@ void UDBAQueueRuleTooltipWidgetBase::ShowQueueRule(
 {
 	BP_OnUpdateQueueRule(QueueName, TeamSize, MapName, ModeName, RuleDescription);
 }
+

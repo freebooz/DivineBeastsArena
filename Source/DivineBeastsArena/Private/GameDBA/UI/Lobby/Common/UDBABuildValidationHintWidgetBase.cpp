@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/Common/UDBABuildValidationHintWidgetBase.h"
+#include "GameDBA/UI/Lobby/Common/UDBABuildValidationHintWidgetBase.h"
 
 UDBABuildValidationHintWidgetBase::UDBABuildValidationHintWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -11,3 +11,4 @@ void UDBABuildValidationHintWidgetBase::ShowValidationResult(bool bIsValid, cons
 {
 	BP_OnUpdateValidationResult(bIsValid, ValidationMessage);
 }
+

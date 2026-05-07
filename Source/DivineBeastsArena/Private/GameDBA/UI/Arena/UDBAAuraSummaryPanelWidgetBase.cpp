@@ -1,6 +1,6 @@
-// Copyright FreeboozStudio Games, Inc. All Rights Reserved.
+﻿// Copyright FreeboozStudio Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/UDBAAuraSummaryPanelWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBAAuraSummaryPanelWidgetBase.h"
 
 UDBAAuraSummaryPanelWidgetBase::UDBAAuraSummaryPanelWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -24,3 +24,4 @@ void UDBAAuraSummaryPanelWidgetBase::UpdateAuraCount(int32 Count)
 void UDBAAuraSummaryPanelWidgetBase::ShowAuraDetails()
 {
 }
+

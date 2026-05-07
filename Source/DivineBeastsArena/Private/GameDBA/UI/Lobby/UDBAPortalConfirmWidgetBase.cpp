@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/UDBAPortalConfirmWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBAPortalConfirmWidgetBase.h"
 
 UDBAPortalConfirmWidgetBase::UDBAPortalConfirmWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -50,3 +50,4 @@ void UDBAPortalConfirmWidgetBase::CancelTeleport()
 	OnPortalCancelledEvent.Broadcast();
 	RemoveFromParent();
 }
+

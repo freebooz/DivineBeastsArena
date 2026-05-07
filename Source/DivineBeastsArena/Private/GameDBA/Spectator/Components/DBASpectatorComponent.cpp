@@ -1,4 +1,4 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "GameDBA/Spectator/Components/DBASpectatorComponent.h"
 #include "GameDBA/Spectator/DBASpectatorManager.h"
@@ -19,11 +19,10 @@ void UDBASpectatorComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 获取所属PlayerController
+	// 鑾峰彇鎵€灞濸layerController
 	OwningPlayerController = GetOwningPlayerController();
 
-	// 获取观战管理器
-	if (UWorld* World = GetWorld())
+		if (UWorld* World = GetWorld())
 	{
 		if (UGameInstance* GameInstance = World->GetGameInstance())
 		{
@@ -41,25 +40,25 @@ void UDBASpectatorComponent::SetupInputComponent(UInputComponent* InputComponent
 
 	CachedInputComponent = InputComponent;
 
-	// Tab键: 循环切换
+	// Tab閿? 寰幆鍒囨崲
 	InputComponent->BindAction("Spectator_CycleNext", IE_Pressed, this, &UDBASpectatorComponent::Input_CycleNext);
 	InputComponent->BindAction("Spectator_CyclePrevious", IE_Pressed, this, &UDBASpectatorComponent::Input_CyclePrevious);
 
-	// Space键: 切换自由视角
+	// Space閿? 鍒囨崲鑷敱瑙嗚
 	InputComponent->BindAction("Spectator_ToggleFreeView", IE_Pressed, this, &UDBASpectatorComponent::Input_ToggleFreeView);
 
-	// 数字键1-9: 直接跳转
-	InputComponent->BindKey(EKeys::One, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch, 0);
-	InputComponent->BindKey(EKeys::Two, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch, 1);
-	InputComponent->BindKey(EKeys::Three, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch, 2);
-	InputComponent->BindKey(EKeys::Four, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch, 3);
-	InputComponent->BindKey(EKeys::Five, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch, 4);
-	InputComponent->BindKey(EKeys::Six, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch, 5);
-	InputComponent->BindKey(EKeys::Seven, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch, 6);
-	InputComponent->BindKey(EKeys::Eight, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch, 7);
-	InputComponent->BindKey(EKeys::Nine, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch, 8);
+	// 鏁板瓧閿?-9: 鐩存帴璺宠浆
+	InputComponent->BindKey(EKeys::One, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch1);
+	InputComponent->BindKey(EKeys::Two, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch2);
+	InputComponent->BindKey(EKeys::Three, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch3);
+	InputComponent->BindKey(EKeys::Four, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch4);
+	InputComponent->BindKey(EKeys::Five, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch5);
+	InputComponent->BindKey(EKeys::Six, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch6);
+	InputComponent->BindKey(EKeys::Seven, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch7);
+	InputComponent->BindKey(EKeys::Eight, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch8);
+	InputComponent->BindKey(EKeys::Nine, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch9);
 
-	// P键: 暂停
+	// P閿? 鏆傚仠
 	InputComponent->BindAction("Spectator_TogglePause", IE_Pressed, this, &UDBASpectatorComponent::Input_TogglePause);
 }
 
@@ -67,7 +66,7 @@ void UDBASpectatorComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// 更新视角目标数据
+	// 鏇存柊瑙嗚鐩爣鏁版嵁
 	if (bIsConnected && SpectatorManager.IsValid())
 	{
 		CurrentViewTarget = SpectatorManager->GetCurrentViewTarget(OwningPlayerController.Get());
@@ -81,13 +80,13 @@ void UDBASpectatorComponent::JoinSpectatorMode(FString MatchID)
 		return;
 	}
 
-	// 连接观战
+	// 杩炴帴瑙傛垬
 	bool bSuccess = SpectatorManager->ConnectToMatch(OwningPlayerController.Get(), MatchID, EDBAObserverControlLevel::ViewOnly);
 	if (bSuccess)
 	{
 		bIsConnected = true;
 
-		// 设置输入处理
+		// 璁剧疆杈撳叆澶勭悊
 		if (APlayerController* PC = OwningPlayerController.Get())
 		{
 			if (UInputComponent* IC = PC->InputComponent)
@@ -205,6 +204,16 @@ void UDBASpectatorComponent::Input_ToggleFreeView()
 	}
 }
 
+void UDBASpectatorComponent::Input_NumericSwitch1() { Input_NumericSwitch(0); }
+void UDBASpectatorComponent::Input_NumericSwitch2() { Input_NumericSwitch(1); }
+void UDBASpectatorComponent::Input_NumericSwitch3() { Input_NumericSwitch(2); }
+void UDBASpectatorComponent::Input_NumericSwitch4() { Input_NumericSwitch(3); }
+void UDBASpectatorComponent::Input_NumericSwitch5() { Input_NumericSwitch(4); }
+void UDBASpectatorComponent::Input_NumericSwitch6() { Input_NumericSwitch(5); }
+void UDBASpectatorComponent::Input_NumericSwitch7() { Input_NumericSwitch(6); }
+void UDBASpectatorComponent::Input_NumericSwitch8() { Input_NumericSwitch(7); }
+void UDBASpectatorComponent::Input_NumericSwitch9() { Input_NumericSwitch(8); }
+
 void UDBASpectatorComponent::Input_NumericSwitch(int32 Index)
 {
 	JumpToTarget(Index);
@@ -235,3 +244,6 @@ APlayerController* UDBASpectatorComponent::GetOwningPlayerController() const
 	}
 	return nullptr;
 }
+
+
+

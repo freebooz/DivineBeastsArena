@@ -1,4 +1,4 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetBase.h"
 #include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetController.h"
@@ -31,13 +31,8 @@ void UDBAMainLobbyWidgetBase::NativeDestruct()
 
 void UDBAMainLobbyWidgetBase::TryBindWidgetController()
 {
-	// 自动获取Controller - 子类实现具体逻辑
-	// 默认从WidgetTree中查找对应Controller
-	if (UObject* Controller = GetWidgetTreeParent.Get())
-	{
-		SetWidgetController(Cast<UDBAMainLobbyWidgetController>(Controller));
-	}
 }
+
 
 void UDBAMainLobbyWidgetBase::SetWidgetController(UDBAMainLobbyWidgetController* InController)
 {
@@ -87,3 +82,4 @@ void UDBAMainLobbyWidgetBase::OpenSettings()
 void UDBAMainLobbyWidgetBase::ExitGame()
 {
 }
+

@@ -1,13 +1,12 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
 // 技能投射物 - 云巡龙君技能Q
 
-#include "Combat/Projectiles/DBAProjectile_Dragon_Q.h"
+#include "GameDBA/Combat/DBAProjectile_Dragon_Q.h"
 #include "Components/SphereComponent.h"
 
 ADBAProjectile_Dragon_Q::ADBAProjectile_Dragon_Q()
 {
-	// 设置投射物属性
-	Speed = 1200.0f;
+	// 设置投射物属�?	Speed = 1200.0f;
 	Radius = 30.0f;
 	Damage = 50.0f;
 
@@ -26,14 +25,14 @@ ADBAProjectile_Dragon_Q::ADBAProjectile_Dragon_Q()
 		ImpactVFXAsset = ImpactVFXFinder.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<USoundCue> FlySFXFinder(
+	static ConstructorHelpers::FObjectFinder<USoundBase> FlySFXFinder(
 		TEXT("/Game/Audio/SFX/Projectiles/Dragon/S_Dragon_Q_Fly.S_Dragon_Q_Fly"));
 	if (FlySFXFinder.Succeeded())
 	{
 		FlySFXAsset = FlySFXFinder.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<USoundCue> ImpactSFXFinder(
+	static ConstructorHelpers::FObjectFinder<USoundBase> ImpactSFXFinder(
 		TEXT("/Game/Audio/SFX/Projectiles/Dragon/S_Dragon_Q_Impact.S_Dragon_Q_Impact"));
 	if (ImpactSFXFinder.Succeeded())
 	{

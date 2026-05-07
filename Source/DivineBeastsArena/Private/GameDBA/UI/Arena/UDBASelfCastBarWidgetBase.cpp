@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Arena/UDBASelfCastBarWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBASelfCastBarWidgetBase.h"
 
 UDBASelfCastBarWidgetBase::UDBASelfCastBarWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -24,3 +24,4 @@ void UDBASelfCastBarWidgetBase::ShowSelfCastProgress(float Duration)
 void UDBASelfCastBarWidgetBase::HideSelfCastProgress()
 {
 }
+

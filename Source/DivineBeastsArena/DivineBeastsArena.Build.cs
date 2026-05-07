@@ -1,124 +1,101 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// 神兽竞技场 - 主模块构建配置
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 using System.IO;
 using UnrealBuildTool;
 
 public class DivineBeastsArena : ModuleRules
 {
-    public DivineBeastsArena(ReadOnlyTargetRules Target) : base(Target)
-    {
-        // PCH 使用策略
-        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+	public DivineBeastsArena(ReadOnlyTargetRules Target) : base(Target)
+	{
+		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-        // 公共依赖模块（在 Public 头文件中使用，需要暴露给其他模块）
-        PublicDependencyModuleNames.AddRange(new string[]
-        {
-            "Core",                     // 核心模块
-            "CoreUObject",              // UObject 系统
-            "Engine",                   // 引擎核心
-            "InputCore",                // 输入核心
-            "EnhancedInput",            // 增强输入系统
-            "GameplayAbilities",        // GAS 核心
-            "GameplayTags",             // GameplayTag 系统
-            "GameplayTasks",            // GameplayTask 系统
-            "UMG",                      // UI 系统
-            "GameCore",                 // 基础层 (L1)
-            "GameMoba",                 // MOBA逻辑层 (L2)
-        });
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core",
+			"CoreUObject",
+			"Engine",
+			"InputCore",
+			"EnhancedInput",
+			"GameplayAbilities",
+			"GameplayTags",
+			"GameplayTasks",
+			"UMG",
+			"GameCore",
+			"GameMoba",
+		});
 
-        // 私有依赖模块（仅在 Private 实现中使用，不暴露给其他模块）
-        PrivateDependencyModuleNames.AddRange(new string[]
-        {
-            "Slate",                    // Slate UI 框架
-            "SlateCore",                // Slate 核心
-            "NetCore",                  // 网络核心
-            "OnlineSubsystem",          // 在线子系统（用于 Session 管理）
-            "OnlineSubsystemUtils",     // 在线子系统工具
-            "DeveloperSettings",        // 开发者设置
-            "AssetRegistry",            // 资产注册表
-            "AIModule",                 // AI 模块（用于 TeamAgentInterface）
-        });
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"Slate",
+			"SlateCore",
+			"NetCore",
+			"OnlineSubsystem",
+			"OnlineSubsystemUtils",
+			"DeveloperSettings",
+			"AssetRegistry",
+			"AIModule",
+			"NavigationSystem",
+			"MediaAssets",
+		});
 
-        // Dedicated Server 不需要的模块（客户端专用）
-        if (Target.Type != TargetType.Server)
-        {
-            PrivateDependencyModuleNames.AddRange(new string[]
-            {
-                "RenderCore",           // 渲染核心
-                "RHI",                  // 渲染硬件接口
-                "Niagara",              // Niagara 特效系统
-                "AudioMixer",           // 音频混音器
-            });
-        }
+		if (Target.Type != TargetType.Server)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[]
+			{
+				"RenderCore",
+				"RHI",
+				"Niagara",
+				"AudioMixer",
+			});
+		}
 
-        // MediaAssets 模块（启动视频需要）
-        // 注意：即使在服务器构建中链接此模块，视频功能也不会被执行（ShouldCreateSubsystem 返回 false）
-        PrivateDependencyModuleNames.Add("MediaAssets");
+		if (Target.Type == TargetType.Editor)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[]
+			{
+				"UnrealEd",
+				"EditorSubsystem",
+			});
+		}
 
-        // Editor 专用模块
-        if (Target.Type == TargetType.Editor)
-        {
-            PrivateDependencyModuleNames.AddRange(new string[]
-            {
-                "UnrealEd",             // 编辑器核心
-                "EditorSubsystem",      // 编辑器子系统
-            });
-        }
+		if (Target.Configuration != UnrealTargetConfiguration.Shipping)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[]
+			{
+				"HTTP",
+				"Json",
+				"JsonUtilities",
+			});
+		}
 
-        // 可选的外部服务客户端依赖（用于 Monitoring / GameOps）
-        // 这些依赖仅用于可选功能，游戏运行不强制依赖
-        if (Target.Configuration != UnrealTargetConfiguration.Shipping)
-        {
-            PrivateDependencyModuleNames.AddRange(new string[]
-            {
-                "HTTP",                 // HTTP 请求（可选监控上报）
-                "Json",                 // JSON 解析
-                "JsonUtilities",        // JSON 工具
-            });
-        }
+		string GameCorePublic = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "GameCore", "Public")).Replace('\\', '/');
+		string GameMobaPublic = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "GameMoba", "Public")).Replace('\\', '/');
 
-        // 公共 Include 路径 - 使用 UE5 标准的相对路径格式
-        string GameCorePublic = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "GameCore", "Public")).Replace('\\', '/');
-        string GameMobaPublic = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "GameMoba", "Public")).Replace('\\', '/');
+		PublicIncludePaths.AddRange(new string[]
+		{
+			Path.Combine(ModuleDirectory, "Public").Replace('\\', '/'),
+			Path.Combine(ModuleDirectory, "Public", "GameDBA").Replace('\\', '/'),
+			GameCorePublic,
+			GameMobaPublic,
+		});
 
-        PublicIncludePaths.AddRange(new string[]
-        {
-            Path.Combine(ModuleDirectory, "Public").Replace('\\', '/'),
-            Path.Combine(ModuleDirectory, "Public", "RPC").Replace('\\', '/'),
-            Path.Combine(ModuleDirectory, "Generated", "Abilities", "Public").Replace('\\', '/'),
-            GameCorePublic,
-            GameMobaPublic,
-        });
+		PrivateIncludePaths.AddRange(new string[]
+		{
+			Path.Combine(ModuleDirectory, "Private").Replace('\\', '/'),
+			Path.Combine(ModuleDirectory, "Private", "GameDBA").Replace('\\', '/'),
+		});
 
-        // 私有 Include 路径
-        PrivateIncludePaths.AddRange(new string[]
-        {
-            Path.Combine(ModuleDirectory, "Private").Replace('\\', '/'),
-            Path.Combine(ModuleDirectory, "Internal").Replace('\\', '/'),
-        });
+		PublicDefinitions.AddRange(new string[]
+		{
+			"ENABLE_GAS_DEBUG=" + (Target.Configuration != UnrealTargetConfiguration.Shipping ? "1" : "0"),
+			"ENABLE_NETWORK_DEBUG=" + (Target.Configuration != UnrealTargetConfiguration.Shipping ? "1" : "0"),
+			"ENABLE_EXTERNAL_SERVICES=" + (Target.Configuration != UnrealTargetConfiguration.Shipping ? "1" : "0"),
+		});
 
-        // 预编译宏定义
-        PublicDefinitions.AddRange(new string[]
-        {
-            // 启用 GAS 调试（非 Shipping 构建）
-            "ENABLE_GAS_DEBUG=" + (Target.Configuration != UnrealTargetConfiguration.Shipping ? "1" : "0"),
+		bUseUnity = true;
+		CppStandard = CppStandardVersion.Cpp20;
 
-            // 启用网络调试（非 Shipping 构建）
-            "ENABLE_NETWORK_DEBUG=" + (Target.Configuration != UnrealTargetConfiguration.Shipping ? "1" : "0"),
-
-            // 启用外部服务客户端（非 Shipping 构建）
-            "ENABLE_EXTERNAL_SERVICES=" + (Target.Configuration != UnrealTargetConfiguration.Shipping ? "1" : "0"),
-        });
-
-        // 优化设置
-        bUseUnity = true;                           // 启用 Unity 构建加速编译
-        // bLegacyPublicIncludePaths = false; // 使用 UE5 默认值
-
-        // C++ 标准
-        CppStandard = CppStandardVersion.Cpp20;
-
-        // 日志输出
-        System.Console.WriteLine("DivineBeastsArena Module: Building for " + Target.Type + " (" + Target.Configuration + ")");
-    }
+		System.Console.WriteLine("DivineBeastsArena Module: Building for " + Target.Type + " (" + Target.Configuration + ")");
+	}
 }
+

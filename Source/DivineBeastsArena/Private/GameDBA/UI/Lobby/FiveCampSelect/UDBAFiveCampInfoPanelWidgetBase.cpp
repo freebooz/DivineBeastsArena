@@ -1,6 +1,6 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
-#include "Client/UI/Lobby/FiveCampSelect/UDBAFiveCampInfoPanelWidgetBase.h"
+#include "GameDBA/UI/Lobby/FiveCampSelect/UDBAFiveCampInfoPanelWidgetBase.h"
 #include "GameCore/Types/DBACommonEnums.h"
 
 UDBAFiveCampInfoPanelWidgetBase::UDBAFiveCampInfoPanelWidgetBase(const FObjectInitializer& ObjectInitializer)
@@ -17,10 +17,11 @@ void UDBAFiveCampInfoPanelWidgetBase::SetFiveCamp(EDBAFiveCamp FiveCamp, EDBAZod
 	CurrentZodiac = Zodiac;
 	CurrentElement = Element;
 
-	FText FiveCampName = FText::FromString(TEXT("天阵营"));
-	FText FiveCampDescription = FText::FromString(TEXT("天界神兽，外观华丽，特效璀璨"));
-	FText AppearanceTheme = FText::FromString(TEXT("金色、白色、光明"));
-	FText EffectTheme = FText::FromString(TEXT("光明、圣洁"));
+	FText FiveCampName = FText::GetEmpty();
+	FText FiveCampDescription = FText::GetEmpty();
+	FText AppearanceTheme = FText::GetEmpty();
+	FText EffectTheme = FText::GetEmpty();
 
 	BP_OnUpdateFiveCampInfo(FiveCamp, FiveCampName, FiveCampDescription, AppearanceTheme, EffectTheme);
 }
+
