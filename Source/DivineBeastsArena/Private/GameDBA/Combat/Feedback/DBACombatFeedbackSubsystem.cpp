@@ -50,7 +50,7 @@ void UDBACombatFeedbackSubsystem::StopListeningForEvent(FGameplayTag EventTag, c
 	}
 }
 
-FLinearColor UDBACombatFeedbackSubsystem::GetElementColor(EDBAElementType Element)
+FLinearColor UDBACombatFeedbackSubsystem::GetElementColor(EDBAElementType Element) const
 {
 	switch (Element)
 	{

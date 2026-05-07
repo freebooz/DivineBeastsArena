@@ -104,7 +104,7 @@ public:
 	void StopListeningForEvent(FGameplayTag EventTag, const FOnCombatEvent& Delegate);
 
 	/** 获取元素对应颜色 */
-	static FLinearColor GetElementColor(EDBAElementType Element);
+	FLinearColor GetElementColor(EDBAElementType Element) const;
 
 public:
 	/** 元素颜色配置表 (非Blueprint属性) */

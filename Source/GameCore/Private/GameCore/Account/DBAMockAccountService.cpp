@@ -4,6 +4,125 @@
 #include "GameCore/Account/DBAAccountSaveGame.h"
 #include "Misc/DateTime.h"
 
+namespace
+{
+const TCHAR* ToStableZodiacName(EDBAZodiac Zodiac)
+{
+	switch (Zodiac)
+	{
+	case EDBAZodiac::Rat: return TEXT("Rat");
+	case EDBAZodiac::Ox: return TEXT("Ox");
+	case EDBAZodiac::Tiger: return TEXT("Tiger");
+	case EDBAZodiac::Rabbit: return TEXT("Rabbit");
+	case EDBAZodiac::Dragon: return TEXT("Dragon");
+	case EDBAZodiac::Snake: return TEXT("Snake");
+	case EDBAZodiac::Horse: return TEXT("Horse");
+	case EDBAZodiac::Goat: return TEXT("Goat");
+	case EDBAZodiac::Monkey: return TEXT("Monkey");
+	case EDBAZodiac::Rooster: return TEXT("Rooster");
+	case EDBAZodiac::Dog: return TEXT("Dog");
+	case EDBAZodiac::Pig: return TEXT("Pig");
+	default: return TEXT("None");
+	}
+}
+
+const TCHAR* ToStableElementName(EDBAElement Element)
+{
+	switch (Element)
+	{
+	case EDBAElement::Fire: return TEXT("Fire");
+	case EDBAElement::Water: return TEXT("Water");
+	case EDBAElement::Wood: return TEXT("Wood");
+	case EDBAElement::Gold: return TEXT("Gold");
+	case EDBAElement::Earth: return TEXT("Earth");
+	default: return TEXT("None");
+	}
+}
+
+EDBAZodiac ResolveCreateZodiac(const FDBACharacterCreateRequest& Request)
+{
+	if (Request.Zodiac != EDBAZodiac::None)
+	{
+		return Request.Zodiac;
+	}
+
+	return Request.DefaultZodiac != EDBAZodiac::None ? Request.DefaultZodiac : EDBAZodiac::Rat;
+}
+
+EDBAElement ResolveCreatePrimaryElement(const FDBACharacterCreateRequest& Request)
+{
+	if (Request.PrimaryElement != EDBAElement::None)
+	{
+		return Request.PrimaryElement;
+	}
+
+	return Request.DefaultElement != EDBAElement::None ? Request.DefaultElement : EDBAElement::Water;
+}
+
+EDBAFiveCamp ResolveCreateFiveCamp(const FDBACharacterCreateRequest& Request, EDBAZodiac Zodiac, EDBAElement Element)
+{
+	if (Request.FiveCamp != EDBAFiveCamp::None)
+	{
+		return Request.FiveCamp;
+	}
+
+	if (Request.DefaultFiveCamp != EDBAFiveCamp::None)
+	{
+		return Request.DefaultFiveCamp;
+	}
+
+	const int32 StableIndex = (static_cast<int32>(Zodiac) + static_cast<int32>(Element)) % 5;
+	switch (StableIndex)
+	{
+	case 0: return EDBAFiveCamp::East;
+	case 1: return EDBAFiveCamp::West;
+	case 2: return EDBAFiveCamp::South;
+	case 3: return EDBAFiveCamp::North;
+	default: return EDBAFiveCamp::Center;
+	}
+}
+
+FName MakeFixedSkillGroupId(EDBAZodiac Zodiac, EDBAElement Element)
+{
+	return FName(*FString::Printf(TEXT("%s_%s"), ToStableZodiacName(Zodiac), ToStableElementName(Element)));
+}
+
+FDBACharacterCoreAttributes MakeDefaultCoreAttributes(EDBAZodiac /*Zodiac*/, EDBAElement Element)
+{
+	FDBACharacterCoreAttributes Attributes;
+
+	if (Element == EDBAElement::Gold)
+	{
+		Attributes.AttackPower *= 1.15f;
+		Attributes.CriticalRate += 10.0f;
+	}
+	else if (Element == EDBAElement::Wood)
+	{
+		Attributes.MaxHealth *= 1.15f;
+		Attributes.MoveSpeed *= 1.10f;
+		Attributes.EnergyRegen *= 1.20f;
+	}
+	else if (Element == EDBAElement::Water)
+	{
+		Attributes.MaxHealth *= 1.15f;
+		Attributes.Defense *= 1.10f;
+		Attributes.EnergyRegen *= 1.20f;
+	}
+	else if (Element == EDBAElement::Fire)
+	{
+		Attributes.AttackPower *= 1.15f;
+		Attributes.MoveSpeed *= 1.10f;
+	}
+	else if (Element == EDBAElement::Earth)
+	{
+		Attributes.MaxHealth *= 1.15f;
+		Attributes.Defense *= 1.10f;
+	}
+
+	return Attributes;
+}
+}
+
 UDBAMockAccountService::UDBAMockAccountService()
 {
 }
@@ -231,12 +350,21 @@ void UDBAMockAccountService::CreateCharacter(const FDBACharacterCreateRequest& R
 	}
 
 	// 创建角色摘要
+	const EDBAZodiac ResolvedZodiac = ResolveCreateZodiac(Request);
+	const EDBAElement ResolvedPrimaryElement = ResolveCreatePrimaryElement(Request);
+	const EDBAFiveCamp ResolvedFiveCamp = ResolveCreateFiveCamp(Request, ResolvedZodiac, ResolvedPrimaryElement);
+
 	FDBACharacterSummary Summary;
 	Summary.CharacterId = GenerateCharacterId();
 	Summary.CharacterName = Request.CharacterName;
-	Summary.DefaultZodiac = Request.DefaultZodiac;
-	Summary.DefaultElement = Request.DefaultElement;
-	Summary.DefaultFiveCamp = Request.DefaultFiveCamp;
+	Summary.Zodiac = ResolvedZodiac;
+	Summary.PrimaryElement = ResolvedPrimaryElement;
+	Summary.FiveCamp = ResolvedFiveCamp;
+	Summary.FixedSkillGroupId = MakeFixedSkillGroupId(ResolvedZodiac, ResolvedPrimaryElement);
+	Summary.CoreAttributes = MakeDefaultCoreAttributes(ResolvedZodiac, ResolvedPrimaryElement);
+	Summary.DefaultZodiac = ResolvedZodiac;
+	Summary.DefaultElement = ResolvedPrimaryElement;
+	Summary.DefaultFiveCamp = ResolvedFiveCamp;
 	Summary.Level = 1;
 	Summary.CreateTime = FDateTime::UtcNow().ToUnixTimestamp();
 	Summary.LastUsedTime = Summary.CreateTime;

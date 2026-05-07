@@ -22,6 +22,9 @@ public class GameCore : ModuleRules
 		{
 			"Slate",
 			"SlateCore",
+			"HTTP",
+			"Json",
+			"JsonUtilities",
 		});
 
 		PublicIncludePaths.Add("GameCore/Public");
