@@ -1,11 +1,13 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// 生肖动画配置 - 夜隐灵鼠
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// 鐢熻倴鍔ㄧ敾閰嶇疆 - 澶滈殣鐏甸紶
 
 #include "GameDBA/Animation/Zodiac/DBAZodiacAnimConfig_Rat.h"
 
 UDBAZodiacAnimConfig_Rat::UDBAZodiacAnimConfig_Rat()
 {
-	// 设置默认资源路径
+	if (!IsRunningDedicatedServer())
+	{
+	// 璁剧疆榛樿璧勬簮璺緞
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> IdleFinder(
 		TEXT("/Game/Animation/Zodiac/Rat/Montages/AM_Rat_Idle.AM_Rat_Idle"));
 	if (IdleFinder.Succeeded())
@@ -82,4 +84,7 @@ UDBAZodiacAnimConfig_Rat::UDBAZodiacAnimConfig_Rat()
 	{
 		Death_Montage = DeathFinder.Object;
 	}
+	}
 }
+
+

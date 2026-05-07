@@ -110,10 +110,10 @@ struct DIVINEBEASTSARENA_API FDBARequestId
 	GENERATED_BODY()
 
 	/** 请求 GUID */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|External")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|External", Meta = (IgnoreForMemberInitializationTest))
 	FGuid RequestGuid;
 
-	FDBARequestId() : RequestGuid(FGuid::NewGuid()) {}
+	FDBARequestId() : RequestGuid() {}
 	explicit FDBARequestId(const FGuid& InGuid) : RequestGuid(InGuid) {}
 
 	bool IsValid() const { return RequestGuid.IsValid(); }

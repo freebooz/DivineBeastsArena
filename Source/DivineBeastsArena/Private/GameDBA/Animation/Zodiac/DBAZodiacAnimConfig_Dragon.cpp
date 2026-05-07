@@ -1,11 +1,13 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// 生肖动画配置 - 云巡龙君
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// 鐢熻倴鍔ㄧ敾閰嶇疆 - 浜戝贰榫欏悰
 
 #include "GameDBA/Animation/Zodiac/DBAZodiacAnimConfig_Dragon.h"
 
 UDBAZodiacAnimConfig_Dragon::UDBAZodiacAnimConfig_Dragon()
 {
-	// 设置默认资源路径
+	if (!IsRunningDedicatedServer())
+	{
+	// 璁剧疆榛樿璧勬簮璺緞
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> IdleFinder(
 		TEXT("/Game/Animation/Zodiac/Dragon/Montages/AM_Dragon_Idle.AM_Dragon_Idle"));
 	if (IdleFinder.Succeeded())
@@ -82,4 +84,7 @@ UDBAZodiacAnimConfig_Dragon::UDBAZodiacAnimConfig_Dragon()
 	{
 		Death_Montage = DeathFinder.Object;
 	}
+	}
 }
+
+

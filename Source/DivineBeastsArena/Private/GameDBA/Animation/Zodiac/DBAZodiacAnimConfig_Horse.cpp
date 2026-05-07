@@ -1,11 +1,13 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// 生肖动画配置 - 踏风天驹
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// 鐢熻倴鍔ㄧ敾閰嶇疆 - 韪忛澶╅┕
 
 #include "GameDBA/Animation/Zodiac/DBAZodiacAnimConfig_Horse.h"
 
 UDBAZodiacAnimConfig_Horse::UDBAZodiacAnimConfig_Horse()
 {
-	// 设置默认资源路径
+	if (!IsRunningDedicatedServer())
+	{
+	// 璁剧疆榛樿璧勬簮璺緞
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> IdleFinder(
 		TEXT("/Game/Animation/Zodiac/Horse/Montages/AM_Horse_Idle.AM_Horse_Idle"));
 	if (IdleFinder.Succeeded())
@@ -82,4 +84,7 @@ UDBAZodiacAnimConfig_Horse::UDBAZodiacAnimConfig_Horse()
 	{
 		Death_Montage = DeathFinder.Object;
 	}
+	}
 }
+
+

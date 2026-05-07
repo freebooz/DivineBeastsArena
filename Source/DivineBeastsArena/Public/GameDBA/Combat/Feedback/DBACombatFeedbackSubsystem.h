@@ -38,15 +38,15 @@ struct DIVINEBEASTSARENA_API FDBACombatEventData
 
 	/** 伤害值 */
 	UPROPERTY(BlueprintReadOnly)
-	float DamageValue;
+	float DamageValue = 0.0f;
 
 	/** 是否暴击 */
 	UPROPERTY(BlueprintReadOnly)
-	bool bIsCritical;
+	bool bIsCritical = false;
 
 	/** 元素类型 */
 	UPROPERTY(BlueprintReadOnly)
-	EDBAElementType Element;
+	EDBAElementType Element = EDBAElementType::None;
 };
 
 /**

@@ -1,11 +1,13 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// 生肖动画配置 - 玄花灵蛇
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// 鐢熻倴鍔ㄧ敾閰嶇疆 - 鐜勮姳鐏佃泧
 
 #include "GameDBA/Animation/Zodiac/DBAZodiacAnimConfig_Snake.h"
 
 UDBAZodiacAnimConfig_Snake::UDBAZodiacAnimConfig_Snake()
 {
-	// 设置默认资源路径
+	if (!IsRunningDedicatedServer())
+	{
+	// 璁剧疆榛樿璧勬簮璺緞
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> IdleFinder(
 		TEXT("/Game/Animation/Zodiac/Snake/Montages/AM_Snake_Idle.AM_Snake_Idle"));
 	if (IdleFinder.Succeeded())
@@ -82,4 +84,7 @@ UDBAZodiacAnimConfig_Snake::UDBAZodiacAnimConfig_Snake()
 	{
 		Death_Montage = DeathFinder.Object;
 	}
+	}
 }
+
+

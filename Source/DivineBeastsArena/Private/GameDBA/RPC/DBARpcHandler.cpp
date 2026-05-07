@@ -8,7 +8,7 @@
 
 ADBARpcHandler::ADBARpcHandler()
 {
-	SetReplicates(true);
+	bReplicates = true;
 	bAlwaysRelevant = true;
 }
 

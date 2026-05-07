@@ -4,10 +4,22 @@
 
 #include "GameDBA/UI/Arena/UDBAArenaHUDRootWidgetBase.h"
 #include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetBase.h"
+#include "UObject/ConstructorHelpers.h"
 
 UDBAGameUIManager::UDBAGameUIManager()
 	: Super()
 {
+	static ConstructorHelpers::FClassFinder<UDBAMainLobbyWidgetBase> MainLobbyWidgetFinder(TEXT("/Game/UI/Lobby/MainLobby/WBP_DBA_MainLobby"));
+	if (MainLobbyWidgetFinder.Succeeded())
+	{
+		MainLobbyWidgetClass = MainLobbyWidgetFinder.Class;
+	}
+
+	static ConstructorHelpers::FClassFinder<UDBAArenaHUDRootWidgetBase> ArenaHudWidgetFinder(TEXT("/Game/UI/Arena/HUD/WBP_DBA_ArenaHUDRoot"));
+	if (ArenaHudWidgetFinder.Succeeded())
+	{
+		ArenaHUDWidgetClass = ArenaHudWidgetFinder.Class;
+	}
 }
 
 void UDBAGameUIManager::Initialize(FSubsystemCollectionBase& Collection)

@@ -36,6 +36,7 @@ public class DivineBeastsArena : ModuleRules
 			"AIModule",
 			"NavigationSystem",
 			"MediaAssets",
+			"Niagara",
 		});
 
 		if (Target.Type != TargetType.Server)
@@ -44,7 +45,6 @@ public class DivineBeastsArena : ModuleRules
 			{
 				"RenderCore",
 				"RHI",
-				"Niagara",
 				"AudioMixer",
 			});
 		}
@@ -98,4 +98,3 @@ public class DivineBeastsArena : ModuleRules
 		System.Console.WriteLine("DivineBeastsArena Module: Building for " + Target.Type + " (" + Target.Configuration + ")");
 	}
 }
-

@@ -36,7 +36,7 @@
  * - Dedicated Server 不调用 Queue 接口
  * - Dedicated Server 只验证客户端提供的 Match 信息
  */
-UCLASS(Abstract)
+UCLASS()
 class GAMECORE_API UDBAQueueServiceBase : public UDBAGameInstanceSubsystemBase
 {
 	GENERATED_BODY()

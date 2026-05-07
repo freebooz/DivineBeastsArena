@@ -1,11 +1,13 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// 生肖动画配置 - 镇魄灵犬
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// 鐢熻倴鍔ㄧ敾閰嶇疆 - 闀囬瓌鐏电姮
 
 #include "GameDBA/Animation/Zodiac/DBAZodiacAnimConfig_Dog.h"
 
 UDBAZodiacAnimConfig_Dog::UDBAZodiacAnimConfig_Dog()
 {
-	// 设置默认资源路径
+	if (!IsRunningDedicatedServer())
+	{
+	// 璁剧疆榛樿璧勬簮璺緞
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> IdleFinder(
 		TEXT("/Game/Animation/Zodiac/Dog/Montages/AM_Dog_Idle.AM_Dog_Idle"));
 	if (IdleFinder.Succeeded())
@@ -82,4 +84,7 @@ UDBAZodiacAnimConfig_Dog::UDBAZodiacAnimConfig_Dog()
 	{
 		Death_Montage = DeathFinder.Object;
 	}
+	}
 }
+
+

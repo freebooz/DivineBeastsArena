@@ -1,11 +1,13 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// 生肖动画配置 - 福岳灵猪
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// 鐢熻倴鍔ㄧ敾閰嶇疆 - 绂忓渤鐏电尓
 
 #include "GameDBA/Animation/Zodiac/DBAZodiacAnimConfig_Pig.h"
 
 UDBAZodiacAnimConfig_Pig::UDBAZodiacAnimConfig_Pig()
 {
-	// 设置默认资源路径
+	if (!IsRunningDedicatedServer())
+	{
+	// 璁剧疆榛樿璧勬簮璺緞
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> IdleFinder(
 		TEXT("/Game/Animation/Zodiac/Pig/Montages/AM_Pig_Idle.AM_Pig_Idle"));
 	if (IdleFinder.Succeeded())
@@ -82,4 +84,7 @@ UDBAZodiacAnimConfig_Pig::UDBAZodiacAnimConfig_Pig()
 	{
 		Death_Montage = DeathFinder.Object;
 	}
+	}
 }
+
+

@@ -15,7 +15,7 @@ UDBAMonsterAIComponent::UDBAMonsterAIComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.TickInterval = 0.1f; // AI Tick 棰戠巼 10Hz
 
-	SetIsReplicated(true);
+	SetIsReplicatedByDefault(true);
 }
 
 void UDBAMonsterAIComponent::InitializeComponent()

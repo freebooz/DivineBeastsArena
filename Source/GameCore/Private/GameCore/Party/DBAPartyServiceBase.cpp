@@ -1,7 +1,10 @@
 // Copyright FreeboozStudio. All Rights Reserved.
 
 #include "GameCore/Party/DBAPartyServiceBase.h"
+
 #include "GameCore/Account/DBAAccountServiceBase.h"
+#include "GameCore/Session/DBAFrontendSessionSubsystem.h"
+#include "Misc/DateTime.h"
 #include "Misc/Guid.h"
 
 UDBAPartyServiceBase::UDBAPartyServiceBase()
@@ -11,22 +14,18 @@ UDBAPartyServiceBase::UDBAPartyServiceBase()
 void UDBAPartyServiceBase::OnSubsystemInitialize()
 {
 	Super::OnSubsystemInitialize();
-
-	LogSubsystemInfo(TEXT("Party 服务初始化"));
-
+	LogSubsystemInfo(TEXT("Party service initialized"));
 	bIsInitialized = true;
 }
 
 void UDBAPartyServiceBase::OnSubsystemDeinitialize()
 {
-	LogSubsystemInfo(TEXT("Party 服务反初始化"));
-
+	LogSubsystemInfo(TEXT("Party service deinitialized"));
 	Super::OnSubsystemDeinitialize();
 }
 
 bool UDBAPartyServiceBase::IsSupportedInCurrentEnvironment() const
 {
-	// Dedicated Server 不需要 Party 服务
 	if (GetGameInstance() && GetGameInstance()->IsDedicatedServerInstance())
 	{
 		return false;
@@ -42,10 +41,39 @@ void UDBAPartyServiceBase::CreateParty(FDBAOnPartyCreated OnComplete)
 		return;
 	}
 
-	LogSubsystemError(TEXT("CreateParty - 基类未实现，派生类必须重写此方法"));
+	UDBAAccountServiceBase* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAAccountServiceBase>() : nullptr;
+	if (!AccountService || !AccountService->IsLoggedIn())
+	{
+		LogSubsystemError(TEXT("CreateParty failed: account not logged in"));
+		FDBAPartyInfo EmptyParty;
+		OnComplete.ExecuteIfBound(EmptyParty);
+		return;
+	}
 
-	FDBAPartyInfo EmptyParty;
-	OnComplete.ExecuteIfBound(EmptyParty);
+	const FDBAAccountInfo& AccountInfo = AccountService->GetCurrentAccountInfo();
+	FDBAPartyMember LeaderMember;
+	LeaderMember.AccountId = AccountInfo.AccountId;
+	LeaderMember.DisplayName = AccountInfo.DisplayName;
+	LeaderMember.Role = EDBAPartyMemberRole::Leader;
+	LeaderMember.Status = EDBAPartyMemberStatus::Online;
+	LeaderMember.JoinTime = FDateTime::UtcNow().ToUnixTimestamp();
+
+	CurrentPartyInfo = FDBAPartyInfo();
+	CurrentPartyInfo.PartyId = GeneratePartyId();
+	CurrentPartyInfo.LeaderAccountId = LeaderMember.AccountId;
+	CurrentPartyInfo.Members.Add(LeaderMember);
+	CurrentPartyInfo.State = EDBAPartyState::Idle;
+	CurrentPartyInfo.MaxMembers = 5;
+	CurrentPartyInfo.CreateTime = FDateTime::UtcNow().ToUnixTimestamp();
+
+	if (UDBAFrontendSessionSubsystem* FrontendSession = GetGameInstance()->GetSubsystem<UDBAFrontendSessionSubsystem>())
+	{
+		FrontendSession->SetCurrentPartyInfo(CurrentPartyInfo);
+		FrontendSession->SetState(EDBAFrontendSessionState::InParty);
+	}
+
+	OnPartyUpdated.ExecuteIfBound(CurrentPartyInfo);
+	OnComplete.ExecuteIfBound(CurrentPartyInfo);
 }
 
 void UDBAPartyServiceBase::InvitePlayer(const FDBAAccountId& AccountId, FDBAOnPartyOperationComplete OnComplete)
@@ -55,9 +83,28 @@ void UDBAPartyServiceBase::InvitePlayer(const FDBAAccountId& AccountId, FDBAOnPa
 		return;
 	}
 
-	LogSubsystemError(TEXT("InvitePlayer - 基类未实现，派生类必须重写此方法"));
+	if (!IsInParty())
+	{
+		OnComplete.ExecuteIfBound(false, TEXT("Party not created"));
+		return;
+	}
 
-	OnComplete.ExecuteIfBound(false, TEXT("未实现"));
+	if (CurrentPartyInfo.IsFull())
+	{
+		OnComplete.ExecuteIfBound(false, TEXT("Party is full"));
+		return;
+	}
+
+	FDBAPartyMember NewMember;
+	NewMember.AccountId = AccountId;
+	NewMember.DisplayName = AccountId.ToString();
+	NewMember.Role = EDBAPartyMemberRole::Member;
+	NewMember.Status = EDBAPartyMemberStatus::Online;
+	NewMember.JoinTime = FDateTime::UtcNow().ToUnixTimestamp();
+
+	CurrentPartyInfo.Members.Add(NewMember);
+	OnPartyUpdated.ExecuteIfBound(CurrentPartyInfo);
+	OnComplete.ExecuteIfBound(true, TEXT(""));
 }
 
 void UDBAPartyServiceBase::AcceptInvite(const FDBAPartyInvite& Invite, FDBAOnPartyJoined OnComplete)
@@ -67,10 +114,51 @@ void UDBAPartyServiceBase::AcceptInvite(const FDBAPartyInvite& Invite, FDBAOnPar
 		return;
 	}
 
-	LogSubsystemError(TEXT("AcceptInvite - 基类未实现，派生类必须重写此方法"));
+	if (!Invite.IsValid())
+	{
+		FDBAPartyInfo EmptyParty;
+		OnComplete.ExecuteIfBound(EmptyParty);
+		return;
+	}
 
-	FDBAPartyInfo EmptyParty;
-	OnComplete.ExecuteIfBound(EmptyParty);
+	CurrentPartyInfo = FDBAPartyInfo();
+	CurrentPartyInfo.PartyId = Invite.PartyId;
+	CurrentPartyInfo.LeaderAccountId = Invite.InviterAccountId;
+	CurrentPartyInfo.State = EDBAPartyState::Idle;
+	CurrentPartyInfo.MaxMembers = 5;
+	CurrentPartyInfo.CreateTime = FDateTime::UtcNow().ToUnixTimestamp();
+
+	FDBAPartyMember LeaderMember;
+	LeaderMember.AccountId = Invite.InviterAccountId;
+	LeaderMember.DisplayName = Invite.InviterDisplayName;
+	LeaderMember.Role = EDBAPartyMemberRole::Leader;
+	LeaderMember.Status = EDBAPartyMemberStatus::Online;
+	LeaderMember.JoinTime = FDateTime::UtcNow().ToUnixTimestamp();
+	CurrentPartyInfo.Members.Add(LeaderMember);
+
+	if (UDBAAccountServiceBase* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAAccountServiceBase>() : nullptr)
+	{
+		const FDBAAccountInfo& AccountInfo = AccountService->GetCurrentAccountInfo();
+		if (AccountInfo.AccountId != Invite.InviterAccountId && AccountInfo.AccountId.IsValid())
+		{
+			FDBAPartyMember SelfMember;
+			SelfMember.AccountId = AccountInfo.AccountId;
+			SelfMember.DisplayName = AccountInfo.DisplayName;
+			SelfMember.Role = EDBAPartyMemberRole::Member;
+			SelfMember.Status = EDBAPartyMemberStatus::Online;
+			SelfMember.JoinTime = FDateTime::UtcNow().ToUnixTimestamp();
+			CurrentPartyInfo.Members.Add(SelfMember);
+		}
+	}
+
+	if (UDBAFrontendSessionSubsystem* FrontendSession = GetGameInstance()->GetSubsystem<UDBAFrontendSessionSubsystem>())
+	{
+		FrontendSession->SetCurrentPartyInfo(CurrentPartyInfo);
+		FrontendSession->SetState(EDBAFrontendSessionState::InParty);
+	}
+
+	OnPartyUpdated.ExecuteIfBound(CurrentPartyInfo);
+	OnComplete.ExecuteIfBound(CurrentPartyInfo);
 }
 
 void UDBAPartyServiceBase::DeclineInvite(const FDBAPartyInvite& Invite, FDBAOnPartyOperationComplete OnComplete)
@@ -80,9 +168,13 @@ void UDBAPartyServiceBase::DeclineInvite(const FDBAPartyInvite& Invite, FDBAOnPa
 		return;
 	}
 
-	LogSubsystemError(TEXT("DeclineInvite - 基类未实现，派生类必须重写此方法"));
+	if (!Invite.IsValid())
+	{
+		OnComplete.ExecuteIfBound(false, TEXT("Invalid invite"));
+		return;
+	}
 
-	OnComplete.ExecuteIfBound(false, TEXT("未实现"));
+	OnComplete.ExecuteIfBound(true, TEXT(""));
 }
 
 void UDBAPartyServiceBase::LeaveParty(FDBAOnPartyLeft OnComplete)
@@ -93,9 +185,13 @@ void UDBAPartyServiceBase::LeaveParty(FDBAOnPartyLeft OnComplete)
 	}
 
 	CurrentPartyInfo = FDBAPartyInfo();
+	if (UDBAFrontendSessionSubsystem* FrontendSession = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAFrontendSessionSubsystem>() : nullptr)
+	{
+		FrontendSession->ClearCurrentPartyInfo();
+		FrontendSession->SetState(EDBAFrontendSessionState::MainLobby);
+	}
 
-	LogSubsystemInfo(TEXT("离开 Party 成功"));
-
+	LogSubsystemInfo(TEXT("LeaveParty succeeded"));
 	OnComplete.ExecuteIfBound();
 }
 
@@ -106,9 +202,19 @@ void UDBAPartyServiceBase::KickMember(const FDBAAccountId& AccountId, FDBAOnPart
 		return;
 	}
 
-	LogSubsystemError(TEXT("KickMember - 基类未实现，派生类必须重写此方法"));
+	const int32 RemovedCount = CurrentPartyInfo.Members.RemoveAll([&AccountId](const FDBAPartyMember& Member)
+	{
+		return Member.AccountId == AccountId && Member.Role != EDBAPartyMemberRole::Leader;
+	});
 
-	OnComplete.ExecuteIfBound(false, TEXT("未实现"));
+	if (RemovedCount > 0)
+	{
+		OnPartyUpdated.ExecuteIfBound(CurrentPartyInfo);
+		OnComplete.ExecuteIfBound(true, TEXT(""));
+		return;
+	}
+
+	OnComplete.ExecuteIfBound(false, TEXT("Member not found or is leader"));
 }
 
 void UDBAPartyServiceBase::PromoteLeader(const FDBAAccountId& AccountId, FDBAOnPartyOperationComplete OnComplete)
@@ -118,9 +224,21 @@ void UDBAPartyServiceBase::PromoteLeader(const FDBAAccountId& AccountId, FDBAOnP
 		return;
 	}
 
-	LogSubsystemError(TEXT("PromoteLeader - 基类未实现，派生类必须重写此方法"));
+	FDBAPartyMember* NewLeader = CurrentPartyInfo.FindMember(AccountId);
+	if (!NewLeader)
+	{
+		OnComplete.ExecuteIfBound(false, TEXT("Member not found"));
+		return;
+	}
 
-	OnComplete.ExecuteIfBound(false, TEXT("未实现"));
+	for (FDBAPartyMember& Member : CurrentPartyInfo.Members)
+	{
+		Member.Role = (Member.AccountId == AccountId) ? EDBAPartyMemberRole::Leader : EDBAPartyMemberRole::Member;
+	}
+	CurrentPartyInfo.LeaderAccountId = AccountId;
+
+	OnPartyUpdated.ExecuteIfBound(CurrentPartyInfo);
+	OnComplete.ExecuteIfBound(true, TEXT(""));
 }
 
 bool UDBAPartyServiceBase::IsLeader() const
@@ -130,8 +248,7 @@ bool UDBAPartyServiceBase::IsLeader() const
 		return false;
 	}
 
-	// 获取当前账户服务
-	UDBAAccountServiceBase* AccountService = GetGameInstance()->GetSubsystem<UDBAAccountServiceBase>();
+	UDBAAccountServiceBase* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAAccountServiceBase>() : nullptr;
 	if (!AccountService)
 	{
 		return false;
@@ -143,6 +260,6 @@ bool UDBAPartyServiceBase::IsLeader() const
 
 FDBAPartyId UDBAPartyServiceBase::GeneratePartyId()
 {
-	const FString PartyIdString = FGuid::NewGuid().ToString();
-	return FDBAPartyId(PartyIdString);
+	return FDBAPartyId(FGuid::NewGuid().ToString());
 }
+

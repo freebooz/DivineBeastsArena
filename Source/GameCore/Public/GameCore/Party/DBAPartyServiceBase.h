@@ -33,7 +33,7 @@
  * - Dedicated Server 不调用 Party 接口
  * - Dedicated Server 只验证客户端提供的 Party 信息
  */
-UCLASS(Abstract)
+UCLASS()
 class GAMECORE_API UDBAPartyServiceBase : public UDBAGameInstanceSubsystemBase
 {
 	GENERATED_BODY()

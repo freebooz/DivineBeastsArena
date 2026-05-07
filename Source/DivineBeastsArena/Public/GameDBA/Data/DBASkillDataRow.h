@@ -136,6 +136,26 @@ struct DIVINEBEASTSARENA_API FDBASkillDataRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
 	TArray<FName> SkillTags;
 
+	/** 技能战术定位（攻击/位移/控制/防护/功能） */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Design")
+	FName TacticalRole;
+
+	/** 是否保命/防护技能（用于 UI 强调与新手引导） */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Design")
+	bool bIsDefensiveSkill = false;
+
+	/** 图标命名（策划/美术对齐用） */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Design")
+	FText IconDesignName;
+
+	/** 图标设计说明 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Design")
+	FText IconDesignDescription;
+
+	/** 特效表现说明 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Design")
+	FText VFXDesignDescription;
+
 	/** 技能升级配置（JSON 格式） */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Upgrade")
 	FString UpgradeConfigJson;

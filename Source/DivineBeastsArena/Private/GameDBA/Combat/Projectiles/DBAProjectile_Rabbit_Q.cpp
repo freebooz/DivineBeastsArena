@@ -1,16 +1,18 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// 技能投射物 - 月华灵兔技能Q
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// 鎶€鑳芥姇灏勭墿 - 鏈堝崕鐏靛厰鎶€鑳絈
 
 #include "GameDBA/Combat/DBAProjectile_Rabbit_Q.h"
 #include "Components/SphereComponent.h"
 
 ADBAProjectile_Rabbit_Q::ADBAProjectile_Rabbit_Q()
 {
-	// 设置投射物属�?	Speed = 1200.0f;
+	// 璁剧疆鎶曞皠鐗╁睘鎬?	Speed = 1200.0f;
 	Radius = 30.0f;
 	Damage = 50.0f;
 
-	// 设置特效资源路径
+	if (!IsRunningDedicatedServer())
+	{
+		// 璁剧疆鐗规晥璧勬簮璺緞
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> ProjectileVFXFinder(
 		TEXT("/Game/VFX/Projectiles/Rabbit/P_Rabbit_Q_Projectile.P_Rabbit_Q_Projectile"));
 	if (ProjectileVFXFinder.Succeeded())
@@ -38,6 +40,7 @@ ADBAProjectile_Rabbit_Q::ADBAProjectile_Rabbit_Q()
 	{
 		ImpactSFXAsset = ImpactSFXFinder.Object;
 	}
+	}
 }
 
 void ADBAProjectile_Rabbit_Q::BeginPlay()
@@ -60,20 +63,20 @@ void ADBAProjectile_Rabbit_Q::InitializeProjectile(
 	Speed = InSpeed;
 	Radius = InRadius;
 
-	// 更新移动组件
+	// 鏇存柊绉诲姩缁勪欢
 	if (ProjectileMovement)
 	{
 		ProjectileMovement->InitialSpeed = Speed;
 		ProjectileMovement->MaxSpeed = Speed * 1.5f;
 	}
 
-	// 更新碰撞半径
+	// 鏇存柊纰版挒鍗婂緞
 	if (USphereComponent* Sphere = Cast<USphereComponent>(RootComponent))
 	{
 		Sphere->SetSphereRadius(Radius);
 	}
 
-	// 加载飞行特效
+	// 鍔犺浇椋炶鐗规晥
 	if (ProjectileVFXAsset.IsValid())
 	{
 		if (UParticleSystem* VFX = ProjectileVFXAsset.LoadSynchronous())
@@ -82,10 +85,12 @@ void ADBAProjectile_Rabbit_Q::InitializeProjectile(
 		}
 	}
 
-	// 设置初始速度方向朝向目标
+	// 璁剧疆鍒濆閫熷害鏂瑰悜鏈濆悜鐩爣
 	if (InTarget)
 	{
 		FVector Direction = (InTarget->GetActorLocation() - GetActorLocation()).GetSafeNormal();
 		ProjectileMovement->Velocity = Direction * Speed;
 	}
 }
+
+

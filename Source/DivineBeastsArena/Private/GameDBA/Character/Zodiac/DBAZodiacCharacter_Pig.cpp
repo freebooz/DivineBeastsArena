@@ -1,30 +1,33 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
-// 生肖角色 - 福岳灵猪
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// 鐢熻倴瑙掕壊 - 绂忓渤鐏电尓
 
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Pig.h"
 #include "Components/SkeletalMeshComponent.h"
 
 ADBAZodiacCharacter_Pig::ADBAZodiacCharacter_Pig()
 {
-	// 设置元素类型
+	// 璁剧疆鍏冪礌绫诲瀷
 	ElementType = EDBAElementType::Metal;
 	ZodiacType = EDBAZodiacType::Pig;
 
-	// 加载骨骼网格体
-	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/Models/Zodiac/Pig/SK_Pig_Mesh.SK_Pig_Mesh"));
+	if (!IsRunningDedicatedServer())
+	{
+		static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/Models/Zodiac/Pig/SK_Pig_Mesh.SK_Pig_Mesh"));
 	if (MeshFinder.Succeeded())
 	{
 		GetMesh()->SetSkeletalMesh(MeshFinder.Object);
-	}
+		}
 
-	// 设置动画蓝图
+	// 璁剧疆鍔ㄧ敾钃濆浘
 	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Pig/ABP_Pig.ABP_Pig"));
 	if (AnimBPFinder.Succeeded())
 	{
 		GetMesh()->SetAnimClass(AnimBPFinder.Class);
-	}
+		}
 
-	// 配置角色描述
+		}
+
+	// 閰嶇疆瑙掕壊鎻忚堪
 	PrimaryActorTick.bCanEverTick = true;
 }
 
@@ -32,5 +35,6 @@ void ADBAZodiacCharacter_Pig::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 福岳灵猪角色特定初始化
+	// 绂忓渤鐏电尓瑙掕壊鐗瑰畾鍒濆鍖?
 }
+
