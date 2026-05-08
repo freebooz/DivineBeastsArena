@@ -19,7 +19,7 @@ ADBAZodiacCharacter_Snake::ADBAZodiacCharacter_Snake()
 		}
 
 	// 璁剧疆鍔ㄧ敾钃濆浘
-	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Snake/ABP_Snake.ABP_Snake"));
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Snake/ABP_Snake"));
 	if (AnimBPFinder.Succeeded())
 	{
 		GetMesh()->SetAnimClass(AnimBPFinder.Class);
@@ -37,4 +37,5 @@ void ADBAZodiacCharacter_Snake::BeginPlay()
 
 	// 鐜勮姳鐏佃泧瑙掕壊鐗瑰畾鍒濆鍖?
 }
+
 

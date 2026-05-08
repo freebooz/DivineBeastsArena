@@ -19,7 +19,7 @@ ADBAZodiacCharacter_Pig::ADBAZodiacCharacter_Pig()
 		}
 
 	// 璁剧疆鍔ㄧ敾钃濆浘
-	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Pig/ABP_Pig.ABP_Pig"));
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Pig/ABP_Pig"));
 	if (AnimBPFinder.Succeeded())
 	{
 		GetMesh()->SetAnimClass(AnimBPFinder.Class);
@@ -37,4 +37,5 @@ void ADBAZodiacCharacter_Pig::BeginPlay()
 
 	// 绂忓渤鐏电尓瑙掕壊鐗瑰畾鍒濆鍖?
 }
+
 

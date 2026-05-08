@@ -19,7 +19,7 @@ ADBAZodiacCharacter_Dragon::ADBAZodiacCharacter_Dragon()
 		}
 
 	// 璁剧疆鍔ㄧ敾钃濆浘
-	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Dragon/ABP_Dragon.ABP_Dragon"));
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Dragon/ABP_Dragon"));
 	if (AnimBPFinder.Succeeded())
 	{
 		GetMesh()->SetAnimClass(AnimBPFinder.Class);
@@ -37,4 +37,5 @@ void ADBAZodiacCharacter_Dragon::BeginPlay()
 
 	// 浜戝贰榫欏悰瑙掕壊鐗瑰畾鍒濆鍖?
 }
+
 

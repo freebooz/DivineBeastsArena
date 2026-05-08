@@ -19,7 +19,7 @@ ADBAZodiacCharacter_Rabbit::ADBAZodiacCharacter_Rabbit()
 		}
 
 	// 璁剧疆鍔ㄧ敾钃濆浘
-	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Rabbit/ABP_Rabbit.ABP_Rabbit"));
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Rabbit/ABP_Rabbit"));
 	if (AnimBPFinder.Succeeded())
 	{
 		GetMesh()->SetAnimClass(AnimBPFinder.Class);
@@ -37,4 +37,5 @@ void ADBAZodiacCharacter_Rabbit::BeginPlay()
 
 	// 鏈堝崕鐏靛厰瑙掕壊鐗瑰畾鍒濆鍖?
 }
+
 

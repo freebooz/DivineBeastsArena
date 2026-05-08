@@ -73,6 +73,114 @@ def find_template_for_kind(kind: str, registry: unreal.AssetRegistry) -> str | N
     return None
 
 
+def create_bootstrap_templates() -> dict[str, str]:
+    tools = unreal.AssetToolsHelpers.get_asset_tools()
+    lib = unreal.EditorAssetLibrary
+    created: dict[str, str] = {}
+    root = "/Game/_AutoPlaceholders"
+    lib.make_directory(root)
+
+    def _ensure_asset(path: str, creator):
+        if lib.does_asset_exist(path):
+            return lib.load_asset(path)
+        return creator()
+
+    # Build a minimal animation chain from a known engine skeletal mesh template.
+    sk_path = f"{root}/SK_Placeholder.SK_Placeholder"
+    if lib.does_asset_exist(sk_path):
+        sk_asset = lib.load_asset(sk_path)
+    else:
+        engine_sk = unreal.load_asset("/Engine/EngineMeshes/SkeletalCube.SkeletalCube")
+        sk_asset = None
+        if engine_sk:
+            sk_asset = unreal.AssetToolsHelpers.get_asset_tools().duplicate_asset(
+                asset_name="SK_Placeholder",
+                package_path=root,
+                original_object=engine_sk,
+            )
+    if sk_asset:
+        created["SkeletalMesh"] = sk_path
+        unreal.EditorAssetLibrary.save_loaded_asset(sk_asset)
+
+        skeleton = None
+        try:
+            skeleton = sk_asset.get_editor_property("skeleton")
+        except Exception:
+            skeleton = None
+
+        if skeleton:
+            abp_path = f"{root}/ABP_Placeholder.ABP_Placeholder"
+            if lib.does_asset_exist(abp_path):
+                created["AnimBlueprint"] = abp_path
+            else:
+                try:
+                    abp_factory = unreal.AnimBlueprintFactory()
+                    try:
+                        abp_factory.set_editor_property("target_skeleton", skeleton)
+                    except Exception:
+                        pass
+                    abp = tools.create_asset("ABP_Placeholder", root, unreal.AnimBlueprint, abp_factory)
+                    if abp:
+                        created["AnimBlueprint"] = abp_path
+                        unreal.EditorAssetLibrary.save_loaded_asset(abp)
+                except Exception as e:
+                    log(f"AnimBlueprint bootstrap failed: {e}")
+
+            am_path = f"{root}/AM_Placeholder.AM_Placeholder"
+            if lib.does_asset_exist(am_path):
+                created["AnimMontage"] = am_path
+            else:
+                try:
+                    am_factory = unreal.AnimMontageFactory()
+                    am_factory.set_editor_property("target_skeleton", skeleton)
+                    am = tools.create_asset("AM_Placeholder", root, unreal.AnimMontage, am_factory)
+                    if am:
+                        created["AnimMontage"] = am_path
+                        unreal.EditorAssetLibrary.save_loaded_asset(am)
+                except Exception as e:
+                    log(f"AnimMontage bootstrap failed: {e}")
+
+    particle_path = f"{root}/P_Placeholder.P_Placeholder"
+    p = _ensure_asset(
+        particle_path,
+        lambda: tools.create_asset("P_Placeholder", root, unreal.ParticleSystem, unreal.ParticleSystemFactoryNew()),
+    )
+    if p:
+        created["ParticleSystem"] = particle_path
+
+    cue_path = f"{root}/S_Placeholder.S_Placeholder"
+    if lib.does_asset_exist(cue_path):
+        created["SoundBase"] = cue_path
+
+    for pth in created.values():
+        asset = lib.load_asset(pth)
+        if asset:
+            unreal.EditorAssetLibrary.save_loaded_asset(asset)
+    return created
+
+
+def cleanup_bad_temp_assets() -> None:
+    lib = unreal.EditorAssetLibrary
+    temp_root = "/Game/_AutoPlaceholdersTemp"
+    if lib.does_directory_exist(temp_root):
+        assets = lib.list_assets(temp_root, True, True)
+        for asset in assets:
+            lib.delete_asset(asset)
+        lib.delete_directory(temp_root)
+
+
+def cleanup_generated_zodiac_placeholders(paths: list[str]) -> None:
+    lib = unreal.EditorAssetLibrary
+    for object_path in paths:
+        kind = infer_kind(object_path)
+        if kind not in {"SkeletalMesh", "AnimBlueprint", "AnimMontage"}:
+            continue
+        package_obj_path = object_path
+        if not lib.does_asset_exist(package_obj_path):
+            continue
+        lib.delete_asset(package_obj_path)
+
+
 def ensure_asset(object_path: str, template_path: str) -> tuple[bool, str]:
     lib = unreal.EditorAssetLibrary
     if lib.does_asset_exist(object_path):
@@ -98,8 +206,12 @@ def ensure_asset(object_path: str, template_path: str) -> tuple[bool, str]:
 
 def main() -> None:
     registry = unreal.AssetRegistryHelpers.get_asset_registry()
+    cleanup_bad_temp_assets()
     paths = gather_paths()
+    cleanup_generated_zodiac_placeholders(paths)
     log(f"scanned_paths={len(paths)}")
+    bootstrap_templates = create_bootstrap_templates()
+    log(f"bootstrap_templates={bootstrap_templates}")
 
     created = 0
     exists = 0
@@ -117,6 +229,8 @@ def main() -> None:
 
         if kind not in templates_cache:
             templates_cache[kind] = find_template_for_kind(kind, registry)
+            if not templates_cache[kind] and kind in bootstrap_templates:
+                templates_cache[kind] = bootstrap_templates[kind]
 
         template = templates_cache[kind]
         if not template:

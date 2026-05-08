@@ -19,7 +19,7 @@ ADBAZodiacCharacter_Dog::ADBAZodiacCharacter_Dog()
 		}
 
 	// 璁剧疆鍔ㄧ敾钃濆浘
-	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Dog/ABP_Dog.ABP_Dog"));
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Dog/ABP_Dog"));
 	if (AnimBPFinder.Succeeded())
 	{
 		GetMesh()->SetAnimClass(AnimBPFinder.Class);
@@ -37,4 +37,5 @@ void ADBAZodiacCharacter_Dog::BeginPlay()
 
 	// 闀囬瓌鐏电姮瑙掕壊鐗瑰畾鍒濆鍖?
 }
+
 

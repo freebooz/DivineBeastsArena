@@ -19,7 +19,7 @@ ADBAZodiacCharacter_Monkey::ADBAZodiacCharacter_Monkey()
 		}
 
 	// 璁剧疆鍔ㄧ敾钃濆浘
-	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Monkey/ABP_Monkey.ABP_Monkey"));
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Monkey/ABP_Monkey"));
 	if (AnimBPFinder.Succeeded())
 	{
 		GetMesh()->SetAnimClass(AnimBPFinder.Class);
@@ -37,4 +37,5 @@ void ADBAZodiacCharacter_Monkey::BeginPlay()
 
 	// 骞讳簯鐏电尶瑙掕壊鐗瑰畾鍒濆鍖?
 }
+
 

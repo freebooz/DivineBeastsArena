@@ -19,7 +19,7 @@ ADBAZodiacCharacter_Ox::ADBAZodiacCharacter_Ox()
 		}
 
 	// 璁剧疆鍔ㄧ敾钃濆浘
-	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Ox/ABP_Ox.ABP_Ox"));
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Ox/ABP_Ox"));
 	if (AnimBPFinder.Succeeded())
 	{
 		GetMesh()->SetAnimClass(AnimBPFinder.Class);
@@ -37,4 +37,5 @@ void ADBAZodiacCharacter_Ox::BeginPlay()
 
 	// 闀囧渤绁炵墰瑙掕壊鐗瑰畾鍒濆鍖?
 }
+
 

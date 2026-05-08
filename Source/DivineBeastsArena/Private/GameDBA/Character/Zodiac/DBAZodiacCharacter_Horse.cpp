@@ -19,7 +19,7 @@ ADBAZodiacCharacter_Horse::ADBAZodiacCharacter_Horse()
 		}
 
 	// 璁剧疆鍔ㄧ敾钃濆浘
-	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Horse/ABP_Horse.ABP_Horse"));
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Horse/ABP_Horse"));
 	if (AnimBPFinder.Succeeded())
 	{
 		GetMesh()->SetAnimClass(AnimBPFinder.Class);
@@ -37,4 +37,5 @@ void ADBAZodiacCharacter_Horse::BeginPlay()
 
 	// 韪忛澶╅┕瑙掕壊鐗瑰畾鍒濆鍖?
 }
+
 

@@ -19,7 +19,7 @@ ADBAZodiacCharacter_Rooster::ADBAZodiacCharacter_Rooster()
 		}
 
 	// 璁剧疆鍔ㄧ敾钃濆浘
-	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Rooster/ABP_Rooster.ABP_Rooster"));
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Rooster/ABP_Rooster"));
 	if (AnimBPFinder.Succeeded())
 	{
 		GetMesh()->SetAnimClass(AnimBPFinder.Class);
@@ -37,4 +37,5 @@ void ADBAZodiacCharacter_Rooster::BeginPlay()
 
 	// 鏇滈福绁為浮瑙掕壊鐗瑰畾鍒濆鍖?
 }
+
 

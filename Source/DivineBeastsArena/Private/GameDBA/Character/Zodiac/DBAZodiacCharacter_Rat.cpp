@@ -19,7 +19,7 @@ ADBAZodiacCharacter_Rat::ADBAZodiacCharacter_Rat()
 		}
 
 	// 璁剧疆鍔ㄧ敾钃濆浘
-	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Rat/ABP_Rat.ABP_Rat"));
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Rat/ABP_Rat"));
 	if (AnimBPFinder.Succeeded())
 	{
 		GetMesh()->SetAnimClass(AnimBPFinder.Class);
@@ -37,4 +37,5 @@ void ADBAZodiacCharacter_Rat::BeginPlay()
 
 	// 澶滈殣鐏甸紶瑙掕壊鐗瑰畾鍒濆鍖?
 }
+
 
