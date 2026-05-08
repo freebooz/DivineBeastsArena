@@ -11,19 +11,19 @@
 class UAbilitySystemComponent;
 
 /**
- * IDBACharacterRef
+ * IIDBACharacterRef
  * 角色引用接口 - 解除 ADBARpcHandler 与 ADBAZodiacCharacterBase 的直接耦合
  *
- * 使用 TScriptInterface<IDBACharacterRef> 让 RPC Handler 可以通过接口访问角色属性，
+ * 使用 TScriptInterface<IIDBACharacterRef> 让 RPC Handler 可以通过接口访问角色属性，
  * 而无需直接依赖具体角色类。
  */
-UINTERFACE(BlueprintType)
+UINTERFACE(NotBlueprintable)
 class DIVINEBEASTSARENA_API UIDBACharacterRef : public UInterface
 {
 	GENERATED_BODY()
 };
 
-class DIVINEBEASTSARENA_API IDBACharacterRef
+class DIVINEBEASTSARENA_API IIDBACharacterRef
 {
 	GENERATED_BODY()
 

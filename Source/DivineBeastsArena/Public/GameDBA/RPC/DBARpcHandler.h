@@ -75,5 +75,5 @@ protected:
 	bool IsEnemy(AActor* ActorA, AActor* ActorB) const;
 
 	/** 通过接口获取 Owner Character */
-	TScriptInterface<IDBACharacterRef> GetCharacterRef() const;
+	TScriptInterface<IIDBACharacterRef> GetCharacterRef() const;
 };

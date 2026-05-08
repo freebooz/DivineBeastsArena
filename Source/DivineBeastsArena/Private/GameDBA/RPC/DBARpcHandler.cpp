@@ -5,11 +5,14 @@
 #include "GameDBA/Core/DBALogChannels.h"
 #include "Engine/World.h"
 
-TScriptInterface<IDBACharacterRef> ADBARpcHandler::GetCharacterRef() const
+TScriptInterface<IIDBACharacterRef> ADBARpcHandler::GetCharacterRef() const
 {
-	if (AActor* Owner = GetOwner())
+	if (AActor* OwnerActor = GetOwner())
 	{
-		return Owner->GetInterface<IDBACharacterRef>();
+		if (OwnerActor->Implements<UIDBACharacterRef>())
+		{
+			return TScriptInterface<IIDBACharacterRef>(OwnerActor);
+		}
 	}
 	return nullptr;
 }
@@ -24,20 +27,20 @@ ADBARpcHandler::ADBARpcHandler()
 
 void ADBARpcHandler::ServerTryActivateAbility_Implementation(const FDBAAbilityRpcParams& Params)
 {
-	UE_LOG(LogDBANetwork, Warning, TEXT("ServerTryActivateAbility called - handle: %s"), *Params.AbilityHandle.ToString());
+	UE_LOG(LogDBANetwork, Warning, TEXT("[Server] 尝试激活技能 - Handle: %s"), *Params.AbilityHandle.ToString());
 }
 
 bool ADBARpcHandler::ServerTryActivateAbility_Validate(const FDBAAbilityRpcParams& Params)
 {
 	if (!Params.AbilityHandle.IsValid())
 	{
-		UE_LOG(LogDBANetwork, Warning, TEXT("ServerTryActivateAbility rejected: invalid handle"));
+		UE_LOG(LogDBANetwork, Warning, TEXT("[Server] 激活技能被拒绝: 无效的Handle"));
 		return false;
 	}
 
 	if (Params.TargetActor != nullptr && !ValidateTarget(Params.TargetActor.Get()))
 	{
-		UE_LOG(LogDBANetwork, Warning, TEXT("ServerTryActivateAbility rejected: invalid target"));
+		UE_LOG(LogDBANetwork, Warning, TEXT("[Server] 激活技能被拒绝: 无效的目标"));
 		return false;
 	}
 
@@ -46,14 +49,14 @@ bool ADBARpcHandler::ServerTryActivateAbility_Validate(const FDBAAbilityRpcParam
 
 void ADBARpcHandler::ServerCancelAbility_Implementation(FGameplayAbilitySpecHandle Handle)
 {
-	UE_LOG(LogDBANetwork, Warning, TEXT("ServerCancelAbility called - handle: %s"), *Handle.ToString());
+	UE_LOG(LogDBANetwork, Warning, TEXT("[Server] 取消技能 - Handle: %s"), *Handle.ToString());
 }
 
 bool ADBARpcHandler::ServerCancelAbility_Validate(FGameplayAbilitySpecHandle Handle)
 {
 	if (!Handle.IsValid())
 	{
-		UE_LOG(LogDBANetwork, Warning, TEXT("ServerCancelAbility rejected: invalid handle"));
+		UE_LOG(LogDBANetwork, Warning, TEXT("[Server] 取消技能被拒绝: 无效的Handle"));
 		return false;
 	}
 	return true;
@@ -61,14 +64,14 @@ bool ADBARpcHandler::ServerCancelAbility_Validate(FGameplayAbilitySpecHandle Han
 
 void ADBARpcHandler::ServerLockTarget_Implementation(AActor* TargetActor)
 {
-	UE_LOG(LogDBANetwork, Warning, TEXT("ServerLockTarget called"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("[Server] 锁定目标"));
 }
 
 bool ADBARpcHandler::ServerLockTarget_Validate(AActor* TargetActor)
 {
 	if (!ValidateTarget(TargetActor))
 	{
-		UE_LOG(LogDBANetwork, Warning, TEXT("ServerLockTarget rejected: invalid target"));
+		UE_LOG(LogDBANetwork, Warning, TEXT("[Server] 锁定目标被拒绝: 无效的目标"));
 		return false;
 	}
 	return true;
@@ -76,14 +79,14 @@ bool ADBARpcHandler::ServerLockTarget_Validate(AActor* TargetActor)
 
 void ADBARpcHandler::ServerMoveTo_Implementation(FVector_NetQuantize10 Location)
 {
-	UE_LOG(LogDBANetwork, Verbose, TEXT("ServerMoveTo called - location: %s"), *Location.ToString());
+	UE_LOG(LogDBANetwork, Verbose, TEXT("[Server] 移动到位置: %s"), *Location.ToString());
 }
 
 bool ADBARpcHandler::ServerMoveTo_Validate(FVector_NetQuantize10 Location)
 {
 	if (Location.ContainsNaN())
 	{
-		UE_LOG(LogDBANetwork, Warning, TEXT("ServerMoveTo rejected: invalid location"));
+		UE_LOG(LogDBANetwork, Warning, TEXT("[Server] 移动被拒绝: 无效的位置坐标"));
 		return false;
 	}
 
@@ -93,7 +96,7 @@ bool ADBARpcHandler::ServerMoveTo_Validate(FVector_NetQuantize10 Location)
 			Location.Y < -10000.f || Location.Y > 10000.f ||
 			Location.Z < -100.f || Location.Z > 10000.f)
 		{
-			UE_LOG(LogDBANetwork, Warning, TEXT("ServerMoveTo rejected: location out of bounds"));
+			UE_LOG(LogDBANetwork, Warning, TEXT("[Server] 移动被拒绝: 位置超出边界"));
 			return false;
 		}
 	}
@@ -103,7 +106,7 @@ bool ADBARpcHandler::ServerMoveTo_Validate(FVector_NetQuantize10 Location)
 
 void ADBARpcHandler::ServerRequestAttack_Implementation()
 {
-	UE_LOG(LogDBANetwork, Warning, TEXT("ServerRequestAttack called"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("[Server] 请求攻击"));
 }
 
 bool ADBARpcHandler::ServerRequestAttack_Validate()
@@ -113,22 +116,22 @@ bool ADBARpcHandler::ServerRequestAttack_Validate()
 
 void ADBARpcHandler::ServerUltimateAbility_Implementation(const FDBAAbilityRpcParams& Params)
 {
-	UE_LOG(LogDBANetwork, Warning, TEXT("ServerUltimateAbility called"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("[Server] 终极技能被调用"));
 }
 
 bool ADBARpcHandler::ServerUltimateAbility_Validate(const FDBAAbilityRpcParams& Params)
 {
 	if (!Params.AbilityHandle.IsValid())
 	{
-		UE_LOG(LogDBANetwork, Warning, TEXT("ServerUltimateAbility rejected: invalid handle"));
+		UE_LOG(LogDBANetwork, Warning, TEXT("[Server] 终极技能被拒绝: 无效的Handle"));
 		return false;
 	}
 
-	if (TScriptInterface<IDBACharacterRef> CharacterRef = GetCharacterRef())
+	if (TScriptInterface<IIDBACharacterRef> CharacterRef = GetCharacterRef())
 	{
 		if (CharacterRef->GetUltimateEnergy() < 100.f)
 		{
-			UE_LOG(LogDBANetwork, Warning, TEXT("ServerUltimateAbility rejected: ultimate energy not full"));
+			UE_LOG(LogDBANetwork, Warning, TEXT("[Server] 终极技能被拒绝: 终极能量未满"));
 			return false;
 		}
 	}
@@ -140,66 +143,66 @@ bool ADBARpcHandler::ServerUltimateAbility_Validate(const FDBAAbilityRpcParams& 
 
 void ADBARpcHandler::ClientReceiveDamage_Implementation(float Damage, FVector_NetQuantize10 Position, FGameplayTag DamageType)
 {
-	UE_LOG(LogDBANetwork, Verbose, TEXT("ClientReceiveDamage: %f"), Damage);
+	UE_LOG(LogDBANetwork, Verbose, TEXT("[Client] 接收伤害: %f"), Damage);
 }
 
 void ADBARpcHandler::ClientReceiveEffect_Implementation(FGameplayTag EffectTag, float Magnitude)
 {
-	UE_LOG(LogDBANetwork, Verbose, TEXT("ClientReceiveEffect: %s"), *EffectTag.ToString());
+	UE_LOG(LogDBANetwork, Verbose, TEXT("[Client] 接收效果: %s"), *EffectTag.ToString());
 }
 
 void ADBARpcHandler::ClientReplicateState_Implementation(uint8 NewState, const FVector_NetQuantize10& Location)
 {
-	UE_LOG(LogDBANetwork, Verbose, TEXT("ClientReplicateState: %d"), NewState);
+	UE_LOG(LogDBANetwork, Verbose, TEXT("[Client] 同步状态: %d"), NewState);
 }
 
 void ADBARpcHandler::ClientAbilityActivated_Implementation(FGameplayAbilitySpecHandle Handle)
 {
-	UE_LOG(LogDBANetwork, Verbose, TEXT("ClientAbilityActivated"));
+	UE_LOG(LogDBANetwork, Verbose, TEXT("[Client] 技能已激活"));
 }
 
 void ADBARpcHandler::ClientAbilityFailed_Implementation(FGameplayAbilitySpecHandle Handle, FGameplayTag FailureTag)
 {
-	UE_LOG(LogDBANetwork, Warning, TEXT("ClientAbilityFailed: %s"), *FailureTag.ToString());
+	UE_LOG(LogDBANetwork, Warning, TEXT("[Client] 技能激活失败: %s"), *FailureTag.ToString());
 }
 
 // ==================== IDBARpcInterface Interface ====================
 
 void ADBARpcHandler::ClientReportHit_Implementation(FGameplayAbilitySpecHandle AbilityHandle, FVector_NetQuantize10 HitLocation, AActor* HitActor)
 {
-	UE_LOG(LogDBANetwork, Verbose, TEXT("ClientReportHit"));
+	UE_LOG(LogDBANetwork, Verbose, TEXT("[Client] 报告命中"));
 }
 
 void ADBARpcHandler::ClientFullStateSync_Implementation(float Health, float Energy, float Shield, float UltimateEnergy, int32 ChainLevel, int32 ResonanceLevel)
 {
-	UE_LOG(LogDBANetwork, Verbose, TEXT("ClientFullStateSync"));
+	UE_LOG(LogDBANetwork, Verbose, TEXT("[Client] 完整状态同步"));
 }
 
 void ADBARpcHandler::ClientMoveCorrection_Implementation(FVector_NetQuantize10 ServerLocation, float ServerTime)
 {
-	UE_LOG(LogDBANetwork, Verbose, TEXT("ClientMoveCorrection"));
+	UE_LOG(LogDBANetwork, Verbose, TEXT("[Client] 移动校正"));
 }
 
 void ADBARpcHandler::ClientHitConfirmed_Implementation(FGameplayAbilitySpecHandle AbilityHandle, float Damage, FGameplayTag DamageType)
 {
-	UE_LOG(LogDBANetwork, Verbose, TEXT("ClientHitConfirmed"));
+	UE_LOG(LogDBANetwork, Verbose, TEXT("[Client] 命中确认"));
 }
 
 void ADBARpcHandler::ClientHitRejected_Implementation(FGameplayAbilitySpecHandle AbilityHandle)
 {
-	UE_LOG(LogDBANetwork, Warning, TEXT("ClientHitRejected"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("[Client] 命中被拒绝"));
 }
 
 void ADBARpcHandler::ClientHitConfirmedWithCritical_Implementation(FGameplayAbilitySpecHandle AbilityHandle, float Damage, FGameplayTag DamageType, bool bIsCritical, FVector_NetQuantize10 HitLocation)
 {
-	UE_LOG(LogDBANetwork, Verbose, TEXT("ClientHitConfirmedWithCritical"));
+	UE_LOG(LogDBANetwork, Verbose, TEXT("[Client] 命中确认(带暴击)"));
 }
 
 // ==================== Helper Methods ====================
 
 bool ADBARpcHandler::ValidateEnergyCost(float Cost) const
 {
-	if (TScriptInterface<IDBACharacterRef> CharacterRef = GetCharacterRef())
+	if (TScriptInterface<IIDBACharacterRef> CharacterRef = GetCharacterRef())
 	{
 		return CharacterRef->HasEnoughEnergy(Cost);
 	}
@@ -256,12 +259,11 @@ bool ADBARpcHandler::IsEnemy(AActor* ActorA, AActor* ActorB) const
 		return false;
 	}
 
-	if (TScriptInterface<IDBACharacterRef> CharRefA = ActorA->GetInterface<IDBACharacterRef>())
+	if (ActorA->Implements<UIDBACharacterRef>() && ActorB->Implements<UIDBACharacterRef>())
 	{
-		if (TScriptInterface<IDBACharacterRef> CharRefB = ActorB->GetInterface<IDBACharacterRef>())
-		{
-			return CharRefA->GetTeamID() != CharRefB->GetTeamID();
-		}
+		TScriptInterface<IIDBACharacterRef> CharRefA(ActorA);
+		TScriptInterface<IIDBACharacterRef> CharRefB(ActorB);
+		return CharRefA->GetTeamID() != CharRefB->GetTeamID();
 	}
 
 	return true;

@@ -13,7 +13,7 @@ void UDBAElementSkillAbility_Generic::ActivateAbility(
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
 {
-	UE_LOG(LogDBAAbility, Log, TEXT("UDBAElementSkillAbility_Generic::ActivateAbility - SkillID: %s"), *SkillID.ToString());
+	UE_LOG(LogDBACombat, Log, TEXT("UDBAElementSkillAbility_Generic::ActivateAbility - SkillID: %s"), *SkillID.ToString());
 
 	// 调用蓝图事件
 	OnAbilityActivatedBP(SkillID);
@@ -29,7 +29,7 @@ void UDBAElementSkillAbility_Generic::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	UE_LOG(LogDBAAbility, Log, TEXT("UDBAElementSkillAbility_Generic::EndAbility - SkillID: %s, bWasCancelled: %d"), *SkillID.ToString(), bWasCancelled);
+	UE_LOG(LogDBACombat, Log, TEXT("UDBAElementSkillAbility_Generic::EndAbility - SkillID: %s, bWasCancelled: %d"), *SkillID.ToString(), bWasCancelled);
 
 	// 调用蓝图事件
 	OnAbilityEndedBP(SkillID, bWasCancelled);

@@ -1,4 +1,4 @@
-﻿// Copyright FreeboozStudio. All Rights Reserved.
+// Copyright FreeboozStudio. All Rights Reserved.
 
 #include "GameDBA/UI/Startup/UDBAStartupVideoWidget.h"
 #include "Components/Image.h"
@@ -7,7 +7,7 @@
 #include "RenderingThread.h"
 #include "GameDBA/Core/DBALogChannels.h"
 
-// 浠呭湪闈炴湇鍔″櫒鏋勫缓鏃跺寘鍚?MediaAssets
+// 仅在非服务端构建时包含MediaAssets
 #if !UE_SERVER
 #include "MediaPlayer.h"
 #include "MediaTexture.h"
@@ -17,13 +17,13 @@ void UDBAStartupVideoWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// 璁剧疆璺宠繃鎻愮ず鏂囨湰
+	// 设置跳过提示文本
 	if (SkipHintText)
 	{
 		SkipHintText->SetText(SkipHint);
 	}
 
-	// 缁戝畾璺宠繃鎸夐挳鐐瑰嚮浜嬩欢
+	// 绑定跳过按钮点击事件
 	if (SkipButton)
 	{
 		SkipButton->OnClicked.AddDynamic(this, &UDBAStartupVideoWidget::OnSkipClicked);
@@ -32,7 +32,7 @@ void UDBAStartupVideoWidget::NativeConstruct()
 
 void UDBAStartupVideoWidget::NativeDestruct()
 {
-	// 娓呯悊濯掍綋璧勬簮
+	// 清理媒体资源
 #if !UE_SERVER
 	if (MediaPlayer)
 	{
@@ -50,17 +50,17 @@ void UDBAStartupVideoWidget::SetMediaPlayer(UMediaPlayer* InMediaPlayer)
 	if (MediaPlayer)
 	{
 		bIsPlaying = true;
-		UE_LOG(LogDBAUI, Log, TEXT("[DBAStartupVideoWidget] 濯掍綋鎾斁鍣ㄥ凡璁剧疆"));
+		UE_LOG(LogDBAUI, Log, TEXT("[DBAStartupVideoWidget] 媒体播放器已设置"));
 	}
 }
 
 void UDBAStartupVideoWidget::OnVideoFinished()
 {
 	bIsPlaying = false;
-	UE_LOG(LogDBAUI, Log, TEXT("[DBAStartupVideoWidget] 瑙嗛鎾斁瀹屾垚"));
+	UE_LOG(LogDBAUI, Log, TEXT("[DBAStartupVideoWidget] 视频播放完成"));
 }
 
 void UDBAStartupVideoWidget::OnSkipClicked()
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[DBAStartupVideoWidget] 鐢ㄦ埛鐐瑰嚮璺宠繃"));
+	UE_LOG(LogDBAUI, Log, TEXT("[DBAStartupVideoWidget] 用户点击跳过"));
 }

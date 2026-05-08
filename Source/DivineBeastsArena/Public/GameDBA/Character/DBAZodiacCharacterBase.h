@@ -23,7 +23,7 @@ class ADBARpcHandler;
  * 实现了 IDBACharacterRef 接口，让 RPC Handler 可以通过接口访问角色属性
  */
 UCLASS(Blueprintable, BlueprintType)
-class DIVINEBEASTSARENA_API ADBAZodiacCharacterBase : public ACharacter, public IDBACharacterRef
+class DIVINEBEASTSARENA_API ADBAZodiacCharacterBase : public ACharacter, public IIDBACharacterRef
 {
 	GENERATED_BODY()
 
@@ -99,8 +99,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
 	virtual bool HasEnoughEnergy(float Cost) const override;
 
-	/** 标记实现 IDBACharacterRef 接口 */
-	virtual bool ImplementsUIDBACharacterRef() const override { return true; }
+	/** 标记实现 IIDBACharacterRef 接口 */
+	virtual bool ImplementsIIDBACharacterRef() const { return true; }
 
 public:
 	// ==================== 属性修改 ====================

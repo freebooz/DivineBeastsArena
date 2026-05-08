@@ -240,7 +240,7 @@ bool ADBAZodiacCharacterBase::IsTeammate(const ADBAZodiacCharacterBase* Other) c
 	return TeamID == Other->TeamID;
 }
 
-// ==================== IDBACharacterRef 接口实现 ====================
+// ==================== IIDBACharacterRef 接口实现 ====================
 
 UAbilitySystemComponent* ADBAZodiacCharacterBase::GetAbilitySystemComponent() const
 {

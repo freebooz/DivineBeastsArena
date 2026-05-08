@@ -13,7 +13,7 @@ void UDBAZodiacPassiveAbility_Generic::ActivateAbility(
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
 {
-	UE_LOG(LogDBAAbility, Log, TEXT("UDBAZodiacPassiveAbility_Generic::ActivateAbility - PassiveSkillID: %s"), *PassiveSkillID.ToString());
+	UE_LOG(LogDBACombat, Log, TEXT("UDBAZodiacPassiveAbility_Generic::ActivateAbility - PassiveSkillID: %s"), *PassiveSkillID.ToString());
 
 	// 调用蓝图事件
 	OnPassiveActivatedBP(PassiveSkillID);
@@ -29,7 +29,7 @@ void UDBAZodiacPassiveAbility_Generic::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	UE_LOG(LogDBAAbility, Log, TEXT("UDBAZodiacPassiveAbility_Generic::EndAbility - PassiveSkillID: %s, bWasCancelled: %d"), *PassiveSkillID.ToString(), bWasCancelled);
+	UE_LOG(LogDBACombat, Log, TEXT("UDBAZodiacPassiveAbility_Generic::EndAbility - PassiveSkillID: %s, bWasCancelled: %d"), *PassiveSkillID.ToString(), bWasCancelled);
 
 	// 调用蓝图事件
 	OnPassiveRemovedBP(PassiveSkillID);
