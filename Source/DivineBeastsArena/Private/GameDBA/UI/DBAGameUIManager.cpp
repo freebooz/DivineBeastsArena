@@ -6,6 +6,9 @@
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
 #include "GameDBA/UI/Arena/UDBAArenaHUDRootWidgetBase.h"
 #include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetBase.h"
+#include "GameDBA/UI/Lobby/Login/UDBALoginFlowWidgetBase.h"
+#include "GameDBA/UI/Lobby/Login/UDBACharacterSelectFlowWidgetBase.h"
+#include "GameDBA/UI/Lobby/Login/UDBACharacterCreateFlowWidgetBase.h"
 #include "UObject/ConstructorHelpers.h"
 
 UDBAGameUIManager::UDBAGameUIManager()
@@ -23,19 +26,19 @@ UDBAGameUIManager::UDBAGameUIManager()
 		ArenaHUDWidgetClass = ArenaHudWidgetFinder.Class;
 	}
 
-	static ConstructorHelpers::FClassFinder<UUserWidget> LoginWidgetFinder(TEXT("/Game/UI/Lobby/Login/WBP_DBA_Login"));
+	static ConstructorHelpers::FClassFinder<UDBALoginFlowWidgetBase> LoginWidgetFinder(TEXT("/Game/UI/Lobby/Login/WBP_DBA_Login"));
 	if (LoginWidgetFinder.Succeeded())
 	{
 		LoginWidgetClass = LoginWidgetFinder.Class;
 	}
 
-	static ConstructorHelpers::FClassFinder<UUserWidget> CharacterSelectWidgetFinder(TEXT("/Game/UI/Lobby/Character/WBP_DBA_CharacterSelect"));
+	static ConstructorHelpers::FClassFinder<UDBACharacterSelectFlowWidgetBase> CharacterSelectWidgetFinder(TEXT("/Game/UI/Lobby/Character/WBP_DBA_CharacterSelect"));
 	if (CharacterSelectWidgetFinder.Succeeded())
 	{
 		CharacterSelectWidgetClass = CharacterSelectWidgetFinder.Class;
 	}
 
-	static ConstructorHelpers::FClassFinder<UUserWidget> CharacterCreateWidgetFinder(TEXT("/Game/UI/Lobby/Character/WBP_DBA_CharacterCreate"));
+	static ConstructorHelpers::FClassFinder<UDBACharacterCreateFlowWidgetBase> CharacterCreateWidgetFinder(TEXT("/Game/UI/Lobby/Character/WBP_DBA_CharacterCreate"));
 	if (CharacterCreateWidgetFinder.Succeeded())
 	{
 		CharacterCreateWidgetClass = CharacterCreateWidgetFinder.Class;
@@ -266,7 +269,8 @@ void UDBAGameUIManager::HideAllFlowWidgets()
 	bFlowWidgetVisible = false;
 }
 
-UUserWidget* UDBAGameUIManager::EnsureFlowWidgetCreated(TSubclassOf<UUserWidget> WidgetClass, TObjectPtr<UUserWidget>& WidgetInstance)
+template<typename WidgetType>
+WidgetType* UDBAGameUIManager::EnsureFlowWidgetCreated(TSubclassOf<WidgetType> WidgetClass, TObjectPtr<WidgetType>& WidgetInstance)
 {
 	if (WidgetInstance)
 	{
@@ -280,7 +284,7 @@ UUserWidget* UDBAGameUIManager::EnsureFlowWidgetCreated(TSubclassOf<UUserWidget>
 	{
 		if (APlayerController* PC = World->GetFirstPlayerController())
 		{
-			WidgetInstance = CreateWidget<UUserWidget>(PC, WidgetClass);
+			WidgetInstance = CreateWidget<WidgetType>(PC, WidgetClass);
 		}
 	}
 	return WidgetInstance;

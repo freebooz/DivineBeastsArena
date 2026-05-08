@@ -16,7 +16,6 @@
 #include "GameDBA/Core/Interfaces/DBATargetableInterface.h"
 #include "GameDBA/Core/Interfaces/DBATelemetryInterface.h"
 #include "GameDBA/Core/Interfaces/DBAExternalServiceDegradableInterface.h"
-#include "DBAInterfacesCore.generated.h"
 
 /**
  * DBAInterfacesCore.h - 接口聚合头文件

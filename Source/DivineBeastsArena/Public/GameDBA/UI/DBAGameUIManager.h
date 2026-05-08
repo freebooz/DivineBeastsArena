@@ -6,11 +6,13 @@
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
 #include "GameCore/Subsystems/DBAGameInstanceSubsystemBase.h"
 #include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetBase.h"
+#include "GameDBA/UI/Lobby/Login/UDBALoginFlowWidgetBase.h"
+#include "GameDBA/UI/Lobby/Login/UDBACharacterSelectFlowWidgetBase.h"
+#include "GameDBA/UI/Lobby/Login/UDBACharacterCreateFlowWidgetBase.h"
 #include "DBAGameUIManager.generated.h"
 
 class UDBAArenaHUDRootWidgetBase;
 class UDBAMainLobbyWidgetBase;
-class UUserWidget;
 
 /**
  * EDBAUIState
@@ -115,13 +117,13 @@ protected:
 	TObjectPtr<UDBAArenaHUDRootWidgetBase> ArenaHUDWidget;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
-	TObjectPtr<UUserWidget> LoginWidget;
+	TObjectPtr<UDBALoginFlowWidgetBase> LoginWidget;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
-	TObjectPtr<UUserWidget> CharacterSelectWidget;
+	TObjectPtr<UDBACharacterSelectFlowWidgetBase> CharacterSelectWidget;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
-	TObjectPtr<UUserWidget> CharacterCreateWidget;
+	TObjectPtr<UDBACharacterCreateFlowWidgetBase> CharacterCreateWidget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
 	TSubclassOf<UDBAMainLobbyWidgetBase> MainLobbyWidgetClass;
@@ -130,13 +132,13 @@ protected:
 	TSubclassOf<UDBAArenaHUDRootWidgetBase> ArenaHUDWidgetClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
-	TSubclassOf<UUserWidget> LoginWidgetClass;
+	TSubclassOf<UDBALoginFlowWidgetBase> LoginWidgetClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
-	TSubclassOf<UUserWidget> CharacterSelectWidgetClass;
+	TSubclassOf<UDBACharacterSelectFlowWidgetBase> CharacterSelectWidgetClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
-	TSubclassOf<UUserWidget> CharacterCreateWidgetClass;
+	TSubclassOf<UDBACharacterCreateFlowWidgetBase> CharacterCreateWidgetClass;
 
 private:
 	UPROPERTY()
@@ -148,7 +150,8 @@ private:
 	void RefreshLoginFlowWidgetVisibility();
 	void HideAllFlowWidgets();
 
-	UUserWidget* EnsureFlowWidgetCreated(TSubclassOf<UUserWidget> WidgetClass, TObjectPtr<UUserWidget>& WidgetInstance);
+	template<typename WidgetType>
+	WidgetType* EnsureFlowWidgetCreated(TSubclassOf<WidgetType> WidgetClass, TObjectPtr<WidgetType>& WidgetInstance);
 	void SetFlowWidgetVisible(UUserWidget* WidgetToShow);
 
 	bool bMainLobbyVisible = false;
