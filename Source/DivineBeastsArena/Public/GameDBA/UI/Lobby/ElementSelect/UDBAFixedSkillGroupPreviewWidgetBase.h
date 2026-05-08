@@ -3,12 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameCore/UI/DBAWidgetBase.h"
+#include "GameMoba/UI/UDBAMobaUserWidgetBase.h"
 #include "GameCore/Types/DBACommonEnums.h"
 #include "UDBAFixedSkillGroupPreviewWidgetBase.generated.h"
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
-class DIVINEBEASTSARENA_API UDBAFixedSkillGroupPreviewWidgetBase : public UDBAWidgetBase
+class DIVINEBEASTSARENA_API UDBAFixedSkillGroupPreviewWidgetBase : public UDBAMobaUserWidgetBase
 {
 	GENERATED_BODY()
 

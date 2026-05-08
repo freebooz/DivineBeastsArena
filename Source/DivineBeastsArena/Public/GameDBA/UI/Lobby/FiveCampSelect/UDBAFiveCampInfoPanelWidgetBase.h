@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameCore/UI/DBAWidgetBase.h"
+#include "GameMoba/UI/UDBAMobaUserWidgetBase.h"
 #include "UDBAFiveCampInfoPanelWidgetBase.generated.h"
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
-class DIVINEBEASTSARENA_API UDBAFiveCampInfoPanelWidgetBase : public UDBAWidgetBase
+class DIVINEBEASTSARENA_API UDBAFiveCampInfoPanelWidgetBase : public UDBAMobaUserWidgetBase
 {
 	GENERATED_BODY()
 

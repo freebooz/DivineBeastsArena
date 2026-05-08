@@ -4,7 +4,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "GameMoba/UI/UDBAMobaUserWidgetBase.h"
 #include "DBAAbilitySlotWidget.generated.h"
 
 class UImage;
@@ -51,8 +51,8 @@ public:
  * 技能槽Widget
  * 显示单个技能的图标、冷却、快捷键
  */
-UCLASS(Blueprintable, BlueprintType)
-class DIVINEBEASTSARENA_API UDBAAbilitySlotWidget : public UUserWidget
+UCLASS(Abstract, Blueprintable, BlueprintType)
+class DIVINEBEASTSARENA_API UDBAAbilitySlotWidget : public UDBAMobaUserWidgetBase
 {
 	GENERATED_BODY()
 
