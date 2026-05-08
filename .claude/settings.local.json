@@ -60,7 +60,8 @@
       "Bash(cmd //c \"D:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" DivineBeastsArenaEditor Win64 Development -Project=\"D:\\\\DivineBeastsArena\\\\DivineBeastsArena.uproject\" -BuildMachine -NoEngineChanges -NoHotReloadFromIDE)",
       "Bash(rm -rf D:/DivineBeastsArena/Intermediate/Build/BuildRules/*)",
       "Bash(xargs cat *)",
-      "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.exe\" --help)"
+      "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.exe\" --help)",
+      "Bash(\"E:/UnrealEngine-5.7.1-release/Engine/Binaries/Win64/UnrealEditor.exe\" \"DivineBeastsArena.uproject\" -server -log -GameDefaultMap=/Game/Maps/Lobby/LobbyMap.LobbyMap -ServerDefaultMap=/Game/Maps/Lobby/LobbyMap.LobbyMap -Port=7777 -nosound)"
     ]
   }
 }

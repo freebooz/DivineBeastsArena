@@ -10,7 +10,9 @@
       "Bash(find \"/c/Program Files/Microsoft Visual Studio\" -name \"MSBuild.exe\" 2>/dev/null | head -5)",
       "Read(//c/Program Files/Microsoft Visual Studio/**)",
       "Bash(cmd //c \"\\\\\"C:\\\\\\\\Program Files\\\\\\\\Microsoft Visual Studio\\\\\\\\2022\\\\\\\\Professional\\\\\\\\MSBuild\\\\\\\\Current\\\\\\\\Bin\\\\\\\\MSBuild.exe\\\\\" DivineBeastsArena.sln /p:Configuration=Development /p:Platform=Win64 /v:minimal /t:Build\")",
-      "Bash(python Scripts/GenerateHeroBalance.py)"
+      "Bash(python Scripts/GenerateHeroBalance.py)",
+      "Bash(\"d:/DivineBeastsArena/Binaries/Win64/DivineBeastsArenaServer.exe\" -Windowed -log -GameDefaultMap=/Game/Maps/Lobby/LobbyMap.LobbyMap -ServerDefaultMap=/Game/Maps/Lobby/LobbyMap.LobbyMap -Port=7777)",
+      "Bash(tasklist)"
     ],
     "additionalDirectories": [
       "E:\\UnrealEngine-5.7.1-release\\Engine\\Intermediate\\Build\\BuildRules"
