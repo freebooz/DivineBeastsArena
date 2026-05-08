@@ -22,7 +22,7 @@ ADBAZodiacCharacter_Rooster::ADBAZodiacCharacter_Rooster()
 	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Rooster/ABP_Rooster"));
 	if (AnimBPFinder.Succeeded())
 	{
-		GetMesh()->SetAnimClass(AnimBPFinder.Class);
+		GetMesh()->SetAnimInstanceClass(AnimBPFinder.Class);
 		}
 
 		}

@@ -24,7 +24,7 @@ UDBAFixedSkillGroupDataAsset* UDBAFixedSkillGroupLibrary::GetFixedSkillGroupById
 	}
 
 	const FSoftObjectPath AssetPath = MakeFixedSkillGroupPath(FixedSkillGroupId);
-	if (UAssetManager* AssetManager = UAssetManager::GetIfValid())
+	if (UAssetManager* AssetManager = UAssetManager::GetIfInitialized())
 	{
 		if (UObject* Loaded = AssetManager->GetStreamableManager().LoadSynchronous(AssetPath, false))
 		{
@@ -45,7 +45,7 @@ void UDBAFixedSkillGroupLibrary::LoadFixedSkillGroupByIdAsync(const FName& Fixed
 		return;
 	}
 
-	UAssetManager* AssetManager = UAssetManager::GetIfValid();
+	UAssetManager* AssetManager = UAssetManager::GetIfInitialized();
 	if (!AssetManager)
 	{
 		UE_LOG(LogDBAData, Error, TEXT("[UDBAFixedSkillGroupLibrary] AssetManager unavailable"));

@@ -22,7 +22,7 @@ ADBAZodiacCharacter_Dragon::ADBAZodiacCharacter_Dragon()
 	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Dragon/ABP_Dragon"));
 	if (AnimBPFinder.Succeeded())
 	{
-		GetMesh()->SetAnimClass(AnimBPFinder.Class);
+		GetMesh()->SetAnimInstanceClass(AnimBPFinder.Class);
 		}
 
 		}

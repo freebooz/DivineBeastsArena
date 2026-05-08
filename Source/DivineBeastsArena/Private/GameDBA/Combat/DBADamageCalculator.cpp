@@ -6,6 +6,20 @@
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
 #include "AbilitySystemComponent.h"
 
+// EDBAElement to EDBAElementType conversion map
+static EDBAElementType GetElementTypeFromGoldFireWoodEarthWater(EDBAElement OldElement)
+{
+	switch (OldElement)
+	{
+	case EDBAElement::Gold: return EDBAElementType::Metal;
+	case EDBAElement::Fire: return EDBAElementType::Fire;
+	case EDBAElement::Wood: return EDBAElementType::Wood;
+	case EDBAElement::Water: return EDBAElementType::Water;
+	case EDBAElement::Earth: return EDBAElementType::Earth;
+	default: return EDBAElementType::None;
+	}
+}
+
 float UDBADamageCalculator::CalculateDamage(
 	float BaseDamage,
 	EDBAElement AttackElement,
@@ -208,4 +222,144 @@ void UDBADamageCalculator::ApplyDamageToTarget(
 			ZodiacChar->OnDeath();
 		}
 	}
+}
+
+// ========== Value Object 方法实现 (EDBAElementType) ==========
+
+EDBAElementType UDBADamageCalculator::GetElementTypeFromOldEnum(EDBAElement OldElement)
+{
+	return GetElementTypeFromGoldFireWoodEarthWater(OldElement);
+}
+
+FElementCounterResult UDBADamageCalculator::GetElementCounterResult(EDBAElementType AttackElement, EDBAElementType DefenseElement)
+{
+	FElementCounterResult Result;
+
+	if (AttackElement == EDBAElementType::None || DefenseElement == EDBAElementType::None)
+	{
+		Result.Multiplier = 1.0f;
+		Result.ResultType = EDBAElementCounterResult::None;
+		return Result;
+	}
+
+	// 五行相克: 火→金→木→土→水→火 (Metal替代Gold)
+	// 攻击方克防守方时倍率为1.2，被克制时为0.8
+	const EDBAElementType CounterMap[5] = {
+		EDBAElementType::Fire,   // Metal克Wood
+		EDBAElementType::Wood,   // Wood克Earth
+		EDBAElementType::Earth,  // Earth克Water
+		EDBAElementType::Water,  // Water克Fire
+		EDBAElementType::Metal   // Fire克Metal
+	};
+
+	// 检查攻击方是否克制防守方
+	for (int32 i = 0; i < 5; ++i)
+	{
+		if (AttackElement == CounterMap[i])
+		{
+			EDBAElementType DefendedElement = CounterMap[(i + 1) % 5];
+			if (DefenseElement == DefendedElement)
+			{
+				Result.Multiplier = 1.2f;
+				Result.ResultType = EDBAElementCounterResult::Counter;
+				return Result;
+			}
+		}
+	}
+
+	// 检查攻击方是否被防守方克制
+	for (int32 i = 0; i < 5; ++i)
+	{
+		if (CounterMap[i] == DefenseElement)
+		{
+			if (AttackElement == CounterMap[(i + 1) % 5])
+			{
+				Result.Multiplier = 0.8f;
+				Result.ResultType = EDBAElementCounterResult::Countered;
+				return Result;
+			}
+		}
+	}
+
+	Result.Multiplier = 1.0f;
+	Result.ResultType = EDBAElementCounterResult::None;
+	return Result;
+}
+
+float UDBADamageCalculator::GetResonanceBonusForElement(EDBAResonanceLevel ResonanceLevel)
+{
+	switch (ResonanceLevel)
+	{
+	case EDBAResonanceLevel::Level1: return 0.05f;  // +5%
+	case EDBAResonanceLevel::Level2: return 0.10f;  // +10%
+	case EDBAResonanceLevel::Level3: return 0.15f; // +15%
+	case EDBAResonanceLevel::Level4: return 0.20f; // +20%
+	default: return 0.0f;
+	}
+}
+
+FChainBonus UDBADamageCalculator::GetChainBonus(int32 ChainLevel)
+{
+	FChainBonus Bonus;
+
+	if (ChainLevel >= 10)
+	{
+		Bonus.Multiplier = 1.0f;
+		Bonus.bIsFinal = true;
+	}
+	else if (ChainLevel >= 6)
+	{
+		Bonus.Multiplier = 1.35f;
+		Bonus.bIsFinal = false;
+	}
+	else if (ChainLevel >= 1)
+	{
+		Bonus.Multiplier = 1.20f;
+		Bonus.bIsFinal = false;
+	}
+	else
+	{
+		Bonus.Multiplier = 1.0f;
+		Bonus.bIsFinal = false;
+	}
+
+	return Bonus;
+}
+
+FFinalDamageResult UDBADamageCalculator::CalculateFinalDamageWithObject(const FDamageCalculationParams& Params)
+{
+	FFinalDamageResult Result;
+
+	// 1. 元素克制
+	FElementCounterResult ElementResult = GetElementCounterResult(Params.AttackElement, Params.DefenseElement);
+	Result.ElementResult = ElementResult;
+	float Damage = Params.BaseDamage * ElementResult.Multiplier;
+
+	// 2. 共鸣加成
+	float ResonanceBonus = GetResonanceBonusForElement(static_cast<EDBAResonanceLevel>(Params.ResonanceLevel));
+	Result.ResonanceBonusPercent = ResonanceBonus;
+	Damage *= (1.0f + ResonanceBonus);
+
+	// 3. 连锁加成
+	FChainBonus ChainBonus = GetChainBonus(Params.ChainLevel);
+	Result.ChainBonus = ChainBonus;
+	if (!ChainBonus.bIsFinal)
+	{
+		Damage *= ChainBonus.Multiplier;
+	}
+
+	// 4. 防御减免
+	float PhysicalReduction = Params.Defense / (Params.Defense + 100.0f);
+	Result.DefenseReductionPercent = PhysicalReduction;
+	Damage *= (1.0f - PhysicalReduction);
+
+	// 5. 暴击判定
+	Result.bIsCritical = FMath::FRand() < Params.CriticalRate;
+	if (Result.bIsCritical)
+	{
+		Damage *= Params.CriticalMultiplier;
+	}
+
+	Result.FinalDamage = FMath::Max(Damage, 0.0f);
+	return Result;
 }

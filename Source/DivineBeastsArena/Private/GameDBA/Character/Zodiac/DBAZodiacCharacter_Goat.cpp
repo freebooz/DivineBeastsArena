@@ -22,7 +22,7 @@ ADBAZodiacCharacter_Goat::ADBAZodiacCharacter_Goat()
 	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPFinder(TEXT("/Game/Animation/Zodiac/Goat/ABP_Goat"));
 	if (AnimBPFinder.Succeeded())
 	{
-		GetMesh()->SetAnimClass(AnimBPFinder.Class);
+		GetMesh()->SetAnimInstanceClass(AnimBPFinder.Class);
 		}
 
 		}

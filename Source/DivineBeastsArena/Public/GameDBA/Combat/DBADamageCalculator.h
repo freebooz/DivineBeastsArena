@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameCore/Types/DBACommonEnums.h"
 #include "GameDBA/Core/DBAEnumsCore.h"
+#include "GameDBA/Combat/Structs/DBADamageTypes.h"
 #include "DBADamageCalculator.generated.h"
 
 /**
@@ -116,4 +117,49 @@ public:
 		float FinalDamage,
 		EDBAElement Element,
 		bool bIsCritical);
+
+	// ========== Value Object 方法 (使用 EDBAElementType) ==========
+
+	/**
+	 * 使用 Value Object 计算最终伤害 (EDBAElementType 版本)
+	 *
+	 * @param Params 伤害计算参数
+	 * @return 最终伤害结果，包含所有计算细节
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Damage")
+	static FFinalDamageResult CalculateFinalDamageWithObject(const FDamageCalculationParams& Params);
+
+	/**
+	 * 获取元素克制倍率 (EDBAElementType 版本)
+	 *
+	 * @param AttackElement 攻击方元素
+	 * @param DefenseElement 防御方元素
+	 * @return 元素克制结果
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Damage")
+	static FElementCounterResult GetElementCounterResult(EDBAElementType AttackElement, EDBAElementType DefenseElement);
+
+	/**
+	 * 获取共鸣伤害加成 (EDBAElementType 版本)
+	 *
+	 * @param ResonanceLevel 共鸣等级 (0-4)
+	 * @return 共鸣加成百分比 (0.0 ~ 0.2)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Damage")
+	static float GetResonanceBonusForElement(EDBAResonanceLevel ResonanceLevel);
+
+	/**
+	 * 获取连锁加成 (EDBAElementType 版本)
+	 *
+	 * @param ChainLevel 连锁等级 (0-10)
+	 * @return 连锁加成
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Damage")
+	static FChainBonus GetChainBonus(int32 ChainLevel);
+
+	/**
+	 * 从旧枚举 EDBAElement 转换为 EDBAElementType
+	 * 用于兼容 GameCore 模块的旧代码
+	 */
+	static EDBAElementType GetElementTypeFromOldEnum(EDBAElement OldElement);
 };

@@ -2,9 +2,17 @@
 // RPC Handler Implementation
 
 #include "GameDBA/RPC/DBARpcHandler.h"
-#include "GameDBA/Character/DBAZodiacCharacterBase.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "Engine/World.h"
+
+TScriptInterface<IDBACharacterRef> ADBARpcHandler::GetCharacterRef() const
+{
+	if (AActor* Owner = GetOwner())
+	{
+		return Owner->GetInterface<IDBACharacterRef>();
+	}
+	return nullptr;
+}
 
 ADBARpcHandler::ADBARpcHandler()
 {
@@ -116,15 +124,12 @@ bool ADBARpcHandler::ServerUltimateAbility_Validate(const FDBAAbilityRpcParams& 
 		return false;
 	}
 
-	if (AActor* OwnerActor = GetOwner())
+	if (TScriptInterface<IDBACharacterRef> CharacterRef = GetCharacterRef())
 	{
-		if (ADBAZodiacCharacterBase* Character = Cast<ADBAZodiacCharacterBase>(OwnerActor))
+		if (CharacterRef->GetUltimateEnergy() < 100.f)
 		{
-			if (Character->GetUltimateEnergy() < 100.f)
-			{
-				UE_LOG(LogDBANetwork, Warning, TEXT("ServerUltimateAbility rejected: ultimate energy not full"));
-				return false;
-			}
+			UE_LOG(LogDBANetwork, Warning, TEXT("ServerUltimateAbility rejected: ultimate energy not full"));
+			return false;
 		}
 	}
 
@@ -194,12 +199,9 @@ void ADBARpcHandler::ClientHitConfirmedWithCritical_Implementation(FGameplayAbil
 
 bool ADBARpcHandler::ValidateEnergyCost(float Cost) const
 {
-	if (AActor* OwnerActor = GetOwner())
+	if (TScriptInterface<IDBACharacterRef> CharacterRef = GetCharacterRef())
 	{
-		if (ADBAZodiacCharacterBase* Character = Cast<ADBAZodiacCharacterBase>(OwnerActor))
-		{
-			return Character->GetCurrentEnergy() >= Cost;
-		}
+		return CharacterRef->HasEnoughEnergy(Cost);
 	}
 	return true;
 }
@@ -236,12 +238,12 @@ bool ADBARpcHandler::ValidateCastRange(AActor* Target, float Range) const
 	return Distance <= Range;
 }
 
-AActor* ADBARpcHandler::FindAttackTarget(ADBAZodiacCharacterBase* Character) const
+AActor* ADBARpcHandler::FindAttackTarget() const
 {
 	return nullptr;
 }
 
-float ADBARpcHandler::CalculateAttackDamage(ADBAZodiacCharacterBase* Attacker, AActor* Target, bool& OutbIsCritical) const
+float ADBARpcHandler::CalculateAttackDamage(AActor* Target, bool& OutbIsCritical) const
 {
 	OutbIsCritical = false;
 	return 100.f;
@@ -254,11 +256,11 @@ bool ADBARpcHandler::IsEnemy(AActor* ActorA, AActor* ActorB) const
 		return false;
 	}
 
-	if (ADBAZodiacCharacterBase* CharA = Cast<ADBAZodiacCharacterBase>(ActorA))
+	if (TScriptInterface<IDBACharacterRef> CharRefA = ActorA->GetInterface<IDBACharacterRef>())
 	{
-		if (ADBAZodiacCharacterBase* CharB = Cast<ADBAZodiacCharacterBase>(ActorB))
+		if (TScriptInterface<IDBACharacterRef> CharRefB = ActorB->GetInterface<IDBACharacterRef>())
 		{
-			return CharA->GetTeamID() != CharB->GetTeamID();
+			return CharRefA->GetTeamID() != CharRefB->GetTeamID();
 		}
 	}
 

@@ -240,6 +240,36 @@ bool ADBAZodiacCharacterBase::IsTeammate(const ADBAZodiacCharacterBase* Other) c
 	return TeamID == Other->TeamID;
 }
 
+// ==================== IDBACharacterRef 接口实现 ====================
+
+UAbilitySystemComponent* ADBAZodiacCharacterBase::GetAbilitySystemComponent() const
+{
+	return GetDBAAbilitySystemComponent();
+}
+
+EDBAElementType ADBAZodiacCharacterBase::GetElementType() const
+{
+	return ElementType;
+}
+
+float ADBAZodiacCharacterBase::GetMaxEnergy() const
+{
+	// 最大能量暂定为 100，后续可通过属性扩展
+	return 100.0f;
+}
+
+bool ADBAZodiacCharacterBase::IsAbilityOnCooldown(FName SkillId) const
+{
+	// 简化实现：检查技能冷却数组
+	// 实际实现应该通过 GAS AbilitySystemComponent 查询冷却
+	return false;
+}
+
+bool ADBAZodiacCharacterBase::HasEnoughEnergy(float Cost) const
+{
+	return GetCurrentEnergy() >= Cost;
+}
+
 
 
 

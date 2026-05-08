@@ -4,9 +4,8 @@
 #include "CoreMinimal.h"
 #include "GameMoba/RPC/DBARpcClient.h"
 #include "GameMoba/RPC/DBARpcServer.h"
+#include "GameDBA/Character/IDBACharacterRef.h"
 #include "DBARpcHandler.generated.h"
-
-class ADBAZodiacCharacterBase;
 
 UCLASS(Blueprintable)
 class DIVINEBEASTSARENA_API ADBARpcHandler : public AActor, public IDBARpcServer, public IDBARpcClient
@@ -71,7 +70,10 @@ protected:
 	bool ValidateEnergyCost(float Cost) const;
 	bool ValidateTarget(AActor* Target) const;
 	bool ValidateCastRange(AActor* Target, float Range) const;
-	AActor* FindAttackTarget(ADBAZodiacCharacterBase* Character) const;
-	float CalculateAttackDamage(ADBAZodiacCharacterBase* Attacker, AActor* Target, bool& OutbIsCritical) const;
+	AActor* FindAttackTarget() const;
+	float CalculateAttackDamage(AActor* Target, bool& OutbIsCritical) const;
 	bool IsEnemy(AActor* ActorA, AActor* ActorB) const;
+
+	/** 通过接口获取 Owner Character */
+	TScriptInterface<IDBACharacterRef> GetCharacterRef() const;
 };

@@ -8,6 +8,7 @@
 #include "GameDBA/Core/DBAEnumsCore.h"
 #include "GameDBA/Combat/DBACombatTypes.h"
 #include "GameDBA/Spectator/DBAObserverTypes.h"
+#include "GameDBA/Character/IDBACharacterRef.h"
 #include "DBAZodiacCharacterBase.generated.h"
 
 class UDBAZodiacAnimInstance;
@@ -18,9 +19,11 @@ class ADBARpcHandler;
  * DBAZodiacCharacterBase
  * 生肖角色基类
  * 提供角色公共功能：动画控制、属性同步
+ *
+ * 实现了 IDBACharacterRef 接口，让 RPC Handler 可以通过接口访问角色属性
  */
 UCLASS(Blueprintable, BlueprintType)
-class DIVINEBEASTSARENA_API ADBAZodiacCharacterBase : public ACharacter
+class DIVINEBEASTSARENA_API ADBAZodiacCharacterBase : public ACharacter, public IDBACharacterRef
 {
 	GENERATED_BODY()
 
@@ -72,6 +75,32 @@ public:
 	/** 获取共鸣等级 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
 	int32 GetResonanceLevel() const { return ResonanceLevel; }
+
+public:
+	// ==================== IDBACharacterRef 接口实现 ====================
+
+	/** 获取最大能量 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	virtual float GetMaxEnergy() const override;
+
+	/** 获取 AbilitySystemComponent */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	/** 获取元素类型 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	virtual EDBAElementType GetElementType() const override;
+
+	/** 检查技能是否在冷却中 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	virtual bool IsAbilityOnCooldown(FName SkillId) const override;
+
+	/** 检查是否有足够的能量 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	virtual bool HasEnoughEnergy(float Cost) const override;
+
+	/** 标记实现 IDBACharacterRef 接口 */
+	virtual bool ImplementsUIDBACharacterRef() const override { return true; }
 
 public:
 	// ==================== 属性修改 ====================
