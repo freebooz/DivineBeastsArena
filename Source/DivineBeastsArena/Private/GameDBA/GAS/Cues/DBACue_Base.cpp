@@ -9,13 +9,16 @@ ADBACue_Base::ADBACue_Base()
 
 bool ADBACue_Base::OnExecuteGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters)
 {
-    LoadSkillData();
+    if (SkillId.IsNone())
+    {
+        return false;
+    }
 
     FDBASkillDataRow* SkillData = nullptr;
     UDataTable* SkillTable = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/Data/Skills/SkillDataTable.SkillDataTable'"));
     if (SkillTable)
     {
-        SkillData = SkillTable->FindRow<FDBASkillDataRow>(GetSkillId(), TEXT("OnExecute"), false);
+        SkillData = SkillTable->FindRow<FDBASkillDataRow>(SkillId, TEXT("OnExecute"), false);
     }
 
     if (SkillData && SkillData->VFXAsset.IsValid())
@@ -41,26 +44,21 @@ bool ADBACue_Base::OnExecuteGameplayCue(AActor* Target, const FGameplayCueParame
 
 void ADBACue_Base::OnActiveGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters)
 {
-    LoadSkillData();
     PlayVFX(Target, CueScale * 0.7f);
 }
 
 void ADBACue_Base::OnRemoveGameplayCue(AActor* Target, const FGameplayCueParameters& Parameters)
 {
-    // Cleanup logic
 }
 
 void ADBACue_Base::LoadSkillData()
 {
-    // Implemented in subclasses
 }
 
 void ADBACue_Base::PlayVFX(AActor* Target, float Scale)
 {
-    // Get VFX from skill data and play
 }
 
 void ADBACue_Base::PlaySFX(AActor* Target)
 {
-    // Get SFX from skill data and play
 }

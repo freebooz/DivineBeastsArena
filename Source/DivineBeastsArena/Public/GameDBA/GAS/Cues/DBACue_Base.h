@@ -28,8 +28,12 @@ protected:
     // Play SFX helper
     void PlaySFX(AActor* Target);
 
-    // Get skill ID for this cue (override in subclasses)
-    virtual FName GetSkillId() const { return NAME_None; }
+    /** 获取技能ID - 子类可重写 */
+    virtual FName GetSkillId() const { return SkillId; }
+
+    /** 技能ID (可在蓝图中配置) */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Cue")
+    FName SkillId = NAME_None;
 
     UPROPERTY(EditDefaultsOnly, Category = "Cue")
     float CueScale = 1.0f;
