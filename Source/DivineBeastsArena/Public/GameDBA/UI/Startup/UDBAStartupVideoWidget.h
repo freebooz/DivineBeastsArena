@@ -66,11 +66,11 @@ private:
 	TObjectPtr<UMediaPlayer> MediaPlayer;
 
 	/** 跳过提示文本 */
-	UPROPERTY( meta = (BindWidgetOptional) )
+	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> SkipHintText;
 
 	/** 跳过按钮（透明全屏） */
-	UPROPERTY( meta = (BindWidgetOptional) )
+	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UButton> SkipButton;
 
 	/** 提示文字 */
@@ -78,6 +78,6 @@ private:
 	FText SkipHint = FText::FromString(TEXT("按 ESC 跳过"));
 
 	/** 是否正在播放 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	bool bIsPlaying = false;
 };

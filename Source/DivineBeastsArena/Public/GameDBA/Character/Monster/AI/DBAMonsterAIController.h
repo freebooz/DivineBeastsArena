@@ -45,8 +45,8 @@ public:
 
 protected:
 	/** AI组件弱引用 */
-	UPROPERTY()
-	UDBAMonsterAIComponent* AIComponent;
+	UPROPERTY(Transient)
+	TObjectPtr<UDBAMonsterAIComponent> AIComponent;
 
 private:
 	/** 初始化AI组件 */

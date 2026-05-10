@@ -18,15 +18,15 @@ struct FAggroInfo
 
 public:
 	/** 目标Actor */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TWeakObjectPtr<AActor> Target;
 
 	/** 仇恨值 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	float Threat = 0.0f;
 
 	/** 最后仇恨时间戳 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	float LastThreatTime = 0.0f;
 
 public:

@@ -122,6 +122,6 @@ private:
 	TMap<FGameplayTag, TArray<FOnCombatEvent>> EventListeners;
 
 	/** 游戏实例引用 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TWeakObjectPtr<UGameInstance> CachedGameInstance;
 };

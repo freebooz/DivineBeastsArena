@@ -375,6 +375,53 @@ namespace DBAConstants
 	constexpr float Android_SafeAreaMargin = 20.0f;
 
 	// ========================================
+	// 地图边界配置
+	// ========================================
+
+	/** 地图边界 - X轴最小值 */
+	constexpr float MapBoundary_MinX = -10000.0f;
+
+	/** 地图边界 - X轴最大值 */
+	constexpr float MapBoundary_MaxX = 10000.0f;
+
+	/** 地图边界 - Y轴最小值 */
+	constexpr float MapBoundary_MinY = -10000.0f;
+
+	/** 地图边界 - Y轴最大值 */
+	constexpr float MapBoundary_MaxY = 10000.0f;
+
+	/** 地图边界 - Z轴最小值 */
+	constexpr float MapBoundary_MinZ = -100.0f;
+
+	/** 地图边界 - Z轴最大值 */
+	constexpr float MapBoundary_MaxZ = 10000.0f;
+
+	/** 地图边界检测阈值（超过此距离进行校正） */
+	constexpr float MapBoundary_CorrectionThreshold = 500.0f;
+
+	// ========================================
+	// 战斗配置
+	// ========================================
+
+	/** 默认攻击范围 */
+	constexpr float DefaultAttackRange = 500.0f;
+
+	/** 基础伤害百分比（目标最大生命值） */
+	constexpr float BaseDamagePercentOfMaxHealth = 0.1f;
+
+	/** 暴击概率 */
+	constexpr float CriticalChance = 0.1f;
+
+	/** 暴击伤害倍率 */
+	constexpr float CriticalDamageMultiplier = 2.0f;
+
+	/** 默认基础伤害 */
+	constexpr float DefaultBaseDamage = 50.0f;
+
+	/** 动画速度基数 */
+	constexpr float AnimationSpeedBase = 600.0f;
+
+	// ========================================
 	// 调试配置
 	// ========================================
 

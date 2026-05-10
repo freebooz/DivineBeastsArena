@@ -69,18 +69,18 @@ protected:
 	// ==================== 资源数据 ====================
 
 	/** 技能施法特效映射 */
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Resources")
 	TMap<FName, TSoftObjectPtr<UParticleSystem>> SkillCastingVFX;
 
 	/** 技能命中特效映射 */
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Resources")
 	TMap<FName, TSoftObjectPtr<UParticleSystem>> SkillImpactVFX;
 
 	/** 技能施法音效映射 */
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Resources")
 	TMap<FName, TSoftObjectPtr<USoundBase>> SkillCastingSFX;
 
 	/** 技能命中音效映射 */
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Resources")
 	TMap<FName, TSoftObjectPtr<USoundBase>> SkillImpactSFX;
 };

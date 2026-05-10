@@ -108,6 +108,6 @@ public:
 
 protected:
 	/** 所属Pawn引用 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TObjectPtr<APawn> OwningPawn;
 };

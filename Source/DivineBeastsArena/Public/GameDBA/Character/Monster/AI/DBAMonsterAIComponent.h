@@ -197,19 +197,19 @@ protected:
 
 private:
 	/** 当前巡逻点索引 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	int32 CurrentPatrolIndex = 0;
 
 	/** 出生点位置 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	FVector SpawnLocation = FVector::ZeroVector;
 
 	/** 最后攻击时间 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	float LastAttackTime = 0.0f;
 
 	/** 最后更新仇恨时间 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	float LastAggroUpdateTime = 0.0f;
 
 public:

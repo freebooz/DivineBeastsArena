@@ -99,7 +99,7 @@ public:
 
 protected:
 	/** 技能信息 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	FDBAAbilityInfo AbilityInfo;
 
 	/** 更新冷却显示 */

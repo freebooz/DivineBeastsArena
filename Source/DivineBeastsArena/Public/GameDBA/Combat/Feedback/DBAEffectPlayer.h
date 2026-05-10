@@ -73,10 +73,10 @@ protected:
 
 private:
 	/** 特效表管理器 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TWeakObjectPtr<UDBAEffectTableManager> EffectTableManager;
 
 	/** 世界引用 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TWeakObjectPtr<UWorld> CachedWorld;
 };

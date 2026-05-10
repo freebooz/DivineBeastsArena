@@ -100,11 +100,11 @@ public:
 
 protected:
 	/** 投射物拥有者 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TObjectPtr<AActor> ProjectileOwner;
 
 	/** 目标Actor */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TObjectPtr<AActor> TargetActor;
 
 protected:

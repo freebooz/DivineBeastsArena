@@ -58,7 +58,7 @@ protected:
 
 protected:
 	/** 玩家头像按钮数组 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TArray<TWeakObjectPtr<UButton>> PlayerButtons;
 
 	/** 玩家位置点数组 */
@@ -74,7 +74,7 @@ protected:
 	FLinearColor Team2Color;
 
 	/** 当前视角索引 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	int32 CurrentTargetIndex;
 
 	/** 地图缩放 */

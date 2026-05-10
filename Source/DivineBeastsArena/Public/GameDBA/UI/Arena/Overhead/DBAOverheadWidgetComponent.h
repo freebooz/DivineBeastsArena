@@ -72,9 +72,9 @@ protected:
 	FVector GetOwnerBoundingBoxCenter() const;
 
 private:
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TObjectPtr<UUserWidget> OverheadWidget;
 
-	UPROPERTY()
+	UPROPERTY(Transient)
 	float CachedHealthPercent = 1.0f;
 };

@@ -141,7 +141,7 @@ protected:
 	TSubclassOf<UDBACharacterCreateFlowWidgetBase> CharacterCreateWidgetClass;
 
 private:
-	UPROPERTY()
+	UPROPERTY(Transient)
 	EDBALoginFlowState CachedLoginFlowState = EDBALoginFlowState::Startup;
 
 	UFUNCTION()

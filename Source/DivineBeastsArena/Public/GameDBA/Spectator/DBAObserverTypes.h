@@ -168,14 +168,14 @@ struct DIVINEBEASTSARENA_API FDBAObserverCameraState
 	{}
 
 	/** 相机位置 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	FVector CameraLocation;
 
 	/** 相机旋转 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	FRotator CameraRotation;
 
 	/** 缩放距离 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	float CameraZoom;
 };

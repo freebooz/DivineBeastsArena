@@ -76,14 +76,14 @@ protected:
 
 protected:
 	/** 观战组件引用 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TWeakObjectPtr<UDBASpectatorComponent> SpectatorComponent;
 
 	/** 缓存的当前视角目标 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	FDBAObserverViewTarget CachedViewTarget;
 
 	/** 缓存的暂停状态 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	bool bCachedIsPaused;
 };

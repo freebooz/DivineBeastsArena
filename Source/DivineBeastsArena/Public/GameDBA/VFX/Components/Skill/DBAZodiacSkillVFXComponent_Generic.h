@@ -95,10 +95,10 @@ public:
 
 protected:
 	/** 缓存的VFX数据行 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	FDBAVFXDataRow CachedVFXData;
 
 	/** 引导特效的粒子组件 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TObjectPtr<UParticleSystemComponent> ChannelVFXComponent;
 };

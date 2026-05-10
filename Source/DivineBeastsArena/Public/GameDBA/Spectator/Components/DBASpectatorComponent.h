@@ -106,15 +106,15 @@ public:
 
 protected:
 	/** 杈撳叆缁勪欢寮曠敤 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TWeakObjectPtr<UInputComponent> CachedInputComponent;
 
 	/** 瑙傛垬绠＄悊鍣ㄥ紩鐢?*/
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TWeakObjectPtr<UDBASpectatorManager> SpectatorManager;
 
 	/** 瑙傛垬鑰呮帶鍒跺櫒寮曠敤 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TWeakObjectPtr<APlayerController> OwningPlayerController;
 };
 

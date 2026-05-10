@@ -121,11 +121,11 @@ private:
 	float DamageDuration = 1.2f;
 
 	/** 活跃的伤害数字条目 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TArray<FDBAFloatingDamageEntry> ActiveDamageEntries;
 
 	/** 可复用的伤害数字条目 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TArray<FDBAFloatingDamageEntry> AvailableDamageEntries;
 
 	/** 世界到屏幕变换缓存 */

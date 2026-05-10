@@ -81,6 +81,6 @@ protected:
 	int32 MaxMemberCount;
 
 	/** 动态成员UI数组 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TArray<FDBASpectatorMemberUI> MemberUIs;
 };

@@ -3,6 +3,7 @@
 
 #include "GameDBA/RPC/DBARpcHandler.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/Core/DBAConstants.h"
 #include "GameDBA/Character/IDBACharacterRef.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
@@ -139,9 +140,9 @@ bool ADBARpcHandler::ServerMoveTo_Validate(FVector_NetQuantize10 Location)
 
 	if (UWorld* World = GetWorld())
 	{
-		if (Location.X < -10000.f || Location.X > 10000.f ||
-			Location.Y < -10000.f || Location.Y > 10000.f ||
-			Location.Z < -100.f || Location.Z > 10000.f)
+		if (Location.X < DBAConstants::MapBoundary_MinX || Location.X > DBAConstants::MapBoundary_MaxX ||
+			Location.Y < DBAConstants::MapBoundary_MinY || Location.Y > DBAConstants::MapBoundary_MaxY ||
+			Location.Z < DBAConstants::MapBoundary_MinZ || Location.Z > DBAConstants::MapBoundary_MaxZ)
 		{
 			UE_LOG(LogDBANetwork, Warning, TEXT("[Server] 移动被拒绝: 位置超出边界"));
 			return false;
@@ -297,7 +298,7 @@ void ADBARpcHandler::ClientMoveCorrection_Implementation(FVector_NetQuantize10 S
 		float Distance = FVector::Dist(CurrentLocation, ServerLocation);
 
 		// 如果距离超过阈值，进行位置校正
-		if (Distance > 500.f) // 超过500单位
+		if (Distance > DBAConstants::MapBoundary_CorrectionThreshold)
 		{
 			Owner->SetActorLocation(ServerLocation);
 		}
@@ -378,7 +379,7 @@ AActor* ADBARpcHandler::FindAttackTarget() const
 	}
 
 	const FVector OwnerLocation = Owner->GetActorLocation();
-	const float AttackRange = 500.f;
+	const float AttackRange = DBAConstants::DefaultAttackRange;
 
 	// 使用球体Overlap查询代替遍历所有Actor
 	TArray<FOverlapResult> Overlaps;
@@ -443,13 +444,13 @@ float ADBARpcHandler::CalculateAttackDamage(AActor* Target, bool& OutbIsCritical
 		float TargetCurrentHealth = TargetRef->GetCurrentHealth();
 
 		// 基础伤害公式：基于目标最大生命值
-		float BaseDamage = TargetMaxHealth * 0.1f; // 10% 最大生命值作为基础伤害
+		float BaseDamage = TargetMaxHealth * DBAConstants::BaseDamagePercentOfMaxHealth;
 
-		// 暴击判定 (10% 概率)
-		OutbIsCritical = FMath::RandRange(0.f, 1.f) < 0.1f;
+		// 暴击判定
+		OutbIsCritical = FMath::RandRange(0.f, 1.f) < DBAConstants::CriticalChance;
 		if (OutbIsCritical)
 		{
-			BaseDamage *= 2.f; // 暴击伤害翻倍
+			BaseDamage *= DBAConstants::CriticalDamageMultiplier;
 		}
 
 		return BaseDamage;
@@ -457,7 +458,7 @@ float ADBARpcHandler::CalculateAttackDamage(AActor* Target, bool& OutbIsCritical
 
 	// 默认伤害
 	OutbIsCritical = false;
-	return 50.f;
+	return DBAConstants::DefaultBaseDamage;
 }
 
 bool ADBARpcHandler::IsEnemy(AActor* ActorA, AActor* ActorB) const
@@ -474,5 +475,6 @@ bool ADBARpcHandler::IsEnemy(AActor* ActorA, AActor* ActorB) const
 		return CharRefA->GetTeamID() != CharRefB->GetTeamID();
 	}
 
-	return true;
+	// Actor未实现角色接口，既不是敌人也不是友军（无效目标）
+	return false;
 }

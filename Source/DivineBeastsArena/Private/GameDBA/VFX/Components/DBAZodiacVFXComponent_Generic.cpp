@@ -3,6 +3,7 @@
 
 #include "GameDBA/VFX/Components/DBAZodiacVFXComponent_Generic.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/Core/DBAConstants.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -131,7 +132,7 @@ void UDBAZodiacVFXComponent_Generic::PlayMoveAnimation(float Speed)
 {
 	if (USkeletalMeshComponent* Mesh = GetOwner()->FindComponentByClass<USkeletalMeshComponent>())
 	{
-		Mesh->SetAnimationSpeedMultiplier(Speed / 600.0f);
+		Mesh->SetAnimationSpeedMultiplier(Speed / DBAConstants::AnimationSpeedBase);
 	}
 }
 

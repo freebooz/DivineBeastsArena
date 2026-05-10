@@ -110,14 +110,14 @@ protected:
 
 private:
 	/** 技能特效表 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> SkillEffectTable;
 
 	/** 已加载的特效数据缓存 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TMap<FName, FDBASkillEffectRow> CachedEffects;
 
 	/** 待加载路径 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TSoftObjectPtr<UDataTable> PendingTablePath;
 };

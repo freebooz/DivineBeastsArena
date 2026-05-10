@@ -27,7 +27,7 @@ struct FDBAObserverPlayerEntry
 		: Character(InCharacter)
 	{}
 
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TWeakObjectPtr<ADBAZodiacCharacterBase> Character;
 };
 
@@ -168,18 +168,18 @@ protected:
 
 private:
 	/** 观战者信息映射 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TMap<TObjectPtr<APlayerController>, FDBAObserverInfo> ObserverMap;
 
 	/** 当前比赛中的玩家列表 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TArray<FDBAObserverPlayerEntry> MatchPlayers;
 
 	/** 是否已暂停 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	bool bIsPaused;
 
 	/** 当前观看的MatchID */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	FString CurrentMatchID;
 };

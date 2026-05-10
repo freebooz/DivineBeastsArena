@@ -50,11 +50,11 @@ protected:
 
 protected:
 	/** 当前预测位置 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	FVector PredictedLocation;
 
 	/** 最后服务端校正位置 */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	FVector LastCorrectedLocation;
 
 	/** 预测误差 (用于调试) */
