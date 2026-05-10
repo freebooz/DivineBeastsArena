@@ -264,7 +264,7 @@ void ADBARpcHandler::ClientReportHit_Implementation(FGameplayAbilitySpecHandle A
 	UE_LOG(LogDBANetwork, Verbose, TEXT("[Client] 报告命中: %s at %s"), *AbilityHandle.ToString(), *HitLocation.ToString());
 
 	// 客户端预测命中，服务端需要验证
-	if (HitActor && HitActor->IsValid())
+	if (HitActor && IsValid(HitActor))
 	{
 		// 播放命中特效
 	}
@@ -291,10 +291,10 @@ void ADBARpcHandler::ClientMoveCorrection_Implementation(FVector_NetQuantize10 S
 	UE_LOG(LogDBANetwork, Verbose, TEXT("[Client] 移动校正: %s, Time=%f"), *ServerLocation.ToString(), ServerTime);
 
 	// 根据服务端位置校正客户端位置
-	AActor* Owner = GetOwner();
-	if (Owner)
+	AActor* OwnerActor = GetOwner();
+	if (OwnerActor)
 	{
-		FVector CurrentLocation = Owner->GetActorLocation();
+		FVector CurrentLocation = OwnerActor->GetActorLocation();
 		float Distance = FVector::Dist(CurrentLocation, ServerLocation);
 
 		// 如果距离超过阈值，进行位置校正
@@ -340,7 +340,7 @@ bool ADBARpcHandler::ValidateEnergyCost(float Cost) const
 
 bool ADBARpcHandler::ValidateTarget(AActor* Target) const
 {
-	if (!Target || !Target->IsValid())
+	if (!Target || !IsValid(Target))
 	{
 		return false;
 	}
@@ -372,13 +372,13 @@ bool ADBARpcHandler::ValidateCastRange(AActor* Target, float Range) const
 
 AActor* ADBARpcHandler::FindAttackTarget() const
 {
-	AActor* Owner = GetOwner();
-	if (!Owner)
+	AActor* OwnerActor = GetOwner();
+	if (!OwnerActor)
 	{
 		return nullptr;
 	}
 
-	const FVector OwnerLocation = Owner->GetActorLocation();
+	const FVector OwnerLocation = OwnerActor->GetActorLocation();
 	const float AttackRange = DBAConstants::DefaultAttackRange;
 
 	// 使用球体Overlap查询代替遍历所有Actor
@@ -438,10 +438,11 @@ float ADBARpcHandler::CalculateAttackDamage(AActor* Target, bool& OutbIsCritical
 	}
 
 	// 通过接口获取角色属性
-	if (TScriptInterface<IIDBACharacterRef> TargetRef(Target))
+	IIDBACharacterRef* TargetRefInterface = Cast<IIDBACharacterRef>(Target);
+	if (TargetRefInterface)
 	{
-		float TargetMaxHealth = TargetRef->GetMaxHealth();
-		float TargetCurrentHealth = TargetRef->GetCurrentHealth();
+		float TargetMaxHealth = TargetRefInterface->GetMaxHealth();
+		float TargetCurrentHealth = TargetRefInterface->GetCurrentHealth();
 
 		// 基础伤害公式：基于目标最大生命值
 		float BaseDamage = TargetMaxHealth * DBAConstants::BaseDamagePercentOfMaxHealth;

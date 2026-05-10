@@ -51,7 +51,7 @@ public:
 
 	/** 获取当前VFX数据行 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|VFX")
-	FDBAVFXDataRow* GetVFXData() const;
+	const FDBAVFXDataRow& GetVFXData() const;
 
 	// ==================== 技能特效接口 ====================
 

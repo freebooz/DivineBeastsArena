@@ -132,7 +132,9 @@ void UDBAZodiacVFXComponent_Generic::PlayMoveAnimation(float Speed)
 {
 	if (USkeletalMeshComponent* Mesh = GetOwner()->FindComponentByClass<USkeletalMeshComponent>())
 	{
-		Mesh->SetAnimationSpeedMultiplier(Speed / DBAConstants::AnimationSpeedBase);
+		// 计算速度倍率并设置动画播放速率
+		float SpeedMultiplier = Speed / DBAConstants::AnimationSpeedBase;
+		Mesh->GlobalAnimRateScale = SpeedMultiplier;
 	}
 }
 
@@ -163,7 +165,7 @@ void UDBAZodiacVFXComponent_Generic::PlaySkillAnimation(FName SkillId)
 
 UAnimBlueprint* UDBAZodiacVFXComponent_Generic::GetAnimBlueprint() const
 {
-	if (UClass* BPClass = AnimBlueprintClass.Load())
+	if (UClass* BPClass = AnimBlueprintClass.Get())
 	{
 		return Cast<UAnimBlueprint>(BPClass->GetDefaultObject());
 	}

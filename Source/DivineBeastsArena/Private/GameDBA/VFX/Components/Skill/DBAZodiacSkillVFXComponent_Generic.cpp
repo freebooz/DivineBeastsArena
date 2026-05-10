@@ -37,9 +37,9 @@ void UDBAZodiacSkillVFXComponent_Generic::LoadFromDataTable()
 	}
 }
 
-FDBAVFXDataRow* UDBAZodiacSkillVFXComponent_Generic::GetVFXData() const
+const FDBAVFXDataRow& UDBAZodiacSkillVFXComponent_Generic::GetVFXData() const
 {
-	return const_cast<FDBAVFXDataRow*>(&CachedVFXData);
+	return CachedVFXData;
 }
 
 void UDBAZodiacSkillVFXComponent_Generic::PlayCastingVFX(AActor* Target)
@@ -81,9 +81,12 @@ void UDBAZodiacSkillVFXComponent_Generic::PlayImpactVFX(AActor* HitTarget)
 
 	if (UAnimMontage* Montage = CachedVFXData.ImpactMontage.LoadSynchronous())
 	{
-		if (HitTarget && USkeletalMeshComponent* Mesh = HitTarget->FindComponentByClass<USkeletalMeshComponent>())
+		if (HitTarget)
 		{
-			Mesh->GetAnimInstance()->Montage_Play(Montage);
+			if (USkeletalMeshComponent* Mesh = HitTarget->FindComponentByClass<USkeletalMeshComponent>())
+			{
+				Mesh->GetAnimInstance()->Montage_Play(Montage);
+			}
 		}
 	}
 }
