@@ -6,6 +6,10 @@
 #include "GameDBA/Character/IDBACharacterRef.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include "Engine/OverlapResult.h"
+#include "PhysicsEngine/PhysicsSettings.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/Controller.h"
 
 TScriptInterface<IIDBACharacterRef> ADBARpcHandler::GetCharacterRef() const
 {
@@ -259,7 +263,7 @@ void ADBARpcHandler::ClientReportHit_Implementation(FGameplayAbilitySpecHandle A
 	UE_LOG(LogDBANetwork, Verbose, TEXT("[Client] 报告命中: %s at %s"), *AbilityHandle.ToString(), *HitLocation.ToString());
 
 	// 客户端预测命中，服务端需要验证
-	if (HitActor && HitActor->IsValidLowLevel())
+	if (HitActor && HitActor->IsValid())
 	{
 		// 播放命中特效
 	}
@@ -335,7 +339,7 @@ bool ADBARpcHandler::ValidateEnergyCost(float Cost) const
 
 bool ADBARpcHandler::ValidateTarget(AActor* Target) const
 {
-	if (!Target || !Target->IsValidLowLevel())
+	if (!Target || !Target->IsValid())
 	{
 		return false;
 	}
@@ -373,35 +377,55 @@ AActor* ADBARpcHandler::FindAttackTarget() const
 		return nullptr;
 	}
 
-	// 查找最近的敌人
-	TArray<AActor*> ActorsToCheck;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AActor::StaticClass(), ActorsToCheck);
+	const FVector OwnerLocation = Owner->GetActorLocation();
+	const float AttackRange = 500.f;
 
-	AActor* ClosestEnemy = nullptr;
-	float MinDistance = MAX_flt;
+	// 使用球体Overlap查询代替遍历所有Actor
+	TArray<FOverlapResult> Overlaps;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(Owner);
 
-	for (AActor* Actor : ActorsToCheck)
+	FCollisionShape SphereShape;
+	SphereShape.SetSphere(AttackRange);
+
+	if (UWorld* World = GetWorld())
 	{
-		if (Actor == Owner || !IsValid(Actor))
-		{
-			continue;
-		}
+		World->OverlapMultiByObjectType(
+			Overlaps,
+			OwnerLocation,
+			FQuat::Identity,
+			FCollisionObjectQueryParams(ECC_Pawn),
+			SphereShape,
+			QueryParams
+		);
 
-		// 检查是否是敌人
-		if (IsEnemy(Owner, Actor))
-		{
-			float Distance = FVector::Dist(Owner->GetActorLocation(), Actor->GetActorLocation());
+		AActor* ClosestEnemy = nullptr;
+		float MinDistance = MAX_flt;
 
-			// 检查是否在攻击范围内 (默认500单位)
-			if (Distance < 500.f && Distance < MinDistance)
+		for (const FOverlapResult& Overlap : Overlaps)
+		{
+			AActor* OtherActor = Overlap.GetActor();
+			if (!OtherActor || !IsValid(OtherActor))
 			{
-				MinDistance = Distance;
-				ClosestEnemy = Actor;
+				continue;
+			}
+
+			// 检查是否是敌人
+			if (IsEnemy(Owner, OtherActor))
+			{
+				float Distance = FVector::Dist(OwnerLocation, OtherActor->GetActorLocation());
+				if (Distance < MinDistance)
+				{
+					MinDistance = Distance;
+					ClosestEnemy = OtherActor;
+				}
 			}
 		}
+
+		return ClosestEnemy;
 	}
 
-	return ClosestEnemy;
+	return nullptr;
 }
 
 float ADBARpcHandler::CalculateAttackDamage(AActor* Target, bool& OutbIsCritical) const
