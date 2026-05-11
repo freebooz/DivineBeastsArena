@@ -35,6 +35,7 @@ public class DivineBeastsArena : ModuleRules
             "DeveloperSettings",        // 开发者设置
             "AssetRegistry",            // 资产注册表
             "AIModule",                 // AI 模块（用于 TeamAgentInterface）
+            "NavigationSystem",         // 导航系统
         });
 
         // Dedicated Server 不需要的模块（客户端专用）
