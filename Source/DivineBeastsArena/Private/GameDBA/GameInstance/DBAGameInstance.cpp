@@ -3,6 +3,7 @@
 
 #include "GameDBA/GameInstance/DBAGameInstance.h"
 #include "GameCore/Subsystems/DBAGameInstanceSubsystemBase.h"
+#include "GameCore/Session/DBALoginFlowSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameDBA/Core/DBALogChannels.h"
 
@@ -35,4 +36,22 @@ void UDBAGameInstance::OnWorldChanged(UWorld* OldWorld, UWorld* NewWorld)
 	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] World 切换: %s -> %s"),
 		OldWorld ? *OldWorld->GetName() : TEXT("None"),
 		NewWorld ? *NewWorld->GetName() : TEXT("None"));
+}
+
+void UDBAGameInstance::StartLoginFlow()
+{
+	if (bLoginFlowStarted)
+	{
+		return;
+	}
+
+	bLoginFlowStarted = true;
+
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 开始登录流程"));
+
+	// 获取登录流程子系统并启动
+	if (UDBALoginFlowSubsystem* LoginFlow = GetSubsystem<UDBALoginFlowSubsystem>())
+	{
+		LoginFlow->StartLoginFlow();
+	}
 }

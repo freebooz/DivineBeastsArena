@@ -140,6 +140,19 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
 	TSubclassOf<UDBACharacterCreateFlowWidgetBase> CharacterCreateWidgetClass;
 
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
+	TObjectPtr<class UDBASplashVideoWidget> SplashVideoWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
+	TSubclassOf<class UDBASplashVideoWidget> SplashVideoWidgetClass;
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	void ShowSplashVideo();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	void HideSplashVideo();
+
 private:
 	UPROPERTY(Transient)
 	EDBALoginFlowState CachedLoginFlowState = EDBALoginFlowState::Startup;

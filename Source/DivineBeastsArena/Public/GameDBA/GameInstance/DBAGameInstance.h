@@ -24,4 +24,15 @@ public:
 	virtual void Init() override;
 	virtual void Shutdown() override;
 	virtual void OnWorldChanged(UWorld* OldWorld, UWorld* NewWorld) override;
+
+	/**
+	 * 开始登录流程（由启动视频结束后调用）
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|GameInstance")
+	void StartLoginFlow();
+
+private:
+	/** 是否已启动登录流程 */
+	UPROPERTY(Transient)
+	bool bLoginFlowStarted = false;
 };

@@ -1,6 +1,7 @@
 ﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "GameDBA/UI/DBAGameUIManager.h"
+#include "GameDBA/UI/Splash/UDBASplashVideoWidget.h"
 
 #include "Blueprint/UserWidget.h"
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
@@ -43,6 +44,12 @@ UDBAGameUIManager::UDBAGameUIManager()
 	{
 		CharacterCreateWidgetClass = CharacterCreateWidgetFinder.Class;
 	}
+
+	static ConstructorHelpers::FClassFinder<UDBASplashVideoWidget> SplashVideoWidgetFinder(TEXT("/Game/UI/Splash/WBP_DBA_SplashVideo"));
+	if (SplashVideoWidgetFinder.Succeeded())
+	{
+		SplashVideoWidgetClass = SplashVideoWidgetFinder.Class;
+	}
 }
 
 void UDBAGameUIManager::OnSubsystemInitialize()
@@ -55,8 +62,11 @@ void UDBAGameUIManager::OnSubsystemInitialize()
 		LoginFlow->OnFlowStateChanged.AddDynamic(this, &UDBAGameUIManager::HandleLoginFlowStateChanged);
 		CachedLoginFlowState = LoginFlow->GetFlowState();
 		RefreshLoginFlowWidgetVisibility();
-		LoginFlow->StartLoginFlow();
+		// Don't auto-start login flow - show splash video first
 	}
+
+	// 显示启动视频
+	ShowSplashVideo();
 }
 
 void UDBAGameUIManager::OnSubsystemDeinitialize()
@@ -254,6 +264,8 @@ void UDBAGameUIManager::RefreshLoginFlowWidgetVisibility()
 
 void UDBAGameUIManager::HideAllFlowWidgets()
 {
+	HideSplashVideo();
+
 	if (LoginWidget)
 	{
 		LoginWidget->RemoveFromParent();
@@ -300,4 +312,37 @@ void UDBAGameUIManager::SetFlowWidgetVisible(UUserWidget* WidgetToShow)
 	HideAllFlowWidgets();
 	WidgetToShow->AddToViewport(10);
 	bFlowWidgetVisible = true;
+}
+
+void UDBAGameUIManager::ShowSplashVideo()
+{
+	if (!SplashVideoWidget)
+	{
+		if (!SplashVideoWidgetClass)
+		{
+			return;
+		}
+		if (UWorld* World = GetWorld())
+		{
+			if (APlayerController* PC = World->GetFirstPlayerController())
+			{
+				SplashVideoWidget = CreateWidget<UDBASplashVideoWidget>(PC, SplashVideoWidgetClass);
+			}
+		}
+	}
+	if (SplashVideoWidget && !bFlowWidgetVisible)
+	{
+		SplashVideoWidget->AddToViewport(999);
+
+		// 设置键盘焦点到启动视频控件，以便接收 ESC 按键
+		SplashVideoWidget->SetFocus();
+	}
+}
+
+void UDBAGameUIManager::HideSplashVideo()
+{
+	if (SplashVideoWidget)
+	{
+		SplashVideoWidget->RemoveFromParent();
+	}
 }
