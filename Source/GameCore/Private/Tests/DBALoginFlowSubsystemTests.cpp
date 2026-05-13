@@ -157,6 +157,8 @@ bool FDBALoginFlowGuestSelectToLobbyTest::RunTest(const FString& Parameters)
 	}
 
 	LoginFlow->SubmitGuestLogin();
+	TestTrue(TEXT("Preparation: guest login should enter CharacterCreate before creating role"), WaitForFlowState(LoginFlow, EDBALoginFlowState::CharacterCreate, LoginFlowAsyncTimeoutSeconds));
+
 	FDBACharacterCreateRequest CreateRequest;
 	CreateRequest.CharacterName = TEXT("AutoFlow_Ox");
 	CreateRequest.Zodiac = EDBAZodiac::Ox;

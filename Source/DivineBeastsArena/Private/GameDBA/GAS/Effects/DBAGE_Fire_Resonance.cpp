@@ -7,7 +7,7 @@
 UDBAGE_Fire_Resonance::UDBAGE_Fire_Resonance()
 {
 	// 浠庡厓绱犲叡楦ｆ暟鎹〃鍔犺浇閰嶇疆
-	UDataTable* ResonanceTable = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/Data/Elements/ElementResonanceTable.ElementResonanceTable'"));
+	UDataTable* ResonanceTable = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/Data/Elements/DBAElementResonanceRowe.DBAElementResonanceRowe'"));
 	if (ResonanceTable)
 	{
 		static const FString ContextString = TEXT("DBAGE_Fire_Resonance");

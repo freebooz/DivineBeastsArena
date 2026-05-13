@@ -25,18 +25,9 @@ public class DivineBeastsArenaEditorTarget : TargetRules
         ExtraModuleNames.Add("GameCore");
         ExtraModuleNames.Add("GameMoba");
 
-        // 全局定义
-        GlobalDefinitions.AddRange(new string[]
-        {
-            // 编辑器标识
-            "DBA_EDITOR=1",
-            "DBA_CLIENT=1",
-            "DBA_SERVER=0",
-        });
-
         // 编译设置
-        bUseLoggingInShipping = true;
-        bOverrideBuildEnvironment = true;               // Editor 始终启用日志
+        bUseLoggingInShipping = false;
+        bOverrideBuildEnvironment = false;              // 使用引擎默认 Editor 构建环境，避免 DLL 导入宏与预编译引擎不一致
         bCompileWithAccessibilitySupport = true;    // 启用无障碍支持
         bCompileAgainstEngine = true;               // 编译引擎代码
         bCompileAgainstCoreUObject = true;          // 编译 CoreUObject

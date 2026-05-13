@@ -13,6 +13,10 @@
 
 class UMediaPlayer;
 class UMediaTexture;
+class UFileMediaSource;
+class UMediaSoundComponent;
+class UAudioComponent;
+class USoundWaveProcedural;
 
 /**
  * UDBASplashVideoWidget
@@ -48,10 +52,21 @@ protected:
 private:
 	UFUNCTION()
 	void OnSkipButtonClicked();
+	UFUNCTION()
+	void HandleMediaOpened(FString OpenedUrl);
+	UFUNCTION()
+	void HandleMediaOpenFailed(FString FailedUrl);
+	UFUNCTION()
+	void HandleMediaEndReached();
+	UFUNCTION()
+	void VerifyPlaybackState();
+
 	void OnVideoFinished();
 	void TransitionToLogin();
 	void RemoveSelf();
 	void StartPlayback();
+	void PlayFallbackAudio();
+	USoundWaveProcedural* CreateSoundWaveFromPcmWav(const FString& WavPath);
 
 private:
 	/** 媒体播放器 */
@@ -61,6 +76,18 @@ private:
 	/** 媒体纹理 */
 	UPROPERTY(Transient)
 	TObjectPtr<UMediaTexture> MediaTexture;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UFileMediaSource> FileMediaSource;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMediaSoundComponent> MediaSoundComponent;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USoundWaveProcedural> FallbackAudioWave;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> FallbackAudioComponent;
 
 	/** 视频显示图像 */
 	UPROPERTY(meta = (BindWidgetOptional))
