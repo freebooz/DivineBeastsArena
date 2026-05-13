@@ -2,6 +2,7 @@
 
 #include "GameDBA/UI/DBAGameUIManager.h"
 #include "GameDBA/UI/Splash/UDBASplashVideoWidget.h"
+#include "GameDBA/Core/DBALogChannels.h"
 
 #include "Blueprint/UserWidget.h"
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
@@ -49,6 +50,11 @@ UDBAGameUIManager::UDBAGameUIManager()
 	if (SplashVideoWidgetFinder.Succeeded())
 	{
 		SplashVideoWidgetClass = SplashVideoWidgetFinder.Class;
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] SplashVideoWidgetClass found: %s"), *SplashVideoWidgetClass->GetName());
+	}
+	else
+	{
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] SplashVideoWidgetFinder failed to find class"));
 	}
 }
 
@@ -62,11 +68,37 @@ void UDBAGameUIManager::OnSubsystemInitialize()
 		LoginFlow->OnFlowStateChanged.AddDynamic(this, &UDBAGameUIManager::HandleLoginFlowStateChanged);
 		CachedLoginFlowState = LoginFlow->GetFlowState();
 		RefreshLoginFlowWidgetVisibility();
-		// Don't auto-start login flow - show splash video first
 	}
 
-	// 显示启动视频
-	ShowSplashVideo();
+	// 延迟显示启动视频，等待世界加载完成
+	GetWorld()->GetTimerManager().SetTimer(SplashVideoTimerHandle, this, &UDBAGameUIManager::TryShowSplashVideo, 0.5f, true);
+}
+
+void UDBAGameUIManager::TryShowSplashVideo()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	// 先尝试获取 PrimaryPlayerController
+	APlayerController* PC = World->GetGameInstance() ? World->GetGameInstance()->GetPrimaryPlayerController() : nullptr;
+	if (!PC)
+	{
+		PC = World->GetFirstPlayerController();
+	}
+
+	if (PC)
+	{
+		// PlayerController 已存在，停止重试并显示视频
+		GetWorld()->GetTimerManager().ClearTimer(SplashVideoTimerHandle);
+		ShowSplashVideo();
+	}
+	else
+	{
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Waiting for PlayerController... World: %s"), *World->GetName());
+	}
 }
 
 void UDBAGameUIManager::OnSubsystemDeinitialize()
@@ -316,23 +348,43 @@ void UDBAGameUIManager::SetFlowWidgetVisible(UUserWidget* WidgetToShow)
 
 void UDBAGameUIManager::ShowSplashVideo()
 {
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] ShowSplashVideo called, Class: %s"), SplashVideoWidgetClass ? TEXT("Valid") : TEXT("NULL"));
+
 	if (!SplashVideoWidget)
 	{
 		if (!SplashVideoWidgetClass)
 		{
+			UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] SplashVideoWidgetClass is NULL!"));
 			return;
 		}
 		if (UWorld* World = GetWorld())
 		{
-			if (APlayerController* PC = World->GetFirstPlayerController())
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] World: %s, URL: %s, PlayerControllers: %d"), *World->GetName(), *World->URL.ToString(), World->GetNumPlayerControllers());
+			APlayerController* PC = World->GetGameInstance() ? World->GetGameInstance()->GetPrimaryPlayerController() : nullptr;
+			if (!PC)
+			{
+				PC = World->GetFirstPlayerController();
+			}
+			if (PC)
 			{
 				SplashVideoWidget = CreateWidget<UDBASplashVideoWidget>(PC, SplashVideoWidgetClass);
+				UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] SplashVideoWidget created: %s"), SplashVideoWidget ? TEXT("Success") : TEXT("Failed"));
 			}
+			else
+			{
+				UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] No PlayerController found in world '%s' (%d controllers)"), *World->GetName(), World->GetNumPlayerControllers());
+				return;
+			}
+		}
+		else
+		{
+			UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] No World found"));
 		}
 	}
 	if (SplashVideoWidget && !bFlowWidgetVisible)
 	{
 		SplashVideoWidget->AddToViewport(999);
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] SplashVideoWidget added to viewport"));
 
 		// 设置键盘焦点到启动视频控件，以便接收 ESC 按键
 		SplashVideoWidget->SetFocus();

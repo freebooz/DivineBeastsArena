@@ -5,9 +5,14 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Image.h"
+#include "Components/Button.h"
+#include "Components/TextBlock.h"
 #include "MediaPlayer.h"
 #include "MediaTexture.h"
 #include "UDBASplashVideoWidget.generated.h"
+
+class UMediaPlayer;
+class UMediaTexture;
 
 /**
  * UDBASplashVideoWidget
@@ -41,8 +46,12 @@ protected:
 	void SkipVideo();
 
 private:
+	UFUNCTION()
+	void OnSkipButtonClicked();
 	void OnVideoFinished();
 	void TransitionToLogin();
+	void RemoveSelf();
+	void StartPlayback();
 
 private:
 	/** 媒体播放器 */
@@ -59,7 +68,11 @@ private:
 
 	/** 跳过提示文本 */
 	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<class UTextBlock> SkipHintText;
+	TObjectPtr<UTextBlock> SkipHintText;
+
+	/** 跳过按钮 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UButton> SkipButton;
 
 	/** 是否正在播放 */
 	UPROPERTY(Transient)
@@ -68,4 +81,8 @@ private:
 	/** 是否已处理完成 */
 	UPROPERTY(Transient)
 	bool bCompleted = false;
+
+	/** 已过时间 */
+	UPROPERTY(Transient)
+	float ElapsedTime = 0.0f;
 };

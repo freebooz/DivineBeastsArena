@@ -167,7 +167,11 @@ private:
 	WidgetType* EnsureFlowWidgetCreated(TSubclassOf<WidgetType> WidgetClass, TObjectPtr<WidgetType>& WidgetInstance);
 	void SetFlowWidgetVisible(UUserWidget* WidgetToShow);
 
+	void TryShowSplashVideo();
+
 	bool bMainLobbyVisible = false;
 	bool bArenaHUDVisible = false;
 	bool bFlowWidgetVisible = false;
+
+	FTimerHandle SplashVideoTimerHandle;
 };
