@@ -45,6 +45,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|LoginFlow")
 	void SubmitCharacterCreation(const FDBACharacterCreateRequest& Request);
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|LoginFlow")
+	void EnterCharacterCreate();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|LoginFlow")
+	void BackToCharacterSelect();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|LoginFlow")
+	void RefreshCharacterList();
+
 	UFUNCTION(BlueprintPure, Category = "DBA|LoginFlow")
 	EDBALoginFlowState GetFlowState() const { return FlowState; }
 

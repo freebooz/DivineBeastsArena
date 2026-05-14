@@ -29,25 +29,9 @@ void UDBALoginFlowSubsystem::BroadcastErrorAndSetState(const FString& ErrorMessa
 
 void UDBALoginFlowSubsystem::StartLoginFlow()
 {
-	SetFlowState(EDBALoginFlowState::TryAutoLogin);
-
-	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
-	if (!AccountService)
-	{
-		SetFlowState(EDBALoginFlowState::LoginScreen);
-		return;
-	}
-
-	AccountService->AutoLogin(FDBAOnLoginComplete::CreateWeakLambda(this, [this](const FDBALoginResponse& Response)
-	{
-		if (Response.bSuccess)
-		{
-			LoadCharactersAfterLogin();
-			return;
-		}
-
-		SetFlowState(EDBALoginFlowState::LoginScreen);
-	}));
+	// UX rule: entering frontend should always land on login screen first.
+	// Actual authentication flow starts only after explicit user action.
+	SetFlowState(EDBALoginFlowState::LoginScreen);
 }
 
 void UDBALoginFlowSubsystem::SubmitLogin(const FString& Email, const FString& Password)
@@ -122,6 +106,12 @@ void UDBALoginFlowSubsystem::LoadCharactersAfterLogin()
 
 void UDBALoginFlowSubsystem::SubmitCharacterSelection(const FDBACharacterId& CharacterId)
 {
+	if (FlowState != EDBALoginFlowState::CharacterSelect && FlowState != EDBALoginFlowState::CharacterCreate)
+	{
+		BroadcastErrorAndSetState(TEXT("Character selection is not available in current state"), EDBALoginFlowState::LoginScreen);
+		return;
+	}
+
 	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
 	if (!AccountService)
 	{
@@ -143,6 +133,12 @@ void UDBALoginFlowSubsystem::SubmitCharacterSelection(const FDBACharacterId& Cha
 
 void UDBALoginFlowSubsystem::SubmitCharacterCreation(const FDBACharacterCreateRequest& Request)
 {
+	if (FlowState != EDBALoginFlowState::CharacterCreate)
+	{
+		BroadcastErrorAndSetState(TEXT("Character creation is not available in current state"), EDBALoginFlowState::LoginScreen);
+		return;
+	}
+
 	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
 	if (!AccountService)
 	{
@@ -160,6 +156,27 @@ void UDBALoginFlowSubsystem::SubmitCharacterCreation(const FDBACharacterCreateRe
 
 		BroadcastErrorAndSetState(Response.ErrorMessage, EDBALoginFlowState::CharacterCreate);
 	}));
+}
+
+void UDBALoginFlowSubsystem::EnterCharacterCreate()
+{
+	if (FlowState == EDBALoginFlowState::CharacterSelect || FlowState == EDBALoginFlowState::CharacterCreate)
+	{
+		SetFlowState(EDBALoginFlowState::CharacterCreate);
+	}
+}
+
+void UDBALoginFlowSubsystem::BackToCharacterSelect()
+{
+	if (FlowState == EDBALoginFlowState::CharacterCreate || FlowState == EDBALoginFlowState::CharacterSelect)
+	{
+		SetFlowState(EDBALoginFlowState::CharacterSelect);
+	}
+}
+
+void UDBALoginFlowSubsystem::RefreshCharacterList()
+{
+	LoadCharactersAfterLogin();
 }
 
 void UDBALoginFlowSubsystem::EnterMainLobby()

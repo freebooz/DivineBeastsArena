@@ -13,37 +13,72 @@
 #include "GameDBA/UI/Lobby/Login/UDBACharacterCreateFlowWidgetBase.h"
 #include "UObject/ConstructorHelpers.h"
 
+namespace
+{
+	template<typename WidgetType>
+	TSubclassOf<WidgetType> ResolveWidgetClassPath(std::initializer_list<const TCHAR*> CandidatePaths)
+	{
+		for (const TCHAR* CandidatePath : CandidatePaths)
+		{
+			ConstructorHelpers::FClassFinder<WidgetType> Finder(CandidatePath);
+			if (Finder.Succeeded())
+			{
+				return Finder.Class;
+			}
+		}
+		return nullptr;
+	}
+}
+
 UDBAGameUIManager::UDBAGameUIManager()
 	: Super()
 {
-	static ConstructorHelpers::FClassFinder<UDBAMainLobbyWidgetBase> MainLobbyWidgetFinder(TEXT("/Game/UI/Lobby/MainLobby/WBP_DBA_MainLobby"));
-	if (MainLobbyWidgetFinder.Succeeded())
+	MainLobbyWidgetClass = ResolveWidgetClassPath<UDBAMainLobbyWidgetBase>({
+		TEXT("/Game/DBA/UI/Lobby/MainLobby/WBP_DBA_MainLobby"),
+		TEXT("/Game/Blueprints/UI/DBA/Lobby/WBP_DBA_MainLobby")
+	});
+	if (!MainLobbyWidgetClass)
 	{
-		MainLobbyWidgetClass = MainLobbyWidgetFinder.Class;
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Main lobby widget blueprint unavailable"));
 	}
 
-	static ConstructorHelpers::FClassFinder<UDBAArenaHUDRootWidgetBase> ArenaHudWidgetFinder(TEXT("/Game/UI/Arena/HUD/WBP_DBA_ArenaHUDRoot"));
-	if (ArenaHudWidgetFinder.Succeeded())
+	ArenaHUDWidgetClass = ResolveWidgetClassPath<UDBAArenaHUDRootWidgetBase>({
+		TEXT("/Game/UI/Arena/HUD/WBP_DBA_ArenaHUDRoot"),
+		TEXT("/Game/Blueprints/UI/DBA/ArenaHUD/WBP_DBA_ArenaHUDRoot")
+	});
+	if (!ArenaHUDWidgetClass)
 	{
-		ArenaHUDWidgetClass = ArenaHudWidgetFinder.Class;
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Arena HUD widget blueprint unavailable"));
 	}
 
-	static ConstructorHelpers::FClassFinder<UDBALoginFlowWidgetBase> LoginWidgetFinder(TEXT("/Game/UI/Lobby/Login/WBP_DBA_Login"));
-	if (LoginWidgetFinder.Succeeded())
+	LoginWidgetClass = ResolveWidgetClassPath<UDBALoginFlowWidgetBase>({
+		TEXT("/Game/DBA/UI/Lobby/Login/WBP_DBA_Login"),
+		TEXT("/Game/Blueprints/UI/DBA/Login/WBP_DBA_Login")
+	});
+	if (!LoginWidgetClass)
 	{
-		LoginWidgetClass = LoginWidgetFinder.Class;
+		LoginWidgetClass = UDBALoginFlowWidgetBase::StaticClass();
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Login widget blueprint unavailable, using native fallback"));
 	}
 
-	static ConstructorHelpers::FClassFinder<UDBACharacterSelectFlowWidgetBase> CharacterSelectWidgetFinder(TEXT("/Game/UI/Lobby/Character/WBP_DBA_CharacterSelect"));
-	if (CharacterSelectWidgetFinder.Succeeded())
+	CharacterSelectWidgetClass = ResolveWidgetClassPath<UDBACharacterSelectFlowWidgetBase>({
+		TEXT("/Game/DBA/UI/Lobby/Character/WBP_DBA_CharacterSelect"),
+		TEXT("/Game/Blueprints/UI/DBA/Login/WBP_DBA_CharacterSelect")
+	});
+	if (!CharacterSelectWidgetClass)
 	{
-		CharacterSelectWidgetClass = CharacterSelectWidgetFinder.Class;
+		CharacterSelectWidgetClass = UDBACharacterSelectFlowWidgetBase::StaticClass();
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Character select widget blueprint unavailable, using native fallback"));
 	}
 
-	static ConstructorHelpers::FClassFinder<UDBACharacterCreateFlowWidgetBase> CharacterCreateWidgetFinder(TEXT("/Game/UI/Lobby/Character/WBP_DBA_CharacterCreate"));
-	if (CharacterCreateWidgetFinder.Succeeded())
+	CharacterCreateWidgetClass = ResolveWidgetClassPath<UDBACharacterCreateFlowWidgetBase>({
+		TEXT("/Game/DBA/UI/Lobby/Character/WBP_DBA_CharacterCreate"),
+		TEXT("/Game/Blueprints/UI/DBA/Login/WBP_DBA_CharacterCreate")
+	});
+	if (!CharacterCreateWidgetClass)
 	{
-		CharacterCreateWidgetClass = CharacterCreateWidgetFinder.Class;
+		CharacterCreateWidgetClass = UDBACharacterCreateFlowWidgetBase::StaticClass();
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Character create widget blueprint unavailable, using native fallback"));
 	}
 
 	static ConstructorHelpers::FClassFinder<UDBASplashVideoWidget> SplashVideoWidgetFinder(TEXT("/Game/UI/Splash/WBP_DBA_SplashVideo"));

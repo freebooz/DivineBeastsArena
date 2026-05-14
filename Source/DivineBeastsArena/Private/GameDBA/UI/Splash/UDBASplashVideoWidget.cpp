@@ -15,6 +15,13 @@
 #include "MediaTexture.h"
 #include "Sound/SoundWaveProcedural.h"
 
+#if PLATFORM_WINDOWS
+#include "Windows/AllowWindowsPlatformTypes.h"
+#include <windows.h>
+#include <mmsystem.h>
+#include "Windows/HideWindowsPlatformTypes.h"
+#endif
+
 UDBASplashVideoWidget::UDBASplashVideoWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -213,7 +220,7 @@ void UDBASplashVideoWidget::PlayVideo()
 			}
 		}
 		MediaSoundComponent->Start();
-		MediaSoundComponent->SetVolumeMultiplier(1.0f);
+		MediaSoundComponent->SetVolumeMultiplier(0.0f);
 
 		UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] MediaSoundComponent registered: %s, playing: %s"),
 			MediaSoundComponent->IsRegistered() ? TEXT("true") : TEXT("false"),
@@ -244,7 +251,7 @@ void UDBASplashVideoWidget::HandleMediaOpened(FString OpenedUrl)
 		{
 			MediaSoundComponent->Start();
 		}
-		MediaSoundComponent->SetVolumeMultiplier(1.0f);
+		MediaSoundComponent->SetVolumeMultiplier(0.0f);
 		UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Media sound after open: registered=%s, playing=%s"),
 			MediaSoundComponent->IsRegistered() ? TEXT("true") : TEXT("false"),
 			MediaSoundComponent->IsPlaying() ? TEXT("true") : TEXT("false"));
@@ -323,6 +330,10 @@ void UDBASplashVideoWidget::StopVideo()
 		FallbackAudioComponent = nullptr;
 	}
 
+#if PLATFORM_WINDOWS
+	::PlaySoundW(nullptr, nullptr, 0);
+#endif
+
 	if (MediaSoundComponent)
 	{
 		MediaSoundComponent->RemoveClockSink();
@@ -372,6 +383,21 @@ void UDBASplashVideoWidget::PlayFallbackAudio()
 	{
 		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] Failed to spawn fallback Startup.wav audio"));
 	}
+
+	PlayNativeFallbackAudio(WavPath);
+}
+
+void UDBASplashVideoWidget::PlayNativeFallbackAudio(const FString& WavPath)
+{
+#if PLATFORM_WINDOWS
+	const FString FullWavPath = FPaths::ConvertRelativePathToFull(WavPath);
+	const bool bPlayed = ::PlaySoundW(*FullWavPath, nullptr, SND_FILENAME | SND_ASYNC | SND_NODEFAULT);
+	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Native Windows Startup.wav audio playing: %s, path: %s"),
+		bPlayed ? TEXT("true") : TEXT("false"),
+		*FullWavPath);
+#else
+	UE_LOG(LogDBAUI, Verbose, TEXT("[UDBASplashVideoWidget] Native audio fallback is only available on Windows"));
+#endif
 }
 
 USoundWaveProcedural* UDBASplashVideoWidget::CreateSoundWaveFromPcmWav(const FString& WavPath)
@@ -396,7 +422,7 @@ USoundWaveProcedural* UDBASplashVideoWidget::CreateSoundWaveFromPcmWav(const FSt
 		return nullptr;
 	}
 
-	int32 Cursor = 12;
+	int32 ChunkCursor = 12;
 	uint16 FormatTag = 0;
 	uint16 NumChannels = 0;
 	uint32 SampleRate = 0;
@@ -404,30 +430,30 @@ USoundWaveProcedural* UDBASplashVideoWidget::CreateSoundWaveFromPcmWav(const FSt
 	int32 DataOffset = INDEX_NONE;
 	uint32 DataSize = 0;
 
-	while (Cursor + 8 <= WavBytes.Num())
+	while (ChunkCursor + 8 <= WavBytes.Num())
 	{
-		const uint32 ChunkSize = ReadU32(Cursor + 4);
-		const int32 ChunkDataOffset = Cursor + 8;
+		const uint32 ChunkSize = ReadU32(ChunkCursor + 4);
+		const int32 ChunkDataOffset = ChunkCursor + 8;
 		if (ChunkDataOffset + static_cast<int32>(ChunkSize) > WavBytes.Num())
 		{
 			break;
 		}
 
-		if (FMemory::Memcmp(WavBytes.GetData() + Cursor, "fmt ", 4) == 0 && ChunkSize >= 16)
+		if (FMemory::Memcmp(WavBytes.GetData() + ChunkCursor, "fmt ", 4) == 0 && ChunkSize >= 16)
 		{
 			FormatTag = ReadU16(ChunkDataOffset);
 			NumChannels = ReadU16(ChunkDataOffset + 2);
 			SampleRate = ReadU32(ChunkDataOffset + 4);
 			BitsPerSample = ReadU16(ChunkDataOffset + 14);
 		}
-		else if (FMemory::Memcmp(WavBytes.GetData() + Cursor, "data", 4) == 0)
+		else if (FMemory::Memcmp(WavBytes.GetData() + ChunkCursor, "data", 4) == 0)
 		{
 			DataOffset = ChunkDataOffset;
 			DataSize = ChunkSize;
 			break;
 		}
 
-		Cursor = ChunkDataOffset + static_cast<int32>(ChunkSize) + (ChunkSize % 2);
+		ChunkCursor = ChunkDataOffset + static_cast<int32>(ChunkSize) + (ChunkSize % 2);
 	}
 
 	if (FormatTag != 1 || NumChannels == 0 || SampleRate == 0 || BitsPerSample != 16 || DataOffset == INDEX_NONE || DataSize == 0)

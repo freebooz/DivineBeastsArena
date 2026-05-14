@@ -3,15 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameCore/Session/DBALoginFlowSubsystem.h"
 #include "GameMoba/UI/UDBAMobaUserWidgetBase.h"
 #include "UDBALoginFlowWidgetBase.generated.h"
 
-/**
- * UDBALoginFlowWidgetBase
- * 登录流程Widget基类
- * 提供登录界面通用功能
- */
-UCLASS(Abstract, Blueprintable, BlueprintType)
+class UButton;
+class UEditableTextBox;
+class UTextBlock;
+
+UCLASS(Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBALoginFlowWidgetBase : public UDBAMobaUserWidgetBase
 {
 	GENERATED_BODY()
@@ -22,24 +22,68 @@ public:
 protected:
 	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 public:
-	/** 显示错误信息 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Login")
+	virtual void SubmitLogin();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Login")
+	virtual void SubmitGuestLogin();
+
 	UFUNCTION(BlueprintCallable, Category = "DBA|Login")
 	virtual void ShowError(const FString& ErrorMessage);
 
-	/** 清除错误信息 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Login")
 	virtual void ClearError();
 
 protected:
+	UFUNCTION()
+	void HandleLoginClicked();
+
+	UFUNCTION()
+	void HandleGuestLoginClicked();
+
+	UFUNCTION()
+	void HandleFlowStateChanged(EDBALoginFlowState NewState);
+
+	UFUNCTION()
+	void HandleFlowError(const FString& ErrorMessage);
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|Login", meta = (DisplayName = "On Show Error"))
 	void BP_OnShowError(const FString& ErrorMessage);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|Login", meta = (DisplayName = "On Clear Error"))
 	void BP_OnClearError();
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|Login", meta = (DisplayName = "On Flow State Changed"))
+	void BP_OnFlowStateChanged(EDBALoginFlowState NewState);
+
+	void EnsureNativeFallbackLayout();
+	void BindControls();
+	void UnbindControls();
+	void SetStatus(const FText& InStatusText);
+	UDBALoginFlowSubsystem* GetLoginFlow() const;
+
 protected:
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UEditableTextBox> EmailInput;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UEditableTextBox> PasswordInput;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UButton> LoginButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UButton> GuestLoginButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UTextBlock> ErrorText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UTextBlock> StatusText;
+
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|Login")
 	FString LastErrorMessage;
 };

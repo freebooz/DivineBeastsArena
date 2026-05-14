@@ -3,15 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameMoba/UI/UDBAMobaUserWidgetBase.h"
 #include "GameCore/Account/DBAAccountTypes.h"
+#include "GameMoba/UI/UDBAMobaUserWidgetBase.h"
 #include "UDBACharacterSelectFlowWidgetBase.generated.h"
 
-/**
- * UDBACharacterSelectFlowWidgetBase
- * 角色选择流程Widget基类
- */
-UCLASS(Abstract, Blueprintable, BlueprintType)
+class UButton;
+class UTextBlock;
+class UViewport;
+class UDBALoginFlowSubsystem;
+class ADBACharacterPreviewActor;
+
+UCLASS(Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBACharacterSelectFlowWidgetBase : public UDBAMobaUserWidgetBase
 {
 	GENERATED_BODY()
@@ -22,27 +24,81 @@ public:
 protected:
 	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 public:
-	/** 更新角色列表 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterSelect")
 	virtual void UpdateCharacters(const TArray<FDBACharacterSummary>& Characters);
 
-	/** 选择角色 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterSelect")
 	virtual void SelectCharacter(const FDBACharacterId& CharacterId);
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterSelect")
+	virtual void ConfirmSelectedCharacter();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterSelect")
+	virtual void EnterCharacterCreate();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterSelect")
+	virtual void RefreshCharacterList();
+
 protected:
+	UFUNCTION()
+	void HandleConfirmClicked();
+
+	UFUNCTION()
+	void HandleCreateClicked();
+
+	UFUNCTION()
+	void HandleRefreshClicked();
+
+	UFUNCTION()
+	void HandleCharactersLoaded(const TArray<FDBACharacterSummary>& Characters);
+
+	UFUNCTION()
+	void HandleFlowError(const FString& ErrorMessage);
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|CharacterSelect", meta = (DisplayName = "On Characters Updated"))
 	void BP_OnCharactersUpdated(const TArray<FDBACharacterSummary>& Characters);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|CharacterSelect", meta = (DisplayName = "On Character Selected"))
 	void BP_OnCharacterSelected(const FDBACharacterId& CharacterId);
 
+	void EnsureNativeFallbackLayout();
+	void BindControls();
+	void UnbindControls();
+	void RefreshCharacterText();
+	void SetStatus(const FText& InStatusText);
+	UDBALoginFlowSubsystem* GetLoginFlow() const;
+	void InitializePreviewViewport();
+	void DestroyPreviewViewport();
+	void UpdateCharacterPreviewById(const FDBACharacterId& CharacterId);
+
 protected:
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterSelect")
+	TObjectPtr<UTextBlock> CharacterListText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterSelect")
+	TObjectPtr<UTextBlock> StatusText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterSelect")
+	TObjectPtr<UButton> ConfirmButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterSelect")
+	TObjectPtr<UButton> CreateButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterSelect")
+	TObjectPtr<UButton> RefreshButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterSelect")
+	TObjectPtr<UViewport> CharacterPreviewViewport;
+
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterSelect")
 	TArray<FDBACharacterSummary> CurrentCharacters;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterSelect")
 	FDBACharacterId SelectedCharacterId;
+
+	UPROPERTY(Transient)
+	TObjectPtr<ADBACharacterPreviewActor> PreviewActor;
 };

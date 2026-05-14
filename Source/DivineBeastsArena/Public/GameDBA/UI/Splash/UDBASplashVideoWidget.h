@@ -66,6 +66,7 @@ private:
 	void RemoveSelf();
 	void StartPlayback();
 	void PlayFallbackAudio();
+	void PlayNativeFallbackAudio(const FString& WavPath);
 	USoundWaveProcedural* CreateSoundWaveFromPcmWav(const FString& WavPath);
 
 private:

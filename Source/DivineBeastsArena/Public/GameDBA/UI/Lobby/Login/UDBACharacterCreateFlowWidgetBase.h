@@ -3,15 +3,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameMoba/UI/UDBAMobaUserWidgetBase.h"
 #include "GameCore/Account/DBAAccountTypes.h"
+#include "GameMoba/UI/UDBAMobaUserWidgetBase.h"
 #include "UDBACharacterCreateFlowWidgetBase.generated.h"
 
-/**
- * UDBACharacterCreateFlowWidgetBase
- * 角色创建流程Widget基类
- */
-UCLASS(Abstract, Blueprintable, BlueprintType)
+class UButton;
+class UEditableTextBox;
+class UTextBlock;
+class UViewport;
+class UDBALoginFlowSubsystem;
+class ADBACharacterPreviewActor;
+
+UCLASS(Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBACharacterCreateFlowWidgetBase : public UDBAMobaUserWidgetBase
 {
 	GENERATED_BODY()
@@ -22,45 +25,109 @@ public:
 protected:
 	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 public:
-	/** 设置角色名称 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterCreate")
 	virtual void SetCharacterName(const FString& Name);
 
-	/** 设置生肖 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterCreate")
 	virtual void SetZodiac(EDBAZodiac Zodiac);
 
-	/** 设置元素 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterCreate")
 	virtual void SetElement(EDBAElement Element);
 
-	/** 设置阵营 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterCreate")
 	virtual void SetFiveCamp(EDBAFiveCamp FiveCamp);
 
-	/** 提交创建 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterCreate")
 	virtual void Submit();
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterCreate")
+	virtual void BackToCharacterSelect();
+
 protected:
+	UFUNCTION()
+	void HandleCreateClicked();
+
+	UFUNCTION()
+	void HandleBackClicked();
+
+	UFUNCTION()
+	void HandleZodiacClicked();
+
+	UFUNCTION()
+	void HandleElementClicked();
+
+	UFUNCTION()
+	void HandleFiveCampClicked();
+
+	UFUNCTION()
+	void HandleFlowError(const FString& ErrorMessage);
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|CharacterCreate", meta = (DisplayName = "On Validation Changed"))
 	void BP_OnValidationChanged(bool bInIsValid, const FText& ValidationMessage);
 
+	void EnsureNativeFallbackLayout();
+	void BindControls();
+	void UnbindControls();
+	bool Validate();
+	void RefreshChoiceText();
+	void ShowValidationMessage(bool bValid, const FText& Message);
+	UDBALoginFlowSubsystem* GetLoginFlow() const;
+	void InitializePreviewViewport();
+	void DestroyPreviewViewport();
+	void RefreshPreviewCharacter();
+
 protected:
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterCreate")
+	TObjectPtr<UEditableTextBox> CharacterNameInput;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterCreate")
+	TObjectPtr<UButton> ZodiacButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterCreate")
+	TObjectPtr<UButton> ElementButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterCreate")
+	TObjectPtr<UButton> FiveCampButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterCreate")
+	TObjectPtr<UButton> CreateButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterCreate")
+	TObjectPtr<UButton> BackButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterCreate")
+	TObjectPtr<UTextBlock> ZodiacText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterCreate")
+	TObjectPtr<UTextBlock> ElementText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterCreate")
+	TObjectPtr<UTextBlock> FiveCampText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterCreate")
+	TObjectPtr<UTextBlock> ValidationText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterCreate")
+	TObjectPtr<UViewport> CharacterPreviewViewport;
+
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterCreate")
 	FString CharacterName;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterCreate")
-	EDBAZodiac SelectedZodiac = EDBAZodiac::None;
+	EDBAZodiac SelectedZodiac = EDBAZodiac::Rat;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterCreate")
-	EDBAElement SelectedElement = EDBAElement::None;
+	EDBAElement SelectedElement = EDBAElement::Water;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterCreate")
 	EDBAFiveCamp SelectedFiveCamp = EDBAFiveCamp::None;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterCreate")
 	bool bIsCreateValid = false;
+
+	UPROPERTY(Transient)
+	TObjectPtr<ADBACharacterPreviewActor> PreviewActor;
 };
