@@ -168,10 +168,12 @@ private:
 	void SetFlowWidgetVisible(UUserWidget* WidgetToShow);
 
 	void TryShowSplashVideo();
+	void EnsureLoginFlowStartedFromManager();
 
 	bool bMainLobbyVisible = false;
 	bool bArenaHUDVisible = false;
 	bool bFlowWidgetVisible = false;
+	bool bLoginFlowStartRequested = false;
 
 	FTimerHandle SplashVideoTimerHandle;
 };

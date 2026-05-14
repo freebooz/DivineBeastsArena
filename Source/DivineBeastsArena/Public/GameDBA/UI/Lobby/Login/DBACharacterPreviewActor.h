@@ -8,6 +8,7 @@
 #include "DBACharacterPreviewActor.generated.h"
 
 class USkeletalMeshComponent;
+class UAnimationAsset;
 
 UCLASS()
 class DIVINEBEASTSARENA_API ADBACharacterPreviewActor : public AActor
@@ -31,7 +32,7 @@ protected:
 private:
 	void ApplyPreviewAssets(EDBAZodiac Zodiac);
 	static FString GetMeshPathByZodiac(EDBAZodiac Zodiac);
-	static FString GetAnimBlueprintPathByZodiac(EDBAZodiac Zodiac);
+	static FString GetIdleAnimationPathByZodiac(EDBAZodiac Zodiac);
 	static FString GetMaterialPathByZodiac(EDBAZodiac Zodiac);
 
 private:

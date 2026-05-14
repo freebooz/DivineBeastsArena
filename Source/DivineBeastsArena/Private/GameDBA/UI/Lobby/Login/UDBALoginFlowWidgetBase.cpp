@@ -4,14 +4,17 @@
 
 #include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
+#include "Components/AudioComponent.h"
 #include "Components/EditableTextBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 
 namespace
 {
-	UTextBlock* MakeButtonLabel(UWidgetTree* WidgetTree, const FText& Label)
+	UTextBlock* MakeLoginButtonLabel(UWidgetTree* WidgetTree, const FText& Label)
 	{
 		UTextBlock* TextBlock = WidgetTree ? WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass()) : nullptr;
 		if (TextBlock)
@@ -57,10 +60,17 @@ void UDBALoginFlowWidgetBase::NativeConstruct()
 
 	EnsureNativeFallbackLayout();
 	BindControls();
+	InitializeAudioAssets();
+	StartBackgroundMusic();
 	ClearError();
 
 	if (UDBALoginFlowSubsystem* LoginFlow = GetLoginFlow())
 	{
+		if (LoginFlow->GetFlowState() == EDBALoginFlowState::Startup)
+		{
+			LoginFlow->StartLoginFlow();
+		}
+
 		LoginFlow->OnFlowStateChanged.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleFlowStateChanged);
 		LoginFlow->OnFlowStateChanged.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleFlowStateChanged);
 		LoginFlow->OnFlowError.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleFlowError);
@@ -78,6 +88,7 @@ void UDBALoginFlowWidgetBase::NativeDestruct()
 	}
 
 	UnbindControls();
+	StopBackgroundMusic();
 	Super::NativeDestruct();
 }
 
@@ -143,11 +154,13 @@ void UDBALoginFlowWidgetBase::ClearError()
 
 void UDBALoginFlowWidgetBase::HandleLoginClicked()
 {
+	PlayButtonClickSfx();
 	SubmitLogin();
 }
 
 void UDBALoginFlowWidgetBase::HandleGuestLoginClicked()
 {
+	PlayButtonClickSfx();
 	SubmitGuestLogin();
 }
 
@@ -197,11 +210,11 @@ void UDBALoginFlowWidgetBase::EnsureNativeFallbackLayout()
 	RootBox->AddChildToVerticalBox(PasswordInput);
 
 	LoginButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("LoginButton"));
-	LoginButton->AddChild(MakeButtonLabel(WidgetTree, NSLOCTEXT("DBALoginFlowWidget", "LoginButton", "Login")));
+	LoginButton->AddChild(MakeLoginButtonLabel(WidgetTree, NSLOCTEXT("DBALoginFlowWidget", "LoginButton", "Login")));
 	RootBox->AddChildToVerticalBox(LoginButton);
 
 	GuestLoginButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("GuestLoginButton"));
-	GuestLoginButton->AddChild(MakeButtonLabel(WidgetTree, NSLOCTEXT("DBALoginFlowWidget", "GuestButton", "Guest Login")));
+	GuestLoginButton->AddChild(MakeLoginButtonLabel(WidgetTree, NSLOCTEXT("DBALoginFlowWidget", "GuestButton", "Guest Login")));
 	RootBox->AddChildToVerticalBox(GuestLoginButton);
 
 	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] Native fallback layout created"));
@@ -245,4 +258,58 @@ void UDBALoginFlowWidgetBase::SetStatus(const FText& InStatusText)
 UDBALoginFlowSubsystem* UDBALoginFlowWidgetBase::GetLoginFlow() const
 {
 	return GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBALoginFlowSubsystem>() : nullptr;
+}
+
+void UDBALoginFlowWidgetBase::HandleBackgroundMusicFinished()
+{
+	StartBackgroundMusic();
+}
+
+void UDBALoginFlowWidgetBase::InitializeAudioAssets()
+{
+	if (!ButtonClickSound)
+	{
+		ButtonClickSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/SFX/SFX_UI_ButtonClick.SFX_UI_ButtonClick"));
+	}
+
+	if (!BackgroundMusicSound)
+	{
+		BackgroundMusicSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/BGM/BGM_Login_Loop.BGM_Login_Loop"));
+	}
+}
+
+void UDBALoginFlowWidgetBase::StartBackgroundMusic()
+{
+	if (BackgroundMusicComponent || !BackgroundMusicSound || !GetWorld())
+	{
+		return;
+	}
+
+	BackgroundMusicComponent = UGameplayStatics::SpawnSound2D(GetWorld(), BackgroundMusicSound, 0.45f, 1.0f, 0.0f, nullptr, false, false);
+	if (BackgroundMusicComponent)
+	{
+		BackgroundMusicComponent->bIsUISound = true;
+		BackgroundMusicComponent->OnAudioFinished.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleBackgroundMusicFinished);
+		BackgroundMusicComponent->OnAudioFinished.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleBackgroundMusicFinished);
+	}
+}
+
+void UDBALoginFlowWidgetBase::StopBackgroundMusic()
+{
+	if (!BackgroundMusicComponent)
+	{
+		return;
+	}
+
+	BackgroundMusicComponent->OnAudioFinished.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleBackgroundMusicFinished);
+	BackgroundMusicComponent->Stop();
+	BackgroundMusicComponent = nullptr;
+}
+
+void UDBALoginFlowWidgetBase::PlayButtonClickSfx() const
+{
+	if (ButtonClickSound && GetWorld())
+	{
+		UGameplayStatics::PlaySound2D(GetWorld(), ButtonClickSound, 0.85f);
+	}
 }

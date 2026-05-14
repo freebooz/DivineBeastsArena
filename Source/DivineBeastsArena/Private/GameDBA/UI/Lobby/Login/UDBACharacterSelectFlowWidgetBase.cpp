@@ -3,17 +3,28 @@
 #include "GameDBA/UI/Lobby/Login/UDBACharacterSelectFlowWidgetBase.h"
 
 #include "Blueprint/WidgetTree.h"
+#include "Components/AudioComponent.h"
+#include "Components/Border.h"
 #include "Components/Button.h"
+#include "Components/ContentWidget.h"
+#include "Components/PanelWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/Viewport.h"
 #include "Components/VerticalBox.h"
+#include "Components/DirectionalLightComponent.h"
+#include "Components/SkyLightComponent.h"
+#include "Engine/DirectionalLight.h"
+#include "Engine/SkyLight.h"
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPreviewActor.h"
+#include "GameFramework/PlayerController.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 
 namespace
 {
-	UTextBlock* MakeButtonLabel(UWidgetTree* WidgetTree, const FText& Label)
+	UTextBlock* MakeSelectButtonLabel(UWidgetTree* WidgetTree, const FText& Label)
 	{
 		UTextBlock* TextBlock = WidgetTree ? WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass()) : nullptr;
 		if (TextBlock)
@@ -21,6 +32,95 @@ namespace
 			TextBlock->SetText(Label);
 		}
 		return TextBlock;
+	}
+
+	UWidget* ResolvePreviewHost(UWidgetTree* WidgetTree, UWidget* CurrentHost)
+	{
+		if (!WidgetTree)
+		{
+			return nullptr;
+		}
+
+		if (CurrentHost)
+		{
+			return CurrentHost;
+		}
+
+		const TArray<FName> CandidateNames = {
+			TEXT("CharacterPreviewHost"),
+			TEXT("PreviewHost"),
+			TEXT("PreviewContainer"),
+			TEXT("CharacterPreviewContainer")
+		};
+
+		for (const FName Candidate : CandidateNames)
+		{
+			if (UWidget* FoundHost = WidgetTree->FindWidget(Candidate))
+			{
+				return FoundHost;
+			}
+		}
+
+		return WidgetTree->RootWidget;
+	}
+
+	bool TryAttachPreviewViewport(UWidget* HostWidget, UViewport* Viewport)
+	{
+		if (!HostWidget || !Viewport)
+		{
+			return false;
+		}
+
+		if (UPanelWidget* PanelHost = Cast<UPanelWidget>(HostWidget))
+		{
+			PanelHost->AddChild(Viewport);
+			return true;
+		}
+
+		if (UContentWidget* ContentHost = Cast<UContentWidget>(HostWidget))
+		{
+			ContentHost->SetContent(Viewport);
+			return true;
+		}
+
+		return false;
+	}
+
+	void ApplyHostTransparency(UWidget* HostWidget)
+	{
+		if (UBorder* Border = Cast<UBorder>(HostWidget))
+		{
+			FLinearColor Color = Border->GetBrushColor();
+			Color.A = 0.0f;
+			Border->SetBrushColor(Color);
+		}
+	}
+
+	void ApplyMenuInputMode(UUserWidget* Widget)
+	{
+		if (!Widget)
+		{
+			return;
+		}
+
+		APlayerController* PC = Widget->GetOwningPlayer();
+		if (!PC && Widget->GetWorld())
+		{
+			PC = Widget->GetWorld()->GetFirstPlayerController();
+		}
+		if (!PC)
+		{
+			return;
+		}
+
+		FInputModeGameAndUI InputMode;
+		InputMode.SetHideCursorDuringCapture(false);
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
+		PC->SetShowMouseCursor(true);
+		PC->bEnableClickEvents = true;
+		PC->bEnableMouseOverEvents = true;
+		Widget->SetFocus();
 	}
 }
 
@@ -40,6 +140,9 @@ void UDBACharacterSelectFlowWidgetBase::NativeConstruct()
 
 	EnsureNativeFallbackLayout();
 	BindControls();
+	InitializeAudioAssets();
+	StartBackgroundMusic();
+	ApplyMenuInputMode(this);
 	InitializePreviewViewport();
 
 	if (UDBALoginFlowSubsystem* LoginFlow = GetLoginFlow())
@@ -61,6 +164,7 @@ void UDBACharacterSelectFlowWidgetBase::NativeDestruct()
 	}
 
 	UnbindControls();
+	StopBackgroundMusic();
 	DestroyPreviewViewport();
 	Super::NativeDestruct();
 }
@@ -126,16 +230,19 @@ void UDBACharacterSelectFlowWidgetBase::RefreshCharacterList()
 
 void UDBACharacterSelectFlowWidgetBase::HandleConfirmClicked()
 {
+	PlayButtonClickSfx();
 	ConfirmSelectedCharacter();
 }
 
 void UDBACharacterSelectFlowWidgetBase::HandleCreateClicked()
 {
+	PlayButtonClickSfx();
 	EnterCharacterCreate();
 }
 
 void UDBACharacterSelectFlowWidgetBase::HandleRefreshClicked()
 {
+	PlayButtonClickSfx();
 	RefreshCharacterList();
 }
 
@@ -170,16 +277,19 @@ void UDBACharacterSelectFlowWidgetBase::EnsureNativeFallbackLayout()
 	RootBox->AddChildToVerticalBox(CharacterListText);
 
 	ConfirmButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("ConfirmButton"));
-	ConfirmButton->AddChild(MakeButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterSelectWidget", "ConfirmButton", "Enter Lobby")));
+	ConfirmButton->AddChild(MakeSelectButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterSelectWidget", "ConfirmButton", "Enter Lobby")));
 	RootBox->AddChildToVerticalBox(ConfirmButton);
 
 	CreateButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("CreateButton"));
-	CreateButton->AddChild(MakeButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterSelectWidget", "CreateButton", "Create Character")));
+	CreateButton->AddChild(MakeSelectButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterSelectWidget", "CreateButton", "Create Character")));
 	RootBox->AddChildToVerticalBox(CreateButton);
 
 	RefreshButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("RefreshButton"));
-	RefreshButton->AddChild(MakeButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterSelectWidget", "RefreshButton", "Refresh")));
+	RefreshButton->AddChild(MakeSelectButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterSelectWidget", "RefreshButton", "Refresh")));
 	RootBox->AddChildToVerticalBox(RefreshButton);
+
+	CharacterPreviewViewport = WidgetTree->ConstructWidget<UViewport>(UViewport::StaticClass(), TEXT("CharacterPreviewViewport"));
+	RootBox->AddChildToVerticalBox(CharacterPreviewViewport);
 
 	UE_LOG(LogDBAUI, Log, TEXT("[CharacterSelectWidget] Native fallback layout created"));
 }
@@ -257,18 +367,50 @@ UDBALoginFlowSubsystem* UDBACharacterSelectFlowWidgetBase::GetLoginFlow() const
 
 void UDBACharacterSelectFlowWidgetBase::InitializePreviewViewport()
 {
+	if (!CharacterPreviewViewport)
+	{
+		CharacterPreviewHost = ResolvePreviewHost(WidgetTree, CharacterPreviewHost);
+		ApplyHostTransparency(CharacterPreviewHost);
+		if (CharacterPreviewHost && WidgetTree)
+		{
+			CharacterPreviewViewport = WidgetTree->ConstructWidget<UViewport>(UViewport::StaticClass(), TEXT("CharacterPreviewViewport_Auto"));
+			if (CharacterPreviewViewport && TryAttachPreviewViewport(CharacterPreviewHost, CharacterPreviewViewport))
+			{
+				UE_LOG(LogDBAUI, Warning, TEXT("[CharacterSelectWidget] Auto-created CharacterPreviewViewport under host '%s'."), *CharacterPreviewHost->GetName());
+			}
+		}
+	}
+
 	if (!CharacterPreviewViewport || PreviewActor)
 	{
 		return;
 	}
 
-	CharacterPreviewViewport->SetViewLocation(FVector(120.0f, 0.0f, 80.0f));
-	CharacterPreviewViewport->SetViewRotation(FRotator(0.0f, 180.0f, 0.0f));
+	CharacterPreviewViewport->SetViewLocation(FVector(260.0f, 0.0f, 100.0f));
+	CharacterPreviewViewport->SetViewRotation(FRotator(-8.0f, 180.0f, 0.0f));
+	CharacterPreviewViewport->SetEnableAdvancedFeatures(false);
+	CharacterPreviewViewport->SetBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
 
 	PreviewActor = Cast<ADBACharacterPreviewActor>(CharacterPreviewViewport->Spawn(ADBACharacterPreviewActor::StaticClass()));
 	if (PreviewActor)
 	{
-		PreviewActor->SetRotationSpeed(15.0f);
+		PreviewActor->SetActorLocation(FVector::ZeroVector);
+		PreviewActor->SetRotationSpeed(8.0f);
+	}
+
+	PreviewDirectionalLight = Cast<ADirectionalLight>(CharacterPreviewViewport->Spawn(ADirectionalLight::StaticClass()));
+	if (PreviewDirectionalLight && PreviewDirectionalLight->GetLightComponent())
+	{
+		PreviewDirectionalLight->SetActorRotation(FRotator(-45.0f, -35.0f, 0.0f));
+		PreviewDirectionalLight->GetLightComponent()->SetCastShadows(false);
+		PreviewDirectionalLight->GetLightComponent()->SetIntensity(5000.0f);
+	}
+
+	PreviewSkyLight = Cast<ASkyLight>(CharacterPreviewViewport->Spawn(ASkyLight::StaticClass()));
+	if (PreviewSkyLight && PreviewSkyLight->GetLightComponent())
+	{
+		PreviewSkyLight->GetLightComponent()->SetCastShadows(false);
+		PreviewSkyLight->GetLightComponent()->SetIntensity(0.5f);
 	}
 }
 
@@ -278,6 +420,16 @@ void UDBACharacterSelectFlowWidgetBase::DestroyPreviewViewport()
 	{
 		PreviewActor->Destroy();
 		PreviewActor = nullptr;
+	}
+	if (PreviewDirectionalLight)
+	{
+		PreviewDirectionalLight->Destroy();
+		PreviewDirectionalLight = nullptr;
+	}
+	if (PreviewSkyLight)
+	{
+		PreviewSkyLight->Destroy();
+		PreviewSkyLight = nullptr;
 	}
 }
 
@@ -297,5 +449,72 @@ void UDBACharacterSelectFlowWidgetBase::UpdateCharacterPreviewById(const FDBACha
 	if (SelectedSummary)
 	{
 		PreviewActor->SetPreviewZodiac(SelectedSummary->Zodiac);
+	}
+}
+
+void UDBACharacterSelectFlowWidgetBase::HandleBackgroundMusicFinished()
+{
+	StartBackgroundMusic();
+}
+
+void UDBACharacterSelectFlowWidgetBase::InitializeAudioAssets()
+{
+	if (!ButtonClickSound)
+	{
+		ButtonClickSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/SFX/SFX_UI_ButtonClick.SFX_UI_ButtonClick"));
+		if (!ButtonClickSound)
+		{
+			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterSelectWidget] Button click sound not found."));
+		}
+	}
+
+	if (!BackgroundMusicSound)
+	{
+		BackgroundMusicSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/BGM/BGM_CharacterSelect_Loop.BGM_CharacterSelect_Loop"));
+		if (!BackgroundMusicSound)
+		{
+			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterSelectWidget] BGM asset not found."));
+		}
+	}
+}
+
+void UDBACharacterSelectFlowWidgetBase::StartBackgroundMusic()
+{
+	if (BackgroundMusicComponent || !BackgroundMusicSound || !GetWorld())
+	{
+		return;
+	}
+
+	BackgroundMusicComponent = UGameplayStatics::SpawnSound2D(GetWorld(), BackgroundMusicSound, 0.4f, 1.0f, 0.0f, nullptr, false, false);
+	if (BackgroundMusicComponent)
+	{
+		BackgroundMusicComponent->bIsUISound = true;
+		BackgroundMusicComponent->SetVolumeMultiplier(0.75f);
+		BackgroundMusicComponent->OnAudioFinished.RemoveDynamic(this, &UDBACharacterSelectFlowWidgetBase::HandleBackgroundMusicFinished);
+		BackgroundMusicComponent->OnAudioFinished.AddDynamic(this, &UDBACharacterSelectFlowWidgetBase::HandleBackgroundMusicFinished);
+	}
+	else
+	{
+		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterSelectWidget] Failed to spawn BGM component."));
+	}
+}
+
+void UDBACharacterSelectFlowWidgetBase::StopBackgroundMusic()
+{
+	if (!BackgroundMusicComponent)
+	{
+		return;
+	}
+
+	BackgroundMusicComponent->OnAudioFinished.RemoveDynamic(this, &UDBACharacterSelectFlowWidgetBase::HandleBackgroundMusicFinished);
+	BackgroundMusicComponent->Stop();
+	BackgroundMusicComponent = nullptr;
+}
+
+void UDBACharacterSelectFlowWidgetBase::PlayButtonClickSfx() const
+{
+	if (ButtonClickSound && GetWorld())
+	{
+		UGameplayStatics::PlaySound2D(GetWorld(), ButtonClickSound, 0.85f);
 	}
 }

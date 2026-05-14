@@ -2,10 +2,11 @@
 
 #include "GameDBA/UI/Lobby/Login/DBACharacterPreviewActor.h"
 
-#include "Animation/AnimBlueprint.h"
+#include "Animation/AnimationAsset.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Materials/MaterialInterface.h"
 #include "Engine/SkeletalMesh.h"
+#include "GameDBA/Core/DBALogChannels.h"
 
 ADBACharacterPreviewActor::ADBACharacterPreviewActor()
 {
@@ -52,22 +53,42 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 		return;
 	}
 
-	const FString MeshPath = GetMeshPathByZodiac(Zodiac);
-	if (!MeshPath.IsEmpty())
+	const TArray<FString> MeshCandidates = {
+		GetMeshPathByZodiac(Zodiac),
+		TEXT("/Game/DBA/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny"),
+		TEXT("/Game/DBA/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"),
+		TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat")
+	};
+
+	USkeletalMesh* ResolvedMesh = nullptr;
+	for (const FString& MeshPath : MeshCandidates)
 	{
-		if (USkeletalMesh* Mesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath))
+		if (!MeshPath.IsEmpty())
 		{
-			PreviewMeshComponent->SetSkeletalMesh(Mesh);
+			ResolvedMesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath);
+			if (ResolvedMesh)
+			{
+				UE_LOG(LogDBAUI, Log, TEXT("[CharacterPreviewActor] Loaded mesh: %s"), *MeshPath);
+				break;
+			}
 		}
 	}
 
-	const FString AnimBlueprintPath = GetAnimBlueprintPathByZodiac(Zodiac);
-	if (!AnimBlueprintPath.IsEmpty())
+	if (!ResolvedMesh)
 	{
-		if (UAnimBlueprint* AnimBlueprint = LoadObject<UAnimBlueprint>(nullptr, *AnimBlueprintPath))
+		UE_LOG(LogDBAUI, Error, TEXT("[CharacterPreviewActor] Failed to load any preview skeletal mesh."));
+		return;
+	}
+	PreviewMeshComponent->SetSkeletalMesh(ResolvedMesh);
+
+	const FString IdleAnimationPath = GetIdleAnimationPathByZodiac(Zodiac);
+	if (!IdleAnimationPath.IsEmpty())
+	{
+		if (UAnimationAsset* IdleAnimation = LoadObject<UAnimationAsset>(nullptr, *IdleAnimationPath))
 		{
-			PreviewMeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
-			PreviewMeshComponent->SetAnimInstanceClass(AnimBlueprint->GeneratedClass);
+			PreviewMeshComponent->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+			PreviewMeshComponent->SetAnimation(IdleAnimation);
+			PreviewMeshComponent->Play(true);
 		}
 	}
 
@@ -83,12 +104,28 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 
 FString ADBACharacterPreviewActor::GetMeshPathByZodiac(EDBAZodiac Zodiac)
 {
-	return TEXT("/Game/DBA/Characters/Mannequins/Meshes/SK_Mannequin.SK_Mannequin");
+	switch (Zodiac)
+	{
+	case EDBAZodiac::Rat: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat");
+	case EDBAZodiac::Ox: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Ox.SKM_DBA_Zodiac_Ox");
+	case EDBAZodiac::Tiger: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Tiger.SKM_DBA_Zodiac_Tiger");
+	case EDBAZodiac::Rabbit: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rabbit.SKM_DBA_Zodiac_Rabbit");
+	case EDBAZodiac::Dragon: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Dragon.SKM_DBA_Zodiac_Dragon");
+	case EDBAZodiac::Snake: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Snake.SKM_DBA_Zodiac_Snake");
+	case EDBAZodiac::Horse: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Horse.SKM_DBA_Zodiac_Horse");
+	case EDBAZodiac::Goat: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Goat.SKM_DBA_Zodiac_Goat");
+	case EDBAZodiac::Monkey: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Monkey.SKM_DBA_Zodiac_Monkey");
+	case EDBAZodiac::Rooster: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rooster.SKM_DBA_Zodiac_Rooster");
+	case EDBAZodiac::Dog: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Dog.SKM_DBA_Zodiac_Dog");
+	case EDBAZodiac::Pig: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Pig.SKM_DBA_Zodiac_Pig");
+	default:
+		return TEXT("/Game/DBA/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny");
+	}
 }
 
-FString ADBACharacterPreviewActor::GetAnimBlueprintPathByZodiac(EDBAZodiac Zodiac)
+FString ADBACharacterPreviewActor::GetIdleAnimationPathByZodiac(EDBAZodiac Zodiac)
 {
-	return TEXT("/Game/DBA/Characters/Mannequins/Animations/ABP_Manny.ABP_Manny");
+	return TEXT("/Game/DBA/Characters/Mannequins/Animations/Manny/MM_Idle.MM_Idle");
 }
 
 FString ADBACharacterPreviewActor::GetMaterialPathByZodiac(EDBAZodiac Zodiac)

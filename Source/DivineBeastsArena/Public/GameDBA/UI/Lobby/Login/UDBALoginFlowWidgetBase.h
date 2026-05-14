@@ -10,6 +10,8 @@
 class UButton;
 class UEditableTextBox;
 class UTextBlock;
+class USoundBase;
+class UAudioComponent;
 
 UCLASS(Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBALoginFlowWidgetBase : public UDBAMobaUserWidgetBase
@@ -50,6 +52,9 @@ protected:
 	UFUNCTION()
 	void HandleFlowError(const FString& ErrorMessage);
 
+	UFUNCTION()
+	void HandleBackgroundMusicFinished();
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|Login", meta = (DisplayName = "On Show Error"))
 	void BP_OnShowError(const FString& ErrorMessage);
 
@@ -64,6 +69,10 @@ protected:
 	void UnbindControls();
 	void SetStatus(const FText& InStatusText);
 	UDBALoginFlowSubsystem* GetLoginFlow() const;
+	void InitializeAudioAssets();
+	void StartBackgroundMusic();
+	void StopBackgroundMusic();
+	void PlayButtonClickSfx() const;
 
 protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
@@ -86,4 +95,13 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|Login")
 	FString LastErrorMessage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Audio")
+	TObjectPtr<USoundBase> BackgroundMusicSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Audio")
+	TObjectPtr<USoundBase> ButtonClickSound;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> BackgroundMusicComponent;
 };

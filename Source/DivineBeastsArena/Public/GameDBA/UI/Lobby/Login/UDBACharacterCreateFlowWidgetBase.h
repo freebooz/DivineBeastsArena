@@ -10,9 +10,14 @@
 class UButton;
 class UEditableTextBox;
 class UTextBlock;
+class UWidget;
 class UViewport;
 class UDBALoginFlowSubsystem;
 class ADBACharacterPreviewActor;
+class ADirectionalLight;
+class ASkyLight;
+class USoundBase;
+class UAudioComponent;
 
 UCLASS(Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBACharacterCreateFlowWidgetBase : public UDBAMobaUserWidgetBase
@@ -65,6 +70,9 @@ protected:
 	UFUNCTION()
 	void HandleFlowError(const FString& ErrorMessage);
 
+	UFUNCTION()
+	void HandleBackgroundMusicFinished();
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|CharacterCreate", meta = (DisplayName = "On Validation Changed"))
 	void BP_OnValidationChanged(bool bInIsValid, const FText& ValidationMessage);
 
@@ -78,6 +86,10 @@ protected:
 	void InitializePreviewViewport();
 	void DestroyPreviewViewport();
 	void RefreshPreviewCharacter();
+	void InitializeAudioAssets();
+	void StartBackgroundMusic();
+	void StopBackgroundMusic();
+	void PlayButtonClickSfx() const;
 
 protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterCreate")
@@ -113,6 +125,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterCreate")
 	TObjectPtr<UViewport> CharacterPreviewViewport;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|CharacterCreate")
+	TObjectPtr<UWidget> CharacterPreviewHost;
+
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterCreate")
 	FString CharacterName;
 
@@ -130,4 +145,19 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<ADBACharacterPreviewActor> PreviewActor;
+
+	UPROPERTY(Transient)
+	TObjectPtr<ADirectionalLight> PreviewDirectionalLight;
+
+	UPROPERTY(Transient)
+	TObjectPtr<ASkyLight> PreviewSkyLight;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Audio")
+	TObjectPtr<USoundBase> BackgroundMusicSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Audio")
+	TObjectPtr<USoundBase> ButtonClickSound;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> BackgroundMusicComponent;
 };

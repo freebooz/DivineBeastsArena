@@ -1,4 +1,4 @@
-ï»¿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "GameDBA/UI/DBAGameUIManager.h"
 #include "GameDBA/UI/Splash/UDBASplashVideoWidget.h"
@@ -6,6 +6,7 @@
 
 #include "Blueprint/UserWidget.h"
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
+#include "GameFramework/PlayerController.h"
 #include "GameDBA/UI/Arena/UDBAArenaHUDRootWidgetBase.h"
 #include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetBase.h"
 #include "GameDBA/UI/Lobby/Login/UDBALoginFlowWidgetBase.h"
@@ -27,6 +28,29 @@ namespace
 			}
 		}
 		return nullptr;
+	}
+
+	void ApplyFrontendInputMode(UWorld* World, UUserWidget* FocusWidget)
+	{
+		if (!World || !FocusWidget)
+		{
+			return;
+		}
+
+		APlayerController* PC = World->GetFirstPlayerController();
+		if (!PC)
+		{
+			return;
+		}
+
+		FInputModeGameAndUI InputMode;
+		InputMode.SetHideCursorDuringCapture(false);
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
+		PC->SetShowMouseCursor(true);
+		PC->bEnableClickEvents = true;
+		PC->bEnableMouseOverEvents = true;
+		FocusWidget->SetFocus();
 	}
 }
 
@@ -105,7 +129,7 @@ void UDBAGameUIManager::OnSubsystemInitialize()
 		RefreshLoginFlowWidgetVisibility();
 	}
 
-	// å»¶è¿Ÿæ˜¾ç¤ºå¯åŠ¨è§†é¢‘ï¼Œç­‰å¾…ä¸–ç•ŒåŠ è½½å®Œæˆ
+	// ÑÓ³ÙÏÔÊ¾Æô¶¯ÊÓÆµ£¬µÈ´ýÊÀ½ç¼ÓÔØÍê³É
 	GetWorld()->GetTimerManager().SetTimer(SplashVideoTimerHandle, this, &UDBAGameUIManager::TryShowSplashVideo, 0.5f, true);
 }
 
@@ -114,10 +138,18 @@ void UDBAGameUIManager::TryShowSplashVideo()
 	UWorld* World = GetWorld();
 	if (!World)
 	{
+		EnsureLoginFlowStartedFromManager();
 		return;
 	}
 
-	// å…ˆå°è¯•èŽ·å– PrimaryPlayerController
+	if (!SplashVideoWidgetClass)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(SplashVideoTimerHandle);
+		EnsureLoginFlowStartedFromManager();
+		return;
+	}
+
+	// ÏÈ³¢ÊÔ»ñÈ¡ PrimaryPlayerController
 	APlayerController* PC = World->GetGameInstance() ? World->GetGameInstance()->GetPrimaryPlayerController() : nullptr;
 	if (!PC)
 	{
@@ -126,13 +158,30 @@ void UDBAGameUIManager::TryShowSplashVideo()
 
 	if (PC)
 	{
-		// PlayerController å·²å­˜åœ¨ï¼Œåœæ­¢é‡è¯•å¹¶æ˜¾ç¤ºè§†é¢‘
+		// PlayerController ÒÑ´æÔÚ£¬Í£Ö¹ÖØÊÔ²¢ÏÔÊ¾ÊÓÆµ
 		GetWorld()->GetTimerManager().ClearTimer(SplashVideoTimerHandle);
 		ShowSplashVideo();
 	}
 	else
 	{
 		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Waiting for PlayerController... World: %s"), *World->GetName());
+	}
+}
+
+void UDBAGameUIManager::EnsureLoginFlowStartedFromManager()
+{
+	if (bLoginFlowStartRequested)
+	{
+		return;
+	}
+
+	if (UDBALoginFlowSubsystem* LoginFlow = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBALoginFlowSubsystem>() : nullptr)
+	{
+		if (LoginFlow->GetFlowState() == EDBALoginFlowState::Startup)
+		{
+			LoginFlow->StartLoginFlow();
+		}
+		bLoginFlowStartRequested = true;
 	}
 }
 
@@ -378,6 +427,7 @@ void UDBAGameUIManager::SetFlowWidgetVisible(UUserWidget* WidgetToShow)
 
 	HideAllFlowWidgets();
 	WidgetToShow->AddToViewport(10);
+	ApplyFrontendInputMode(GetWorld(), WidgetToShow);
 	bFlowWidgetVisible = true;
 }
 
@@ -421,7 +471,7 @@ void UDBAGameUIManager::ShowSplashVideo()
 		SplashVideoWidget->AddToViewport(999);
 		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] SplashVideoWidget added to viewport"));
 
-		// è®¾ç½®é”®ç›˜ç„¦ç‚¹åˆ°å¯åŠ¨è§†é¢‘æŽ§ä»¶ï¼Œä»¥ä¾¿æŽ¥æ”¶ ESC æŒ‰é”®
+		// ÉèÖÃ¼üÅÌ½¹µãµ½Æô¶¯ÊÓÆµ¿Ø¼þ£¬ÒÔ±ã½ÓÊÕ ESC °´¼ü
 		SplashVideoWidget->SetFocus();
 	}
 }
