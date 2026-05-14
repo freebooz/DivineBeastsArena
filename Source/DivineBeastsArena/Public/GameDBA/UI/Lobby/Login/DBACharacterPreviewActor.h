@@ -40,5 +40,5 @@ private:
 	TObjectPtr<USkeletalMeshComponent> PreviewMeshComponent;
 
 	UPROPERTY(EditAnywhere, Category = "DBA|Preview")
-	float RotationSpeedDegreesPerSecond = 20.0f;
+	float RotationSpeedDegreesPerSecond = 0.0f;
 };

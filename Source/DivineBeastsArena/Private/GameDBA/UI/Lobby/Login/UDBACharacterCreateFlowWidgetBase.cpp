@@ -8,6 +8,9 @@
 #include "Components/Button.h"
 #include "Components/ContentWidget.h"
 #include "Components/EditableTextBox.h"
+#include "Components/Image.h"
+#include "Components/Overlay.h"
+#include "Components/OverlaySlot.h"
 #include "Components/PanelWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/Viewport.h"
@@ -16,10 +19,15 @@
 #include "Components/SkyLightComponent.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/SkyLight.h"
+#include "Engine/Texture2D.h"
+#include "EngineUtils.h"
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/UI/DBAUIFontUtils.h"
+#include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPreviewActor.h"
 #include "GameFramework/PlayerController.h"
+#include "InputCoreTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 
@@ -79,29 +87,112 @@ namespace
 			}
 		}
 
-		return WidgetTree->RootWidget;
+		return nullptr;
 	}
 
-	bool TryAttachCreatePreviewViewport(UWidget* HostWidget, UViewport* Viewport)
+	bool IsDedicatedCreatePreviewHost(const UWidget* HostWidget)
 	{
-		if (!HostWidget || !Viewport)
+		if (!HostWidget)
 		{
 			return false;
 		}
 
+		const FName HostName = HostWidget->GetFName();
+		return HostName == TEXT("CharacterPreviewHost")
+			|| HostName == TEXT("PreviewHost")
+			|| HostName == TEXT("PreviewContainer")
+			|| HostName == TEXT("CharacterPreviewContainer");
+	}
+
+	void ConfigureCreateOverlaySlot(UOverlaySlot* Slot)
+	{
+		if (!Slot)
+		{
+			return;
+		}
+
+		Slot->SetHorizontalAlignment(HAlign_Fill);
+		Slot->SetVerticalAlignment(VAlign_Fill);
+	}
+
+	void AddCreatePreviewStageImage(UWidgetTree* WidgetTree, UOverlay* Overlay, const FName WidgetName, const TCHAR* TexturePath, float Opacity)
+	{
+		if (!WidgetTree || !Overlay)
+		{
+			return;
+		}
+
+		UImage* StageImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), WidgetName);
+		if (!StageImage)
+		{
+			return;
+		}
+
+		if (UTexture2D* Texture = LoadObject<UTexture2D>(nullptr, TexturePath))
+		{
+			StageImage->SetBrushFromTexture(Texture, true);
+		}
+
+		StageImage->SetRenderOpacity(Opacity);
+		StageImage->SetVisibility(ESlateVisibility::HitTestInvisible);
+		ConfigureCreateOverlaySlot(Overlay->AddChildToOverlay(StageImage));
+	}
+
+	bool TryAttachCreatePreviewViewport(UWidgetTree* WidgetTree, UWidget* HostWidget, UViewport* Viewport)
+	{
+		if (!WidgetTree || !HostWidget || !Viewport)
+		{
+			return false;
+		}
+
+		if (Viewport->GetParent())
+		{
+			Viewport->RemoveFromParent();
+		}
+
+		UOverlay* PreviewStageOverlay = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("CharacterPreviewStageOverlay_Auto"));
+		if (!PreviewStageOverlay)
+		{
+			return false;
+		}
+		PreviewStageOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
 		if (UPanelWidget* PanelHost = Cast<UPanelWidget>(HostWidget))
 		{
-			PanelHost->AddChild(Viewport);
-			return true;
+			if (IsDedicatedCreatePreviewHost(HostWidget))
+			{
+				PanelHost->ClearChildren();
+			}
+			PanelHost->AddChild(PreviewStageOverlay);
 		}
-
-		if (UContentWidget* ContentHost = Cast<UContentWidget>(HostWidget))
+		else if (UContentWidget* ContentHost = Cast<UContentWidget>(HostWidget))
 		{
-			ContentHost->SetContent(Viewport);
-			return true;
+			ContentHost->SetContent(PreviewStageOverlay);
+		}
+		else
+		{
+			return false;
 		}
 
-		return false;
+		AddCreatePreviewStageImage(
+			WidgetTree,
+			PreviewStageOverlay,
+			TEXT("CharacterPreviewBackdrop_Auto"),
+			TEXT("/Game/DBA/UI/Lobby/Character/Textures/T_DBA_PreviewStage_Backdrop.T_DBA_PreviewStage_Backdrop"),
+			1.0f);
+
+		Viewport->SetRenderOpacity(0.88f);
+		Viewport->SetVisibility(ESlateVisibility::HitTestInvisible);
+		ConfigureCreateOverlaySlot(PreviewStageOverlay->AddChildToOverlay(Viewport));
+
+		AddCreatePreviewStageImage(
+			WidgetTree,
+			PreviewStageOverlay,
+			TEXT("CharacterPreviewForeground_Auto"),
+			TEXT("/Game/DBA/UI/Lobby/Character/Textures/T_DBA_PreviewStage_Foreground.T_DBA_PreviewStage_Foreground"),
+			1.0f);
+
+		return true;
 	}
 
 	void ApplyCreateHostTransparency(UWidget* HostWidget)
@@ -112,6 +203,70 @@ namespace
 			Color.A = 0.0f;
 			Border->SetBrushColor(Color);
 		}
+
+		if (UImage* Image = Cast<UImage>(HostWidget))
+		{
+			Image->SetColorAndOpacity(FLinearColor(1.0f, 1.0f, 1.0f, 0.0f));
+		}
+
+		if (UButton* Button = Cast<UButton>(HostWidget))
+		{
+			Button->SetColorAndOpacity(FLinearColor(1.0f, 1.0f, 1.0f, 0.0f));
+			Button->SetBackgroundColor(FLinearColor(1.0f, 1.0f, 1.0f, 0.0f));
+		}
+	}
+
+	bool IsCreateBackgroundImageName(const FString& Name)
+	{
+		const FString LowerName = Name.ToLower();
+		return LowerName.Contains(TEXT("background"))
+			|| LowerName.Contains(TEXT("backdrop"))
+			|| LowerName.StartsWith(TEXT("bg"))
+			|| LowerName.Contains(TEXT("_bg"));
+	}
+
+	void HideCreateWorldStageBackgroundImages(UWidgetTree* WidgetTree)
+	{
+		if (!WidgetTree)
+		{
+			return;
+		}
+
+		WidgetTree->ForEachWidgetAndDescendants(
+			[](UWidget* Widget)
+			{
+				UImage* Image = Cast<UImage>(Widget);
+				if (Image && IsCreateBackgroundImageName(Image->GetName()))
+				{
+					Image->SetRenderOpacity(0.0f);
+					Image->SetVisibility(ESlateVisibility::HitTestInvisible);
+				}
+			});
+	}
+
+	ADBACharacterPresentationActor* ResolveCreatePresentationActor(UWorld* World)
+	{
+		if (!World)
+		{
+			return nullptr;
+		}
+
+		for (TActorIterator<ADBACharacterPresentationActor> It(World); It; ++It)
+		{
+			if (IsValid(*It))
+			{
+				return *It;
+			}
+		}
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Name = TEXT("DBA_CharacterPresentationStage");
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		return World->SpawnActor<ADBACharacterPresentationActor>(
+			ADBACharacterPresentationActor::StaticClass(),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			SpawnParams);
 	}
 
 	void ApplyCreateMenuInputMode(UUserWidget* Widget)
@@ -159,6 +314,7 @@ void UDBACharacterCreateFlowWidgetBase::NativeConstruct()
 	EnsureNativeFallbackLayout();
 	BindControls();
 	InitializeAudioAssets();
+	DBAUIFonts::ApplyGameFontToWidgetTree(WidgetTree);
 	ApplyCreateMenuInputMode(this);
 	InitializePreviewViewport();
 	RefreshChoiceText();
@@ -181,6 +337,78 @@ void UDBACharacterCreateFlowWidgetBase::NativeDestruct()
 	UnbindControls();
 	DestroyPreviewViewport();
 	Super::NativeDestruct();
+}
+
+FReply UDBACharacterCreateFlowWidgetBase::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton && IsPointerOverPreviewHost(InMouseEvent.GetScreenSpacePosition()))
+	{
+		BeginPreviewRotationDrag(InMouseEvent.GetScreenSpacePosition());
+		return FReply::Handled().CaptureMouse(TakeWidget());
+	}
+
+	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+}
+
+FReply UDBACharacterCreateFlowWidgetBase::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	if (bIsPreviewRotationDragging && InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+	{
+		EndPreviewRotationDrag();
+		return FReply::Handled().ReleaseMouseCapture();
+	}
+
+	return Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
+}
+
+FReply UDBACharacterCreateFlowWidgetBase::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	if (bIsPreviewRotationDragging && InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
+	{
+		UpdatePreviewRotationDrag(InMouseEvent.GetScreenSpacePosition());
+		return FReply::Handled();
+	}
+
+	if (bIsPreviewRotationDragging)
+	{
+		EndPreviewRotationDrag();
+		return FReply::Handled().ReleaseMouseCapture();
+	}
+
+	return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
+}
+
+FReply UDBACharacterCreateFlowWidgetBase::NativeOnTouchStarted(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent)
+{
+	if (IsPointerOverPreviewHost(InGestureEvent.GetScreenSpacePosition()))
+	{
+		BeginPreviewRotationDrag(InGestureEvent.GetScreenSpacePosition());
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnTouchStarted(InGeometry, InGestureEvent);
+}
+
+FReply UDBACharacterCreateFlowWidgetBase::NativeOnTouchMoved(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent)
+{
+	if (bIsPreviewRotationDragging)
+	{
+		UpdatePreviewRotationDrag(InGestureEvent.GetScreenSpacePosition());
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnTouchMoved(InGeometry, InGestureEvent);
+}
+
+FReply UDBACharacterCreateFlowWidgetBase::NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent)
+{
+	if (bIsPreviewRotationDragging)
+	{
+		EndPreviewRotationDrag();
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnTouchEnded(InGeometry, InGestureEvent);
 }
 
 void UDBACharacterCreateFlowWidgetBase::SetCharacterName(const FString& Name)
@@ -296,7 +524,7 @@ void UDBACharacterCreateFlowWidgetBase::HandleFlowError(const FString& ErrorMess
 
 void UDBACharacterCreateFlowWidgetBase::EnsureNativeFallbackLayout()
 {
-	if (!WidgetTree || (CharacterNameInput && CreateButton))
+	if (!WidgetTree || WidgetTree->RootWidget || (CharacterNameInput && CreateButton))
 	{
 		return;
 	}
@@ -452,72 +680,31 @@ void UDBACharacterCreateFlowWidgetBase::InitializePreviewViewport()
 		ApplyCreateHostTransparency(CharacterPreviewHost);
 	}
 
-	if (CharacterPreviewHost && WidgetTree)
-	{
-		if (CharacterPreviewViewport && CharacterPreviewViewport->GetParent())
-		{
-			CharacterPreviewViewport->RemoveFromParent();
-		}
+	HideCreateWorldStageBackgroundImages(WidgetTree);
 
-		CharacterPreviewViewport = WidgetTree->ConstructWidget<UViewport>(UViewport::StaticClass(), TEXT("CharacterPreviewViewport_Auto"));
-		if (CharacterPreviewViewport && TryAttachCreatePreviewViewport(CharacterPreviewHost, CharacterPreviewViewport))
-		{
-			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] Auto-created CharacterPreviewViewport under host '%s'."), *CharacterPreviewHost->GetName());
-		}
-		else
-		{
-			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] Failed to attach auto preview viewport. Host: %s"), CharacterPreviewHost ? *CharacterPreviewHost->GetName() : TEXT("None"));
-		}
+	if (CharacterPreviewHost)
+	{
+		CharacterPreviewHost->SetRenderOpacity(0.0f);
+		CharacterPreviewHost->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 
-	if (!CharacterPreviewViewport || PreviewActor)
+	if (PreviewActor)
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] Preview viewport unavailable or actor already exists. Viewport: %s Actor: %s"), CharacterPreviewViewport ? TEXT("Valid") : TEXT("None"), PreviewActor ? TEXT("Valid") : TEXT("None"));
+		PreviewActor->ActivatePresentationCamera(GetOwningPlayer());
+		PreviewActor->SetPreviewZodiac(SelectedZodiac);
 		return;
 	}
 
-	CharacterPreviewViewport->SetViewLocation(FVector(260.0f, 0.0f, 100.0f));
-	CharacterPreviewViewport->SetViewRotation(FRotator(-8.0f, 180.0f, 0.0f));
-	CharacterPreviewViewport->SetEnableAdvancedFeatures(false);
-	CharacterPreviewViewport->SetBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
-
-	PreviewActor = Cast<ADBACharacterPreviewActor>(CharacterPreviewViewport->Spawn(ADBACharacterPreviewActor::StaticClass()));
+	PreviewActor = ResolveCreatePresentationActor(GetWorld());
 	if (PreviewActor)
 	{
-		PreviewActor->SetActorLocation(FVector::ZeroVector);
-		PreviewActor->SetRotationSpeed(8.0f);
+		PreviewActor->ActivatePresentationCamera(GetOwningPlayer());
 		PreviewActor->SetPreviewZodiac(SelectedZodiac);
-		UE_LOG(LogDBAUI, Log, TEXT("[CharacterCreateWidget] Preview actor spawned for zodiac %d."), static_cast<int32>(SelectedZodiac));
+		UE_LOG(LogDBAUI, Log, TEXT("[CharacterCreateWidget] Using world 3D character presentation stage for zodiac %d."), static_cast<int32>(SelectedZodiac));
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] Failed to spawn preview actor."));
-	}
-
-	PreviewDirectionalLight = Cast<ADirectionalLight>(CharacterPreviewViewport->Spawn(ADirectionalLight::StaticClass()));
-	if (PreviewDirectionalLight && PreviewDirectionalLight->GetLightComponent())
-	{
-		PreviewDirectionalLight->SetActorRotation(FRotator(-32.0f, -28.0f, 0.0f));
-		PreviewDirectionalLight->GetLightComponent()->SetCastShadows(false);
-		PreviewDirectionalLight->GetLightComponent()->SetIntensity(1650.0f);
-		PreviewDirectionalLight->GetLightComponent()->SetLightColor(FLinearColor(1.0f, 0.88f, 0.68f));
-	}
-
-	PreviewFillLight = Cast<ADirectionalLight>(CharacterPreviewViewport->Spawn(ADirectionalLight::StaticClass()));
-	if (PreviewFillLight && PreviewFillLight->GetLightComponent())
-	{
-		PreviewFillLight->SetActorRotation(FRotator(-8.0f, 145.0f, 0.0f));
-		PreviewFillLight->GetLightComponent()->SetCastShadows(false);
-		PreviewFillLight->GetLightComponent()->SetIntensity(520.0f);
-		PreviewFillLight->GetLightComponent()->SetLightColor(FLinearColor(0.62f, 0.76f, 1.0f));
-	}
-
-	PreviewSkyLight = Cast<ASkyLight>(CharacterPreviewViewport->Spawn(ASkyLight::StaticClass()));
-	if (PreviewSkyLight && PreviewSkyLight->GetLightComponent())
-	{
-		PreviewSkyLight->GetLightComponent()->SetCastShadows(false);
-		PreviewSkyLight->GetLightComponent()->SetIntensity(1.35f);
-		PreviewSkyLight->GetLightComponent()->SetLightColor(FLinearColor(0.72f, 0.80f, 1.0f));
+		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] Failed to spawn world 3D character presentation stage."));
 	}
 }
 
@@ -543,6 +730,56 @@ void UDBACharacterCreateFlowWidgetBase::DestroyPreviewViewport()
 		PreviewSkyLight->Destroy();
 		PreviewSkyLight = nullptr;
 	}
+}
+
+bool UDBACharacterCreateFlowWidgetBase::IsPointerOverPreviewHost(const FVector2D& ScreenPosition) const
+{
+	if (CharacterPreviewHost && CharacterPreviewHost->GetCachedGeometry().IsUnderLocation(ScreenPosition))
+	{
+		return true;
+	}
+
+	const FGeometry& RootGeometry = GetCachedGeometry();
+	const FVector2D LocalPosition = RootGeometry.AbsoluteToLocal(ScreenPosition);
+	const FVector2D LocalSize = RootGeometry.GetLocalSize();
+	return LocalSize.X > 1.0f
+		&& LocalSize.Y > 1.0f
+		&& LocalPosition.X >= LocalSize.X * 0.24f
+		&& LocalPosition.X <= LocalSize.X * 0.76f
+		&& LocalPosition.Y >= LocalSize.Y * 0.05f
+		&& LocalPosition.Y <= LocalSize.Y * 0.95f;
+}
+
+void UDBACharacterCreateFlowWidgetBase::BeginPreviewRotationDrag(const FVector2D& ScreenPosition)
+{
+	if (!PreviewActor)
+	{
+		return;
+	}
+
+	bIsPreviewRotationDragging = true;
+	LastPreviewDragScreenPosition = ScreenPosition;
+}
+
+void UDBACharacterCreateFlowWidgetBase::UpdatePreviewRotationDrag(const FVector2D& ScreenPosition)
+{
+	if (!bIsPreviewRotationDragging || !PreviewActor)
+	{
+		return;
+	}
+
+	const float DeltaX = ScreenPosition.X - LastPreviewDragScreenPosition.X;
+	if (FMath::Abs(DeltaX) > KINDA_SMALL_NUMBER)
+	{
+		PreviewActor->AddPreviewYaw(DeltaX * PreviewDragRotationDegreesPerPixel);
+	}
+
+	LastPreviewDragScreenPosition = ScreenPosition;
+}
+
+void UDBACharacterCreateFlowWidgetBase::EndPreviewRotationDrag()
+{
+	bIsPreviewRotationDragging = false;
 }
 
 void UDBACharacterCreateFlowWidgetBase::RefreshPreviewCharacter()

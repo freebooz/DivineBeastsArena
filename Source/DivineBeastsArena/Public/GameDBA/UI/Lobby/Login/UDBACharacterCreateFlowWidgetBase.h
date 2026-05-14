@@ -14,6 +14,7 @@ class UWidget;
 class UViewport;
 class UDBALoginFlowSubsystem;
 class ADBACharacterPreviewActor;
+class ADBACharacterPresentationActor;
 class ADirectionalLight;
 class ASkyLight;
 class USoundBase;
@@ -31,6 +32,12 @@ protected:
 	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual FReply NativeOnTouchStarted(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
+	virtual FReply NativeOnTouchMoved(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
+	virtual FReply NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterCreate")
@@ -86,6 +93,10 @@ protected:
 	void InitializePreviewViewport();
 	void DestroyPreviewViewport();
 	void RefreshPreviewCharacter();
+	bool IsPointerOverPreviewHost(const FVector2D& ScreenPosition) const;
+	void BeginPreviewRotationDrag(const FVector2D& ScreenPosition);
+	void UpdatePreviewRotationDrag(const FVector2D& ScreenPosition);
+	void EndPreviewRotationDrag();
 	void InitializeAudioAssets();
 	void StartBackgroundMusic();
 	void StopBackgroundMusic();
@@ -144,7 +155,7 @@ protected:
 	bool bIsCreateValid = false;
 
 	UPROPERTY(Transient)
-	TObjectPtr<ADBACharacterPreviewActor> PreviewActor;
+	TObjectPtr<ADBACharacterPresentationActor> PreviewActor;
 
 	UPROPERTY(Transient)
 	TObjectPtr<ADirectionalLight> PreviewDirectionalLight;
@@ -154,6 +165,15 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<ASkyLight> PreviewSkyLight;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|CharacterCreate|Preview")
+	float PreviewDragRotationDegreesPerPixel = 0.28f;
+
+	UPROPERTY(Transient)
+	bool bIsPreviewRotationDragging = false;
+
+	UPROPERTY(Transient)
+	FVector2D LastPreviewDragScreenPosition = FVector2D::ZeroVector;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Audio")
 	TObjectPtr<USoundBase> BackgroundMusicSound;

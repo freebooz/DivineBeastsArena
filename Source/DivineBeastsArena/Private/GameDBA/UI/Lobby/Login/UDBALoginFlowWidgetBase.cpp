@@ -11,6 +11,7 @@
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/UI/DBAUIFontUtils.h"
 #include "Engine/Texture2D.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
@@ -92,6 +93,7 @@ void UDBALoginFlowWidgetBase::NativeConstruct()
 	InitializeAudioAssets();
 	InitializeVisualAssets();
 	ApplyVisualStyle();
+	DBAUIFonts::ApplyGameFontToWidgetTree(WidgetTree);
 	ClearError();
 
 	if (UDBALoginFlowSubsystem* LoginFlow = GetLoginFlow())
