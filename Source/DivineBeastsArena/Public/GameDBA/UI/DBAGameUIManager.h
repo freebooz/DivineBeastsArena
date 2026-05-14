@@ -13,6 +13,8 @@
 
 class UDBAArenaHUDRootWidgetBase;
 class UDBAMainLobbyWidgetBase;
+class UAudioComponent;
+class USoundBase;
 
 /**
  * EDBAUIState
@@ -162,6 +164,11 @@ private:
 
 	void RefreshLoginFlowWidgetVisibility();
 	void HideAllFlowWidgets();
+	void EnsureLoginFlowBackgroundMusic();
+	void StopLoginFlowBackgroundMusic();
+
+	UFUNCTION()
+	void HandleLoginFlowBackgroundMusicFinished();
 
 	template<typename WidgetType>
 	WidgetType* EnsureFlowWidgetCreated(TSubclassOf<WidgetType> WidgetClass, TObjectPtr<WidgetType>& WidgetInstance);
@@ -176,4 +183,10 @@ private:
 	bool bLoginFlowStartRequested = false;
 
 	FTimerHandle SplashVideoTimerHandle;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> LoginFlowBackgroundMusicComponent;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DBA|UI|Audio")
+	TObjectPtr<USoundBase> LoginFlowBackgroundMusicSound;
 };

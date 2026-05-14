@@ -12,6 +12,9 @@
 #include "GameDBA/UI/Lobby/Login/UDBALoginFlowWidgetBase.h"
 #include "GameDBA/UI/Lobby/Login/UDBACharacterSelectFlowWidgetBase.h"
 #include "GameDBA/UI/Lobby/Login/UDBACharacterCreateFlowWidgetBase.h"
+#include "Components/AudioComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 #include "UObject/ConstructorHelpers.h"
 
 namespace
@@ -192,6 +195,7 @@ void UDBAGameUIManager::OnSubsystemDeinitialize()
 		LoginFlow->OnFlowStateChanged.RemoveDynamic(this, &UDBAGameUIManager::HandleLoginFlowStateChanged);
 	}
 
+	StopLoginFlowBackgroundMusic();
 	ClearAllUI();
 	Super::OnSubsystemDeinitialize();
 }
@@ -240,6 +244,7 @@ void UDBAGameUIManager::RegisterStateChangeCallback(const FOnUIStateChanged& Del
 
 void UDBAGameUIManager::ShowMainLobby()
 {
+	StopLoginFlowBackgroundMusic();
 	HideAllFlowWidgets();
 
 	if (!MainLobbyWidget)
@@ -296,6 +301,7 @@ void UDBAGameUIManager::HideArenaHUD()
 
 void UDBAGameUIManager::ClearAllUI()
 {
+	StopLoginFlowBackgroundMusic();
 	HideAllFlowWidgets();
 	HideMainLobby();
 	HideArenaHUD();
@@ -349,24 +355,28 @@ void UDBAGameUIManager::RefreshLoginFlowWidgetVisibility()
 	case EDBALoginFlowState::LoginScreen:
 	case EDBALoginFlowState::TryAutoLogin:
 	{
+		EnsureLoginFlowBackgroundMusic();
 		HideMainLobby();
 		SetFlowWidgetVisible(EnsureFlowWidgetCreated(LoginWidgetClass, LoginWidget));
 		break;
 	}
 	case EDBALoginFlowState::CharacterSelect:
 	{
+		EnsureLoginFlowBackgroundMusic();
 		HideMainLobby();
 		SetFlowWidgetVisible(EnsureFlowWidgetCreated(CharacterSelectWidgetClass, CharacterSelectWidget));
 		break;
 	}
 	case EDBALoginFlowState::CharacterCreate:
 	{
+		EnsureLoginFlowBackgroundMusic();
 		HideMainLobby();
 		SetFlowWidgetVisible(EnsureFlowWidgetCreated(CharacterCreateWidgetClass, CharacterCreateWidget));
 		break;
 	}
 	case EDBALoginFlowState::MainLobby:
 	{
+		StopLoginFlowBackgroundMusic();
 		HideAllFlowWidgets();
 		ShowMainLobby();
 		break;
@@ -482,4 +492,56 @@ void UDBAGameUIManager::HideSplashVideo()
 	{
 		SplashVideoWidget->RemoveFromParent();
 	}
+}
+
+void UDBAGameUIManager::EnsureLoginFlowBackgroundMusic()
+{
+	if (LoginFlowBackgroundMusicComponent)
+	{
+		return;
+	}
+
+	if (!LoginFlowBackgroundMusicSound)
+	{
+		LoginFlowBackgroundMusicSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/BGM/BGM_LoginFlow_Loop.BGM_LoginFlow_Loop"));
+		if (!LoginFlowBackgroundMusicSound)
+		{
+			LoginFlowBackgroundMusicSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/BGM/BGM_Login_Loop.BGM_Login_Loop"));
+		}
+	}
+
+	if (!LoginFlowBackgroundMusicSound || !GetWorld())
+	{
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Login flow BGM unavailable."));
+		return;
+	}
+
+	LoginFlowBackgroundMusicComponent = UGameplayStatics::SpawnSound2D(GetWorld(), LoginFlowBackgroundMusicSound, 0.72f, 1.0f, 0.0f, nullptr, false, false);
+	if (!LoginFlowBackgroundMusicComponent)
+	{
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Failed to start login flow BGM."));
+		return;
+	}
+
+	LoginFlowBackgroundMusicComponent->bIsUISound = true;
+	LoginFlowBackgroundMusicComponent->OnAudioFinished.RemoveDynamic(this, &UDBAGameUIManager::HandleLoginFlowBackgroundMusicFinished);
+	LoginFlowBackgroundMusicComponent->OnAudioFinished.AddDynamic(this, &UDBAGameUIManager::HandleLoginFlowBackgroundMusicFinished);
+}
+
+void UDBAGameUIManager::StopLoginFlowBackgroundMusic()
+{
+	if (!LoginFlowBackgroundMusicComponent)
+	{
+		return;
+	}
+
+	LoginFlowBackgroundMusicComponent->OnAudioFinished.RemoveDynamic(this, &UDBAGameUIManager::HandleLoginFlowBackgroundMusicFinished);
+	LoginFlowBackgroundMusicComponent->Stop();
+	LoginFlowBackgroundMusicComponent = nullptr;
+}
+
+void UDBAGameUIManager::HandleLoginFlowBackgroundMusicFinished()
+{
+	LoginFlowBackgroundMusicComponent = nullptr;
+	EnsureLoginFlowBackgroundMusic();
 }

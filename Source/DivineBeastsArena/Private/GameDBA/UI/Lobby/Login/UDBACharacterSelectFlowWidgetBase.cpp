@@ -34,7 +34,7 @@ namespace
 		return TextBlock;
 	}
 
-	UWidget* ResolvePreviewHost(UWidgetTree* WidgetTree, UWidget* CurrentHost)
+	UWidget* ResolveSelectPreviewHost(UWidgetTree* WidgetTree, UWidget* CurrentHost)
 	{
 		if (!WidgetTree)
 		{
@@ -64,7 +64,7 @@ namespace
 		return WidgetTree->RootWidget;
 	}
 
-	bool TryAttachPreviewViewport(UWidget* HostWidget, UViewport* Viewport)
+	bool TryAttachSelectPreviewViewport(UWidget* HostWidget, UViewport* Viewport)
 	{
 		if (!HostWidget || !Viewport)
 		{
@@ -86,7 +86,7 @@ namespace
 		return false;
 	}
 
-	void ApplyHostTransparency(UWidget* HostWidget)
+	void ApplySelectHostTransparency(UWidget* HostWidget)
 	{
 		if (UBorder* Border = Cast<UBorder>(HostWidget))
 		{
@@ -96,7 +96,7 @@ namespace
 		}
 	}
 
-	void ApplyMenuInputMode(UUserWidget* Widget)
+	void ApplySelectMenuInputMode(UUserWidget* Widget)
 	{
 		if (!Widget)
 		{
@@ -141,8 +141,7 @@ void UDBACharacterSelectFlowWidgetBase::NativeConstruct()
 	EnsureNativeFallbackLayout();
 	BindControls();
 	InitializeAudioAssets();
-	StartBackgroundMusic();
-	ApplyMenuInputMode(this);
+	ApplySelectMenuInputMode(this);
 	InitializePreviewViewport();
 
 	if (UDBALoginFlowSubsystem* LoginFlow = GetLoginFlow())
@@ -164,7 +163,6 @@ void UDBACharacterSelectFlowWidgetBase::NativeDestruct()
 	}
 
 	UnbindControls();
-	StopBackgroundMusic();
 	DestroyPreviewViewport();
 	Super::NativeDestruct();
 }
@@ -369,12 +367,12 @@ void UDBACharacterSelectFlowWidgetBase::InitializePreviewViewport()
 {
 	if (!CharacterPreviewViewport)
 	{
-		CharacterPreviewHost = ResolvePreviewHost(WidgetTree, CharacterPreviewHost);
-		ApplyHostTransparency(CharacterPreviewHost);
+		CharacterPreviewHost = ResolveSelectPreviewHost(WidgetTree, CharacterPreviewHost);
+		ApplySelectHostTransparency(CharacterPreviewHost);
 		if (CharacterPreviewHost && WidgetTree)
 		{
 			CharacterPreviewViewport = WidgetTree->ConstructWidget<UViewport>(UViewport::StaticClass(), TEXT("CharacterPreviewViewport_Auto"));
-			if (CharacterPreviewViewport && TryAttachPreviewViewport(CharacterPreviewHost, CharacterPreviewViewport))
+			if (CharacterPreviewViewport && TryAttachSelectPreviewViewport(CharacterPreviewHost, CharacterPreviewViewport))
 			{
 				UE_LOG(LogDBAUI, Warning, TEXT("[CharacterSelectWidget] Auto-created CharacterPreviewViewport under host '%s'."), *CharacterPreviewHost->GetName());
 			}
@@ -401,16 +399,27 @@ void UDBACharacterSelectFlowWidgetBase::InitializePreviewViewport()
 	PreviewDirectionalLight = Cast<ADirectionalLight>(CharacterPreviewViewport->Spawn(ADirectionalLight::StaticClass()));
 	if (PreviewDirectionalLight && PreviewDirectionalLight->GetLightComponent())
 	{
-		PreviewDirectionalLight->SetActorRotation(FRotator(-45.0f, -35.0f, 0.0f));
+		PreviewDirectionalLight->SetActorRotation(FRotator(-32.0f, -28.0f, 0.0f));
 		PreviewDirectionalLight->GetLightComponent()->SetCastShadows(false);
-		PreviewDirectionalLight->GetLightComponent()->SetIntensity(5000.0f);
+		PreviewDirectionalLight->GetLightComponent()->SetIntensity(1650.0f);
+		PreviewDirectionalLight->GetLightComponent()->SetLightColor(FLinearColor(1.0f, 0.88f, 0.68f));
+	}
+
+	PreviewFillLight = Cast<ADirectionalLight>(CharacterPreviewViewport->Spawn(ADirectionalLight::StaticClass()));
+	if (PreviewFillLight && PreviewFillLight->GetLightComponent())
+	{
+		PreviewFillLight->SetActorRotation(FRotator(-8.0f, 145.0f, 0.0f));
+		PreviewFillLight->GetLightComponent()->SetCastShadows(false);
+		PreviewFillLight->GetLightComponent()->SetIntensity(520.0f);
+		PreviewFillLight->GetLightComponent()->SetLightColor(FLinearColor(0.62f, 0.76f, 1.0f));
 	}
 
 	PreviewSkyLight = Cast<ASkyLight>(CharacterPreviewViewport->Spawn(ASkyLight::StaticClass()));
 	if (PreviewSkyLight && PreviewSkyLight->GetLightComponent())
 	{
 		PreviewSkyLight->GetLightComponent()->SetCastShadows(false);
-		PreviewSkyLight->GetLightComponent()->SetIntensity(0.5f);
+		PreviewSkyLight->GetLightComponent()->SetIntensity(1.35f);
+		PreviewSkyLight->GetLightComponent()->SetLightColor(FLinearColor(0.72f, 0.80f, 1.0f));
 	}
 }
 
@@ -425,6 +434,11 @@ void UDBACharacterSelectFlowWidgetBase::DestroyPreviewViewport()
 	{
 		PreviewDirectionalLight->Destroy();
 		PreviewDirectionalLight = nullptr;
+	}
+	if (PreviewFillLight)
+	{
+		PreviewFillLight->Destroy();
+		PreviewFillLight = nullptr;
 	}
 	if (PreviewSkyLight)
 	{

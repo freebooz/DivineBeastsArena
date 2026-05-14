@@ -10,6 +10,8 @@
 class UButton;
 class UEditableTextBox;
 class UTextBlock;
+class UTexture2D;
+class UWidget;
 class USoundBase;
 class UAudioComponent;
 
@@ -73,8 +75,14 @@ protected:
 	void StartBackgroundMusic();
 	void StopBackgroundMusic();
 	void PlayButtonClickSfx() const;
+	void InitializeVisualAssets();
+	void ApplyVisualStyle();
+	void ApplyButtonTextureStyle(UButton* Button) const;
 
 protected:
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UWidget> LoginPanel;
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
 	TObjectPtr<UEditableTextBox> EmailInput;
 
@@ -104,4 +112,10 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAudioComponent> BackgroundMusicComponent;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Visual")
+	TObjectPtr<UTexture2D> LoginPanelTexture;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Visual")
+	TObjectPtr<UTexture2D> LoginButtonTexture;
 };

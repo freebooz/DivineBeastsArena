@@ -52,7 +52,7 @@ namespace
 		return Values.IsValidIndex(CurrentIndex + 1) ? Values[CurrentIndex + 1] : Values[0];
 	}
 
-	UWidget* ResolvePreviewHost(UWidgetTree* WidgetTree, UWidget* CurrentHost)
+	UWidget* ResolveCreatePreviewHost(UWidgetTree* WidgetTree, UWidget* CurrentHost)
 	{
 		if (!WidgetTree)
 		{
@@ -82,7 +82,7 @@ namespace
 		return WidgetTree->RootWidget;
 	}
 
-	bool TryAttachPreviewViewport(UWidget* HostWidget, UViewport* Viewport)
+	bool TryAttachCreatePreviewViewport(UWidget* HostWidget, UViewport* Viewport)
 	{
 		if (!HostWidget || !Viewport)
 		{
@@ -104,7 +104,7 @@ namespace
 		return false;
 	}
 
-	void ApplyHostTransparency(UWidget* HostWidget)
+	void ApplyCreateHostTransparency(UWidget* HostWidget)
 	{
 		if (UBorder* Border = Cast<UBorder>(HostWidget))
 		{
@@ -114,7 +114,7 @@ namespace
 		}
 	}
 
-	void ApplyMenuInputMode(UUserWidget* Widget)
+	void ApplyCreateMenuInputMode(UUserWidget* Widget)
 	{
 		if (!Widget)
 		{
@@ -159,8 +159,7 @@ void UDBACharacterCreateFlowWidgetBase::NativeConstruct()
 	EnsureNativeFallbackLayout();
 	BindControls();
 	InitializeAudioAssets();
-	StartBackgroundMusic();
-	ApplyMenuInputMode(this);
+	ApplyCreateMenuInputMode(this);
 	InitializePreviewViewport();
 	RefreshChoiceText();
 	Validate();
@@ -180,7 +179,6 @@ void UDBACharacterCreateFlowWidgetBase::NativeDestruct()
 	}
 
 	UnbindControls();
-	StopBackgroundMusic();
 	DestroyPreviewViewport();
 	Super::NativeDestruct();
 }
@@ -448,22 +446,33 @@ UDBALoginFlowSubsystem* UDBACharacterCreateFlowWidgetBase::GetLoginFlow() const
 
 void UDBACharacterCreateFlowWidgetBase::InitializePreviewViewport()
 {
-	if (!CharacterPreviewViewport)
+	if (!CharacterPreviewHost)
 	{
-		CharacterPreviewHost = ResolvePreviewHost(WidgetTree, CharacterPreviewHost);
-		ApplyHostTransparency(CharacterPreviewHost);
-		if (CharacterPreviewHost && WidgetTree)
+		CharacterPreviewHost = ResolveCreatePreviewHost(WidgetTree, CharacterPreviewHost);
+		ApplyCreateHostTransparency(CharacterPreviewHost);
+	}
+
+	if (CharacterPreviewHost && WidgetTree)
+	{
+		if (CharacterPreviewViewport && CharacterPreviewViewport->GetParent())
 		{
-			CharacterPreviewViewport = WidgetTree->ConstructWidget<UViewport>(UViewport::StaticClass(), TEXT("CharacterPreviewViewport_Auto"));
-			if (CharacterPreviewViewport && TryAttachPreviewViewport(CharacterPreviewHost, CharacterPreviewViewport))
-			{
-				UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] Auto-created CharacterPreviewViewport under host '%s'."), *CharacterPreviewHost->GetName());
-			}
+			CharacterPreviewViewport->RemoveFromParent();
+		}
+
+		CharacterPreviewViewport = WidgetTree->ConstructWidget<UViewport>(UViewport::StaticClass(), TEXT("CharacterPreviewViewport_Auto"));
+		if (CharacterPreviewViewport && TryAttachCreatePreviewViewport(CharacterPreviewHost, CharacterPreviewViewport))
+		{
+			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] Auto-created CharacterPreviewViewport under host '%s'."), *CharacterPreviewHost->GetName());
+		}
+		else
+		{
+			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] Failed to attach auto preview viewport. Host: %s"), CharacterPreviewHost ? *CharacterPreviewHost->GetName() : TEXT("None"));
 		}
 	}
 
 	if (!CharacterPreviewViewport || PreviewActor)
 	{
+		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] Preview viewport unavailable or actor already exists. Viewport: %s Actor: %s"), CharacterPreviewViewport ? TEXT("Valid") : TEXT("None"), PreviewActor ? TEXT("Valid") : TEXT("None"));
 		return;
 	}
 
@@ -478,21 +487,37 @@ void UDBACharacterCreateFlowWidgetBase::InitializePreviewViewport()
 		PreviewActor->SetActorLocation(FVector::ZeroVector);
 		PreviewActor->SetRotationSpeed(8.0f);
 		PreviewActor->SetPreviewZodiac(SelectedZodiac);
+		UE_LOG(LogDBAUI, Log, TEXT("[CharacterCreateWidget] Preview actor spawned for zodiac %d."), static_cast<int32>(SelectedZodiac));
+	}
+	else
+	{
+		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] Failed to spawn preview actor."));
 	}
 
 	PreviewDirectionalLight = Cast<ADirectionalLight>(CharacterPreviewViewport->Spawn(ADirectionalLight::StaticClass()));
 	if (PreviewDirectionalLight && PreviewDirectionalLight->GetLightComponent())
 	{
-		PreviewDirectionalLight->SetActorRotation(FRotator(-45.0f, -35.0f, 0.0f));
+		PreviewDirectionalLight->SetActorRotation(FRotator(-32.0f, -28.0f, 0.0f));
 		PreviewDirectionalLight->GetLightComponent()->SetCastShadows(false);
-		PreviewDirectionalLight->GetLightComponent()->SetIntensity(5000.0f);
+		PreviewDirectionalLight->GetLightComponent()->SetIntensity(1650.0f);
+		PreviewDirectionalLight->GetLightComponent()->SetLightColor(FLinearColor(1.0f, 0.88f, 0.68f));
+	}
+
+	PreviewFillLight = Cast<ADirectionalLight>(CharacterPreviewViewport->Spawn(ADirectionalLight::StaticClass()));
+	if (PreviewFillLight && PreviewFillLight->GetLightComponent())
+	{
+		PreviewFillLight->SetActorRotation(FRotator(-8.0f, 145.0f, 0.0f));
+		PreviewFillLight->GetLightComponent()->SetCastShadows(false);
+		PreviewFillLight->GetLightComponent()->SetIntensity(520.0f);
+		PreviewFillLight->GetLightComponent()->SetLightColor(FLinearColor(0.62f, 0.76f, 1.0f));
 	}
 
 	PreviewSkyLight = Cast<ASkyLight>(CharacterPreviewViewport->Spawn(ASkyLight::StaticClass()));
 	if (PreviewSkyLight && PreviewSkyLight->GetLightComponent())
 	{
 		PreviewSkyLight->GetLightComponent()->SetCastShadows(false);
-		PreviewSkyLight->GetLightComponent()->SetIntensity(0.5f);
+		PreviewSkyLight->GetLightComponent()->SetIntensity(1.35f);
+		PreviewSkyLight->GetLightComponent()->SetLightColor(FLinearColor(0.72f, 0.80f, 1.0f));
 	}
 }
 
@@ -507,6 +532,11 @@ void UDBACharacterCreateFlowWidgetBase::DestroyPreviewViewport()
 	{
 		PreviewDirectionalLight->Destroy();
 		PreviewDirectionalLight = nullptr;
+	}
+	if (PreviewFillLight)
+	{
+		PreviewFillLight->Destroy();
+		PreviewFillLight = nullptr;
 	}
 	if (PreviewSkyLight)
 	{

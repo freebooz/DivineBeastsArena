@@ -3,12 +3,15 @@
 #include "GameDBA/UI/Lobby/Login/UDBALoginFlowWidgetBase.h"
 
 #include "Blueprint/WidgetTree.h"
+#include "Components/Border.h"
 #include "Components/Button.h"
 #include "Components/AudioComponent.h"
 #include "Components/EditableTextBox.h"
+#include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "Engine/Texture2D.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 
@@ -22,6 +25,32 @@ namespace
 			TextBlock->SetText(Label);
 		}
 		return TextBlock;
+	}
+
+	UWidget* FindLoginPanelWidget(UWidgetTree* WidgetTree)
+	{
+		if (!WidgetTree)
+		{
+			return nullptr;
+		}
+
+		const TArray<FName> CandidateNames = {
+			TEXT("LoginPanel"),
+			TEXT("LoginFormPanel"),
+			TEXT("AuthPanel"),
+			TEXT("Panel_Login"),
+			TEXT("LoginCard")
+		};
+
+		for (const FName CandidateName : CandidateNames)
+		{
+			if (UWidget* Candidate = WidgetTree->FindWidget(CandidateName))
+			{
+				return Candidate;
+			}
+		}
+
+		return nullptr;
 	}
 
 	FText GetLoginFlowStatusText(EDBALoginFlowState State)
@@ -61,7 +90,8 @@ void UDBALoginFlowWidgetBase::NativeConstruct()
 	EnsureNativeFallbackLayout();
 	BindControls();
 	InitializeAudioAssets();
-	StartBackgroundMusic();
+	InitializeVisualAssets();
+	ApplyVisualStyle();
 	ClearError();
 
 	if (UDBALoginFlowSubsystem* LoginFlow = GetLoginFlow())
@@ -88,7 +118,6 @@ void UDBALoginFlowWidgetBase::NativeDestruct()
 	}
 
 	UnbindControls();
-	StopBackgroundMusic();
 	Super::NativeDestruct();
 }
 
@@ -186,8 +215,12 @@ void UDBALoginFlowWidgetBase::EnsureNativeFallbackLayout()
 		return;
 	}
 
+	UBorder* RootPanel = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("LoginPanel"));
+	LoginPanel = RootPanel;
+	WidgetTree->RootWidget = RootPanel;
+
 	UVerticalBox* RootBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("NativeLoginRoot"));
-	WidgetTree->RootWidget = RootBox;
+	RootPanel->SetContent(RootBox);
 
 	UTextBlock* TitleText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("NativeLoginTitle"));
 	TitleText->SetText(NSLOCTEXT("DBALoginFlowWidget", "Title", "Divine Beasts Arena"));
@@ -270,11 +303,19 @@ void UDBALoginFlowWidgetBase::InitializeAudioAssets()
 	if (!ButtonClickSound)
 	{
 		ButtonClickSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/SFX/SFX_UI_ButtonClick.SFX_UI_ButtonClick"));
+		if (!ButtonClickSound)
+		{
+			UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] Button click sound not found."));
+		}
 	}
 
 	if (!BackgroundMusicSound)
 	{
 		BackgroundMusicSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/BGM/BGM_Login_Loop.BGM_Login_Loop"));
+		if (!BackgroundMusicSound)
+		{
+			UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] BGM asset not found."));
+		}
 	}
 }
 
@@ -289,8 +330,13 @@ void UDBALoginFlowWidgetBase::StartBackgroundMusic()
 	if (BackgroundMusicComponent)
 	{
 		BackgroundMusicComponent->bIsUISound = true;
+		BackgroundMusicComponent->SetVolumeMultiplier(0.8f);
 		BackgroundMusicComponent->OnAudioFinished.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleBackgroundMusicFinished);
 		BackgroundMusicComponent->OnAudioFinished.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleBackgroundMusicFinished);
+	}
+	else
+	{
+		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] Failed to spawn BGM component."));
 	}
 }
 
@@ -312,4 +358,74 @@ void UDBALoginFlowWidgetBase::PlayButtonClickSfx() const
 	{
 		UGameplayStatics::PlaySound2D(GetWorld(), ButtonClickSound, 0.85f);
 	}
+}
+
+void UDBALoginFlowWidgetBase::InitializeVisualAssets()
+{
+	if (!LoginPanelTexture)
+	{
+		LoginPanelTexture = LoadObject<UTexture2D>(nullptr, TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginPanel_StoneGold.T_DBA_LoginPanel_StoneGold"));
+	}
+
+	if (!LoginButtonTexture)
+	{
+		LoginButtonTexture = LoadObject<UTexture2D>(nullptr, TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginButton_ParchmentGold.T_DBA_LoginButton_ParchmentGold"));
+	}
+}
+
+void UDBALoginFlowWidgetBase::ApplyVisualStyle()
+{
+	if (!LoginPanel)
+	{
+		LoginPanel = FindLoginPanelWidget(WidgetTree);
+	}
+
+	if (LoginPanelTexture && LoginPanel)
+	{
+		if (UBorder* PanelBorder = Cast<UBorder>(LoginPanel))
+		{
+			PanelBorder->SetBrushFromTexture(LoginPanelTexture);
+			PanelBorder->SetBrushColor(FLinearColor(1.0f, 1.0f, 1.0f, 0.96f));
+		}
+		else if (UImage* PanelImage = Cast<UImage>(LoginPanel))
+		{
+			PanelImage->SetBrushFromTexture(LoginPanelTexture);
+			PanelImage->SetColorAndOpacity(FLinearColor(1.0f, 1.0f, 1.0f, 0.96f));
+		}
+	}
+
+	ApplyButtonTextureStyle(LoginButton);
+	ApplyButtonTextureStyle(GuestLoginButton);
+}
+
+void UDBALoginFlowWidgetBase::ApplyButtonTextureStyle(UButton* Button) const
+{
+	if (!Button || !LoginButtonTexture)
+	{
+		return;
+	}
+
+	FSlateBrush NormalBrush;
+	NormalBrush.SetResourceObject(LoginButtonTexture);
+	NormalBrush.ImageSize = FVector2D(512.0f, 160.0f);
+	NormalBrush.DrawAs = ESlateBrushDrawType::Image;
+	NormalBrush.TintColor = FSlateColor(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f));
+
+	FSlateBrush HoveredBrush = NormalBrush;
+	HoveredBrush.TintColor = FSlateColor(FLinearColor(1.18f, 1.08f, 0.82f, 1.0f));
+
+	FSlateBrush PressedBrush = NormalBrush;
+	PressedBrush.TintColor = FSlateColor(FLinearColor(0.78f, 0.65f, 0.44f, 1.0f));
+
+	FSlateBrush DisabledBrush = NormalBrush;
+	DisabledBrush.TintColor = FSlateColor(FLinearColor(0.38f, 0.34f, 0.28f, 0.85f));
+
+	FButtonStyle Style = Button->GetStyle();
+	Style.SetNormal(NormalBrush);
+	Style.SetHovered(HoveredBrush);
+	Style.SetPressed(PressedBrush);
+	Style.SetDisabled(DisabledBrush);
+	Style.SetNormalPadding(FMargin(2.0f));
+	Style.SetPressedPadding(FMargin(3.0f, 4.0f, 1.0f, 0.0f));
+	Button->SetStyle(Style);
 }

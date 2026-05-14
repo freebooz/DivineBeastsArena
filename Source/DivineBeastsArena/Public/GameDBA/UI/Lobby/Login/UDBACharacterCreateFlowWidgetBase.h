@@ -150,6 +150,9 @@ protected:
 	TObjectPtr<ADirectionalLight> PreviewDirectionalLight;
 
 	UPROPERTY(Transient)
+	TObjectPtr<ADirectionalLight> PreviewFillLight;
+
+	UPROPERTY(Transient)
 	TObjectPtr<ASkyLight> PreviewSkyLight;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Audio")

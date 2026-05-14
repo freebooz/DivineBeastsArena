@@ -19,6 +19,7 @@ ADBACharacterPreviewActor::ADBACharacterPreviewActor()
 	PreviewMeshComponent->SetVisibility(true);
 	PreviewMeshComponent->SetComponentTickEnabled(true);
 	PreviewMeshComponent->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	ApplyPreviewAssets(EDBAZodiac::Rat);
 }
 
 void ADBACharacterPreviewActor::BeginPlay()
