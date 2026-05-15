@@ -4,6 +4,7 @@
 
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/UI/DBAGameUIManager.h"
 #include "Kismet/GameplayStatics.h"
 
 namespace
@@ -50,6 +51,14 @@ void UDBAGameInstance::OnWorldChanged(UWorld* OldWorld, UWorld* NewWorld)
 	{
 		bPendingStartLoginFlowOnFrontend = false;
 		StartLoginFlow();
+	}
+
+	if (IsFrontendWorld(NewWorld))
+	{
+		if (UDBAGameUIManager* UIManager = GetSubsystem<UDBAGameUIManager>())
+		{
+			UIManager->RequestShowLoginFlowWidget();
+		}
 	}
 }
 

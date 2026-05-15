@@ -100,6 +100,7 @@ protected:
 	void BuildReferenceNativeLayout();
 	void ApplyVisualStyle();
 	void ApplyButtonTextureStyle(UButton* Button) const;
+	void ApplyGuestButtonStyle(UButton* Button) const;
 
 protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")

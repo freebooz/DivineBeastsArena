@@ -94,6 +94,24 @@ namespace
 		}
 	}
 
+	UWidget* FindWidgetByNames(UWidgetTree* WidgetTree, const TArray<FName>& Names)
+	{
+		if (!WidgetTree)
+		{
+			return nullptr;
+		}
+
+		for (const FName& Name : Names)
+		{
+			if (UWidget* Widget = WidgetTree->FindWidget(Name))
+			{
+				return Widget;
+			}
+		}
+
+		return nullptr;
+	}
+
 	void AddVerticalChild(UVerticalBox* Box, UWidget* Child, const FMargin& Padding, EHorizontalAlignment HorizontalAlignment = HAlign_Fill)
 	{
 		if (!Box || !Child)
@@ -141,28 +159,6 @@ namespace
 		{
 			return;
 		}
-
-		FEditableTextBoxStyle Style = TextBox->GetWidgetStyle();
-
-		FSlateBrush NormalBrush;
-		NormalBrush.DrawAs = ESlateBrushDrawType::RoundedBox;
-		NormalBrush.TintColor = FSlateColor(FLinearColor(0.90f, 0.96f, 0.92f, 0.96f));
-		Style.SetBackgroundImageNormal(NormalBrush);
-
-		FSlateBrush HoveredBrush = NormalBrush;
-		HoveredBrush.TintColor = FSlateColor(FLinearColor(0.95f, 0.99f, 0.96f, 1.0f));
-		Style.SetBackgroundImageHovered(HoveredBrush);
-
-		FSlateBrush FocusedBrush = NormalBrush;
-		FocusedBrush.TintColor = FSlateColor(FLinearColor(1.0f, 1.0f, 0.92f, 1.0f));
-		Style.SetBackgroundImageFocused(FocusedBrush);
-
-		FSlateBrush ReadOnlyBrush = NormalBrush;
-		ReadOnlyBrush.TintColor = FSlateColor(FLinearColor(0.66f, 0.70f, 0.68f, 0.92f));
-		Style.SetBackgroundImageReadOnly(ReadOnlyBrush);
-
-		Style.ForegroundColor = FSlateColor(FLinearColor(0.09f, 0.12f, 0.10f, 1.0f));
-		TextBox->SetWidgetStyle(Style);
 		TextBox->SetMinDesiredWidth(500.0f);
 		TextBox->SetVisibility(ESlateVisibility::Visible);
 	}
@@ -221,13 +217,13 @@ UDBALoginFlowWidgetBase::UDBALoginFlowWidgetBase(const FObjectInitializer& Objec
 FDBALoginVisualLayoutSpec UDBALoginFlowWidgetBase::GetReferenceVisualLayoutSpec()
 {
 	FDBALoginVisualLayoutSpec Spec;
-	Spec.PanelAnchorX = 0.66f;
-	Spec.TitleText = NSLOCTEXT("DBALoginFlowWidget", "ReferenceTitle", "神兽竞技场");
-	Spec.PrimaryButtonText = NSLOCTEXT("DBALoginFlowWidget", "ReferencePrimaryButton", "进入游戏");
+	Spec.PanelAnchorX = 0.50f;
+	Spec.TitleText = FText::FromString(TEXT("\u795E\u517D\u7ADE\u6280\u573A"));
+	Spec.PrimaryButtonText = FText::FromString(TEXT("\u767B\u5F55"));
 	Spec.LeftToolLabels = {
-		NSLOCTEXT("DBALoginFlowWidget", "ReferenceAnnouncements", "公告"),
-		NSLOCTEXT("DBALoginFlowWidget", "ReferenceRepair", "修复"),
-		NSLOCTEXT("DBALoginFlowWidget", "ReferenceSupport", "客服")
+		FText::FromString(TEXT("\u516C\u544A")),
+		FText::FromString(TEXT("\u5BA2\u670D")),
+		FText::FromString(TEXT("\u4FEE\u590D"))
 	};
 	return Spec;
 }
@@ -246,6 +242,36 @@ void UDBALoginFlowWidgetBase::NativeConstruct()
 	if (bHasBlueprintLayout)
 	{
 		LoginPanel = FindLoginPanelWidget(WidgetTree);
+		EmailInput = Cast<UEditableTextBox>(FindWidgetByNames(WidgetTree, { TEXT("EmailInput") }));
+		PasswordInput = Cast<UEditableTextBox>(FindWidgetByNames(WidgetTree, { TEXT("PasswordInput") }));
+		LoginButton = Cast<UButton>(FindWidgetByNames(WidgetTree, { TEXT("LoginButton") }));
+		GuestLoginButton = Cast<UButton>(FindWidgetByNames(WidgetTree, { TEXT("GuestLoginButton") }));
+		ErrorText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("ErrorText") }));
+		StatusText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("StatusText") }));
+		TitleText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("TitleText") }));
+
+		if (!EmailInput)
+		{
+			if (UCanvasPanel* EmailHost = Cast<UCanvasPanel>(FindWidgetByNames(WidgetTree, { TEXT("EmailInputHost") })))
+			{
+				EmailInput = WidgetTree->ConstructWidget<UEditableTextBox>(UEditableTextBox::StaticClass(), TEXT("EmailInput"));
+				EmailInput->SetHintText(FText::FromString(TEXT("\u8BF7\u8F93\u5165\u8D26\u53F7")));
+				ApplyEditableBoxStyle(EmailInput);
+				AddCanvasChildAnchored(EmailHost, EmailInput, FAnchors(0.0f, 0.0f, 1.0f, 1.0f), FMargin(0.0f, 0.0f, 0.0f, 0.0f));
+			}
+		}
+
+		if (!PasswordInput)
+		{
+			if (UCanvasPanel* PasswordHost = Cast<UCanvasPanel>(FindWidgetByNames(WidgetTree, { TEXT("PasswordInputHost") })))
+			{
+				PasswordInput = WidgetTree->ConstructWidget<UEditableTextBox>(UEditableTextBox::StaticClass(), TEXT("PasswordInput"));
+				PasswordInput->SetHintText(FText::FromString(TEXT("\u8BF7\u8F93\u5165\u5BC6\u7801")));
+				PasswordInput->SetIsPassword(true);
+				ApplyEditableBoxStyle(PasswordInput);
+				AddCanvasChildAnchored(PasswordHost, PasswordInput, FAnchors(0.0f, 0.0f, 1.0f, 1.0f), FMargin(0.0f, 0.0f, 0.0f, 0.0f));
+			}
+		}
 	}
 	else if (bUseReferenceNativeLayout)
 	{
@@ -731,7 +757,9 @@ void UDBALoginFlowWidgetBase::ApplyVisualStyle()
 	}
 
 	ApplyButtonTextureStyle(LoginButton);
-	ApplyButtonTextureStyle(GuestLoginButton);
+	ApplyGuestButtonStyle(GuestLoginButton);
+	ApplyEditableBoxStyle(EmailInput);
+	ApplyEditableBoxStyle(PasswordInput);
 }
 
 void UDBALoginFlowWidgetBase::ApplyButtonTextureStyle(UButton* Button) const
@@ -755,6 +783,36 @@ void UDBALoginFlowWidgetBase::ApplyButtonTextureStyle(UButton* Button) const
 
 	FSlateBrush DisabledBrush = NormalBrush;
 	DisabledBrush.TintColor = FSlateColor(FLinearColor(0.38f, 0.34f, 0.28f, 0.85f));
+
+	FButtonStyle Style = Button->GetStyle();
+	Style.SetNormal(NormalBrush);
+	Style.SetHovered(HoveredBrush);
+	Style.SetPressed(PressedBrush);
+	Style.SetDisabled(DisabledBrush);
+	Style.SetNormalPadding(FMargin(2.0f));
+	Style.SetPressedPadding(FMargin(3.0f, 4.0f, 1.0f, 0.0f));
+	Button->SetStyle(Style);
+}
+
+void UDBALoginFlowWidgetBase::ApplyGuestButtonStyle(UButton* Button) const
+{
+	if (!Button)
+	{
+		return;
+	}
+
+	FSlateBrush NormalBrush;
+	NormalBrush.DrawAs = ESlateBrushDrawType::RoundedBox;
+	NormalBrush.TintColor = FSlateColor(FLinearColor(0.05f, 0.28f, 0.62f, 0.96f));
+
+	FSlateBrush HoveredBrush = NormalBrush;
+	HoveredBrush.TintColor = FSlateColor(FLinearColor(0.08f, 0.40f, 0.84f, 1.0f));
+
+	FSlateBrush PressedBrush = NormalBrush;
+	PressedBrush.TintColor = FSlateColor(FLinearColor(0.03f, 0.18f, 0.42f, 1.0f));
+
+	FSlateBrush DisabledBrush = NormalBrush;
+	DisabledBrush.TintColor = FSlateColor(FLinearColor(0.03f, 0.10f, 0.20f, 0.72f));
 
 	FButtonStyle Style = Button->GetStyle();
 	Style.SetNormal(NormalBrush);

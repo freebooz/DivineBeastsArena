@@ -3,6 +3,7 @@
 #include "GameDBA/UI/DBAGameUIManager.h"
 #include "GameDBA/UI/Splash/UDBASplashVideoWidget.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/GameInstance/DBAGameInstance.h"
 
 #include "Blueprint/UserWidget.h"
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
@@ -177,6 +178,13 @@ void UDBAGameUIManager::EnsureLoginFlowStartedFromManager()
 {
 	if (bLoginFlowStartRequested)
 	{
+		return;
+	}
+
+	if (UDBAGameInstance* DBAInstance = GetGameInstance() ? Cast<UDBAGameInstance>(GetGameInstance()) : nullptr)
+	{
+		DBAInstance->StartLoginFlow();
+		bLoginFlowStartRequested = true;
 		return;
 	}
 
@@ -427,7 +435,18 @@ WidgetType* UDBAGameUIManager::EnsureFlowWidgetCreated(TSubclassOf<WidgetType> W
 {
 	if (WidgetInstance)
 	{
-		return WidgetInstance;
+		const UWorld* CurrentWorld = GetWorld();
+		const UWorld* WidgetWorld = WidgetInstance->GetWorld();
+		const APlayerController* OwningPC = WidgetInstance->GetOwningPlayer();
+		const UWorld* OwningPlayerWorld = OwningPC ? OwningPC->GetWorld() : nullptr;
+		const bool bWidgetWorldMatches = CurrentWorld && (WidgetWorld == CurrentWorld || OwningPlayerWorld == CurrentWorld);
+		if (bWidgetWorldMatches)
+		{
+			return WidgetInstance;
+		}
+
+		WidgetInstance->RemoveFromParent();
+		WidgetInstance = nullptr;
 	}
 	if (!WidgetClass)
 	{
