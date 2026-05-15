@@ -9,6 +9,7 @@
 #include "FileMediaSource.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/GameInstance/DBAGameInstance.h"
+#include "GameDBA/UI/DBAGameUIManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "MediaPlayer.h"
 #include "MediaSoundComponent.h"
@@ -512,15 +513,27 @@ void UDBASplashVideoWidget::TransitionToLogin()
 {
 	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] TransitionToLogin"));
 
+	UWorld* ResolvedWorld = nullptr;
 	if (APlayerController* PC = GetOwningPlayer())
 	{
-		if (UWorld* World = PC->GetWorld())
+		ResolvedWorld = PC->GetWorld();
+	}
+	if (!ResolvedWorld)
+	{
+		ResolvedWorld = GetWorld();
+	}
+
+	if (UDBAGameInstance* GI = ResolvedWorld ? Cast<UDBAGameInstance>(ResolvedWorld->GetGameInstance()) : nullptr)
+	{
+		GI->StartLoginFlow();
+		if (UDBAGameUIManager* UIManager = GI->GetSubsystem<UDBAGameUIManager>())
 		{
-			if (UDBAGameInstance* GI = Cast<UDBAGameInstance>(World->GetGameInstance()))
-			{
-				GI->StartLoginFlow();
-			}
+			UIManager->RequestShowLoginFlowWidget();
 		}
+	}
+	else
+	{
+		UE_LOG(LogDBAUI, Warning, TEXT("[UDBASplashVideoWidget] Unable to resolve DBA game instance when transitioning to login."));
 	}
 
 	if (UWorld* World = GetWorld())

@@ -4,6 +4,7 @@
 
 #include "GameCore/Account/DBAOnlineAccountService.h"
 #include "GameCore/Session/DBAFrontendSessionSubsystem.h"
+#include "Kismet/GameplayStatics.h"
 
 bool UDBALoginFlowSubsystem::ShouldEnterCharacterCreate(int32 CharacterCount)
 {
@@ -187,4 +188,18 @@ void UDBALoginFlowSubsystem::EnterMainLobby()
 	}
 
 	SetFlowState(EDBALoginFlowState::MainLobby);
+
+	if (UWorld* World = GetWorld())
+	{
+		FString CurrentLevelPath;
+		if (World->PersistentLevel)
+		{
+			CurrentLevelPath = World->PersistentLevel->GetOutermost()->GetName();
+		}
+
+		if (!CurrentLevelPath.Contains(TEXT("LobbyMap")))
+		{
+			UGameplayStatics::OpenLevel(World, FName(TEXT("/Game/Maps/Lobby/LobbyMap")));
+		}
+	}
 }

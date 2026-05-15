@@ -1,55 +1,79 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
-// 游戏实例实现 - 管理游戏生命周期和子系统
 
 #include "GameDBA/GameInstance/DBAGameInstance.h"
-#include "GameCore/Subsystems/DBAGameInstanceSubsystemBase.h"
-#include "GameCore/Session/DBALoginFlowSubsystem.h"
-#include "Kismet/GameplayStatics.h"
-#include "GameDBA/Core/DBALogChannels.h"
 
-// 构造函数 - 初始化游戏实例
+#include "GameCore/Session/DBALoginFlowSubsystem.h"
+#include "GameDBA/Core/DBALogChannels.h"
+#include "Kismet/GameplayStatics.h"
+
+namespace
+{
+	const FName FrontendMapPath(TEXT("/Game/Maps/Lobby/FrontendMap"));
+
+	bool IsFrontendWorld(const UWorld* World)
+	{
+		if (!World || !World->PersistentLevel)
+		{
+			return false;
+		}
+
+		const FString LevelPath = World->PersistentLevel->GetOutermost()->GetName();
+		return LevelPath.Contains(TEXT("FrontendMap"));
+	}
+}
+
 UDBAGameInstance::UDBAGameInstance()
 {
 }
 
-// Init - 游戏实例初始化
 void UDBAGameInstance::Init()
 {
 	Super::Init();
-
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 初始化完成"));
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Initialized."));
 }
 
-// Shutdown - 游戏实例关闭
 void UDBAGameInstance::Shutdown()
 {
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 关闭中"));
-
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Shutdown."));
 	Super::Shutdown();
 }
 
-// OnWorldChanged - 世界切换时的回调
 void UDBAGameInstance::OnWorldChanged(UWorld* OldWorld, UWorld* NewWorld)
 {
 	Super::OnWorldChanged(OldWorld, NewWorld);
 
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] World 切换: %s -> %s"),
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] World changed: %s -> %s"),
 		OldWorld ? *OldWorld->GetName() : TEXT("None"),
 		NewWorld ? *NewWorld->GetName() : TEXT("None"));
+
+	if (bPendingStartLoginFlowOnFrontend && IsFrontendWorld(NewWorld))
+	{
+		bPendingStartLoginFlowOnFrontend = false;
+		StartLoginFlow();
+	}
 }
 
 void UDBAGameInstance::StartLoginFlow()
 {
+	if (UWorld* World = GetWorld())
+	{
+		if (!IsFrontendWorld(World))
+		{
+			bPendingStartLoginFlowOnFrontend = true;
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Switching to FrontendMap before login flow."));
+			UGameplayStatics::OpenLevel(World, FrontendMapPath);
+			return;
+		}
+	}
+
 	if (bLoginFlowStarted)
 	{
 		return;
 	}
 
 	bLoginFlowStarted = true;
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Start login flow."));
 
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 开始登录流程"));
-
-	// 获取登录流程子系统并启动
 	if (UDBALoginFlowSubsystem* LoginFlow = GetSubsystem<UDBALoginFlowSubsystem>())
 	{
 		LoginFlow->StartLoginFlow();

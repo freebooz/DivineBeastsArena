@@ -35,4 +35,7 @@ private:
 	/** 是否已启动登录流程 */
 	UPROPERTY(Transient)
 	bool bLoginFlowStarted = false;
+
+	UPROPERTY(Transient)
+	bool bPendingStartLoginFlowOnFrontend = false;
 };

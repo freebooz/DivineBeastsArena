@@ -6,6 +6,7 @@
 #include "Components/AudioComponent.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Components/ContentWidget.h"
 #include "Components/EditableTextBox.h"
 #include "Components/Image.h"
@@ -219,10 +220,26 @@ namespace
 	bool IsCreateBackgroundImageName(const FString& Name)
 	{
 		const FString LowerName = Name.ToLower();
-		return LowerName.Contains(TEXT("background"))
-			|| LowerName.Contains(TEXT("backdrop"))
-			|| LowerName.StartsWith(TEXT("bg"))
-			|| LowerName.Contains(TEXT("_bg"));
+		return LowerName.Contains(TEXT("previewstage"))
+			|| LowerName.Contains(TEXT("characterpreviewbg"))
+			|| LowerName.Contains(TEXT("characterpreviewbackdrop"))
+			|| LowerName.Contains(TEXT("characterpreviewforeground"));
+	}
+
+	void ApplyWidgetSlot(UWidget* Widget, const FAnchors& Anchors, const FMargin& Offsets, const FVector2D& Alignment)
+	{
+		if (!Widget)
+		{
+			return;
+		}
+
+		if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(Widget->Slot))
+		{
+			CanvasSlot->SetAnchors(Anchors);
+			CanvasSlot->SetOffsets(Offsets);
+			CanvasSlot->SetAlignment(Alignment);
+			CanvasSlot->SetAutoSize(false);
+		}
 	}
 
 	void HideCreateWorldStageBackgroundImages(UWidgetTree* WidgetTree)
@@ -259,10 +276,9 @@ namespace
 			}
 		}
 
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Name = TEXT("DBA_CharacterPresentationStage");
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		return World->SpawnActor<ADBACharacterPresentationActor>(
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	return World->SpawnActor<ADBACharacterPresentationActor>(
 			ADBACharacterPresentationActor::StaticClass(),
 			FVector::ZeroVector,
 			FRotator::ZeroRotator,
@@ -312,6 +328,8 @@ void UDBACharacterCreateFlowWidgetBase::NativeConstruct()
 	Super::NativeConstruct();
 
 	EnsureNativeFallbackLayout();
+	ResolveBoundWidgetsFromWidgetTree();
+	ApplyBlueprintLayoutOverrides();
 	BindControls();
 	InitializeAudioAssets();
 	DBAUIFonts::ApplyGameFontToWidgetTree(WidgetTree);
@@ -572,6 +590,120 @@ void UDBACharacterCreateFlowWidgetBase::EnsureNativeFallbackLayout()
 	UE_LOG(LogDBAUI, Log, TEXT("[CharacterCreateWidget] Native fallback layout created"));
 }
 
+void UDBACharacterCreateFlowWidgetBase::ResolveBoundWidgetsFromWidgetTree()
+{
+	if (!WidgetTree)
+	{
+		return;
+	}
+
+	auto FindNamedWidget = [this](const TArray<FName>& Names) -> UWidget*
+	{
+		for (const FName& Name : Names)
+		{
+			if (UWidget* Found = WidgetTree->FindWidget(Name))
+			{
+				return Found;
+			}
+		}
+		return nullptr;
+	};
+
+	if (!CharacterNameInput)
+	{
+		CharacterNameInput = Cast<UEditableTextBox>(FindNamedWidget({ TEXT("CharacterNameInput"), TEXT("NameInput"), TEXT("RoleNameInput") }));
+	}
+	if (!ValidationText)
+	{
+		ValidationText = Cast<UTextBlock>(FindNamedWidget({ TEXT("ValidationText"), TEXT("StatusText"), TEXT("HintText") }));
+	}
+	if (!ZodiacButton)
+	{
+		ZodiacButton = Cast<UButton>(FindNamedWidget({ TEXT("ZodiacButton"), TEXT("RaceButton") }));
+	}
+	if (!ElementButton)
+	{
+		ElementButton = Cast<UButton>(FindNamedWidget({ TEXT("ElementButton"), TEXT("ElementSelectButton") }));
+	}
+	if (!FiveCampButton)
+	{
+		FiveCampButton = Cast<UButton>(FindNamedWidget({ TEXT("FiveCampButton"), TEXT("CampButton") }));
+	}
+	if (!CreateButton)
+	{
+		CreateButton = Cast<UButton>(FindNamedWidget({ TEXT("CreateButton"), TEXT("CreateCharacterButton"), TEXT("ConfirmCreateButton") }));
+	}
+	if (!BackButton)
+	{
+		BackButton = Cast<UButton>(FindNamedWidget({ TEXT("BackButton"), TEXT("BackToSelectButton") }));
+	}
+	if (!ZodiacText)
+	{
+		ZodiacText = Cast<UTextBlock>(FindNamedWidget({ TEXT("ZodiacText"), TEXT("RaceText") }));
+	}
+	if (!ElementText)
+	{
+		ElementText = Cast<UTextBlock>(FindNamedWidget({ TEXT("ElementText") }));
+	}
+	if (!FiveCampText)
+	{
+		FiveCampText = Cast<UTextBlock>(FindNamedWidget({ TEXT("FiveCampText"), TEXT("CampText") }));
+	}
+	if (!CharacterPreviewHost)
+	{
+		CharacterPreviewHost = FindNamedWidget({ TEXT("CharacterPreviewHost"), TEXT("PreviewHost"), TEXT("PreviewContainer"), TEXT("CharacterPreviewContainer") });
+	}
+	if (!CharacterPreviewViewport)
+	{
+		CharacterPreviewViewport = Cast<UViewport>(FindNamedWidget({ TEXT("CharacterPreviewViewport"), TEXT("PreviewViewport") }));
+	}
+}
+
+void UDBACharacterCreateFlowWidgetBase::ApplyBlueprintLayoutOverrides()
+{
+	ApplyWidgetSlot(
+		CharacterPreviewHost,
+		FAnchors(0.24f, 0.05f, 0.76f, 0.95f),
+		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
+		FVector2D(0.0f, 0.0f));
+
+	ApplyWidgetSlot(
+		CharacterNameInput,
+		FAnchors(0.78f, 0.23f, 0.96f, 0.29f),
+		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
+		FVector2D(0.0f, 0.0f));
+
+	ApplyWidgetSlot(
+		ZodiacButton,
+		FAnchors(0.78f, 0.33f, 0.96f, 0.39f),
+		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
+		FVector2D(0.0f, 0.0f));
+
+	ApplyWidgetSlot(
+		ElementButton,
+		FAnchors(0.78f, 0.43f, 0.96f, 0.49f),
+		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
+		FVector2D(0.0f, 0.0f));
+
+	ApplyWidgetSlot(
+		FiveCampButton,
+		FAnchors(0.78f, 0.53f, 0.96f, 0.59f),
+		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
+		FVector2D(0.0f, 0.0f));
+
+	ApplyWidgetSlot(
+		CreateButton,
+		FAnchors(0.78f, 0.70f, 0.96f, 0.76f),
+		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
+		FVector2D(0.0f, 0.0f));
+
+	ApplyWidgetSlot(
+		BackButton,
+		FAnchors(0.78f, 0.79f, 0.96f, 0.85f),
+		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
+		FVector2D(0.0f, 0.0f));
+}
+
 void UDBACharacterCreateFlowWidgetBase::BindControls()
 {
 	if (CreateButton)
@@ -632,13 +764,65 @@ bool UDBACharacterCreateFlowWidgetBase::Validate()
 		CharacterName = CharacterNameInput->GetText().ToString().TrimStartAndEnd();
 	}
 
-	bIsCreateValid = !CharacterName.IsEmpty() && SelectedZodiac != EDBAZodiac::None && SelectedElement != EDBAElement::None;
-	ShowValidationMessage(
-		bIsCreateValid,
-		bIsCreateValid
-			? NSLOCTEXT("DBACharacterCreateWidget", "Ready", "Ready.")
-			: NSLOCTEXT("DBACharacterCreateWidget", "MissingName", "Enter a character name."));
+	FText ValidationMessage;
+	const bool bNameValid = ValidateCharacterName(ValidationMessage);
+	bIsCreateValid = bNameValid && SelectedZodiac != EDBAZodiac::None && SelectedElement != EDBAElement::None;
+
+	if (!bNameValid)
+	{
+		ShowValidationMessage(false, ValidationMessage);
+		return false;
+	}
+
+	if (SelectedZodiac == EDBAZodiac::None || SelectedElement == EDBAElement::None)
+	{
+		ShowValidationMessage(false, NSLOCTEXT("DBACharacterCreateWidget", "MissingSelection", "Please select zodiac and element."));
+		return false;
+	}
+
+	ShowValidationMessage(true, NSLOCTEXT("DBACharacterCreateWidget", "Ready", "Ready."));
 	return bIsCreateValid;
+}
+
+bool UDBACharacterCreateFlowWidgetBase::ValidateCharacterName(FText& OutMessage) const
+{
+	if (CharacterName.IsEmpty())
+	{
+		OutMessage = NSLOCTEXT("DBACharacterCreateWidget", "MissingName", "Enter a character name.");
+		return false;
+	}
+
+	const int32 NameLen = CharacterName.Len();
+	if (NameLen < 2 || NameLen > 14)
+	{
+		OutMessage = NSLOCTEXT("DBACharacterCreateWidget", "NameLen", "Name length must be 2-14 characters.");
+		return false;
+	}
+
+	bool bAllDigits = true;
+	for (const TCHAR Ch : CharacterName)
+	{
+		const bool bIsAsciiWord = FChar::IsAlnum(Ch) || Ch == TEXT('_');
+		const bool bIsCJK = Ch >= 0x4E00 && Ch <= 0x9FFF;
+		if (!bIsAsciiWord && !bIsCJK)
+		{
+			OutMessage = NSLOCTEXT("DBACharacterCreateWidget", "NameChars", "Name only supports Chinese, letters, digits, underscore.");
+			return false;
+		}
+		if (!FChar::IsDigit(Ch))
+		{
+			bAllDigits = false;
+		}
+	}
+
+	if (bAllDigits)
+	{
+		OutMessage = NSLOCTEXT("DBACharacterCreateWidget", "AllDigits", "Name cannot be all digits.");
+		return false;
+	}
+
+	OutMessage = FText::GetEmpty();
+	return true;
 }
 
 void UDBACharacterCreateFlowWidgetBase::RefreshChoiceText()

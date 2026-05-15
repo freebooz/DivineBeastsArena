@@ -88,6 +88,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	void ClearAllUI();
 
+	/** 外部请求显示登录流程界面 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	void RequestShowLoginFlowWidget();
+
 protected:
 	/** 创建Lobby Widget */
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")

@@ -80,6 +80,8 @@ protected:
 	void BP_OnCharacterSelected(const FDBACharacterId& CharacterId);
 
 	void EnsureNativeFallbackLayout();
+	void ResolveBoundWidgetsFromWidgetTree();
+	void ApplyBlueprintLayoutOverrides();
 	void BindControls();
 	void UnbindControls();
 	void RefreshCharacterText();

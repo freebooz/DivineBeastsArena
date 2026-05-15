@@ -15,6 +15,24 @@ class UWidget;
 class USoundBase;
 class UAudioComponent;
 
+USTRUCT(BlueprintType)
+struct DIVINEBEASTSARENA_API FDBALoginVisualLayoutSpec
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|Login")
+	float PanelAnchorX = 0.66f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|Login")
+	FText TitleText;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|Login")
+	FText PrimaryButtonText;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|Login")
+	TArray<FText> LeftToolLabels;
+};
+
 UCLASS(Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBALoginFlowWidgetBase : public UDBAMobaUserWidgetBase
 {
@@ -22,6 +40,9 @@ class DIVINEBEASTSARENA_API UDBALoginFlowWidgetBase : public UDBAMobaUserWidgetB
 
 public:
 	UDBALoginFlowWidgetBase(const FObjectInitializer& ObjectInitializer);
+
+	UFUNCTION(BlueprintPure, Category = "DBA|Login|Visual")
+	static FDBALoginVisualLayoutSpec GetReferenceVisualLayoutSpec();
 
 protected:
 	virtual void NativeOnInitialized() override;
@@ -76,6 +97,7 @@ protected:
 	void StopBackgroundMusic();
 	void PlayButtonClickSfx() const;
 	void InitializeVisualAssets();
+	void BuildReferenceNativeLayout();
 	void ApplyVisualStyle();
 	void ApplyButtonTextureStyle(UButton* Button) const;
 
@@ -101,8 +123,14 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
 	TObjectPtr<UTextBlock> StatusText;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UTextBlock> TitleText;
+
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|Login")
 	FString LastErrorMessage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Visual")
+	bool bUseReferenceNativeLayout = true;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Audio")
 	TObjectPtr<USoundBase> BackgroundMusicSound;
@@ -118,4 +146,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Visual")
 	TObjectPtr<UTexture2D> LoginButtonTexture;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Visual")
+	TObjectPtr<UTexture2D> LoginBackgroundTexture;
 };

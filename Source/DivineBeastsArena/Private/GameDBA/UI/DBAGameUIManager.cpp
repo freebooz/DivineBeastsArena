@@ -89,6 +89,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	}
 
 	CharacterSelectWidgetClass = ResolveWidgetClassPath<UDBACharacterSelectFlowWidgetBase>({
+		TEXT("/Game/DBA/UI/Frontend/Character/WBP_DBA_CharacterSelect"),
 		TEXT("/Game/DBA/UI/Lobby/Character/WBP_DBA_CharacterSelect"),
 		TEXT("/Game/Blueprints/UI/DBA/Login/WBP_DBA_CharacterSelect")
 	});
@@ -99,6 +100,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	}
 
 	CharacterCreateWidgetClass = ResolveWidgetClassPath<UDBACharacterCreateFlowWidgetBase>({
+		TEXT("/Game/DBA/UI/Frontend/Character/WBP_DBA_CharacterCreate"),
 		TEXT("/Game/DBA/UI/Lobby/Character/WBP_DBA_CharacterCreate"),
 		TEXT("/Game/Blueprints/UI/DBA/Login/WBP_DBA_CharacterCreate")
 	});
@@ -267,6 +269,11 @@ void UDBAGameUIManager::HideMainLobby()
 	}
 }
 
+void UDBAGameUIManager::RequestShowLoginFlowWidget()
+{
+	ShowLoginFlowWidget();
+}
+
 void UDBAGameUIManager::ShowLoginFlowWidget()
 {
 	RefreshLoginFlowWidgetVisibility();
@@ -352,6 +359,14 @@ void UDBAGameUIManager::RefreshLoginFlowWidgetVisibility()
 {
 	switch (CachedLoginFlowState)
 	{
+	case EDBALoginFlowState::Startup:
+	{
+		EnsureLoginFlowStartedFromManager();
+		EnsureLoginFlowBackgroundMusic();
+		HideMainLobby();
+		SetFlowWidgetVisible(EnsureFlowWidgetCreated(LoginWidgetClass, LoginWidget));
+		break;
+	}
 	case EDBALoginFlowState::LoginScreen:
 	case EDBALoginFlowState::TryAutoLogin:
 	{

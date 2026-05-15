@@ -84,9 +84,12 @@ protected:
 	void BP_OnValidationChanged(bool bInIsValid, const FText& ValidationMessage);
 
 	void EnsureNativeFallbackLayout();
+	void ResolveBoundWidgetsFromWidgetTree();
+	void ApplyBlueprintLayoutOverrides();
 	void BindControls();
 	void UnbindControls();
 	bool Validate();
+	bool ValidateCharacterName(FText& OutMessage) const;
 	void RefreshChoiceText();
 	void ShowValidationMessage(bool bValid, const FText& Message);
 	UDBALoginFlowSubsystem* GetLoginFlow() const;

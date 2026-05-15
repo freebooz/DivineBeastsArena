@@ -52,6 +52,13 @@ void UDBAMobaUserWidgetBase::NativeConstruct()
 
 void UDBAMobaUserWidgetBase::NativeDestruct()
 {
+	for (UButton* Button : BoundButtons)
+	{
+		if (Button)
+		{
+			Button->OnClicked.RemoveDynamic(this, &UDBAMobaUserWidgetBase::HandleAnyButtonClicked);
+		}
+	}
 	BoundButtons.Reset();
 	InjectedBackgroundImage = nullptr;
 	OwnerPlayerController.Reset();
@@ -93,6 +100,7 @@ void UDBAMobaUserWidgetBase::BindButtonClickAudio()
 
 		if (!BoundButtons.Contains(Button))
 		{
+			Button->OnClicked.RemoveDynamic(this, &UDBAMobaUserWidgetBase::HandleAnyButtonClicked);
 			Button->OnClicked.AddDynamic(this, &UDBAMobaUserWidgetBase::HandleAnyButtonClicked);
 			BoundButtons.Add(Button);
 		}

@@ -6,6 +6,7 @@
 #include "Components/AudioComponent.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Components/ContentWidget.h"
 #include "Components/Image.h"
 #include "Components/Overlay.h"
@@ -201,10 +202,26 @@ namespace
 	bool IsSelectBackgroundImageName(const FString& Name)
 	{
 		const FString LowerName = Name.ToLower();
-		return LowerName.Contains(TEXT("background"))
-			|| LowerName.Contains(TEXT("backdrop"))
-			|| LowerName.StartsWith(TEXT("bg"))
-			|| LowerName.Contains(TEXT("_bg"));
+		return LowerName.Contains(TEXT("previewstage"))
+			|| LowerName.Contains(TEXT("characterpreviewbg"))
+			|| LowerName.Contains(TEXT("characterpreviewbackdrop"))
+			|| LowerName.Contains(TEXT("characterpreviewforeground"));
+	}
+
+	void ApplyWidgetSlot(UWidget* Widget, const FAnchors& Anchors, const FMargin& Offsets, const FVector2D& Alignment)
+	{
+		if (!Widget)
+		{
+			return;
+		}
+
+		if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(Widget->Slot))
+		{
+			CanvasSlot->SetAnchors(Anchors);
+			CanvasSlot->SetOffsets(Offsets);
+			CanvasSlot->SetAlignment(Alignment);
+			CanvasSlot->SetAutoSize(false);
+		}
 	}
 
 	void HideSelectWorldStageBackgroundImages(UWidgetTree* WidgetTree)
@@ -241,10 +258,9 @@ namespace
 			}
 		}
 
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Name = TEXT("DBA_CharacterPresentationStage");
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		return World->SpawnActor<ADBACharacterPresentationActor>(
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	return World->SpawnActor<ADBACharacterPresentationActor>(
 			ADBACharacterPresentationActor::StaticClass(),
 			FVector::ZeroVector,
 			FRotator::ZeroRotator,
@@ -294,6 +310,8 @@ void UDBACharacterSelectFlowWidgetBase::NativeConstruct()
 	Super::NativeConstruct();
 
 	EnsureNativeFallbackLayout();
+	ResolveBoundWidgetsFromWidgetTree();
+	ApplyBlueprintLayoutOverrides();
 	BindControls();
 	InitializeAudioAssets();
 	DBAUIFonts::ApplyGameFontToWidgetTree(WidgetTree);
@@ -518,6 +536,94 @@ void UDBACharacterSelectFlowWidgetBase::EnsureNativeFallbackLayout()
 	RootBox->AddChildToVerticalBox(CharacterPreviewViewport);
 
 	UE_LOG(LogDBAUI, Log, TEXT("[CharacterSelectWidget] Native fallback layout created"));
+}
+
+void UDBACharacterSelectFlowWidgetBase::ResolveBoundWidgetsFromWidgetTree()
+{
+	if (!WidgetTree)
+	{
+		return;
+	}
+
+	auto FindNamedWidget = [this](const TArray<FName>& Names) -> UWidget*
+	{
+		for (const FName& Name : Names)
+		{
+			if (UWidget* Found = WidgetTree->FindWidget(Name))
+			{
+				return Found;
+			}
+		}
+		return nullptr;
+	};
+
+	if (!CharacterListText)
+	{
+		CharacterListText = Cast<UTextBlock>(FindNamedWidget({ TEXT("CharacterListText"), TEXT("CharacterList"), TEXT("CharacterEntriesText") }));
+	}
+	if (!StatusText)
+	{
+		StatusText = Cast<UTextBlock>(FindNamedWidget({ TEXT("StatusText"), TEXT("HintText"), TEXT("FlowStatusText") }));
+	}
+	if (!ConfirmButton)
+	{
+		ConfirmButton = Cast<UButton>(FindNamedWidget({ TEXT("ConfirmButton"), TEXT("EnterLobbyButton"), TEXT("EnterButton") }));
+	}
+	if (!CreateButton)
+	{
+		CreateButton = Cast<UButton>(FindNamedWidget({ TEXT("CreateButton"), TEXT("CreateCharacterButton") }));
+	}
+	if (!RefreshButton)
+	{
+		RefreshButton = Cast<UButton>(FindNamedWidget({ TEXT("RefreshButton"), TEXT("ReloadButton"), TEXT("RefreshListButton") }));
+	}
+	if (!CharacterPreviewHost)
+	{
+		CharacterPreviewHost = FindNamedWidget({ TEXT("CharacterPreviewHost"), TEXT("PreviewHost"), TEXT("PreviewContainer"), TEXT("CharacterPreviewContainer") });
+	}
+	if (!CharacterPreviewViewport)
+	{
+		CharacterPreviewViewport = Cast<UViewport>(FindNamedWidget({ TEXT("CharacterPreviewViewport"), TEXT("PreviewViewport") }));
+	}
+}
+
+void UDBACharacterSelectFlowWidgetBase::ApplyBlueprintLayoutOverrides()
+{
+	ApplyWidgetSlot(
+		CharacterPreviewHost,
+		FAnchors(0.24f, 0.05f, 0.76f, 0.95f),
+		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
+		FVector2D(0.0f, 0.0f));
+
+	ApplyWidgetSlot(
+		CharacterListText,
+		FAnchors(0.03f, 0.17f, 0.21f, 0.74f),
+		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
+		FVector2D(0.0f, 0.0f));
+
+	ApplyWidgetSlot(
+		RefreshButton,
+		FAnchors(0.03f, 0.78f, 0.21f, 0.84f),
+		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
+		FVector2D(0.0f, 0.0f));
+
+	ApplyWidgetSlot(
+		ConfirmButton,
+		FAnchors(0.80f, 0.73f, 0.96f, 0.79f),
+		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
+		FVector2D(0.0f, 0.0f));
+
+	ApplyWidgetSlot(
+		CreateButton,
+		FAnchors(0.80f, 0.82f, 0.96f, 0.88f),
+		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
+		FVector2D(0.0f, 0.0f));
+
+	ApplyWidgetSlot(
+		StatusText,
+		FAnchors(0.79f, 0.90f, 0.97f, 0.96f),
+		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
+		FVector2D(0.0f, 0.0f));
 }
 
 void UDBACharacterSelectFlowWidgetBase::BindControls()

@@ -15,6 +15,7 @@ def make_task(filename: str, dest_name: str) -> unreal.AssetImportTask:
 source_root = r"D:/DivineBeastsArena/Exports/Art/UI/LoginTextures"
 
 tasks = [
+    make_task(source_root + r"/T_DBA_LoginForestSanctuary.png", "T_DBA_LoginForestSanctuary"),
     make_task(source_root + r"/T_DBA_LoginPanel_StoneGold.png", "T_DBA_LoginPanel_StoneGold"),
     make_task(source_root + r"/T_DBA_LoginButton_ParchmentGold.png", "T_DBA_LoginButton_ParchmentGold"),
 ]
