@@ -208,7 +208,7 @@ namespace
 			|| LowerName.Contains(TEXT("characterpreviewforeground"));
 	}
 
-	void ApplyWidgetSlot(UWidget* Widget, const FAnchors& Anchors, const FMargin& Offsets, const FVector2D& Alignment)
+	void ApplySelectWidgetSlot(UWidget* Widget, const FAnchors& Anchors, const FMargin& Offsets, const FVector2D& Alignment)
 	{
 		if (!Widget)
 		{
@@ -589,37 +589,37 @@ void UDBACharacterSelectFlowWidgetBase::ResolveBoundWidgetsFromWidgetTree()
 
 void UDBACharacterSelectFlowWidgetBase::ApplyBlueprintLayoutOverrides()
 {
-	ApplyWidgetSlot(
+	ApplySelectWidgetSlot(
 		CharacterPreviewHost,
 		FAnchors(0.24f, 0.05f, 0.76f, 0.95f),
 		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
 		FVector2D(0.0f, 0.0f));
 
-	ApplyWidgetSlot(
+	ApplySelectWidgetSlot(
 		CharacterListText,
 		FAnchors(0.03f, 0.17f, 0.21f, 0.74f),
 		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
 		FVector2D(0.0f, 0.0f));
 
-	ApplyWidgetSlot(
+	ApplySelectWidgetSlot(
 		RefreshButton,
 		FAnchors(0.03f, 0.78f, 0.21f, 0.84f),
 		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
 		FVector2D(0.0f, 0.0f));
 
-	ApplyWidgetSlot(
+	ApplySelectWidgetSlot(
 		ConfirmButton,
 		FAnchors(0.80f, 0.73f, 0.96f, 0.79f),
 		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
 		FVector2D(0.0f, 0.0f));
 
-	ApplyWidgetSlot(
+	ApplySelectWidgetSlot(
 		CreateButton,
 		FAnchors(0.80f, 0.82f, 0.96f, 0.88f),
 		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
 		FVector2D(0.0f, 0.0f));
 
-	ApplyWidgetSlot(
+	ApplySelectWidgetSlot(
 		StatusText,
 		FAnchors(0.79f, 0.90f, 0.97f, 0.96f),
 		FMargin(0.0f, 0.0f, 0.0f, 0.0f),

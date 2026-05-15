@@ -80,8 +80,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	}
 
 	LoginWidgetClass = ResolveWidgetClassPath<UDBALoginFlowWidgetBase>({
-		TEXT("/Game/DBA/UI/Lobby/Login/WBP_DBA_Login"),
-		TEXT("/Game/Blueprints/UI/DBA/Login/WBP_DBA_Login")
+		TEXT("/Game/DBA/UI/Frontend/Login/WBP_DBA_Login")
 	});
 	if (!LoginWidgetClass)
 	{

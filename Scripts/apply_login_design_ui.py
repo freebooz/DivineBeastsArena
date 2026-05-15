@@ -1,7 +1,7 @@
 import unreal
 
 
-ASSET_DIR = "/Game/DBA/UI/Lobby/Login"
+ASSET_DIR = "/Game/DBA/UI/Frontend/Login"
 ASSET_NAME = "WBP_DBA_Login"
 ASSET_PATH = f"{ASSET_DIR}/{ASSET_NAME}"
 PARENT_CLASS_NAME = "DBALoginFlowWidgetBase"

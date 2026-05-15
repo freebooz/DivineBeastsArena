@@ -1,7 +1,7 @@
 import unreal
 
 
-LOGIN_ASSET = "/Game/DBA/UI/Lobby/Login/WBP_DBA_Login"
+LOGIN_ASSET = "/Game/DBA/UI/Frontend/Login/WBP_DBA_Login"
 
 
 def log(msg: str):
