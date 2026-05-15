@@ -6,6 +6,8 @@
 #include "Components/EditableTextBox.h"
 #include "Components/TextBlock.h"
 #include "Fonts/CompositeFont.h"
+#include "Misc/PackageName.h"
+#include "UObject/SoftObjectPath.h"
 
 namespace
 {
@@ -20,7 +22,14 @@ namespace
 			return CachedFontFace;
 		}
 
-		CachedFontFace = LoadObject<UObject>(nullptr, DBAUIFontFacePath);
+		const FSoftObjectPath FontPath(DBAUIFontFacePath);
+		const FString PackageName = FontPath.GetLongPackageName();
+		if (PackageName.IsEmpty() || !FPackageName::DoesPackageExist(PackageName))
+		{
+			return nullptr;
+		}
+
+		CachedFontFace = FontPath.TryLoad();
 		if (CachedFontFace && !CachedFontFace->IsRooted())
 		{
 			// FFontData stores a UObject pointer inside a Slate-owned composite font.

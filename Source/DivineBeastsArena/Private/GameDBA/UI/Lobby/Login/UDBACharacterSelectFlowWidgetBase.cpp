@@ -288,6 +288,8 @@ namespace
 		InputMode.SetHideCursorDuringCapture(false);
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		PC->SetInputMode(InputMode);
+		PC->CurrentMouseCursor = EMouseCursor::Default;
+		PC->DefaultMouseCursor = EMouseCursor::Default;
 		PC->SetShowMouseCursor(true);
 		PC->bEnableClickEvents = true;
 		PC->bEnableMouseOverEvents = true;

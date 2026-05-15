@@ -131,7 +131,7 @@ protected:
 	FString LastErrorMessage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Visual")
-	bool bUseReferenceNativeLayout = true;
+	bool bUseReferenceNativeLayout = false;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Audio")
 	TObjectPtr<USoundBase> BackgroundMusicSound;

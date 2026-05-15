@@ -12,6 +12,7 @@
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
+#include "Components/PanelWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
@@ -19,13 +20,33 @@
 #include "GameDBA/UI/DBAUIFontUtils.h"
 #include "Engine/Texture2D.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/PackageName.h"
 #include "Sound/SoundBase.h"
+#include "UObject/SoftObjectPath.h"
 
 namespace
 {
 	const FLinearColor GoldText(0.95f, 0.77f, 0.36f, 1.0f);
 	const FLinearColor DeepJade(0.015f, 0.11f, 0.085f, 0.92f);
 	const FLinearColor SoftJade(0.05f, 0.28f, 0.20f, 0.78f);
+
+	template<typename AssetType>
+	AssetType* LoadAssetIfCookedAvailable(const TCHAR* ObjectPath)
+	{
+		if (!ObjectPath)
+		{
+			return nullptr;
+		}
+
+		const FSoftObjectPath SoftPath(ObjectPath);
+		const FString PackageName = SoftPath.GetLongPackageName();
+		if (PackageName.IsEmpty() || !FPackageName::DoesPackageExist(PackageName))
+		{
+			return nullptr;
+		}
+
+		return Cast<AssetType>(SoftPath.TryLoad());
+	}
 
 	UTextBlock* MakeLoginButtonLabel(UWidgetTree* WidgetTree, const FText& Label)
 	{
@@ -106,6 +127,88 @@ namespace
 			if (UWidget* Widget = WidgetTree->FindWidget(Name))
 			{
 				return Widget;
+			}
+		}
+
+		return nullptr;
+	}
+
+	bool StringContainsAny(const FString& Source, const TArray<FString>& Keywords)
+	{
+		for (const FString& Keyword : Keywords)
+		{
+			if (!Keyword.IsEmpty() && Source.Contains(Keyword))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	FString ExtractTextFromWidget(UWidget* Widget)
+	{
+		if (!Widget)
+		{
+			return FString();
+		}
+
+		if (UTextBlock* TextBlock = Cast<UTextBlock>(Widget))
+		{
+			return TextBlock->GetText().ToString();
+		}
+
+		if (UPanelWidget* Panel = Cast<UPanelWidget>(Widget))
+		{
+			const int32 Count = Panel->GetChildrenCount();
+			for (int32 Index = 0; Index < Count; ++Index)
+			{
+				if (UWidget* Child = Panel->GetChildAt(Index))
+				{
+					const FString ChildText = ExtractTextFromWidget(Child);
+					if (!ChildText.IsEmpty())
+					{
+						return ChildText;
+					}
+				}
+			}
+		}
+
+		return FString();
+	}
+
+	UButton* FindButtonByHeuristics(
+		UWidgetTree* WidgetTree,
+		const TArray<FString>& NameKeywords,
+		const TArray<FString>& LabelKeywords)
+	{
+		if (!WidgetTree)
+		{
+			return nullptr;
+		}
+
+		TArray<UWidget*> AllWidgets;
+		WidgetTree->GetAllWidgets(AllWidgets);
+		for (UWidget* Widget : AllWidgets)
+		{
+			UButton* Button = Cast<UButton>(Widget);
+			if (!Button)
+			{
+				continue;
+			}
+
+			const FString ButtonName = Button->GetName();
+			if (StringContainsAny(ButtonName, NameKeywords))
+			{
+				return Button;
+			}
+
+			if (UWidget* Content = Button->GetContent())
+			{
+				const FString LabelText = ExtractTextFromWidget(Content);
+				if (StringContainsAny(LabelText, LabelKeywords))
+				{
+					return Button;
+				}
 			}
 		}
 
@@ -244,11 +347,39 @@ void UDBALoginFlowWidgetBase::NativeConstruct()
 		LoginPanel = FindLoginPanelWidget(WidgetTree);
 		EmailInput = Cast<UEditableTextBox>(FindWidgetByNames(WidgetTree, { TEXT("EmailInput") }));
 		PasswordInput = Cast<UEditableTextBox>(FindWidgetByNames(WidgetTree, { TEXT("PasswordInput") }));
-		LoginButton = Cast<UButton>(FindWidgetByNames(WidgetTree, { TEXT("LoginButton") }));
-		GuestLoginButton = Cast<UButton>(FindWidgetByNames(WidgetTree, { TEXT("GuestLoginButton") }));
+		LoginButton = Cast<UButton>(FindWidgetByNames(WidgetTree, {
+			TEXT("LoginButton"),
+			TEXT("BtnLogin"),
+			TEXT("LoginBtn"),
+			TEXT("Button_Login"),
+			TEXT("PrimaryLoginButton")
+		}));
+		GuestLoginButton = Cast<UButton>(FindWidgetByNames(WidgetTree, {
+			TEXT("GuestLoginButton"),
+			TEXT("GuestButton"),
+			TEXT("BtnGuestLogin"),
+			TEXT("Button_GuestLogin"),
+			TEXT("VisitorLoginButton"),
+			TEXT("TouristLoginButton")
+		}));
 		ErrorText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("ErrorText") }));
 		StatusText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("StatusText") }));
 		TitleText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("TitleText") }));
+
+		if (!LoginButton)
+		{
+			LoginButton = FindButtonByHeuristics(
+				WidgetTree,
+				{ TEXT("Login"), TEXT("SignIn"), TEXT("Enter") },
+				{ TEXT("Login"), TEXT("Sign In"), TEXT("\u767b\u5f55"), TEXT("\u8fdb\u5165") });
+		}
+		if (!GuestLoginButton)
+		{
+			GuestLoginButton = FindButtonByHeuristics(
+				WidgetTree,
+				{ TEXT("Guest"), TEXT("Visitor"), TEXT("Tourist"), TEXT("Passport") },
+				{ TEXT("Guest"), TEXT("Visitor"), TEXT("Tourist"), TEXT("\u6e38\u5ba2"), TEXT("\u901a\u884c\u8bc1"), TEXT("\u795e\u517d") });
+		}
 
 		if (!EmailInput)
 		{
@@ -282,6 +413,12 @@ void UDBALoginFlowWidgetBase::NativeConstruct()
 		EnsureNativeFallbackLayout();
 	}
 	BindControls();
+	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] Bound widgets: LoginButton=%s, GuestLoginButton=%s, EmailInput=%s, PasswordInput=%s"),
+		LoginButton ? *LoginButton->GetName() : TEXT("NULL"),
+		GuestLoginButton ? *GuestLoginButton->GetName() : TEXT("NULL"),
+		EmailInput ? *EmailInput->GetName() : TEXT("NULL"),
+		PasswordInput ? *PasswordInput->GetName() : TEXT("NULL"));
+
 	InitializeAudioAssets();
 	ApplyVisualStyle();
 	DBAUIFonts::ApplyGameFontToWidgetTree(WidgetTree);
@@ -339,6 +476,7 @@ void UDBALoginFlowWidgetBase::SubmitLogin()
 
 void UDBALoginFlowWidgetBase::SubmitGuestLogin()
 {
+	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] SubmitGuestLogin clicked"));
 	if (UDBALoginFlowSubsystem* LoginFlow = GetLoginFlow())
 	{
 		ClearError();
@@ -382,12 +520,14 @@ void UDBALoginFlowWidgetBase::HandleLoginClicked()
 
 void UDBALoginFlowWidgetBase::HandleGuestLoginClicked()
 {
+	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] HandleGuestLoginClicked"));
 	PlayButtonClickSfx();
 	SubmitGuestLogin();
 }
 
 void UDBALoginFlowWidgetBase::HandleFlowStateChanged(EDBALoginFlowState NewState)
 {
+	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] Flow state changed: %d"), static_cast<int32>(NewState));
 	SetStatus(GetLoginFlowStatusText(NewState));
 	if (NewState != EDBALoginFlowState::LoginScreen && NewState != EDBALoginFlowState::Error)
 	{
@@ -453,10 +593,19 @@ void UDBALoginFlowWidgetBase::BindControls()
 		LoginButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleLoginClicked);
 		LoginButton->OnClicked.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleLoginClicked);
 	}
+	else
+	{
+		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] LoginButton is NULL, click event not bound."));
+	}
 	if (GuestLoginButton)
 	{
 		GuestLoginButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleGuestLoginClicked);
 		GuestLoginButton->OnClicked.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleGuestLoginClicked);
+		GuestLoginButton->SetIsEnabled(true);
+	}
+	else
+	{
+		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] GuestLoginButton is NULL, click event not bound."));
 	}
 }
 
@@ -495,7 +644,7 @@ void UDBALoginFlowWidgetBase::InitializeAudioAssets()
 {
 	if (!ButtonClickSound)
 	{
-		ButtonClickSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/SFX/SFX_UI_ButtonClick.SFX_UI_ButtonClick"));
+		ButtonClickSound = LoadAssetIfCookedAvailable<USoundBase>(TEXT("/Game/DBA/Audio/UI/SFX/SFX_UI_ButtonClick.SFX_UI_ButtonClick"));
 		if (!ButtonClickSound)
 		{
 			UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] Button click sound not found."));
@@ -504,10 +653,10 @@ void UDBALoginFlowWidgetBase::InitializeAudioAssets()
 
 	if (!BackgroundMusicSound)
 	{
-		BackgroundMusicSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/BGM/BGM_LoginFlow_Loop.BGM_LoginFlow_Loop"));
+		BackgroundMusicSound = LoadAssetIfCookedAvailable<USoundBase>(TEXT("/Game/DBA/Audio/UI/BGM/BGM_LoginFlow_Loop.BGM_LoginFlow_Loop"));
 		if (!BackgroundMusicSound)
 		{
-			BackgroundMusicSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/BGM/BGM_Login_Loop.BGM_Login_Loop"));
+			BackgroundMusicSound = LoadAssetIfCookedAvailable<USoundBase>(TEXT("/Game/DBA/Audio/UI/BGM/BGM_Login_Loop.BGM_Login_Loop"));
 		}
 		if (!BackgroundMusicSound)
 		{
@@ -561,17 +710,17 @@ void UDBALoginFlowWidgetBase::InitializeVisualAssets()
 {
 	if (!LoginPanelTexture)
 	{
-		LoginPanelTexture = LoadObject<UTexture2D>(nullptr, TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginPanel_StoneGold.T_DBA_LoginPanel_StoneGold"));
+		LoginPanelTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginPanel_StoneGold.T_DBA_LoginPanel_StoneGold"));
 	}
 
 	if (!LoginButtonTexture)
 	{
-		LoginButtonTexture = LoadObject<UTexture2D>(nullptr, TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginButton_ParchmentGold.T_DBA_LoginButton_ParchmentGold"));
+		LoginButtonTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginButton_ParchmentGold.T_DBA_LoginButton_ParchmentGold"));
 	}
 
 	if (!LoginBackgroundTexture)
 	{
-		LoginBackgroundTexture = LoadObject<UTexture2D>(nullptr, TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginForestSanctuary.T_DBA_LoginForestSanctuary"));
+		LoginBackgroundTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginForestSanctuary.T_DBA_LoginForestSanctuary"));
 	}
 }
 

@@ -4,6 +4,7 @@
 
 #include "GameCore/Account/DBAOnlineAccountService.h"
 #include "GameCore/Session/DBAFrontendSessionSubsystem.h"
+#include "GameCore/Core/DBALogChannels.h"
 #include "Kismet/GameplayStatics.h"
 
 bool UDBALoginFlowSubsystem::ShouldEnterCharacterCreate(int32 CharacterCount)
@@ -18,6 +19,7 @@ void UDBALoginFlowSubsystem::SetFlowState(EDBALoginFlowState NewState)
 		return;
 	}
 
+	UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] FlowState: %d -> %d"), static_cast<int32>(FlowState), static_cast<int32>(NewState));
 	FlowState = NewState;
 	OnFlowStateChanged.Broadcast(NewState);
 }
@@ -65,6 +67,7 @@ void UDBALoginFlowSubsystem::SubmitLogin(const FString& Email, const FString& Pa
 
 void UDBALoginFlowSubsystem::SubmitGuestLogin()
 {
+	UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] SubmitGuestLogin"));
 	SetFlowState(EDBALoginFlowState::TryAutoLogin);
 
 	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
@@ -76,6 +79,8 @@ void UDBALoginFlowSubsystem::SubmitGuestLogin()
 
 	AccountService->GuestLogin(FDBAOnLoginComplete::CreateWeakLambda(this, [this](const FDBALoginResponse& Response)
 	{
+		UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] GuestLogin response: success=%s, error=%s"),
+			Response.bSuccess ? TEXT("true") : TEXT("false"), *Response.ErrorMessage);
 		if (Response.bSuccess)
 		{
 			LoadCharactersAfterLogin();
@@ -101,6 +106,7 @@ void UDBALoginFlowSubsystem::LoadCharactersAfterLogin()
 	{
 		CachedCharacters = Characters;
 		OnCharactersLoaded.Broadcast(CachedCharacters);
+		UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] CharacterList loaded: count=%d"), CachedCharacters.Num());
 		SetFlowState(ShouldEnterCharacterCreate(CachedCharacters.Num()) ? EDBALoginFlowState::CharacterCreate : EDBALoginFlowState::CharacterSelect);
 	}));
 }

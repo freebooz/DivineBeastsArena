@@ -6,6 +6,7 @@
 #include "GameDBA/GameInstance/DBAGameInstance.h"
 
 #include "Blueprint/UserWidget.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
 #include "GameFramework/PlayerController.h"
 #include "GameDBA/UI/Arena/UDBAArenaHUDRootWidgetBase.h"
@@ -16,7 +17,9 @@
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
+#include "Misc/PackageName.h"
 #include "UObject/ConstructorHelpers.h"
+#include "UObject/SoftObjectPath.h"
 
 namespace
 {
@@ -51,10 +54,73 @@ namespace
 		InputMode.SetHideCursorDuringCapture(false);
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		PC->SetInputMode(InputMode);
+		PC->CurrentMouseCursor = EMouseCursor::Default;
+		PC->DefaultMouseCursor = EMouseCursor::Default;
 		PC->SetShowMouseCursor(true);
 		PC->bEnableClickEvents = true;
 		PC->bEnableMouseOverEvents = true;
 		FocusWidget->SetFocus();
+	}
+
+	template<typename AssetType>
+	AssetType* LoadAssetIfCookedAvailable(const TCHAR* ObjectPath)
+	{
+		if (!ObjectPath)
+		{
+			return nullptr;
+		}
+
+		const FSoftObjectPath SoftPath(ObjectPath);
+		const FString PackageName = SoftPath.GetLongPackageName();
+		if (PackageName.IsEmpty() || !FPackageName::DoesPackageExist(PackageName))
+		{
+			return nullptr;
+		}
+
+		return Cast<AssetType>(SoftPath.TryLoad());
+	}
+
+	void ApplySplashInputMode(UWorld* World, UUserWidget* FocusWidget)
+	{
+		if (!World || !FocusWidget)
+		{
+			return;
+		}
+
+		APlayerController* PC = World->GetFirstPlayerController();
+		if (!PC)
+		{
+			return;
+		}
+
+		FInputModeUIOnly InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetWidgetToFocus(FocusWidget->TakeWidget());
+		PC->SetInputMode(InputMode);
+		PC->CurrentMouseCursor = EMouseCursor::Default;
+		PC->DefaultMouseCursor = EMouseCursor::Default;
+		PC->SetShowMouseCursor(true);
+		PC->bEnableClickEvents = true;
+		PC->bEnableMouseOverEvents = true;
+		FocusWidget->SetFocus();
+	}
+
+	void RemoveAllViewportLoginWidgets(UWorld* World)
+	{
+		if (!World)
+		{
+			return;
+		}
+
+		TArray<UUserWidget*> FoundWidgets;
+		UWidgetBlueprintLibrary::GetAllWidgetsOfClass(World, FoundWidgets, UDBALoginFlowWidgetBase::StaticClass(), false);
+		for (UUserWidget* Widget : FoundWidgets)
+		{
+			if (Widget && Widget->IsInViewport())
+			{
+				Widget->RemoveFromParent();
+			}
+		}
 	}
 }
 
@@ -134,7 +200,7 @@ void UDBAGameUIManager::OnSubsystemInitialize()
 		RefreshLoginFlowWidgetVisibility();
 	}
 
-	// ÑÓ³ÙÏÔÊ¾Æô¶¯ÊÓÆµ£¬µÈ´ýÊÀ½ç¼ÓÔØÍê³É
+	// å»¶è¿Ÿæ˜¾ç¤ºå¯åŠ¨è§†é¢‘ï¼Œç­‰å¾…ä¸–ç•ŒåŠ è½½å®Œæˆ
 	GetWorld()->GetTimerManager().SetTimer(SplashVideoTimerHandle, this, &UDBAGameUIManager::TryShowSplashVideo, 0.5f, true);
 }
 
@@ -154,7 +220,7 @@ void UDBAGameUIManager::TryShowSplashVideo()
 		return;
 	}
 
-	// ÏÈ³¢ÊÔ»ñÈ¡ PrimaryPlayerController
+	// å…ˆå°è¯•èŽ·å– PrimaryPlayerController
 	APlayerController* PC = World->GetGameInstance() ? World->GetGameInstance()->GetPrimaryPlayerController() : nullptr;
 	if (!PC)
 	{
@@ -163,7 +229,7 @@ void UDBAGameUIManager::TryShowSplashVideo()
 
 	if (PC)
 	{
-		// PlayerController ÒÑ´æÔÚ£¬Í£Ö¹ÖØÊÔ²¢ÏÔÊ¾ÊÓÆµ
+		// PlayerController å·²å­˜åœ¨ï¼Œåœæ­¢é‡è¯•å¹¶æ˜¾ç¤ºè§†é¢‘
 		GetWorld()->GetTimerManager().ClearTimer(SplashVideoTimerHandle);
 		ShowSplashVideo();
 	}
@@ -353,6 +419,7 @@ void UDBAGameUIManager::CreateArenaHUDWidget()
 
 void UDBAGameUIManager::HandleLoginFlowStateChanged(EDBALoginFlowState NewState)
 {
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Login flow state changed: %d"), static_cast<int32>(NewState));
 	CachedLoginFlowState = NewState;
 	RefreshLoginFlowWidgetVisibility();
 
@@ -368,10 +435,10 @@ void UDBAGameUIManager::RefreshLoginFlowWidgetVisibility()
 	{
 	case EDBALoginFlowState::Startup:
 	{
-		EnsureLoginFlowStartedFromManager();
-		EnsureLoginFlowBackgroundMusic();
+		// Keep startup clean so splash video can appear before login flow widgets.
 		HideMainLobby();
-		SetFlowWidgetVisible(EnsureFlowWidgetCreated(LoginWidgetClass, LoginWidget));
+		HideAllFlowWidgets();
+		ResetFlowWidgetRefreshRetry();
 		break;
 	}
 	case EDBALoginFlowState::LoginScreen:
@@ -379,26 +446,56 @@ void UDBAGameUIManager::RefreshLoginFlowWidgetVisibility()
 	{
 		EnsureLoginFlowBackgroundMusic();
 		HideMainLobby();
-		SetFlowWidgetVisible(EnsureFlowWidgetCreated(LoginWidgetClass, LoginWidget));
+		if (UUserWidget* Widget = EnsureFlowWidgetCreated(LoginWidgetClass, LoginWidget))
+		{
+			SetFlowWidgetVisible(Widget);
+			ResetFlowWidgetRefreshRetry();
+		}
+		else
+		{
+			ScheduleFlowWidgetRefreshRetry();
+		}
 		break;
 	}
 	case EDBALoginFlowState::CharacterSelect:
 	{
 		EnsureLoginFlowBackgroundMusic();
 		HideMainLobby();
-		SetFlowWidgetVisible(EnsureFlowWidgetCreated(CharacterSelectWidgetClass, CharacterSelectWidget));
+		if (UUserWidget* SelectWidget = EnsureFlowWidgetCreated(CharacterSelectWidgetClass, CharacterSelectWidget))
+		{
+			SetFlowWidgetVisible(SelectWidget);
+			RemoveAllViewportLoginWidgets(GetWorld());
+			ResetFlowWidgetRefreshRetry();
+		}
+		else
+		{
+			UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] CharacterSelect widget not ready, scheduling retry."));
+			ScheduleFlowWidgetRefreshRetry();
+		}
 		break;
 	}
 	case EDBALoginFlowState::CharacterCreate:
 	{
 		EnsureLoginFlowBackgroundMusic();
 		HideMainLobby();
-		SetFlowWidgetVisible(EnsureFlowWidgetCreated(CharacterCreateWidgetClass, CharacterCreateWidget));
+		if (UUserWidget* CreateWidget = EnsureFlowWidgetCreated(CharacterCreateWidgetClass, CharacterCreateWidget))
+		{
+			SetFlowWidgetVisible(CreateWidget);
+			RemoveAllViewportLoginWidgets(GetWorld());
+			ResetFlowWidgetRefreshRetry();
+		}
+		else
+		{
+			UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] CharacterCreate widget not ready, scheduling retry."));
+			ScheduleFlowWidgetRefreshRetry();
+		}
 		break;
 	}
 	case EDBALoginFlowState::MainLobby:
 	{
+		ResetFlowWidgetRefreshRetry();
 		StopLoginFlowBackgroundMusic();
+		RemoveAllViewportLoginWidgets(GetWorld());
 		HideAllFlowWidgets();
 		ShowMainLobby();
 		break;
@@ -453,12 +550,59 @@ WidgetType* UDBAGameUIManager::EnsureFlowWidgetCreated(TSubclassOf<WidgetType> W
 	}
 	if (UWorld* World = GetWorld())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
+		APlayerController* PC = World->GetFirstPlayerController();
+		if (!PC && World->GetGameInstance())
+		{
+			PC = World->GetGameInstance()->GetPrimaryPlayerController();
+		}
+		if (PC)
 		{
 			WidgetInstance = CreateWidget<WidgetType>(PC, WidgetClass);
 		}
 	}
 	return WidgetInstance;
+}
+
+void UDBAGameUIManager::ScheduleFlowWidgetRefreshRetry()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (World->GetTimerManager().IsTimerActive(FlowWidgetRefreshRetryTimerHandle))
+	{
+		return;
+	}
+
+	++FlowWidgetRefreshRetryCount;
+	if (FlowWidgetRefreshRetryCount > 30)
+	{
+		UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] Flow widget retry exceeded limit at state=%d"), static_cast<int32>(CachedLoginFlowState));
+		return;
+	}
+
+	World->GetTimerManager().SetTimer(
+		FlowWidgetRefreshRetryTimerHandle,
+		this,
+		&UDBAGameUIManager::HandleFlowWidgetRefreshRetry,
+		0.15f,
+		false);
+}
+
+void UDBAGameUIManager::ResetFlowWidgetRefreshRetry()
+{
+	FlowWidgetRefreshRetryCount = 0;
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(FlowWidgetRefreshRetryTimerHandle);
+	}
+}
+
+void UDBAGameUIManager::HandleFlowWidgetRefreshRetry()
+{
+	RefreshLoginFlowWidgetVisibility();
 }
 
 void UDBAGameUIManager::SetFlowWidgetVisible(UUserWidget* WidgetToShow)
@@ -509,19 +653,30 @@ void UDBAGameUIManager::ShowSplashVideo()
 			UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] No World found"));
 		}
 	}
-	if (SplashVideoWidget && !bFlowWidgetVisible)
+	if (SplashVideoWidget)
 	{
+		RemoveAllViewportLoginWidgets(GetWorld());
+		if (CharacterSelectWidget)
+		{
+			CharacterSelectWidget->RemoveFromParent();
+		}
+		if (CharacterCreateWidget)
+		{
+			CharacterCreateWidget->RemoveFromParent();
+		}
+		bFlowWidgetVisible = false;
+
 		SplashVideoWidget->AddToViewport(999);
 		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] SplashVideoWidget added to viewport"));
 
-		// ÉèÖÃ¼üÅÌ½¹µãµ½Æô¶¯ÊÓÆµ¿Ø¼þ£¬ÒÔ±ã½ÓÊÕ ESC °´¼ü
-		SplashVideoWidget->SetFocus();
+		// è®¾ç½®é”®ç›˜ç„¦ç‚¹åˆ°å¯åŠ¨è§†é¢‘æŽ§ä»¶ï¼Œä»¥ä¾¿æŽ¥æ”¶ ESC æŒ‰é”®
+		ApplySplashInputMode(GetWorld(), SplashVideoWidget);
 	}
 }
 
 void UDBAGameUIManager::HideSplashVideo()
 {
-	if (SplashVideoWidget)
+	if (SplashVideoWidget && SplashVideoWidget->IsInViewport())
 	{
 		SplashVideoWidget->RemoveFromParent();
 	}
@@ -536,10 +691,10 @@ void UDBAGameUIManager::EnsureLoginFlowBackgroundMusic()
 
 	if (!LoginFlowBackgroundMusicSound)
 	{
-		LoginFlowBackgroundMusicSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/BGM/BGM_LoginFlow_Loop.BGM_LoginFlow_Loop"));
+		LoginFlowBackgroundMusicSound = LoadAssetIfCookedAvailable<USoundBase>(TEXT("/Game/DBA/Audio/UI/BGM/BGM_LoginFlow_Loop.BGM_LoginFlow_Loop"));
 		if (!LoginFlowBackgroundMusicSound)
 		{
-			LoginFlowBackgroundMusicSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/BGM/BGM_Login_Loop.BGM_Login_Loop"));
+			LoginFlowBackgroundMusicSound = LoadAssetIfCookedAvailable<USoundBase>(TEXT("/Game/DBA/Audio/UI/BGM/BGM_Login_Loop.BGM_Login_Loop"));
 		}
 	}
 

@@ -62,6 +62,8 @@ void UDBASplashVideoWidget::NativeConstruct()
 		FTimerHandle TimerHandle;
 		World->GetTimerManager().SetTimer(TimerHandle, this, &UDBASplashVideoWidget::PlayVideo, 0.5f, false);
 	}
+
+	SetFocus();
 }
 
 void UDBASplashVideoWidget::NativeDestruct()
@@ -94,6 +96,17 @@ FReply UDBASplashVideoWidget::NativeOnKeyDown(const FGeometry& InGeometry, const
 	}
 
 	return FReply::Unhandled();
+}
+
+FReply UDBASplashVideoWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (InKeyEvent.GetKey() == EKeys::Escape)
+	{
+		SkipVideo();
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnPreviewKeyDown(InGeometry, InKeyEvent);
 }
 
 void UDBASplashVideoWidget::OnSkipButtonClicked()
@@ -328,6 +341,11 @@ void UDBASplashVideoWidget::StopVideo()
 	if (FallbackAudioComponent)
 	{
 		FallbackAudioComponent->Stop();
+		if (FallbackAudioComponent->IsRegistered())
+		{
+			FallbackAudioComponent->UnregisterComponent();
+		}
+		FallbackAudioComponent->DestroyComponent();
 		FallbackAudioComponent = nullptr;
 	}
 
@@ -339,10 +357,20 @@ void UDBASplashVideoWidget::StopVideo()
 	{
 		MediaSoundComponent->RemoveClockSink();
 		MediaSoundComponent->Stop();
+		MediaSoundComponent->SetMediaPlayer(nullptr);
+		if (MediaSoundComponent->IsRegistered())
+		{
+			MediaSoundComponent->UnregisterComponent();
+		}
+		MediaSoundComponent->DestroyComponent();
+		MediaSoundComponent = nullptr;
 	}
 
 	if (MediaPlayer)
 	{
+		MediaPlayer->OnMediaOpened.RemoveAll(this);
+		MediaPlayer->OnMediaOpenFailed.RemoveAll(this);
+		MediaPlayer->OnEndReached.RemoveAll(this);
 		MediaPlayer->Close();
 	}
 
@@ -503,7 +531,7 @@ void UDBASplashVideoWidget::OnVideoFinished()
 		return;
 	}
 
-	bIsPlaying = false;
+	StopVideo();
 	bCompleted = true;
 	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] OnVideoFinished"));
 	TransitionToLogin();
@@ -512,6 +540,7 @@ void UDBASplashVideoWidget::OnVideoFinished()
 void UDBASplashVideoWidget::TransitionToLogin()
 {
 	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] TransitionToLogin"));
+	RemoveSelf();
 
 	UWorld* ResolvedWorld = nullptr;
 	if (APlayerController* PC = GetOwningPlayer())
@@ -526,24 +555,17 @@ void UDBASplashVideoWidget::TransitionToLogin()
 	if (UDBAGameInstance* GI = ResolvedWorld ? Cast<UDBAGameInstance>(ResolvedWorld->GetGameInstance()) : nullptr)
 	{
 		GI->StartLoginFlow();
-		if (UDBAGameUIManager* UIManager = GI->GetSubsystem<UDBAGameUIManager>())
-		{
-			UIManager->RequestShowLoginFlowWidget();
-		}
 	}
 	else
 	{
 		UE_LOG(LogDBAUI, Warning, TEXT("[UDBASplashVideoWidget] Unable to resolve DBA game instance when transitioning to login."));
 	}
-
-	if (UWorld* World = GetWorld())
-	{
-		FTimerHandle TimerHandle;
-		World->GetTimerManager().SetTimer(TimerHandle, this, &UDBASplashVideoWidget::RemoveSelf, 0.1f, false);
-	}
 }
 
 void UDBASplashVideoWidget::RemoveSelf()
 {
-	RemoveFromParent();
+	if (IsInViewport())
+	{
+		RemoveFromParent();
+	}
 }

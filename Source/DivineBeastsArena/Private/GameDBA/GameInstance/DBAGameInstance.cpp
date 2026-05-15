@@ -68,10 +68,17 @@ void UDBAGameInstance::StartLoginFlow()
 	{
 		if (!IsFrontendWorld(World))
 		{
-			bPendingStartLoginFlowOnFrontend = true;
-			UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Switching to FrontendMap before login flow."));
-			UGameplayStatics::OpenLevel(World, FrontendMapPath);
-			return;
+			// In current client startup flow we boot from LobbyMap. If FrontendMap is not available
+			// in the running content set, continue login flow in current world instead of failing travel.
+			if (!World->GetName().Contains(TEXT("LobbyMap")))
+			{
+				bPendingStartLoginFlowOnFrontend = true;
+				UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Switching to FrontendMap before login flow."));
+				UGameplayStatics::OpenLevel(World, FrontendMapPath);
+				return;
+			}
+
+			UE_LOG(LogDBACore, Warning, TEXT("[DBAGameInstance] FrontendMap travel skipped; starting login flow in LobbyMap."));
 		}
 	}
 
