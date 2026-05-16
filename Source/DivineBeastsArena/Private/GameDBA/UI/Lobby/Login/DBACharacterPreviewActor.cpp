@@ -15,13 +15,24 @@ namespace
 {
 	constexpr float PreviewActorMeshDisplayScale = 1.0f;
 	constexpr float PreviewActorMeshFloorZ = 2.0f;
+
+	bool IsLobbyGameplayWorld(const UWorld* World)
+	{
+		if (!World || !World->PersistentLevel)
+		{
+			return false;
+		}
+
+		const FString LevelPath = World->PersistentLevel->GetOutermost()->GetName();
+		return LevelPath.Contains(TEXT("LobbyMap")) || LevelPath.Contains(TEXT("MainLobby"));
+	}
 }
 
 ADBACharacterPreviewActor::ADBACharacterPreviewActor()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	bAlwaysRelevant = true;
-	SetReplicates(true);
+	bReplicates = true;
 	SetReplicateMovement(true);
 
 	PreviewRoot = CreateDefaultSubobject<USceneComponent>(TEXT("PreviewRoot"));
@@ -43,13 +54,18 @@ ADBACharacterPreviewActor::ADBACharacterPreviewActor()
 	ZodiacTintLight->SetIntensity(650000.0f);
 	ZodiacTintLight->SetAttenuationRadius(760.0f);
 	ZodiacTintLight->SetRelativeLocation(FVector(170.0f, 0.0f, 110.0f));
-
-	ApplyPreviewAssets(CurrentZodiac);
 }
 
 void ADBACharacterPreviewActor::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (IsLobbyGameplayWorld(GetWorld()))
+	{
+		Destroy();
+		return;
+	}
+
 	ApplyPreviewAssets(CurrentZodiac);
 }
 
@@ -97,20 +113,20 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 	}
 
 	const TArray<FString> MeshCandidates = {
-		ADBACharacterPresentationActor::GetPreviewLegacyMeshPathForZodiac(Zodiac),
 		ADBACharacterPresentationActor::GetPreviewMeshPathForZodiac(Zodiac),
 		TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat")
 	};
 
 	USkeletalMesh* ResolvedMesh = nullptr;
+	FString ResolvedMeshPath;
 	for (const FString& MeshPath : MeshCandidates)
 	{
 		if (!MeshPath.IsEmpty())
 		{
-			ResolvedMesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath);
-			if (ResolvedMesh)
+			if (USkeletalMesh* CandidateMesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath))
 			{
-				UE_LOG(LogDBAUI, Log, TEXT("[CharacterPreviewActor] Loaded mesh: %s"), *MeshPath);
+				ResolvedMesh = CandidateMesh;
+				ResolvedMeshPath = MeshPath;
 				break;
 			}
 		}
@@ -121,6 +137,9 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 		UE_LOG(LogDBAUI, Error, TEXT("[CharacterPreviewActor] Failed to load any preview skeletal mesh."));
 		return;
 	}
+	UE_LOG(LogDBAUI, Log, TEXT("[CharacterPreviewActor] Loaded mesh: %s Skeleton=%s"),
+		*ResolvedMeshPath,
+		ResolvedMesh->GetSkeleton() ? TEXT("Valid") : TEXT("None"));
 	PreviewMeshComponent->SetSkeletalMesh(ResolvedMesh);
 	PreviewMeshComponent->SetRelativeRotation(ADBACharacterPresentationActor::GetPreviewMeshPlayerFacingRotation());
 	PreviewMeshComponent->SetRelativeScale3D(FVector(PreviewActorMeshDisplayScale));
@@ -151,6 +170,12 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 				PreviewMeshComponent->SetAnimation(IdleAnimation);
 				PreviewMeshComponent->Play(true);
 			}
+		}
+
+		if (PreviewMeshComponent->GetAnimationMode() != EAnimationMode::AnimationSingleNode)
+		{
+			PreviewMeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+			PreviewMeshComponent->SetAnimInstanceClass(nullptr);
 		}
 	}
 	else

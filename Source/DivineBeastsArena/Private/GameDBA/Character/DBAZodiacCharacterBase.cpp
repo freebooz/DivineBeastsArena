@@ -57,6 +57,11 @@ namespace
 		default: return TEXT("/Game/Animation/Zodiac/Rat/ABP_Rat.ABP_Rat_C");
 		}
 	}
+
+	FString GetEngineTutorialAnimBlueprintPath()
+	{
+		return TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP_AnimBlueprint.TutorialTPP_AnimBlueprint_C");
+	}
 }
 
 ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
@@ -130,17 +135,14 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 
 	const EDBAZodiac CommonZodiac = ToCommonZodiac(ZodiacType);
 	const TArray<FString> MeshCandidates = {
-		ADBACharacterPresentationActor::GetPreviewLegacyMeshPathForZodiac(CommonZodiac),
+		TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP.TutorialTPP"),
 		ADBACharacterPresentationActor::GetPreviewMeshPathForZodiac(CommonZodiac),
-		TEXT("/Game/DBA/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny"),
-		TEXT("/Game/DBA/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"),
+		ADBACharacterPresentationActor::GetPreviewLegacyMeshPathForZodiac(CommonZodiac),
 		TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat")
 	};
 
 	USkeletalMesh* ResolvedMesh = nullptr;
-	USkeletalMesh* FirstLoadedMesh = nullptr;
 	FString ResolvedMeshPath;
-	FString FirstLoadedMeshPath;
 	for (const FString& MeshPath : MeshCandidates)
 	{
 		if (MeshPath.IsEmpty())
@@ -151,23 +153,9 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 		ResolvedMesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath);
 		if (ResolvedMesh)
 		{
-			if (!FirstLoadedMesh)
-			{
-				FirstLoadedMesh = ResolvedMesh;
-				FirstLoadedMeshPath = MeshPath;
-			}
-			if (ResolvedMesh->GetSkeleton())
-			{
-				ResolvedMeshPath = MeshPath;
-				break;
-			}
+			ResolvedMeshPath = MeshPath;
+			break;
 		}
-	}
-
-	if (!ResolvedMesh || !ResolvedMesh->GetSkeleton())
-	{
-		ResolvedMesh = FirstLoadedMesh;
-		ResolvedMeshPath = FirstLoadedMeshPath;
 	}
 
 	if (ResolvedMesh)
@@ -183,15 +171,13 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 
 		if (ResolvedMesh->GetSkeleton())
 		{
-			const bool bUsingMannyFallback = ResolvedMeshPath.Contains(TEXT("/Game/DBA/Characters/Mannequins/"));
-			const FString AnimBlueprintPath = bUsingMannyFallback
-				? FString(TEXT("/Game/DBA/Characters/Mannequins/Animations/ABP_Manny.ABP_Manny_C"))
+			const bool bUsingEngineTutorialMesh = ResolvedMeshPath.Contains(TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP"));
+			const FString AnimBlueprintPath = bUsingEngineTutorialMesh
+				? GetEngineTutorialAnimBlueprintPath()
 				: GetLobbyAnimBlueprintPathForZodiac(CommonZodiac);
-			UClass* AnimClass = LoadClass<UAnimInstance>(nullptr, *AnimBlueprintPath);
-			if (!AnimClass)
-			{
-				AnimClass = LoadClass<UAnimInstance>(nullptr, TEXT("/Game/DBA/Characters/Mannequins/Animations/ABP_Manny.ABP_Manny_C"));
-			}
+			UClass* AnimClass = AnimBlueprintPath.IsEmpty()
+				? nullptr
+				: LoadClass<UAnimInstance>(nullptr, *AnimBlueprintPath);
 			if (AnimClass)
 			{
 				MeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);

@@ -562,27 +562,39 @@ void ADBACharacterPresentationActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 	}
 
 	const TArray<FString> MeshCandidates = {
-		GetPreviewLegacyMeshPathForZodiac(Zodiac),
 		GetPreviewMeshPathForZodiac(Zodiac),
 		TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat")
 	};
 
 	USkeletalMesh* ResolvedMesh = nullptr;
 	FString ResolvedMeshPath;
+	USkeletalMesh* FirstLoadedMesh = nullptr;
+	FString FirstLoadedMeshPath;
 	for (const FString& MeshPath : MeshCandidates)
 	{
 		if (!MeshPath.IsEmpty())
 		{
 			if (USkeletalMesh* CandidateMesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath))
 			{
-				ResolvedMesh = CandidateMesh;
-				ResolvedMeshPath = MeshPath;
-				UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] Loaded mesh: %s Skeleton=%s"),
-					*MeshPath,
-					CandidateMesh->GetSkeleton() ? TEXT("Valid") : TEXT("None"));
-				break;
+				if (!FirstLoadedMesh)
+				{
+					FirstLoadedMesh = CandidateMesh;
+					FirstLoadedMeshPath = MeshPath;
+				}
+				if (CandidateMesh->GetSkeleton())
+				{
+					ResolvedMesh = CandidateMesh;
+					ResolvedMeshPath = MeshPath;
+					break;
+				}
 			}
 		}
+	}
+
+	if (!ResolvedMesh)
+	{
+		ResolvedMesh = FirstLoadedMesh;
+		ResolvedMeshPath = FirstLoadedMeshPath;
 	}
 
 	if (!ResolvedMesh)
@@ -590,6 +602,9 @@ void ADBACharacterPresentationActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 		UE_LOG(LogDBAUI, Error, TEXT("[CharacterPresentationActor] Failed to load any preview skeletal mesh."));
 		return;
 	}
+	UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] Loaded mesh: %s Skeleton=%s"),
+		*ResolvedMeshPath,
+		ResolvedMesh->GetSkeleton() ? TEXT("Valid") : TEXT("None"));
 
 	PreviewMeshComponent->SetSkeletalMesh(ResolvedMesh);
 	PreviewMeshComponent->SetRelativeRotation(GetPreviewMeshPlayerFacingRotation());
@@ -629,6 +644,12 @@ void ADBACharacterPresentationActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 				PreviewMeshComponent->SetAnimation(IdleAnimation);
 				PreviewMeshComponent->Play(true);
 			}
+		}
+
+		if (PreviewMeshComponent->GetAnimationMode() != EAnimationMode::AnimationSingleNode)
+		{
+			PreviewMeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+			PreviewMeshComponent->SetAnimInstanceClass(nullptr);
 		}
 	}
 	else

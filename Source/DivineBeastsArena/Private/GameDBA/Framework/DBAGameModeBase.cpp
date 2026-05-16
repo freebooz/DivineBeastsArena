@@ -21,6 +21,7 @@
 #include "Animation/AnimationAsset.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
+#include "EngineUtils.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
@@ -143,27 +144,6 @@ namespace
 		}
 
 		USkeletalMeshComponent* MeshComponent = Character->GetMesh();
-		if (!MeshComponent->GetSkeletalMeshAsset())
-		{
-			const TArray<FString> MeshCandidates = {
-				ADBACharacterPresentationActor::GetPreviewMeshPathForZodiac(Zodiac),
-				ADBACharacterPresentationActor::GetPreviewLegacyMeshPathForZodiac(Zodiac),
-				TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat")
-			};
-
-			for (const FString& MeshPath : MeshCandidates)
-			{
-				if (USkeletalMesh* Mesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath))
-				{
-					MeshComponent->SetSkeletalMesh(Mesh);
-					UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Lobby pawn mesh applied: pawn=%s mesh=%s"),
-						*Character->GetName(),
-						*MeshPath);
-					break;
-				}
-			}
-		}
-
 		MeshComponent->SetVisibility(true);
 		MeshComponent->SetHiddenInGame(false);
 		MeshComponent->SetComponentTickEnabled(true);
@@ -209,6 +189,16 @@ void ADBAGameModeBase::BeginPlay()
 	{
 		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Running in dedicated server mode"));
 	}
+
+	if (IsLobbyMapWorld(GetWorld()))
+	{
+		for (TActorIterator<ADBACharacterPreviewActor> It(GetWorld()); It; ++It)
+		{
+			It->Destroy();
+		}
+		LobbyDisplayActors.Reset();
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Lobby character preview actors disabled; using player pawns only."));
+	}
 }
 
 FString ADBAGameModeBase::InitNewPlayer(APlayerController* NewPlayerController, const FUniqueNetIdRepl& UniqueId, const FString& Options, const FString& Portal)
@@ -233,7 +223,6 @@ FString ADBAGameModeBase::InitNewPlayer(APlayerController* NewPlayerController, 
 void ADBAGameModeBase::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
-	SpawnOrUpdateLobbyDisplayForPlayer(NewPlayer);
 }
 
 void ADBAGameModeBase::Logout(AController* Exiting)
@@ -259,57 +248,17 @@ void ADBAGameModeBase::Logout(AController* Exiting)
 
 void ADBAGameModeBase::SpawnOrUpdateLobbyDisplayForPlayer(APlayerController* PlayerController)
 {
-	if (!PlayerController || !IsLobbyMapWorld(GetWorld()))
+	if (PlayerController)
 	{
-		return;
-	}
-
-	const TObjectKey<APlayerController> PlayerKey(PlayerController);
-	if (!LobbyJoinIndices.Contains(PlayerKey))
-	{
-		return;
-	}
-
-	const int32 JoinIndex = LobbyJoinIndices[PlayerKey];
-	const EDBAZodiac LobbyZodiac = LobbyJoinZodiacs.Contains(PlayerKey)
-		? LobbyJoinZodiacs[PlayerKey]
-		: ResolveLobbyDisplayZodiac(TEXT(""), JoinIndex);
-
-	ADBACharacterPreviewActor* DisplayActor = nullptr;
-	if (TWeakObjectPtr<ADBACharacterPreviewActor>* ExistingActor = LobbyDisplayActors.Find(PlayerKey))
-	{
-		DisplayActor = ExistingActor->Get();
-	}
-
-	if (!DisplayActor)
-	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = PlayerController;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		DisplayActor = GetWorld()->SpawnActor<ADBACharacterPreviewActor>(
-			ADBACharacterPreviewActor::StaticClass(),
-			GetLobbyDisplayTransform(JoinIndex),
-			SpawnParams);
-		LobbyDisplayActors.Add(PlayerKey, DisplayActor);
-	}
-	else
-	{
-		DisplayActor->SetActorTransform(GetLobbyDisplayTransform(JoinIndex));
-	}
-
-	if (DisplayActor)
-	{
-		DisplayActor->SetPreviewZodiac(LobbyZodiac);
-		DisplayActor->SetActorHiddenInGame(false);
-		DisplayActor->SetReplicates(true);
-		DisplayActor->SetReplicateMovement(true);
-		DisplayActor->ForceNetUpdate();
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Lobby display actor ready: player=%s actor=%s index=%d zodiac=%d location=%s"),
-			*PlayerController->GetName(),
-			*DisplayActor->GetName(),
-			JoinIndex,
-			static_cast<int32>(LobbyZodiac),
-			*DisplayActor->GetActorLocation().ToString());
+		const TObjectKey<APlayerController> PlayerKey(PlayerController);
+		if (TWeakObjectPtr<ADBACharacterPreviewActor>* ExistingActor = LobbyDisplayActors.Find(PlayerKey))
+		{
+			if (ADBACharacterPreviewActor* DisplayActor = ExistingActor->Get())
+			{
+				DisplayActor->Destroy();
+			}
+			LobbyDisplayActors.Remove(PlayerKey);
+		}
 	}
 }
 

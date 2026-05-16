@@ -189,7 +189,7 @@ namespace
 			|| (World && World->GetNetMode() == NM_DedicatedServer);
 	}
 
-	bool IsLobbyGameplayWorld(const UWorld* World)
+	bool IsLobbyGameplayWorldForUIManager(const UWorld* World)
 	{
 		if (!World || !World->PersistentLevel)
 		{
@@ -435,7 +435,7 @@ void UDBAGameUIManager::ShowMainLobby()
 	StopLoginFlowBackgroundMusic();
 	HideAllFlowWidgets();
 
-	if (IsLobbyGameplayWorld(GetWorld()))
+	if (IsLobbyGameplayWorldForUIManager(GetWorld()))
 	{
 		if (MainLobbyWidget && bMainLobbyVisible)
 		{
@@ -574,7 +574,7 @@ void UDBAGameUIManager::ShowLobbyPlayerHUD()
 	{
 		LobbyPlayerHUDWidget->RefreshFromCurrentCharacterData();
 	}
-	else if (!LobbyPlayerHUDWidget && IsLobbyGameplayWorld(GetWorld()))
+	else if (!LobbyPlayerHUDWidget && IsLobbyGameplayWorldForUIManager(GetWorld()))
 	{
 		ScheduleLobbyHUDRefreshRetry();
 	}
