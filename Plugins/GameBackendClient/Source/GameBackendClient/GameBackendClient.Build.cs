@@ -1,0 +1,32 @@
+using UnrealBuildTool;
+
+public class GameBackendClient : ModuleRules
+{
+	public GameBackendClient(ReadOnlyTargetRules Target) : base(Target)
+	{
+		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core",
+			"CoreUObject",
+			"Engine",
+			"HTTP",
+			"Json",
+			"JsonUtilities",
+			"Projects",
+			"DeveloperSettings"
+		});
+
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"Slate",
+			"SlateCore"
+		});
+
+		PublicIncludePaths.Add("GameBackendClient/Public");
+		PrivateIncludePaths.Add("GameBackendClient/Private");
+		bUseUnity = true;
+		CppStandard = CppStandardVersion.Cpp20;
+	}
+}

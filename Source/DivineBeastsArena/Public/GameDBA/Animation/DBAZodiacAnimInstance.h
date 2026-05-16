@@ -45,7 +45,7 @@ public:
 
 	/** 设置是否攻击中 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Animation")
-	void SetIsAttacking(bool bInAttacking) { bIsAttacking = bInAttacking; }
+	void SetIsAttacking(bool bInAttacking);
 
 	/** 获取是否攻击中 */
 	UFUNCTION(BlueprintPure, Category = "DBA|Animation")
@@ -53,7 +53,7 @@ public:
 
 	/** 设置是否受击中 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Animation")
-	void SetIsHit(bool bInHit) { bIsHit = bInHit; }
+	void SetIsHit(bool bInHit);
 
 	/** 获取是否受击中 */
 	UFUNCTION(BlueprintPure, Category = "DBA|Animation")
@@ -61,7 +61,7 @@ public:
 
 	/** 设置是否死亡 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Animation")
-	void SetIsDead(bool bInDead) { bIsDead = bInDead; }
+	void SetIsDead(bool bInDead);
 
 	/** 获取是否死亡 */
 	UFUNCTION(BlueprintPure, Category = "DBA|Animation")
@@ -92,6 +92,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation")
 	bool bIsInAir = false;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation")
+	bool bIsRunning = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation")
+	bool bIsJumping = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation")
+	bool bIsFalling = false;
+
 	/** 是否在攻击中 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation")
 	bool bIsAttacking = false;
@@ -112,8 +121,35 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation")
 	FRotator RotationRate = FRotator::ZeroRotator;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation")
+	float Direction = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation")
+	float VerticalSpeed = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation|Threshold")
+	float MoveSpeedThreshold = 3.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation|Threshold")
+	float RunSpeedThreshold = 320.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation|Threshold")
+	float JumpVerticalSpeedThreshold = 10.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation|Threshold")
+	float FallVerticalSpeedThreshold = 10.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation|Timing")
+	float AttackStateDuration = 0.25f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation|Timing")
+	float HitStateDuration = 0.2f;
+
 protected:
 	/** 所属Pawn引用 */
 	UPROPERTY(Transient)
 	TObjectPtr<APawn> OwningPawn;
+
+	float AttackStateStartTime = -1.0f;
+	float HitStateStartTime = -1.0f;
 };

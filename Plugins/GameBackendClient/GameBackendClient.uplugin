@@ -1,0 +1,19 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "FriendlyName": "Game Backend Client",
+  "Description": "Async backend client for login, config, room, matchmaking, session, mail, support, telemetry and crash upload.",
+  "Category": "Online",
+  "CreatedBy": "DivineBeastsArena",
+  "EnabledByDefault": true,
+  "CanContainContent": false,
+  "IsBetaVersion": true,
+  "Modules": [
+    {
+      "Name": "GameBackendClient",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ]
+}
