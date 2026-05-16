@@ -21,7 +21,9 @@
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/Data/DBAFixedSkillGroupData.h"
 #include "GameDBA/Data/DBASkillDataRow.h"
+#include "GameDBA/GAS/DBAAbilitySetLibrary.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
@@ -31,8 +33,8 @@
 namespace
 {
 	constexpr int32 LobbySkillSlotCount = 7;
-	const TCHAR* DesktopSkillHotkeys[LobbySkillSlotCount] = { TEXT("P"), TEXT("Q"), TEXT("W"), TEXT("E"), TEXT("R"), TEXT("T"), TEXT("Z") };
-	const TCHAR* MobileSkillHotkeys[LobbySkillSlotCount] = { TEXT("P"), TEXT("S1"), TEXT("S2"), TEXT("S3"), TEXT("S4"), TEXT("ULT"), TEXT("RES") };
+	const TCHAR* DesktopSkillHotkeys[LobbySkillSlotCount] = { TEXT("AUTO"), TEXT("1"), TEXT("2"), TEXT("3"), TEXT("4"), TEXT("5"), TEXT("AUTO") };
+	const TCHAR* MobileSkillHotkeys[LobbySkillSlotCount] = { TEXT("AUTO"), TEXT("S1"), TEXT("S2"), TEXT("S3"), TEXT("S4"), TEXT("ULT"), TEXT("AUTO") };
 
 	bool IsMobilePlatform()
 	{
@@ -83,6 +85,48 @@ namespace
 
 		const TCHAR* SlotName = (SkillIndex >= 0 && SkillIndex < LobbySkillSlotCount) ? SlotNames[SkillIndex] : TEXT("Skill");
 		return FString::Printf(TEXT("%s %s"), *ZodiacName, SlotName);
+	}
+
+	FText KeyToSkillHotkeyText(const FKey& Key, const TCHAR* Fallback)
+	{
+		if (!Key.IsValid())
+		{
+			return FText::FromString(Fallback ? FString(Fallback) : FString(TEXT("AUTO")));
+		}
+
+		const FText DisplayName = Key.GetDisplayName(false);
+		return DisplayName.IsEmpty() ? FText::FromName(Key.GetFName()) : DisplayName;
+	}
+
+	void ApplyFixedSkillGroupAssetHotkeys(const UDBAFixedSkillGroupDataAsset* SkillGroupAsset, TArray<FText>& OutSkillHotkeys)
+	{
+		if (!SkillGroupAsset)
+		{
+			return;
+		}
+
+		OutSkillHotkeys = {
+			KeyToSkillHotkeyText(SkillGroupAsset->PassiveInputKey, DesktopSkillHotkeys[0]),
+			KeyToSkillHotkeyText(SkillGroupAsset->Skill01InputKey, DesktopSkillHotkeys[1]),
+			KeyToSkillHotkeyText(SkillGroupAsset->Skill02InputKey, DesktopSkillHotkeys[2]),
+			KeyToSkillHotkeyText(SkillGroupAsset->Skill03InputKey, DesktopSkillHotkeys[3]),
+			KeyToSkillHotkeyText(SkillGroupAsset->Skill04InputKey, DesktopSkillHotkeys[4]),
+			KeyToSkillHotkeyText(SkillGroupAsset->ZodiacUltimateInputKey, DesktopSkillHotkeys[5]),
+			KeyToSkillHotkeyText(SkillGroupAsset->ResonanceInputKey, DesktopSkillHotkeys[6])
+		};
+	}
+
+	void ApplyFixedSkillGroupRowHotkeys(const FDBAZodiacElementFixedSkillGroupRow& SkillGroupRow, TArray<FText>& OutSkillHotkeys)
+	{
+		OutSkillHotkeys = {
+			KeyToSkillHotkeyText(SkillGroupRow.ElementPassiveInputKey, DesktopSkillHotkeys[0]),
+			KeyToSkillHotkeyText(SkillGroupRow.ElementSkill1InputKey, DesktopSkillHotkeys[1]),
+			KeyToSkillHotkeyText(SkillGroupRow.ElementSkill2InputKey, DesktopSkillHotkeys[2]),
+			KeyToSkillHotkeyText(SkillGroupRow.ElementSkill3InputKey, DesktopSkillHotkeys[3]),
+			KeyToSkillHotkeyText(SkillGroupRow.ElementSkill4InputKey, DesktopSkillHotkeys[4]),
+			KeyToSkillHotkeyText(SkillGroupRow.ZodiacUltimateInputKey, DesktopSkillHotkeys[5]),
+			KeyToSkillHotkeyText(SkillGroupRow.ResonanceInputKey, DesktopSkillHotkeys[6])
+		};
 	}
 
 	EDBAZodiac ToCommonZodiac(EDBAZodiacType ZodiacType)
@@ -181,11 +225,22 @@ void UDBALobbyPlayerHUDWidgetBase::RefreshFromCurrentCharacterData()
 			FText::FromString(ZodiacSkillFallbackName(PawnZodiac, 4)),
 			FText::FromString(ZodiacSkillFallbackName(PawnZodiac, 5)),
 			FText::FromString(ZodiacSkillFallbackName(PawnZodiac, 6))});
+		ApplySkillHotkeys({
+			FText::FromString(DesktopSkillHotkeys[0]),
+			FText::FromString(DesktopSkillHotkeys[1]),
+			FText::FromString(DesktopSkillHotkeys[2]),
+			FText::FromString(DesktopSkillHotkeys[3]),
+			FText::FromString(DesktopSkillHotkeys[4]),
+			FText::FromString(DesktopSkillHotkeys[5]),
+			FText::FromString(DesktopSkillHotkeys[6])});
 		if (PawnZodiac != EDBAZodiac::None)
 		{
 			TArray<FText> SkillLabels;
 			ResolveSkillLabelsForSummary(Summary, SkillLabels);
 			ApplySkillLabels(SkillLabels);
+			TArray<FText> SkillHotkeys;
+			ResolveSkillHotkeysForSummary(Summary, SkillHotkeys);
+			ApplySkillHotkeys(SkillHotkeys);
 		}
 		return;
 	}
@@ -213,6 +268,9 @@ void UDBALobbyPlayerHUDWidgetBase::RefreshFromCurrentCharacterData()
 	TArray<FText> SkillLabels;
 	ResolveSkillLabelsForSummary(Summary, SkillLabels);
 	ApplySkillLabels(SkillLabels);
+	TArray<FText> SkillHotkeys;
+	ResolveSkillHotkeysForSummary(Summary, SkillHotkeys);
+	ApplySkillHotkeys(SkillHotkeys);
 }
 
 void UDBALobbyPlayerHUDWidgetBase::BuildDefaultLayoutIfNeeded()
@@ -581,6 +639,19 @@ void UDBALobbyPlayerHUDWidgetBase::ApplySkillLabels(const TArray<FText>& SkillLa
 	}
 }
 
+void UDBALobbyPlayerHUDWidgetBase::ApplySkillHotkeys(const TArray<FText>& SkillHotkeys)
+{
+	const bool bMobile = IsMobilePlatform();
+	for (int32 Index = 0; Index < SkillHotkeyTexts.Num(); ++Index)
+	{
+		if (UTextBlock* HotkeyText = SkillHotkeyTexts[Index])
+		{
+			const FText Fallback = FText::FromString(bMobile ? MobileSkillHotkeys[Index] : DesktopSkillHotkeys[Index]);
+			HotkeyText->SetText(SkillHotkeys.IsValidIndex(Index) ? SkillHotkeys[Index] : Fallback);
+		}
+	}
+}
+
 void UDBALobbyPlayerHUDWidgetBase::ResolveSkillLabelsForSummary(const FDBACharacterSummary& Summary, TArray<FText>& OutSkillLabels) const
 {
 	const EDBAZodiac Zodiac = Summary.Zodiac == EDBAZodiac::None ? Summary.DefaultZodiac : Summary.Zodiac;
@@ -630,6 +701,46 @@ void UDBALobbyPlayerHUDWidgetBase::ResolveSkillLabelsForSummary(const FDBACharac
 		static_cast<int32>(Zodiac),
 		AppliedSkillCount,
 		Rows.Num());
+}
+
+void UDBALobbyPlayerHUDWidgetBase::ResolveSkillHotkeysForSummary(const FDBACharacterSummary& Summary, TArray<FText>& OutSkillHotkeys) const
+{
+	const bool bMobile = IsMobilePlatform();
+	OutSkillHotkeys = {
+		FText::FromString(bMobile ? MobileSkillHotkeys[0] : DesktopSkillHotkeys[0]),
+		FText::FromString(bMobile ? MobileSkillHotkeys[1] : DesktopSkillHotkeys[1]),
+		FText::FromString(bMobile ? MobileSkillHotkeys[2] : DesktopSkillHotkeys[2]),
+		FText::FromString(bMobile ? MobileSkillHotkeys[3] : DesktopSkillHotkeys[3]),
+		FText::FromString(bMobile ? MobileSkillHotkeys[4] : DesktopSkillHotkeys[4]),
+		FText::FromString(bMobile ? MobileSkillHotkeys[5] : DesktopSkillHotkeys[5]),
+		FText::FromString(bMobile ? MobileSkillHotkeys[6] : DesktopSkillHotkeys[6])
+	};
+
+	if (bMobile || Summary.FixedSkillGroupId.IsNone())
+	{
+		return;
+	}
+
+	if (const UDBAFixedSkillGroupDataAsset* SkillGroupAsset = UDBAFixedSkillGroupLibrary::GetFixedSkillGroupById(Summary.FixedSkillGroupId))
+	{
+		ApplyFixedSkillGroupAssetHotkeys(SkillGroupAsset, OutSkillHotkeys);
+		UE_LOG(LogDBACore, Log, TEXT("[LobbyPlayerHUD] Loaded skill hotkeys from FixedSkillGroup asset: %s"),
+			*Summary.FixedSkillGroupId.ToString());
+		return;
+	}
+
+	UDataTable* FixedSkillGroupTable = LoadObject<UDataTable>(nullptr, TEXT("/Game/DBA/Data/Tables/DT_FixedSkillGroups.DT_FixedSkillGroups"));
+	if (!FixedSkillGroupTable)
+	{
+		return;
+	}
+
+	if (const FDBAZodiacElementFixedSkillGroupRow* Row = FixedSkillGroupTable->FindRow<FDBAZodiacElementFixedSkillGroupRow>(Summary.FixedSkillGroupId, TEXT("LobbyHUD")))
+	{
+		ApplyFixedSkillGroupRowHotkeys(*Row, OutSkillHotkeys);
+		UE_LOG(LogDBACore, Log, TEXT("[LobbyPlayerHUD] Loaded skill hotkeys from FixedSkillGroup table row: %s"),
+			*Summary.FixedSkillGroupId.ToString());
+	}
 }
 
 bool UDBALobbyPlayerHUDWidgetBase::ResolveCurrentCharacterSummary(FDBACharacterSummary& OutSummary) const

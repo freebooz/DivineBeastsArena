@@ -60,6 +60,7 @@ void ADBALobbyPlayerController::BeginPlay()
 	{
 		EnsureMovementInputTags();
 		FInputModeGameOnly InputMode;
+		InputMode.SetConsumeCaptureMouseDown(false);
 		SetInputMode(InputMode);
 		SetShowMouseCursor(false);
 		bEnableTouchEvents = true;
@@ -78,6 +79,10 @@ void ADBALobbyPlayerController::OnPossess(APawn* InPawn)
 	Super::OnPossess(InPawn);
 	if (IsLocalController() && InPawn)
 	{
+		FInputModeGameOnly InputMode;
+		InputMode.SetConsumeCaptureMouseDown(false);
+		SetInputMode(InputMode);
+		SetShowMouseCursor(false);
 		SetViewTarget(InPawn);
 		UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] OnPossess view target set to pawn: %s"),
 			*InPawn->GetName());
@@ -90,6 +95,10 @@ void ADBALobbyPlayerController::AcknowledgePossession(APawn* P)
 	Super::AcknowledgePossession(P);
 	if (IsLocalController() && P)
 	{
+		FInputModeGameOnly InputMode;
+		InputMode.SetConsumeCaptureMouseDown(false);
+		SetInputMode(InputMode);
+		SetShowMouseCursor(false);
 		SetViewTarget(P);
 		UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] AcknowledgePossession view target set to pawn: %s"),
 			*P->GetName());

@@ -97,8 +97,8 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 	}
 
 	const TArray<FString> MeshCandidates = {
-		ADBACharacterPresentationActor::GetPreviewMeshPathForZodiac(Zodiac),
 		ADBACharacterPresentationActor::GetPreviewLegacyMeshPathForZodiac(Zodiac),
+		ADBACharacterPresentationActor::GetPreviewMeshPathForZodiac(Zodiac),
 		TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat")
 	};
 

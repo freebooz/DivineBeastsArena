@@ -86,6 +86,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation")
 	bool bIsMoving = false;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation")
+	float GroundSpeed = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation")
+	bool bIsInAir = false;
+
 	/** 是否在攻击中 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Animation")
 	bool bIsAttacking = false;

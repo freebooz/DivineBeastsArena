@@ -169,6 +169,7 @@ namespace
 		}
 
 		FInputModeGameOnly InputMode;
+		InputMode.SetConsumeCaptureMouseDown(false);
 		PC->SetInputMode(InputMode);
 		PC->SetShowMouseCursor(false);
 		PC->bEnableClickEvents = false;

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameCore/Data/DBADataAssetBase.h"
 #include "GameplayEffect.h"
+#include "InputCoreTypes.h"
 #include "DBATypedDataAssets.generated.h"
 
 /**
@@ -287,6 +288,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|AbilitySet")
     int32 AbilityLevel = 1;
 
+    /** 施放键；默认由输入配置使用数字键，避免和 WASD/方向键移动冲突 */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|AbilitySet|Input")
+    FKey InputKey = EKeys::Invalid;
+
     /** 冷却时间 (秒) */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|AbilitySet")
     float Cooldown = 0.0f;
@@ -425,6 +430,30 @@ public:
     /** R 技能 ID */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|SkillGroup")
     FName RSkillId;
+
+    /** 被动技能自动生效，不占用移动输入 */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|SkillGroup|Input")
+    FKey PassiveInputKey = EKeys::Invalid;
+
+    /** 主动技能 1 施放键，默认数字 1，避免和 WASD/方向键冲突 */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|SkillGroup|Input")
+    FKey Skill1InputKey = EKeys::One;
+
+    /** 主动技能 2 施放键，默认数字 2，避免和 WASD/方向键冲突 */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|SkillGroup|Input")
+    FKey Skill2InputKey = EKeys::Two;
+
+    /** 主动技能 3 施放键，默认数字 3，避免和 WASD/方向键冲突 */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|SkillGroup|Input")
+    FKey Skill3InputKey = EKeys::Three;
+
+    /** 主动技能 4 施放键，默认数字 4，避免和 WASD/方向键冲突 */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|SkillGroup|Input")
+    FKey Skill4InputKey = EKeys::Four;
+
+    /** 大招施放键，默认数字 5，避免和 WASD/方向键冲突 */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|SkillGroup|Input")
+    FKey UltimateInputKey = EKeys::Five;
 
     /** 召唤师技能 1 */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|SkillGroup")

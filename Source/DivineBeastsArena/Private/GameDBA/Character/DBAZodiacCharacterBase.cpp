@@ -6,6 +6,7 @@
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "GameDBA/RPC/DBARpcHandler.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
+#include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -34,6 +35,26 @@ namespace
 		case EDBAZodiacType::Dog: return EDBAZodiac::Dog;
 		case EDBAZodiacType::Pig: return EDBAZodiac::Pig;
 		default: return EDBAZodiac::Rat;
+		}
+	}
+
+	FString GetLobbyAnimBlueprintPathForZodiac(EDBAZodiac Zodiac)
+	{
+		switch (Zodiac)
+		{
+		case EDBAZodiac::Rat: return TEXT("/Game/Animation/Zodiac/Rat/ABP_Rat.ABP_Rat_C");
+		case EDBAZodiac::Ox: return TEXT("/Game/Animation/Zodiac/Ox/ABP_Ox.ABP_Ox_C");
+		case EDBAZodiac::Tiger: return TEXT("/Game/Animation/Zodiac/Tiger/ABP_Tiger.ABP_Tiger_C");
+		case EDBAZodiac::Rabbit: return TEXT("/Game/Animation/Zodiac/Rabbit/ABP_Rabbit.ABP_Rabbit_C");
+		case EDBAZodiac::Dragon: return TEXT("/Game/Animation/Zodiac/Dragon/ABP_Dragon.ABP_Dragon_C");
+		case EDBAZodiac::Snake: return TEXT("/Game/Animation/Zodiac/Snake/ABP_Snake.ABP_Snake_C");
+		case EDBAZodiac::Horse: return TEXT("/Game/Animation/Zodiac/Horse/ABP_Horse.ABP_Horse_C");
+		case EDBAZodiac::Goat: return TEXT("/Game/Animation/Zodiac/Goat/ABP_Goat.ABP_Goat_C");
+		case EDBAZodiac::Monkey: return TEXT("/Game/Animation/Zodiac/Monkey/ABP_Monkey.ABP_Monkey_C");
+		case EDBAZodiac::Rooster: return TEXT("/Game/Animation/Zodiac/Rooster/ABP_Rooster.ABP_Rooster_C");
+		case EDBAZodiac::Dog: return TEXT("/Game/Animation/Zodiac/Dog/ABP_Dog.ABP_Dog_C");
+		case EDBAZodiac::Pig: return TEXT("/Game/Animation/Zodiac/Pig/ABP_Pig.ABP_Pig_C");
+		default: return TEXT("/Game/Animation/Zodiac/Rat/ABP_Rat.ABP_Rat_C");
 		}
 	}
 }
@@ -109,13 +130,17 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 
 	const EDBAZodiac CommonZodiac = ToCommonZodiac(ZodiacType);
 	const TArray<FString> MeshCandidates = {
-		ADBACharacterPresentationActor::GetPreviewMeshPathForZodiac(CommonZodiac),
 		ADBACharacterPresentationActor::GetPreviewLegacyMeshPathForZodiac(CommonZodiac),
+		ADBACharacterPresentationActor::GetPreviewMeshPathForZodiac(CommonZodiac),
+		TEXT("/Game/DBA/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny"),
+		TEXT("/Game/DBA/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"),
 		TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat")
 	};
 
 	USkeletalMesh* ResolvedMesh = nullptr;
+	USkeletalMesh* FirstLoadedMesh = nullptr;
 	FString ResolvedMeshPath;
+	FString FirstLoadedMeshPath;
 	for (const FString& MeshPath : MeshCandidates)
 	{
 		if (MeshPath.IsEmpty())
@@ -126,9 +151,23 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 		ResolvedMesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath);
 		if (ResolvedMesh)
 		{
-			ResolvedMeshPath = MeshPath;
-			break;
+			if (!FirstLoadedMesh)
+			{
+				FirstLoadedMesh = ResolvedMesh;
+				FirstLoadedMeshPath = MeshPath;
+			}
+			if (ResolvedMesh->GetSkeleton())
+			{
+				ResolvedMeshPath = MeshPath;
+				break;
+			}
 		}
+	}
+
+	if (!ResolvedMesh || !ResolvedMesh->GetSkeleton())
+	{
+		ResolvedMesh = FirstLoadedMesh;
+		ResolvedMeshPath = FirstLoadedMeshPath;
 	}
 
 	if (ResolvedMesh)
@@ -141,6 +180,34 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 		MeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, -CapsuleHalfHeight + MeshBottomOffsetZ));
 		MeshComponent->SetRelativeRotation(ADBACharacterPresentationActor::GetPreviewMeshPlayerFacingRotation());
 		MeshComponent->SetRelativeScale3D(FVector(MeshScale));
+
+		if (ResolvedMesh->GetSkeleton())
+		{
+			const bool bUsingMannyFallback = ResolvedMeshPath.Contains(TEXT("/Game/DBA/Characters/Mannequins/"));
+			const FString AnimBlueprintPath = bUsingMannyFallback
+				? FString(TEXT("/Game/DBA/Characters/Mannequins/Animations/ABP_Manny.ABP_Manny_C"))
+				: GetLobbyAnimBlueprintPathForZodiac(CommonZodiac);
+			UClass* AnimClass = LoadClass<UAnimInstance>(nullptr, *AnimBlueprintPath);
+			if (!AnimClass)
+			{
+				AnimClass = LoadClass<UAnimInstance>(nullptr, TEXT("/Game/DBA/Characters/Mannequins/Animations/ABP_Manny.ABP_Manny_C"));
+			}
+			if (AnimClass)
+			{
+				MeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+				MeshComponent->SetAnimInstanceClass(AnimClass);
+			}
+			else
+			{
+				MeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+				MeshComponent->SetAnimInstanceClass(UDBAZodiacAnimInstance::StaticClass());
+			}
+		}
+		else
+		{
+			MeshComponent->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+			UE_LOG(LogTemp, Warning, TEXT("[DBAZodiacCharacterBase] Mesh has no skeleton, animation blueprint skipped: %s"), *ResolvedMeshPath);
+		}
 	}
 
 	MeshComponent->SetVisibility(true);
@@ -151,10 +218,12 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 	MeshComponent->UpdateBounds();
 	ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(MeshComponent, CommonZodiac, this);
 
-	UE_LOG(LogTemp, Log, TEXT("[DBAZodiacCharacterBase] Lobby visuals applied: actor=%s zodiac=%d mesh=%s location=%s rotation=%s"),
+	UE_LOG(LogTemp, Log, TEXT("[DBAZodiacCharacterBase] Lobby visuals applied: actor=%s zodiac=%d mesh=%s skeleton=%s anim=%s location=%s rotation=%s"),
 		*GetName(),
 		static_cast<int32>(CommonZodiac),
 		ResolvedMeshPath.IsEmpty() ? TEXT("<unchanged>") : *ResolvedMeshPath,
+		ResolvedMesh && ResolvedMesh->GetSkeleton() ? TEXT("true") : TEXT("false"),
+		MeshComponent->GetAnimInstance() ? *MeshComponent->GetAnimInstance()->GetClass()->GetName() : TEXT("<none>"),
 		*MeshComponent->GetRelativeLocation().ToString(),
 		*MeshComponent->GetRelativeRotation().ToString());
 }
