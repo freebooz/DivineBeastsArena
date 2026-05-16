@@ -9,6 +9,7 @@
 #include "GameDBA/GAS/Abilities/DBAElementAbilityBase.h"
 #include "GameDBA/GAS/Abilities/DBAZodiacUltimateAbilityBase.h"
 #include "GameDBA/GAS/Abilities/DBAResonanceAbilityBase.h"
+#include "InputCoreTypes.h"
 #include "DBAAbilitySetLibrary.generated.h"
 
 class UDataTable;
@@ -46,6 +47,27 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "DBA|FixedSkillGroup")
 	TSubclassOf<UDBAResonanceAbilityBase> ResonanceAbilityClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DBA|FixedSkillGroup|Input")
+	FKey PassiveInputKey = EKeys::Invalid;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DBA|FixedSkillGroup|Input")
+	FKey Skill01InputKey = EKeys::One;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DBA|FixedSkillGroup|Input")
+	FKey Skill02InputKey = EKeys::Two;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DBA|FixedSkillGroup|Input")
+	FKey Skill03InputKey = EKeys::Three;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DBA|FixedSkillGroup|Input")
+	FKey Skill04InputKey = EKeys::Four;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DBA|FixedSkillGroup|Input")
+	FKey ZodiacUltimateInputKey = EKeys::Five;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DBA|FixedSkillGroup|Input")
+	FKey ResonanceInputKey = EKeys::Invalid;
 };
 
 /**

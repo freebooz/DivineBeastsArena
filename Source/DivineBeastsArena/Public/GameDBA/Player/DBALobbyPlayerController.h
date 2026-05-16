@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "GameFramework/PlayerController.h"
 #include "DBALobbyPlayerController.generated.h"
 
@@ -31,10 +32,21 @@ protected:
 	void MoveRightAxis(float Value);
 	void TurnAxis(float Value);
 	void LookUpAxis(float Value);
+	void HandleMoveForwardPressed();
+	void HandleMoveForwardReleased();
+	void HandleMoveBackwardPressed();
+	void HandleMoveBackwardReleased();
+	void HandleMoveLeftPressed();
+	void HandleMoveLeftReleased();
+	void HandleMoveRightPressed();
+	void HandleMoveRightReleased();
 
 	void ApplyMovementInput(float ForwardValue, float RightValue);
-	void ApplyDesktopFallbackInput();
-	void ApplyMouseLookWhileRightButton();
+	void EnsureMovementInputTags();
+	void RefreshMovementInputTagsFromKeyboard();
+	void SetMovementTagActive(const FGameplayTag& Tag, bool bActive);
+	FVector2D ResolveTaggedMovementInput() const;
+	void ApplyMouseLook();
 	void ApplyTouchLook();
 
 protected:
@@ -48,10 +60,15 @@ protected:
 	bool bEnableTouchLook = true;
 
 private:
-	float CachedMoveForwardAxis = 0.0f;
-	float CachedMoveRightAxis = 0.0f;
+	float AnalogMoveForwardAxis = 0.0f;
+	float AnalogMoveRightAxis = 0.0f;
 	float CachedTurnAxis = 0.0f;
 	float CachedLookUpAxis = 0.0f;
+	FGameplayTag MoveForwardTag;
+	FGameplayTag MoveBackwardTag;
+	FGameplayTag MoveLeftTag;
+	FGameplayTag MoveRightTag;
+	FGameplayTagContainer ActiveMovementInputTags;
 	bool bJumpHeld = false;
 	bool bTouchLookWasPressed = false;
 	FVector2D LastTouchLookPos = FVector2D::ZeroVector;

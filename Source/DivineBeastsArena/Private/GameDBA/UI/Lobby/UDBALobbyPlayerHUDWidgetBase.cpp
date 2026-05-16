@@ -30,6 +30,10 @@
 
 namespace
 {
+	constexpr int32 LobbySkillSlotCount = 7;
+	const TCHAR* DesktopSkillHotkeys[LobbySkillSlotCount] = { TEXT("P"), TEXT("Q"), TEXT("W"), TEXT("E"), TEXT("R"), TEXT("T"), TEXT("Z") };
+	const TCHAR* MobileSkillHotkeys[LobbySkillSlotCount] = { TEXT("P"), TEXT("S1"), TEXT("S2"), TEXT("S3"), TEXT("S4"), TEXT("ULT"), TEXT("RES") };
+
 	bool IsMobilePlatform()
 	{
 		const FString Platform = UGameplayStatics::GetPlatformName();
@@ -44,17 +48,68 @@ namespace
 			: Summary.PrimaryElement;
 	}
 
-	FString ElementSkillPrefix(EDBAElement Element)
+	int32 SkillSlotToLobbyIndex(EDBASkillSlot Slot)
 	{
-		switch (Element)
+		switch (Slot)
 		{
-		case EDBAElement::Fire: return TEXT("Fire");
-		case EDBAElement::Water: return TEXT("Water");
-		case EDBAElement::Wood: return TEXT("Wood");
-		case EDBAElement::Gold: return TEXT("Gold");
-		case EDBAElement::Earth: return TEXT("Earth");
-		default: return TEXT("Unknown");
+		case EDBASkillSlot::Passive: return 0;
+		case EDBASkillSlot::Active1: return 1;
+		case EDBASkillSlot::Active2: return 2;
+		case EDBASkillSlot::Active3: return 3;
+		case EDBASkillSlot::Active4: return 4;
+		case EDBASkillSlot::Ultimate: return 5;
+		default: return INDEX_NONE;
 		}
+	}
+
+	FString ZodiacSkillFallbackName(EDBAZodiac Zodiac, int32 SkillIndex)
+	{
+		static const TCHAR* SlotNames[LobbySkillSlotCount] = {
+			TEXT("Passive"),
+			TEXT("Skill 1"),
+			TEXT("Skill 2"),
+			TEXT("Skill 3"),
+			TEXT("Skill 4"),
+			TEXT("Ultimate"),
+			TEXT("Resonance")
+		};
+
+		const UEnum* ZodiacEnum = StaticEnum<EDBAZodiac>();
+		FString ZodiacName = ZodiacEnum ? ZodiacEnum->GetNameStringByValue(static_cast<int64>(Zodiac)) : TEXT("Zodiac");
+		if (ZodiacName.IsEmpty() || Zodiac == EDBAZodiac::None)
+		{
+			ZodiacName = TEXT("Zodiac");
+		}
+
+		const TCHAR* SlotName = (SkillIndex >= 0 && SkillIndex < LobbySkillSlotCount) ? SlotNames[SkillIndex] : TEXT("Skill");
+		return FString::Printf(TEXT("%s %s"), *ZodiacName, SlotName);
+	}
+
+	EDBAZodiac ToCommonZodiac(EDBAZodiacType ZodiacType)
+	{
+		switch (ZodiacType)
+		{
+		case EDBAZodiacType::Rat: return EDBAZodiac::Rat;
+		case EDBAZodiacType::Ox: return EDBAZodiac::Ox;
+		case EDBAZodiacType::Tiger: return EDBAZodiac::Tiger;
+		case EDBAZodiacType::Rabbit: return EDBAZodiac::Rabbit;
+		case EDBAZodiacType::Dragon: return EDBAZodiac::Dragon;
+		case EDBAZodiacType::Snake: return EDBAZodiac::Snake;
+		case EDBAZodiacType::Horse: return EDBAZodiac::Horse;
+		case EDBAZodiacType::Goat: return EDBAZodiac::Goat;
+		case EDBAZodiacType::Monkey: return EDBAZodiac::Monkey;
+		case EDBAZodiacType::Rooster: return EDBAZodiac::Rooster;
+		case EDBAZodiacType::Dog: return EDBAZodiac::Dog;
+		case EDBAZodiacType::Pig: return EDBAZodiac::Pig;
+		default: return EDBAZodiac::None;
+		}
+	}
+
+	EDBAZodiac ResolvePawnZodiac(const UUserWidget* Widget)
+	{
+		const APlayerController* PC = Widget ? Widget->GetOwningPlayer() : nullptr;
+		const ADBAZodiacCharacterBase* Character = PC ? Cast<ADBAZodiacCharacterBase>(PC->GetPawn()) : nullptr;
+		return Character ? ToCommonZodiac(Character->GetZodiacType()) : EDBAZodiac::None;
 	}
 }
 
@@ -101,19 +156,37 @@ void UDBALobbyPlayerHUDWidgetBase::RefreshFromCurrentCharacterData()
 	FDBACharacterSummary Summary;
 	if (!ResolveCurrentCharacterSummary(Summary))
 	{
+		const EDBAZodiac PawnZodiac = ResolvePawnZodiac(this);
 		if (AvatarNameText)
 		{
 			AvatarNameText->SetText(FText::FromString(TEXT("Player")));
 		}
 		if (AvatarMetaText)
 		{
-			AvatarMetaText->SetText(FText::FromString(TEXT("No Character Data")));
+			AvatarMetaText->SetText(PawnZodiac == EDBAZodiac::None
+				? FText::FromString(TEXT("No Character Data"))
+				: FText::Format(FText::FromString(TEXT("{0} | Lobby | Lv.1")), ZodiacToShortText(PawnZodiac)));
 		}
+		if (AvatarImage && PawnZodiac != EDBAZodiac::None)
+		{
+			AvatarImage->SetColorAndOpacity(ZodiacToColor(PawnZodiac));
+		}
+		Summary.Zodiac = PawnZodiac;
+		Summary.DefaultZodiac = PawnZodiac;
 		ApplySkillLabels({
-			FText::FromString(TEXT("Skill 1")),
-			FText::FromString(TEXT("Skill 2")),
-			FText::FromString(TEXT("Skill 3")),
-			FText::FromString(TEXT("Skill 4"))});
+			FText::FromString(ZodiacSkillFallbackName(PawnZodiac, 0)),
+			FText::FromString(ZodiacSkillFallbackName(PawnZodiac, 1)),
+			FText::FromString(ZodiacSkillFallbackName(PawnZodiac, 2)),
+			FText::FromString(ZodiacSkillFallbackName(PawnZodiac, 3)),
+			FText::FromString(ZodiacSkillFallbackName(PawnZodiac, 4)),
+			FText::FromString(ZodiacSkillFallbackName(PawnZodiac, 5)),
+			FText::FromString(ZodiacSkillFallbackName(PawnZodiac, 6))});
+		if (PawnZodiac != EDBAZodiac::None)
+		{
+			TArray<FText> SkillLabels;
+			ResolveSkillLabelsForSummary(Summary, SkillLabels);
+			ApplySkillLabels(SkillLabels);
+		}
 		return;
 	}
 
@@ -257,15 +330,13 @@ void UDBALobbyPlayerHUDWidgetBase::BuildBottomSkillBar(UCanvasPanel* RootCanvas)
 	SkillBarSlot->SetAutoSize(true);
 	SkillBarSlot->SetZOrder(45);
 
-	static const TCHAR* DesktopHotkeys[4] = { TEXT("Q"), TEXT("W"), TEXT("E"), TEXT("R") };
-	static const TCHAR* MobileHotkeys[4] = { TEXT("S1"), TEXT("S2"), TEXT("S3"), TEXT("S4") };
-	const TCHAR* const* Hotkeys = bMobile ? MobileHotkeys : DesktopHotkeys;
+	const TCHAR* const* Hotkeys = bMobile ? MobileSkillHotkeys : DesktopSkillHotkeys;
 	SkillSlotBorders.Reset();
 	SkillNameTexts.Reset();
 	SkillHotkeyTexts.Reset();
 	SkillCooldownTexts.Reset();
 
-	for (int32 Index = 0; Index < 4; ++Index)
+	for (int32 Index = 0; Index < LobbySkillSlotCount; ++Index)
 	{
 		UBorder* SlotBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), *FString::Printf(TEXT("LobbyHUD_SkillSlot_%d"), Index));
 		SlotBorder->SetBrushColor(FLinearColor(0.04f, 0.04f, 0.05f, 0.82f));
@@ -288,7 +359,7 @@ void UDBALobbyPlayerHUDWidgetBase::BuildBottomSkillBar(UCanvasPanel* RootCanvas)
 		}
 
 		UTextBlock* NameText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), *FString::Printf(TEXT("LobbyHUD_SkillName_%d"), Index));
-		NameText->SetText(FText::FromString(FString::Printf(TEXT("Skill %d"), Index + 1)));
+		NameText->SetText(FText::FromString(ZodiacSkillFallbackName(EDBAZodiac::None, Index)));
 		NameText->SetFont(FCoreStyle::GetDefaultFontStyle(TEXT("Bold"), bMobile ? 12 : 13));
 		NameText->SetColorAndOpacity(FSlateColor(FLinearColor(0.95f, 0.95f, 0.98f, 1.0f)));
 		if (UVerticalBoxSlot* NameSlot = ContentVBox->AddChildToVerticalBox(NameText))
@@ -489,9 +560,7 @@ void UDBALobbyPlayerHUDWidgetBase::ApplyResponsiveLayout(const FVector2D& Viewpo
 
 		if (UTextBlock* HotkeyText = SkillHotkeyTexts.IsValidIndex(Index) ? SkillHotkeyTexts[Index] : nullptr)
 		{
-			HotkeyText->SetText(FText::FromString(bMobileLike
-				? FString::Printf(TEXT("S%d"), Index + 1)
-				: (Index == 0 ? TEXT("Q") : Index == 1 ? TEXT("W") : Index == 2 ? TEXT("E") : TEXT("R"))));
+			HotkeyText->SetText(FText::FromString(bMobileLike ? MobileSkillHotkeys[Index] : DesktopSkillHotkeys[Index]));
 		}
 	}
 }
@@ -514,15 +583,18 @@ void UDBALobbyPlayerHUDWidgetBase::ApplySkillLabels(const TArray<FText>& SkillLa
 
 void UDBALobbyPlayerHUDWidgetBase::ResolveSkillLabelsForSummary(const FDBACharacterSummary& Summary, TArray<FText>& OutSkillLabels) const
 {
+	const EDBAZodiac Zodiac = Summary.Zodiac == EDBAZodiac::None ? Summary.DefaultZodiac : Summary.Zodiac;
 	OutSkillLabels = {
-		FText::FromString(TEXT("Skill 1")),
-		FText::FromString(TEXT("Skill 2")),
-		FText::FromString(TEXT("Skill 3")),
-		FText::FromString(TEXT("Skill 4"))
+		FText::FromString(ZodiacSkillFallbackName(Zodiac, 0)),
+		FText::FromString(ZodiacSkillFallbackName(Zodiac, 1)),
+		FText::FromString(ZodiacSkillFallbackName(Zodiac, 2)),
+		FText::FromString(ZodiacSkillFallbackName(Zodiac, 3)),
+		FText::FromString(ZodiacSkillFallbackName(Zodiac, 4)),
+		FText::FromString(ZodiacSkillFallbackName(Zodiac, 5)),
+		FText::FromString(ZodiacSkillFallbackName(Zodiac, 6))
 	};
 
-	const EDBAElement Element = ResolveSummaryElement(Summary);
-	if (Element == EDBAElement::None)
+	if (Zodiac == EDBAZodiac::None)
 	{
 		return;
 	}
@@ -530,25 +602,34 @@ void UDBALobbyPlayerHUDWidgetBase::ResolveSkillLabelsForSummary(const FDBACharac
 	UDataTable* SkillDataTable = LoadObject<UDataTable>(nullptr, TEXT("/Game/Data/Skills/SkillDataTable.SkillDataTable"));
 	if (!SkillDataTable)
 	{
+		UE_LOG(LogDBACore, Warning, TEXT("[LobbyPlayerHUD] SkillDataTable unavailable for zodiac=%d"), static_cast<int32>(Zodiac));
 		return;
 	}
 
-	const FString ElementToken = ElementSkillPrefix(Element);
-	for (int32 SkillIndex = 0; SkillIndex < 4; ++SkillIndex)
+	TArray<FDBASkillDataRow*> Rows;
+	SkillDataTable->GetAllRows<FDBASkillDataRow>(TEXT("LobbyHUD"), Rows);
+	int32 AppliedSkillCount = 0;
+	for (const FDBASkillDataRow* Row : Rows)
 	{
-		const FName RowName(*FString::Printf(TEXT("Element_%s_Skill_%d"), *ElementToken, SkillIndex + 1));
-		if (const FDBASkillDataRow* Row = SkillDataTable->FindRow<FDBASkillDataRow>(RowName, TEXT("LobbyHUD")))
+		if (!Row || Row->ZodiacType != Zodiac || !Row->bEnabled || Row->bIsInDevelopment)
 		{
-			if (!Row->DisplayName.IsEmpty())
-			{
-				OutSkillLabels[SkillIndex] = Row->DisplayName;
-			}
-			else
-			{
-				OutSkillLabels[SkillIndex] = FText::FromName(RowName);
-			}
+			continue;
 		}
+
+		const int32 SkillIndex = SkillSlotToLobbyIndex(Row->SkillSlot);
+		if (!OutSkillLabels.IsValidIndex(SkillIndex))
+		{
+			continue;
+		}
+
+		OutSkillLabels[SkillIndex] = Row->DisplayName.IsEmpty() ? FText::FromName(Row->SkillId) : Row->DisplayName;
+		++AppliedSkillCount;
 	}
+
+	UE_LOG(LogDBACore, Log, TEXT("[LobbyPlayerHUD] Loaded zodiac skill labels: zodiac=%d applied=%d rows=%d"),
+		static_cast<int32>(Zodiac),
+		AppliedSkillCount,
+		Rows.Num());
 }
 
 bool UDBALobbyPlayerHUDWidgetBase::ResolveCurrentCharacterSummary(FDBACharacterSummary& OutSummary) const

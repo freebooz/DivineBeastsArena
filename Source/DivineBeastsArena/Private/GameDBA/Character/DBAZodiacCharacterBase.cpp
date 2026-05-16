@@ -5,12 +5,38 @@
 #include "GameDBA/GAS/DBAAbilitySystemComponent.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "GameDBA/RPC/DBARpcHandler.h"
+#include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameDBA/Animation/DBAZodiacAnimInstance.h"
 #include "Net/UnrealNetwork.h"
+
+namespace
+{
+	EDBAZodiac ToCommonZodiac(EDBAZodiacType ZodiacType)
+	{
+		switch (ZodiacType)
+		{
+		case EDBAZodiacType::Rat: return EDBAZodiac::Rat;
+		case EDBAZodiacType::Ox: return EDBAZodiac::Ox;
+		case EDBAZodiacType::Tiger: return EDBAZodiac::Tiger;
+		case EDBAZodiacType::Rabbit: return EDBAZodiac::Rabbit;
+		case EDBAZodiacType::Dragon: return EDBAZodiac::Dragon;
+		case EDBAZodiacType::Snake: return EDBAZodiac::Snake;
+		case EDBAZodiacType::Horse: return EDBAZodiac::Horse;
+		case EDBAZodiacType::Goat: return EDBAZodiac::Goat;
+		case EDBAZodiacType::Monkey: return EDBAZodiac::Monkey;
+		case EDBAZodiacType::Rooster: return EDBAZodiac::Rooster;
+		case EDBAZodiacType::Dog: return EDBAZodiac::Dog;
+		case EDBAZodiacType::Pig: return EDBAZodiac::Pig;
+		default: return EDBAZodiac::Rat;
+		}
+	}
+}
 
 ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
 {
@@ -58,6 +84,8 @@ void ADBAZodiacCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	ApplyLobbyVisuals();
+
 	// Spawn RPC Handler
 	if (HasAuthority() && RpcHandlerClass)
 	{
@@ -69,6 +97,66 @@ void ADBAZodiacCharacterBase::BeginPlay()
 			RpcHandler->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
 		}
 	}
+}
+
+void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
+{
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+	if (!MeshComponent)
+	{
+		return;
+	}
+
+	const EDBAZodiac CommonZodiac = ToCommonZodiac(ZodiacType);
+	const TArray<FString> MeshCandidates = {
+		ADBACharacterPresentationActor::GetPreviewMeshPathForZodiac(CommonZodiac),
+		ADBACharacterPresentationActor::GetPreviewLegacyMeshPathForZodiac(CommonZodiac),
+		TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat")
+	};
+
+	USkeletalMesh* ResolvedMesh = nullptr;
+	FString ResolvedMeshPath;
+	for (const FString& MeshPath : MeshCandidates)
+	{
+		if (MeshPath.IsEmpty())
+		{
+			continue;
+		}
+
+		ResolvedMesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath);
+		if (ResolvedMesh)
+		{
+			ResolvedMeshPath = MeshPath;
+			break;
+		}
+	}
+
+	if (ResolvedMesh)
+	{
+		MeshComponent->SetSkeletalMesh(ResolvedMesh);
+		const float MeshScale = 1.0f;
+		const float CapsuleHalfHeight = GetCapsuleComponent() ? GetCapsuleComponent()->GetScaledCapsuleHalfHeight() : 88.0f;
+		const FBox MeshBox = ResolvedMesh->GetBounds().GetBox();
+		const float MeshBottomOffsetZ = MeshBox.IsValid ? (-MeshBox.Min.Z * MeshScale) + 2.0f : 0.0f;
+		MeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, -CapsuleHalfHeight + MeshBottomOffsetZ));
+		MeshComponent->SetRelativeRotation(ADBACharacterPresentationActor::GetPreviewMeshPlayerFacingRotation());
+		MeshComponent->SetRelativeScale3D(FVector(MeshScale));
+	}
+
+	MeshComponent->SetVisibility(true);
+	MeshComponent->SetHiddenInGame(false);
+	MeshComponent->SetComponentTickEnabled(true);
+	MeshComponent->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	MeshComponent->SetBoundsScale(2.0f);
+	MeshComponent->UpdateBounds();
+	ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(MeshComponent, CommonZodiac, this);
+
+	UE_LOG(LogTemp, Log, TEXT("[DBAZodiacCharacterBase] Lobby visuals applied: actor=%s zodiac=%d mesh=%s location=%s rotation=%s"),
+		*GetName(),
+		static_cast<int32>(CommonZodiac),
+		ResolvedMeshPath.IsEmpty() ? TEXT("<unchanged>") : *ResolvedMeshPath,
+		*MeshComponent->GetRelativeLocation().ToString(),
+		*MeshComponent->GetRelativeRotation().ToString());
 }
 
 void ADBAZodiacCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

@@ -569,6 +569,10 @@ void UDBAGameUIManager::ShowLobbyPlayerHUD()
 		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Lobby player HUD added to viewport: %s"),
 			*LobbyPlayerHUDWidget->GetClass()->GetName());
 	}
+	else if (LobbyPlayerHUDWidget && bLobbyPlayerHUDVisible)
+	{
+		LobbyPlayerHUDWidget->RefreshFromCurrentCharacterData();
+	}
 	else if (!LobbyPlayerHUDWidget && IsLobbyGameplayWorld(GetWorld()))
 	{
 		ScheduleLobbyHUDRefreshRetry();

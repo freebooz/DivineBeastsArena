@@ -45,6 +45,11 @@ ADBALobbyPlayerController::ADBALobbyPlayerController()
 	bEnableMouseOverEvents = false;
 	bEnableTouchEvents = true;
 	bEnableTouchOverEvents = false;
+
+	MoveForwardTag = FGameplayTag::RequestGameplayTag(TEXT("Input.Move.Forward"), false);
+	MoveBackwardTag = FGameplayTag::RequestGameplayTag(TEXT("Input.Move.Backward"), false);
+	MoveLeftTag = FGameplayTag::RequestGameplayTag(TEXT("Input.Move.Left"), false);
+	MoveRightTag = FGameplayTag::RequestGameplayTag(TEXT("Input.Move.Right"), false);
 }
 
 void ADBALobbyPlayerController::BeginPlay()
@@ -53,6 +58,7 @@ void ADBALobbyPlayerController::BeginPlay()
 
 	if (IsLocalController())
 	{
+		EnsureMovementInputTags();
 		FInputModeGameOnly InputMode;
 		SetInputMode(InputMode);
 		SetShowMouseCursor(false);
@@ -105,6 +111,23 @@ void ADBALobbyPlayerController::SetupInputComponent()
 	InputComponent->BindAxis(TEXT("MoveRight"), this, &ADBALobbyPlayerController::MoveRightAxis);
 	InputComponent->BindAxis(TEXT("Turn"), this, &ADBALobbyPlayerController::TurnAxis);
 	InputComponent->BindAxis(TEXT("LookUp"), this, &ADBALobbyPlayerController::LookUpAxis);
+
+	InputComponent->BindKey(EKeys::W, IE_Pressed, this, &ADBALobbyPlayerController::HandleMoveForwardPressed);
+	InputComponent->BindKey(EKeys::W, IE_Released, this, &ADBALobbyPlayerController::HandleMoveForwardReleased);
+	InputComponent->BindKey(EKeys::Up, IE_Pressed, this, &ADBALobbyPlayerController::HandleMoveForwardPressed);
+	InputComponent->BindKey(EKeys::Up, IE_Released, this, &ADBALobbyPlayerController::HandleMoveForwardReleased);
+	InputComponent->BindKey(EKeys::S, IE_Pressed, this, &ADBALobbyPlayerController::HandleMoveBackwardPressed);
+	InputComponent->BindKey(EKeys::S, IE_Released, this, &ADBALobbyPlayerController::HandleMoveBackwardReleased);
+	InputComponent->BindKey(EKeys::Down, IE_Pressed, this, &ADBALobbyPlayerController::HandleMoveBackwardPressed);
+	InputComponent->BindKey(EKeys::Down, IE_Released, this, &ADBALobbyPlayerController::HandleMoveBackwardReleased);
+	InputComponent->BindKey(EKeys::A, IE_Pressed, this, &ADBALobbyPlayerController::HandleMoveLeftPressed);
+	InputComponent->BindKey(EKeys::A, IE_Released, this, &ADBALobbyPlayerController::HandleMoveLeftReleased);
+	InputComponent->BindKey(EKeys::Left, IE_Pressed, this, &ADBALobbyPlayerController::HandleMoveLeftPressed);
+	InputComponent->BindKey(EKeys::Left, IE_Released, this, &ADBALobbyPlayerController::HandleMoveLeftReleased);
+	InputComponent->BindKey(EKeys::D, IE_Pressed, this, &ADBALobbyPlayerController::HandleMoveRightPressed);
+	InputComponent->BindKey(EKeys::D, IE_Released, this, &ADBALobbyPlayerController::HandleMoveRightReleased);
+	InputComponent->BindKey(EKeys::Right, IE_Pressed, this, &ADBALobbyPlayerController::HandleMoveRightPressed);
+	InputComponent->BindKey(EKeys::Right, IE_Released, this, &ADBALobbyPlayerController::HandleMoveRightReleased);
 }
 
 void ADBALobbyPlayerController::PlayerTick(float DeltaTime)
@@ -116,9 +139,12 @@ void ADBALobbyPlayerController::PlayerTick(float DeltaTime)
 		return;
 	}
 
-	ApplyDesktopFallbackInput();
-	ApplyMovementInput(CachedMoveForwardAxis, CachedMoveRightAxis);
-	ApplyMouseLookWhileRightButton();
+	RefreshMovementInputTagsFromKeyboard();
+	const FVector2D TaggedMove = ResolveTaggedMovementInput();
+	const float ForwardValue = !FMath::IsNearlyZero(AnalogMoveForwardAxis) ? AnalogMoveForwardAxis : TaggedMove.X;
+	const float RightValue = !FMath::IsNearlyZero(AnalogMoveRightAxis) ? AnalogMoveRightAxis : TaggedMove.Y;
+	ApplyMovementInput(ForwardValue, RightValue);
+	ApplyMouseLook();
 	ApplyTouchLook();
 
 	if (ACharacter* ControlledCharacter = Cast<ACharacter>(GetPawn()))
@@ -139,12 +165,12 @@ void ADBALobbyPlayerController::PlayerTick(float DeltaTime)
 
 void ADBALobbyPlayerController::MoveForwardAxis(float Value)
 {
-	CachedMoveForwardAxis = Value;
+	AnalogMoveForwardAxis = FMath::IsNearlyZero(Value, 0.05f) ? 0.0f : FMath::Clamp(Value, -1.0f, 1.0f);
 }
 
 void ADBALobbyPlayerController::MoveRightAxis(float Value)
 {
-	CachedMoveRightAxis = Value;
+	AnalogMoveRightAxis = FMath::IsNearlyZero(Value, 0.05f) ? 0.0f : FMath::Clamp(Value, -1.0f, 1.0f);
 }
 
 void ADBALobbyPlayerController::TurnAxis(float Value)
@@ -154,6 +180,46 @@ void ADBALobbyPlayerController::TurnAxis(float Value)
 	{
 		AddYawInput(Value);
 	}
+}
+
+void ADBALobbyPlayerController::HandleMoveForwardPressed()
+{
+	SetMovementTagActive(MoveForwardTag, true);
+}
+
+void ADBALobbyPlayerController::HandleMoveForwardReleased()
+{
+	SetMovementTagActive(MoveForwardTag, false);
+}
+
+void ADBALobbyPlayerController::HandleMoveBackwardPressed()
+{
+	SetMovementTagActive(MoveBackwardTag, true);
+}
+
+void ADBALobbyPlayerController::HandleMoveBackwardReleased()
+{
+	SetMovementTagActive(MoveBackwardTag, false);
+}
+
+void ADBALobbyPlayerController::HandleMoveLeftPressed()
+{
+	SetMovementTagActive(MoveLeftTag, true);
+}
+
+void ADBALobbyPlayerController::HandleMoveLeftReleased()
+{
+	SetMovementTagActive(MoveLeftTag, false);
+}
+
+void ADBALobbyPlayerController::HandleMoveRightPressed()
+{
+	SetMovementTagActive(MoveRightTag, true);
+}
+
+void ADBALobbyPlayerController::HandleMoveRightReleased()
+{
+	SetMovementTagActive(MoveRightTag, false);
 }
 
 void ADBALobbyPlayerController::LookUpAxis(float Value)
@@ -188,33 +254,79 @@ void ADBALobbyPlayerController::ApplyMovementInput(float ForwardValue, float Rig
 	}
 }
 
-void ADBALobbyPlayerController::ApplyDesktopFallbackInput()
+void ADBALobbyPlayerController::RefreshMovementInputTagsFromKeyboard()
 {
-	// Fallback when project axis mappings are unavailable.
-	float Forward = CachedMoveForwardAxis;
-	float Right = CachedMoveRightAxis;
-
-	if (FMath::IsNearlyZero(Forward))
-	{
-		Forward = (IsInputKeyDown(EKeys::W) ? 1.0f : 0.0f) + (IsInputKeyDown(EKeys::S) ? -1.0f : 0.0f);
-	}
-	if (FMath::IsNearlyZero(Right))
-	{
-		Right = (IsInputKeyDown(EKeys::D) ? 1.0f : 0.0f) + (IsInputKeyDown(EKeys::A) ? -1.0f : 0.0f);
-	}
-
-	CachedMoveForwardAxis = FMath::Clamp(Forward, -1.0f, 1.0f);
-	CachedMoveRightAxis = FMath::Clamp(Right, -1.0f, 1.0f);
+	EnsureMovementInputTags();
+	SetMovementTagActive(MoveForwardTag, IsInputKeyDown(EKeys::W) || IsInputKeyDown(EKeys::Up));
+	SetMovementTagActive(MoveBackwardTag, IsInputKeyDown(EKeys::S) || IsInputKeyDown(EKeys::Down));
+	SetMovementTagActive(MoveLeftTag, IsInputKeyDown(EKeys::A) || IsInputKeyDown(EKeys::Left));
+	SetMovementTagActive(MoveRightTag, IsInputKeyDown(EKeys::D) || IsInputKeyDown(EKeys::Right));
 }
 
-void ADBALobbyPlayerController::ApplyMouseLookWhileRightButton()
+void ADBALobbyPlayerController::EnsureMovementInputTags()
 {
-	// Desktop mouse look while holding the right mouse button.
-	if (!IsInputKeyDown(EKeys::RightMouseButton))
+	if (!MoveForwardTag.IsValid())
+	{
+		MoveForwardTag = FGameplayTag::RequestGameplayTag(TEXT("Input.Move.Forward"), false);
+	}
+	if (!MoveBackwardTag.IsValid())
+	{
+		MoveBackwardTag = FGameplayTag::RequestGameplayTag(TEXT("Input.Move.Backward"), false);
+	}
+	if (!MoveLeftTag.IsValid())
+	{
+		MoveLeftTag = FGameplayTag::RequestGameplayTag(TEXT("Input.Move.Left"), false);
+	}
+	if (!MoveRightTag.IsValid())
+	{
+		MoveRightTag = FGameplayTag::RequestGameplayTag(TEXT("Input.Move.Right"), false);
+	}
+}
+
+void ADBALobbyPlayerController::SetMovementTagActive(const FGameplayTag& Tag, bool bActive)
+{
+	if (!Tag.IsValid())
 	{
 		return;
 	}
 
+	if (bActive)
+	{
+		ActiveMovementInputTags.AddTag(Tag);
+	}
+	else
+	{
+		ActiveMovementInputTags.RemoveTag(Tag);
+	}
+}
+
+FVector2D ADBALobbyPlayerController::ResolveTaggedMovementInput() const
+{
+	float Forward = 0.0f;
+	float Right = 0.0f;
+
+	if (ActiveMovementInputTags.HasTagExact(MoveForwardTag))
+	{
+		Forward += 1.0f;
+	}
+	if (ActiveMovementInputTags.HasTagExact(MoveBackwardTag))
+	{
+		Forward -= 1.0f;
+	}
+	if (ActiveMovementInputTags.HasTagExact(MoveRightTag))
+	{
+		Right += 1.0f;
+	}
+	if (ActiveMovementInputTags.HasTagExact(MoveLeftTag))
+	{
+		Right -= 1.0f;
+	}
+
+	return FVector2D(FMath::Clamp(Forward, -1.0f, 1.0f), FMath::Clamp(Right, -1.0f, 1.0f));
+}
+
+void ADBALobbyPlayerController::ApplyMouseLook()
+{
 	float MouseDeltaX = 0.0f;
 	float MouseDeltaY = 0.0f;
 	GetInputMouseDelta(MouseDeltaX, MouseDeltaY);

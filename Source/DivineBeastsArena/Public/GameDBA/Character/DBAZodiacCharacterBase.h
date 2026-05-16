@@ -35,6 +35,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	void ApplyLobbyVisuals();
 
 public:
 	// ==================== 组件获取 ====================
@@ -46,6 +47,9 @@ public:
 	/** 获取能力系统组件 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character")
 	UDBAAbilitySystemComponent* GetDBAAbilitySystemComponent() const;
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character")
+	EDBAZodiacType GetZodiacType() const { return ZodiacType; }
 
 	/** 获取RPC处理器 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Camera")

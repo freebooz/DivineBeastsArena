@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 #include "GameCore/Types/DBACommonTypes.h"
+#include "InputCoreTypes.h"
 #include "DBAFixedSkillGroupData.generated.h"
 
 /**
@@ -81,6 +82,34 @@ struct DIVINEBEASTSARENA_API FDBAZodiacElementFixedSkillGroupRow : public FTable
 	/** 生肖大招技能 ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillGroup|Skills")
 	FName ZodiacUltimateSkillId;
+
+	/** 被动技能显示键位；被动技能自动生效，默认不占移动输入 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillGroup|Input")
+	FKey ElementPassiveInputKey = EKeys::Invalid;
+
+	/** 元素技能 1 施放键，默认数字 1，避免与 WASD/方向键冲突 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillGroup|Input")
+	FKey ElementSkill1InputKey = EKeys::One;
+
+	/** 元素技能 2 施放键，默认数字 2，避免与 WASD/方向键冲突 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillGroup|Input")
+	FKey ElementSkill2InputKey = EKeys::Two;
+
+	/** 元素技能 3 施放键，默认数字 3，避免与 WASD/方向键冲突 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillGroup|Input")
+	FKey ElementSkill3InputKey = EKeys::Three;
+
+	/** 元素技能 4 施放键，默认数字 4，避免与 WASD/方向键冲突 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillGroup|Input")
+	FKey ElementSkill4InputKey = EKeys::Four;
+
+	/** 生肖大招施放键，默认数字 5，避免与 WASD/方向键冲突 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillGroup|Input")
+	FKey ZodiacUltimateInputKey = EKeys::Five;
+
+	/** 元素共鸣显示键位；共鸣自动生效，默认不占移动输入 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillGroup|Input")
+	FKey ResonanceInputKey = EKeys::Invalid;
 
 	/** 元素共鸣等级（0-4） */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Resonance", meta = (ClampMin = "0", ClampMax = "4"))

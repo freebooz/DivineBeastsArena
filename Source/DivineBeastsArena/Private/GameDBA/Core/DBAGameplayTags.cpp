@@ -184,6 +184,22 @@ void FDBAGameplayTags::AddAllTags()
 		TEXT("Input.CancelCast"),
 		TEXT("取消施法输入"));
 
+	TagsToInit.Input_MoveForward = AddTag(
+		TEXT("Input.Move.Forward"),
+		TEXT("大厅前进输入"));
+
+	TagsToInit.Input_MoveBackward = AddTag(
+		TEXT("Input.Move.Backward"),
+		TEXT("大厅后退输入"));
+
+	TagsToInit.Input_MoveLeft = AddTag(
+		TEXT("Input.Move.Left"),
+		TEXT("大厅左移输入"));
+
+	TagsToInit.Input_MoveRight = AddTag(
+		TEXT("Input.Move.Right"),
+		TEXT("大厅右移输入"));
+
 	// ========================================
 	// Event.* - 事件标签
 	// ========================================

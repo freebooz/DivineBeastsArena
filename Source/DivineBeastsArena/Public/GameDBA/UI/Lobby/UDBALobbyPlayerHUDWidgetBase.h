@@ -44,7 +44,9 @@ protected:
 
 	void UpdateMinimap();
 	void ApplySkillLabels(const TArray<FText>& SkillLabels);
+	void ApplySkillHotkeys(const TArray<FText>& SkillHotkeys);
 	void ResolveSkillLabelsForSummary(const FDBACharacterSummary& Summary, TArray<FText>& OutSkillLabels) const;
+	void ResolveSkillHotkeysForSummary(const FDBACharacterSummary& Summary, TArray<FText>& OutSkillHotkeys) const;
 	bool ResolveCurrentCharacterSummary(FDBACharacterSummary& OutSummary) const;
 
 	static FText ZodiacToShortText(EDBAZodiac Zodiac);

@@ -161,6 +161,11 @@ public:
 	/** Input.CancelCast - 取消施法输入 */
 	mutable FGameplayTag Input_CancelCast;
 
+	mutable FGameplayTag Input_MoveForward;
+	mutable FGameplayTag Input_MoveBackward;
+	mutable FGameplayTag Input_MoveLeft;
+	mutable FGameplayTag Input_MoveRight;
+
 	// ========================================
 	// Event.* - 事件标签
 	// ========================================
