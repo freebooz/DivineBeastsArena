@@ -33,10 +33,17 @@ protected:
 	void ApplyMovementInput(float ForwardValue, float RightValue);
 	void ApplyDesktopFallbackInput();
 	void ApplyMouseLookWhileRightButton();
+	void ApplyTouchLook();
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
 	float MouseLookSensitivity = 0.12f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
+	float TouchLookSensitivity = 0.06f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
+	bool bEnableTouchLook = true;
 
 private:
 	float CachedMoveForwardAxis = 0.0f;
@@ -44,5 +51,6 @@ private:
 	float CachedTurnAxis = 0.0f;
 	float CachedLookUpAxis = 0.0f;
 	bool bJumpHeld = false;
+	bool bTouchLookWasPressed = false;
+	FVector2D LastTouchLookPos = FVector2D::ZeroVector;
 };
-

@@ -52,6 +52,7 @@ void ADBALobbyPlayerController::PlayerTick(float DeltaTime)
 	ApplyDesktopFallbackInput();
 	ApplyMovementInput(CachedMoveForwardAxis, CachedMoveRightAxis);
 	ApplyMouseLookWhileRightButton();
+	ApplyTouchLook();
 
 	if (ACharacter* ControlledCharacter = Cast<ACharacter>(GetPawn()))
 	{
@@ -157,5 +158,39 @@ void ADBALobbyPlayerController::ApplyMouseLookWhileRightButton()
 	if (!FMath::IsNearlyZero(MouseDeltaY))
 	{
 		AddPitchInput(-MouseDeltaY * MouseLookSensitivity);
+	}
+}
+
+void ADBALobbyPlayerController::ApplyTouchLook()
+{
+	if (!bEnableTouchLook)
+	{
+		return;
+	}
+
+	float TouchX = 0.0f;
+	float TouchY = 0.0f;
+	bool bPressed = false;
+	GetInputTouchState(ETouchIndex::Touch2, TouchX, TouchY, bPressed);
+	if (!bPressed)
+	{
+		bTouchLookWasPressed = false;
+		return;
+	}
+
+	const FVector2D CurrentPos(TouchX, TouchY);
+	if (!bTouchLookWasPressed)
+	{
+		LastTouchLookPos = CurrentPos;
+		bTouchLookWasPressed = true;
+		return;
+	}
+
+	const FVector2D Delta = CurrentPos - LastTouchLookPos;
+	LastTouchLookPos = CurrentPos;
+	if (!Delta.IsNearlyZero())
+	{
+		AddYawInput(Delta.X * TouchLookSensitivity);
+		AddPitchInput(-Delta.Y * TouchLookSensitivity);
 	}
 }

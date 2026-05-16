@@ -134,7 +134,7 @@ namespace
 ADBAGameModeBase::ADBAGameModeBase()
 {
 	PlayerControllerClass = ADBALobbyPlayerController::StaticClass();
-	DefaultPawnClass = ADBAZodiacCharacter_Rat::StaticClass();
+	DefaultPawnClass = nullptr;
 }
 
 EDBAZodiac ADBAGameModeBase::ResolveLobbyDisplayZodiac(const FString& Options, int32 JoinIndex)
@@ -296,7 +296,8 @@ UClass* ADBAGameModeBase::GetDefaultPawnClassForController_Implementation(AContr
 		}
 	}
 
-	return Super::GetDefaultPawnClassForController_Implementation(InController);
+	// Fallback for listen/local controller paths that do not carry lobby option maps.
+	return ResolveLobbyPawnClass(EDBAZodiac::Rat);
 }
 
 UClass* ADBAGameModeBase::ResolveLobbyPawnClass(EDBAZodiac Zodiac) const
