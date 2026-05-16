@@ -6,6 +6,8 @@
 #include "GameCore/Session/DBAFrontendSessionSubsystem.h"
 #include "GameCore/Core/DBALogChannels.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/ConfigCacheIni.h"
+#include "GameFramework/PlayerController.h"
 
 bool UDBALoginFlowSubsystem::ShouldEnterCharacterCreate(int32 CharacterCount)
 {
@@ -197,6 +199,38 @@ void UDBALoginFlowSubsystem::EnterMainLobby()
 
 	if (UWorld* World = GetWorld())
 	{
+		FString LobbyServerAddress;
+		if (GConfig)
+		{
+			GConfig->GetString(TEXT("/Script/DivineBeastsArena.DBAFrontendConfig"), TEXT("SharedLobbyServerAddress"), LobbyServerAddress, GGameIni);
+			LobbyServerAddress = LobbyServerAddress.TrimStartAndEnd();
+		}
+
+		// Preferred path for multiplayer lobby: everyone connects to the same lobby server.
+		if (!LobbyServerAddress.IsEmpty())
+		{
+			if (APlayerController* PC = World->GetFirstPlayerController())
+			{
+				UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] EnterMainLobby -> ClientTravel to shared lobby server: %s"), *LobbyServerAddress);
+				PC->ClientTravel(LobbyServerAddress, TRAVEL_Absolute);
+				return;
+			}
+		}
+
+		FString MainLobbyMapPath = TEXT("/Game/Maps/Lobby/LobbyMap");
+		if (GConfig)
+		{
+			FString ConfigMapPath;
+			if (GConfig->GetString(TEXT("/Script/DivineBeastsArena.DBAFrontendConfig"), TEXT("DefaultLobbyMap"), ConfigMapPath, GGameIni))
+			{
+				ConfigMapPath = ConfigMapPath.TrimStartAndEnd();
+				if (!ConfigMapPath.IsEmpty())
+				{
+					MainLobbyMapPath = ConfigMapPath;
+				}
+			}
+		}
+
 		FString CurrentLevelPath;
 		if (World->PersistentLevel)
 		{
@@ -205,7 +239,8 @@ void UDBALoginFlowSubsystem::EnterMainLobby()
 
 		if (!CurrentLevelPath.Contains(TEXT("LobbyMap")))
 		{
-			UGameplayStatics::OpenLevel(World, FName(TEXT("/Game/Maps/Lobby/LobbyMap")));
+			UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] EnterMainLobby -> OpenLevel: %s"), *MainLobbyMapPath);
+			UGameplayStatics::OpenLevel(World, FName(*MainLobbyMapPath));
 		}
 	}
 }

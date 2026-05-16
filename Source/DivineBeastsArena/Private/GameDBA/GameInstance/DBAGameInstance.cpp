@@ -6,6 +6,7 @@
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/UI/DBAGameUIManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/ConfigCacheIni.h"
 
 namespace
 {
@@ -20,6 +21,32 @@ namespace
 
 		const FString LevelPath = World->PersistentLevel->GetOutermost()->GetName();
 		return LevelPath.Contains(TEXT("FrontendMap"));
+	}
+
+	bool IsLobbyWorld(const UWorld* World)
+	{
+		if (!World || !World->PersistentLevel)
+		{
+			return false;
+		}
+
+		const FString LevelPath = World->PersistentLevel->GetOutermost()->GetName();
+		return LevelPath.Contains(TEXT("LobbyMap"))
+			|| LevelPath.Contains(TEXT("MainLobby"));
+	}
+
+	FName GetConfiguredMapPath(const TCHAR* ConfigKey, const FName& FallbackPath)
+	{
+		FString ConfigValue;
+		if (GConfig && GConfig->GetString(TEXT("/Script/DivineBeastsArena.DBAFrontendConfig"), ConfigKey, ConfigValue, GGameIni))
+		{
+			ConfigValue = ConfigValue.TrimStartAndEnd();
+			if (!ConfigValue.IsEmpty())
+			{
+				return FName(*ConfigValue);
+			}
+		}
+		return FallbackPath;
 	}
 }
 
@@ -47,15 +74,33 @@ void UDBAGameInstance::OnWorldChanged(UWorld* OldWorld, UWorld* NewWorld)
 		OldWorld ? *OldWorld->GetName() : TEXT("None"),
 		NewWorld ? *NewWorld->GetName() : TEXT("None"));
 
+	if (IsDedicatedServerInstance())
+	{
+		return;
+	}
+
 	if (bPendingStartLoginFlowOnFrontend && IsFrontendWorld(NewWorld))
 	{
 		bPendingStartLoginFlowOnFrontend = false;
 		StartLoginFlow();
 	}
 
-	if (IsFrontendWorld(NewWorld))
+	UDBALoginFlowSubsystem* LoginFlow = GetSubsystem<UDBALoginFlowSubsystem>();
+	UDBAGameUIManager* UIManager = GetSubsystem<UDBAGameUIManager>();
+	const EDBALoginFlowState FlowState = LoginFlow ? LoginFlow->GetFlowState() : EDBALoginFlowState::Startup;
+
+	if (IsFrontendWorld(NewWorld) && FlowState != EDBALoginFlowState::MainLobby)
 	{
-		if (UDBAGameUIManager* UIManager = GetSubsystem<UDBAGameUIManager>())
+		if (UIManager)
+		{
+			UIManager->RequestShowLoginFlowWidget();
+		}
+		return;
+	}
+
+	if (FlowState == EDBALoginFlowState::MainLobby && (IsLobbyWorld(NewWorld) || IsFrontendWorld(NewWorld)))
+	{
+		if (UIManager)
 		{
 			UIManager->RequestShowLoginFlowWidget();
 		}
@@ -64,26 +109,37 @@ void UDBAGameInstance::OnWorldChanged(UWorld* OldWorld, UWorld* NewWorld)
 
 void UDBAGameInstance::StartLoginFlow()
 {
+	if (IsDedicatedServerInstance())
+	{
+		UE_LOG(LogDBACore, Verbose, TEXT("[DBAGameInstance] Dedicated server instance skips frontend login flow."));
+		return;
+	}
+
 	if (UWorld* World = GetWorld())
 	{
 		if (!IsFrontendWorld(World))
 		{
-			// In current client startup flow we boot from LobbyMap. If FrontendMap is not available
-			// in the running content set, continue login flow in current world instead of failing travel.
-			if (!World->GetName().Contains(TEXT("LobbyMap")))
-			{
-				bPendingStartLoginFlowOnFrontend = true;
-				UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Switching to FrontendMap before login flow."));
-				UGameplayStatics::OpenLevel(World, FrontendMapPath);
-				return;
-			}
-
-			UE_LOG(LogDBACore, Warning, TEXT("[DBAGameInstance] FrontendMap travel skipped; starting login flow in LobbyMap."));
+			bPendingStartLoginFlowOnFrontend = true;
+			const FName ConfiguredFrontendMapPath = GetConfiguredMapPath(TEXT("DefaultFrontendMap"), FrontendMapPath);
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Switching to frontend map before login flow: %s"), *ConfiguredFrontendMapPath.ToString());
+			UGameplayStatics::OpenLevel(World, ConfiguredFrontendMapPath);
+			return;
 		}
 	}
 
 	if (bLoginFlowStarted)
 	{
+		if (UDBALoginFlowSubsystem* LoginFlow = GetSubsystem<UDBALoginFlowSubsystem>())
+		{
+			if (LoginFlow->GetFlowState() == EDBALoginFlowState::Startup)
+			{
+				LoginFlow->StartLoginFlow();
+			}
+		}
+		if (UDBAGameUIManager* UIManager = GetSubsystem<UDBAGameUIManager>())
+		{
+			UIManager->RequestShowLoginFlowWidget();
+		}
 		return;
 	}
 
@@ -93,5 +149,10 @@ void UDBAGameInstance::StartLoginFlow()
 	if (UDBALoginFlowSubsystem* LoginFlow = GetSubsystem<UDBALoginFlowSubsystem>())
 	{
 		LoginFlow->StartLoginFlow();
+	}
+
+	if (UDBAGameUIManager* UIManager = GetSubsystem<UDBAGameUIManager>())
+	{
+		UIManager->RequestShowLoginFlowWidget();
 	}
 }

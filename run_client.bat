@@ -1,3 +1,2 @@
 @echo off
-cd /d d:\DivineBeastsArena\Binaries\Win64
-start "" DivineBeastsArena.exe 127.0.0.1 -nosteam -log -WindowSizeX=800 -WindowSizeY=600
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Tools\LaunchLobby.ps1" -Mode Clients

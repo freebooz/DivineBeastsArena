@@ -87,6 +87,17 @@ void UDBASplashVideoWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 	}
 }
 
+FReply UDBASplashVideoWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+	{
+		SkipVideo();
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+}
+
 FReply UDBASplashVideoWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
 	if (InKeyEvent.GetKey() == EKeys::Escape)
@@ -540,8 +551,6 @@ void UDBASplashVideoWidget::OnVideoFinished()
 void UDBASplashVideoWidget::TransitionToLogin()
 {
 	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] TransitionToLogin"));
-	RemoveSelf();
-
 	UWorld* ResolvedWorld = nullptr;
 	if (APlayerController* PC = GetOwningPlayer())
 	{
@@ -552,9 +561,17 @@ void UDBASplashVideoWidget::TransitionToLogin()
 		ResolvedWorld = GetWorld();
 	}
 
-	if (UDBAGameInstance* GI = ResolvedWorld ? Cast<UDBAGameInstance>(ResolvedWorld->GetGameInstance()) : nullptr)
+	UDBAGameInstance* GI = ResolvedWorld ? Cast<UDBAGameInstance>(ResolvedWorld->GetGameInstance()) : nullptr;
+
+	RemoveSelf();
+
+	if (GI)
 	{
 		GI->StartLoginFlow();
+		if (UDBAGameUIManager* UIManager = GI->GetSubsystem<UDBAGameUIManager>())
+		{
+			UIManager->RequestShowLoginFlowWidget();
+		}
 	}
 	else
 	{

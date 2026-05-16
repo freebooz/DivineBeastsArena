@@ -322,6 +322,21 @@ void UDBAGameUIManager::ShowMainLobby()
 	StopLoginFlowBackgroundMusic();
 	HideAllFlowWidgets();
 
+	if (MainLobbyWidget)
+	{
+		const UWorld* CurrentWorld = GetWorld();
+		const UWorld* WidgetWorld = MainLobbyWidget->GetWorld();
+		const APlayerController* OwningPC = MainLobbyWidget->GetOwningPlayer();
+		const UWorld* OwningPlayerWorld = OwningPC ? OwningPC->GetWorld() : nullptr;
+		const bool bWidgetWorldMatches = CurrentWorld && (WidgetWorld == CurrentWorld || OwningPlayerWorld == CurrentWorld);
+		if (!bWidgetWorldMatches)
+		{
+			MainLobbyWidget->RemoveFromParent();
+			MainLobbyWidget = nullptr;
+			bMainLobbyVisible = false;
+		}
+	}
+
 	if (!MainLobbyWidget)
 	{
 		CreateMainLobbyWidget();
@@ -344,6 +359,10 @@ void UDBAGameUIManager::HideMainLobby()
 
 void UDBAGameUIManager::RequestShowLoginFlowWidget()
 {
+	if (UDBALoginFlowSubsystem* LoginFlow = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBALoginFlowSubsystem>() : nullptr)
+	{
+		CachedLoginFlowState = LoginFlow->GetFlowState();
+	}
 	ShowLoginFlowWidget();
 }
 

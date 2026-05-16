@@ -18,6 +18,8 @@ class USceneComponent;
 class USkeletalMeshComponent;
 class USkyLightComponent;
 class UStaticMeshComponent;
+class USkeletalMesh;
+class UMaterialInterface;
 
 USTRUCT(BlueprintType)
 struct DIVINEBEASTSARENA_API FDBACharacterPresentationStageSpec
@@ -25,28 +27,28 @@ struct DIVINEBEASTSARENA_API FDBACharacterPresentationStageSpec
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
-	float CameraFOV = 33.0f;
+	float CameraFOV = 34.0f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
-	FVector CameraLocation = FVector(178.0f, 0.0f, 108.0f);
+	FVector CameraLocation = FVector(520.0f, 0.0f, 150.0f);
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
-	FRotator CameraRotation = FRotator(-11.0f, 180.0f, 0.0f);
+	FRotator CameraRotation = FRotator(-2.0f, 180.0f, 0.0f);
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
-	float KeyLightIntensity = 56000.0f;
+	float KeyLightIntensity = 65000.0f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
-	float FillLightIntensity = 16000.0f;
+	float FillLightIntensity = 21000.0f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
-	float RimLightIntensity = 24000.0f;
+	float RimLightIntensity = 36000.0f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
-	float FaceLightIntensity = 9000.0f;
+	float FaceLightIntensity = 12000.0f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
-	float SkyLightIntensity = 0.9f;
+	float SkyLightIntensity = 3.2f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
 	FVector GroundScale = FVector(7.5f, 7.5f, 1.0f);
@@ -140,4 +142,11 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "DBA|CharacterPresentation")
 	TObjectPtr<UPostProcessComponent> PostProcess;
+
+	// Hard references to ensure zodiac preview assets are cooked into client builds.
+	UPROPERTY()
+	TArray<TObjectPtr<USkeletalMesh>> CookAnchorPreviewMeshes;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UMaterialInterface>> CookAnchorPreviewMaterials;
 };
