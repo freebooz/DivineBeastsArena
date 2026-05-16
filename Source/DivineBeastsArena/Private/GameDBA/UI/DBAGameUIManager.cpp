@@ -217,6 +217,16 @@ UDBAGameUIManager::UDBAGameUIManager()
 		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Character create widget blueprint unavailable, using native fallback"));
 	}
 
+	LobbyPlayerHUDWidgetClass = ResolveWidgetClassPath<UDBALobbyPlayerHUDWidgetBase>({
+		TEXT("/Game/DBA/UI/Lobby/HUD/WBP_DBA_LobbyPlayerHUD"),
+		TEXT("/Game/Blueprints/UI/DBA/Lobby/WBP_DBA_LobbyPlayerHUD")
+	});
+	if (!LobbyPlayerHUDWidgetClass)
+	{
+		LobbyPlayerHUDWidgetClass = UDBALobbyPlayerHUDWidgetBase::StaticClass();
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Lobby player HUD widget blueprint unavailable, using native fallback"));
+	}
+
 	static ConstructorHelpers::FClassFinder<UDBASplashVideoWidget> SplashVideoWidgetFinder(TEXT("/Game/UI/Splash/WBP_DBA_SplashVideo"));
 	if (SplashVideoWidgetFinder.Succeeded())
 	{
@@ -237,16 +247,6 @@ void UDBAGameUIManager::OnSubsystemInitialize()
 	{
 		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Server runtime skips frontend UI initialization."));
 		return;
-	}
-
-	LobbyPlayerHUDWidgetClass = ResolveWidgetClassPath<UDBALobbyPlayerHUDWidgetBase>({
-		TEXT("/Game/DBA/UI/Lobby/HUD/WBP_DBA_LobbyPlayerHUD"),
-		TEXT("/Game/Blueprints/UI/DBA/Lobby/WBP_DBA_LobbyPlayerHUD")
-	});
-	if (!LobbyPlayerHUDWidgetClass)
-	{
-		LobbyPlayerHUDWidgetClass = UDBALobbyPlayerHUDWidgetBase::StaticClass();
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Lobby player HUD widget blueprint unavailable, using native fallback"));
 	}
 	if (FParse::Param(FCommandLine::Get(), TEXT("DBASkipSplash")))
 	{

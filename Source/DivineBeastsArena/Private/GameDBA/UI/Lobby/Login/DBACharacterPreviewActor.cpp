@@ -13,8 +13,8 @@
 
 namespace
 {
-	constexpr float PreviewMeshDisplayScale = 1.0f;
-	constexpr float PreviewMeshFloorZ = 2.0f;
+	constexpr float PreviewActorMeshDisplayScale = 1.0f;
+	constexpr float PreviewActorMeshFloorZ = 2.0f;
 }
 
 ADBACharacterPreviewActor::ADBACharacterPreviewActor()
@@ -123,10 +123,10 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 	}
 	PreviewMeshComponent->SetSkeletalMesh(ResolvedMesh);
 	PreviewMeshComponent->SetRelativeRotation(ADBACharacterPresentationActor::GetPreviewMeshPlayerFacingRotation());
-	PreviewMeshComponent->SetRelativeScale3D(FVector(PreviewMeshDisplayScale));
+	PreviewMeshComponent->SetRelativeScale3D(FVector(PreviewActorMeshDisplayScale));
 	const FBox MeshBox = ResolvedMesh->GetBounds().GetBox();
 	const float MeshBottomOffsetZ = MeshBox.IsValid
-		? (-MeshBox.Min.Z * PreviewMeshDisplayScale) + PreviewMeshFloorZ
+		? (-MeshBox.Min.Z * PreviewActorMeshDisplayScale) + PreviewActorMeshFloorZ
 		: 0.0f;
 	PreviewMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, MeshBottomOffsetZ));
 	PreviewMeshComponent->SetBoundsScale(2.0f);

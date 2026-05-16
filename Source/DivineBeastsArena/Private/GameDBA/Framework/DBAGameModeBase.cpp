@@ -18,6 +18,7 @@
 #include "GameDBA/Player/DBALobbyPlayerController.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPreviewActor.h"
 #include "GameFramework/Controller.h"
+#include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 
 namespace
@@ -316,4 +317,38 @@ UClass* ADBAGameModeBase::ResolveLobbyPawnClass(EDBAZodiac Zodiac) const
 	case EDBAZodiac::Pig: return ADBAZodiacCharacter_Pig::StaticClass();
 	default: return DefaultPawnClass ? DefaultPawnClass.Get() : ADBAZodiacCharacter_Rat::StaticClass();
 	}
+}
+
+APawn* ADBAGameModeBase::SpawnDefaultPawnAtTransform_Implementation(AController* NewPlayer, const FTransform& SpawnTransform)
+{
+	if (!NewPlayer)
+	{
+		return Super::SpawnDefaultPawnAtTransform_Implementation(NewPlayer, SpawnTransform);
+	}
+
+	if (!IsLobbyMapWorld(GetWorld()))
+	{
+		return Super::SpawnDefaultPawnAtTransform_Implementation(NewPlayer, SpawnTransform);
+	}
+
+	UClass* PawnClass = GetDefaultPawnClassForController(NewPlayer);
+	if (!PawnClass)
+	{
+		return nullptr;
+	}
+
+	FActorSpawnParameters SpawnInfo;
+	SpawnInfo.Owner = NewPlayer;
+	SpawnInfo.Instigator = NewPlayer->GetPawn();
+	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	APawn* SpawnedPawn = GetWorld()->SpawnActor<APawn>(PawnClass, SpawnTransform, SpawnInfo);
+	if (SpawnedPawn)
+	{
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] SpawnDefaultPawnAtTransform (AlwaysSpawn): player=%s pawn=%s class=%s"),
+			*NewPlayer->GetName(),
+			*SpawnedPawn->GetName(),
+			*PawnClass->GetName());
+	}
+	return SpawnedPawn;
 }
