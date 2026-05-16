@@ -24,6 +24,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
 #include "Styling/CoreStyle.h"
 
 namespace
@@ -78,6 +79,12 @@ void UDBALobbyPlayerHUDWidgetBase::NativeConstruct()
 void UDBALobbyPlayerHUDWidgetBase::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
+	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(this);
+	if (!ViewportSize.Equals(LastResponsiveViewport, 0.5f))
+	{
+		ApplyResponsiveLayout(ViewportSize);
+		LastResponsiveViewport = ViewportSize;
+	}
 	UpdateMinimap();
 }
 
@@ -183,6 +190,7 @@ void UDBALobbyPlayerHUDWidgetBase::BuildTopLeftAvatarPanel(UCanvasPanel* RootCan
 	AvatarRootBorder->SetPadding(FMargin(10.0f));
 
 	UCanvasPanelSlot* RootSlot = RootCanvas->AddChildToCanvas(AvatarRootBorder);
+	AvatarRootSlot = RootSlot;
 	RootSlot->SetAnchors(FAnchors(0.0f, 0.0f));
 	RootSlot->SetAlignment(FVector2D::ZeroVector);
 	RootSlot->SetPosition(FVector2D(18.0f, 18.0f));
@@ -234,13 +242,16 @@ void UDBALobbyPlayerHUDWidgetBase::BuildBottomSkillBar(UCanvasPanel* RootCanvas)
 
 	UHorizontalBox* SkillBarHBox = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("LobbyHUD_SkillBarHBox"));
 	UCanvasPanelSlot* SkillBarSlot = RootCanvas->AddChildToCanvas(SkillBarHBox);
+	SkillBarRootSlot = SkillBarSlot;
 	SkillBarSlot->SetAnchors(FAnchors(0.5f, 1.0f));
 	SkillBarSlot->SetAlignment(FVector2D(0.5f, 1.0f));
 	SkillBarSlot->SetPosition(FVector2D(0.0f, bMobile ? -10.0f : -18.0f));
 	SkillBarSlot->SetAutoSize(true);
 	SkillBarSlot->SetZOrder(45);
 
-	static const TCHAR* Hotkeys[4] = { TEXT("Q"), TEXT("W"), TEXT("E"), TEXT("R") };
+	static const TCHAR* DesktopHotkeys[4] = { TEXT("Q"), TEXT("W"), TEXT("E"), TEXT("R") };
+	static const TCHAR* MobileHotkeys[4] = { TEXT("S1"), TEXT("S2"), TEXT("S3"), TEXT("S4") };
+	const TCHAR* const* Hotkeys = bMobile ? MobileHotkeys : DesktopHotkeys;
 	SkillSlotBorders.Reset();
 	SkillNameTexts.Reset();
 	SkillHotkeyTexts.Reset();
@@ -318,6 +329,7 @@ void UDBALobbyPlayerHUDWidgetBase::BuildTopRightMinimap(UCanvasPanel* RootCanvas
 	MinimapRootBorder->SetPadding(FMargin(8.0f));
 
 	UCanvasPanelSlot* MinimapSlot = RootCanvas->AddChildToCanvas(MinimapRootBorder);
+	MinimapRootSlot = MinimapSlot;
 	MinimapSlot->SetAnchors(FAnchors(1.0f, 0.0f));
 	MinimapSlot->SetAlignment(FVector2D(1.0f, 0.0f));
 	MinimapSlot->SetPosition(FVector2D(-18.0f, 18.0f));
@@ -423,6 +435,56 @@ void UDBALobbyPlayerHUDWidgetBase::UpdateMinimap()
 			? FLinearColor(0.05f, 1.0f, 0.42f, 1.0f)
 			: FLinearColor(1.0f, 0.72f, 0.16f, 0.95f));
 		Dot->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void UDBALobbyPlayerHUDWidgetBase::ApplyResponsiveLayout(const FVector2D& ViewportSize)
+{
+	if (ViewportSize.X <= 0.0f || ViewportSize.Y <= 0.0f)
+	{
+		return;
+	}
+
+	const bool bMobilePlatform = IsMobilePlatform();
+	const float MinDimension = FMath::Min(ViewportSize.X, ViewportSize.Y);
+	const bool bCompactViewport = MinDimension < 900.0f || ViewportSize.X < 1400.0f;
+	const bool bMobileLike = bMobilePlatform || bCompactViewport;
+
+	const float BaseScale = bMobileLike
+		? FMath::Clamp(MinDimension / 900.0f, 0.72f, 0.95f)
+		: 1.0f;
+
+	if (AvatarRootSlot)
+	{
+		AvatarRootSlot->SetPosition(FVector2D(18.0f, 18.0f));
+		AvatarRootSlot->SetSize(AvatarPanelSize * BaseScale);
+	}
+
+	if (SkillBarRootSlot)
+	{
+		SkillBarRootSlot->SetPosition(FVector2D(0.0f, bMobileLike ? -8.0f : -18.0f));
+	}
+
+	if (MinimapRootSlot)
+	{
+		MinimapRootSlot->SetPosition(FVector2D(-18.0f, 18.0f));
+		MinimapRootSlot->SetSize(MinimapSize * (bMobileLike ? BaseScale : 1.0f));
+	}
+
+	const float SkillScale = bMobileLike ? FMath::Clamp(BaseScale + 0.06f, 0.80f, 1.0f) : 1.0f;
+	for (int32 Index = 0; Index < SkillSlotBorders.Num(); ++Index)
+	{
+		if (UBorder* Border = SkillSlotBorders[Index])
+		{
+			Border->SetDesiredSizeScale(FVector2D(SkillScale, SkillScale));
+		}
+
+		if (UTextBlock* HotkeyText = SkillHotkeyTexts.IsValidIndex(Index) ? SkillHotkeyTexts[Index] : nullptr)
+		{
+			HotkeyText->SetText(FText::FromString(bMobileLike
+				? FString::Printf(TEXT("S%d"), Index + 1)
+				: (Index == 0 ? TEXT("Q") : Index == 1 ? TEXT("W") : Index == 2 ? TEXT("E") : TEXT("R"))));
+		}
 	}
 }
 

@@ -10,6 +10,8 @@ ADBALobbyPlayerController::ADBALobbyPlayerController()
 	bShowMouseCursor = false;
 	bEnableClickEvents = false;
 	bEnableMouseOverEvents = false;
+	bEnableTouchEvents = true;
+	bEnableTouchOverEvents = false;
 }
 
 void ADBALobbyPlayerController::BeginPlay()
@@ -21,6 +23,7 @@ void ADBALobbyPlayerController::BeginPlay()
 		FInputModeGameOnly InputMode;
 		SetInputMode(InputMode);
 		SetShowMouseCursor(false);
+		bEnableTouchEvents = true;
 	}
 }
 

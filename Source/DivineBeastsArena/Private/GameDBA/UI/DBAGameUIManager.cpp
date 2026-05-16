@@ -18,22 +18,52 @@
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/CommandLine.h"
-#include "Sound/SoundBase.h"
 #include "Misc/PackageName.h"
-#include "UObject/ConstructorHelpers.h"
+#include "Sound/SoundBase.h"
 #include "UObject/SoftObjectPath.h"
 
 namespace
 {
+	FString BuildBlueprintClassObjectPath(const TCHAR* CandidatePath)
+	{
+		if (!CandidatePath || !(*CandidatePath))
+		{
+			return FString();
+		}
+
+		const FString RawPath(CandidatePath);
+		if (RawPath.EndsWith(TEXT("_C")))
+		{
+			return RawPath;
+		}
+
+		const FString PackageName = RawPath.Contains(TEXT("."))
+			? FPackageName::ObjectPathToPackageName(RawPath)
+			: RawPath;
+		const FString AssetName = FPackageName::GetLongPackageAssetName(PackageName);
+		if (PackageName.IsEmpty() || AssetName.IsEmpty())
+		{
+			return FString();
+		}
+
+		return FString::Printf(TEXT("%s.%s_C"), *PackageName, *AssetName);
+	}
+
 	template<typename WidgetType>
 	TSubclassOf<WidgetType> ResolveWidgetClassPath(std::initializer_list<const TCHAR*> CandidatePaths)
 	{
 		for (const TCHAR* CandidatePath : CandidatePaths)
 		{
-			ConstructorHelpers::FClassFinder<WidgetType> Finder(CandidatePath);
-			if (Finder.Succeeded())
+			const FString ClassObjectPath = BuildBlueprintClassObjectPath(CandidatePath);
+			if (ClassObjectPath.IsEmpty())
 			{
-				return Finder.Class;
+				continue;
+			}
+
+			const FSoftClassPath SoftClassPath(ClassObjectPath);
+			if (UClass* LoadedClass = SoftClassPath.TryLoadClass<WidgetType>())
+			{
+				return LoadedClass;
 			}
 		}
 		return nullptr;
@@ -65,7 +95,7 @@ namespace
 	}
 
 	template<typename AssetType>
-	AssetType* LoadAssetIfCookedAvailable(const TCHAR* ObjectPath)
+	AssetType* LoadAssetIfCookedAvailable_UIManager(const TCHAR* ObjectPath)
 	{
 		if (!ObjectPath)
 		{
@@ -850,10 +880,10 @@ void UDBAGameUIManager::EnsureLoginFlowBackgroundMusic()
 
 	if (!LoginFlowBackgroundMusicSound)
 	{
-		LoginFlowBackgroundMusicSound = LoadAssetIfCookedAvailable<USoundBase>(TEXT("/Game/DBA/Audio/UI/BGM/BGM_LoginFlow_Loop.BGM_LoginFlow_Loop"));
+		LoginFlowBackgroundMusicSound = LoadAssetIfCookedAvailable_UIManager<USoundBase>(TEXT("/Game/DBA/Audio/UI/BGM/BGM_LoginFlow_Loop.BGM_LoginFlow_Loop"));
 		if (!LoginFlowBackgroundMusicSound)
 		{
-			LoginFlowBackgroundMusicSound = LoadAssetIfCookedAvailable<USoundBase>(TEXT("/Game/DBA/Audio/UI/BGM/BGM_Login_Loop.BGM_Login_Loop"));
+			LoginFlowBackgroundMusicSound = LoadAssetIfCookedAvailable_UIManager<USoundBase>(TEXT("/Game/DBA/Audio/UI/BGM/BGM_Login_Loop.BGM_Login_Loop"));
 		}
 	}
 

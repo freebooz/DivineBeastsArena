@@ -40,6 +40,7 @@ protected:
 	void BuildTopLeftAvatarPanel(UCanvasPanel* RootCanvas);
 	void BuildBottomSkillBar(UCanvasPanel* RootCanvas);
 	void BuildTopRightMinimap(UCanvasPanel* RootCanvas);
+	void ApplyResponsiveLayout(const FVector2D& ViewportSize);
 
 	void UpdateMinimap();
 	void ApplySkillLabels(const TArray<FText>& SkillLabels);
@@ -68,6 +69,15 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UCanvasPanel> RootCanvasPanel;
+
+	UPROPERTY(Transient)
+	TObjectPtr<class UCanvasPanelSlot> AvatarRootSlot;
+
+	UPROPERTY(Transient)
+	TObjectPtr<class UCanvasPanelSlot> SkillBarRootSlot;
+
+	UPROPERTY(Transient)
+	TObjectPtr<class UCanvasPanelSlot> MinimapRootSlot;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UBorder> AvatarRootBorder;
@@ -107,5 +117,7 @@ protected:
 
 	UPROPERTY(Transient)
 	bool bMinimapOriginInitialized = false;
-};
 
+	UPROPERTY(Transient)
+	FVector2D LastResponsiveViewport = FVector2D::ZeroVector;
+};
