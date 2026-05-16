@@ -9,6 +9,8 @@
 
 class USkeletalMeshComponent;
 class UAnimationAsset;
+class UPointLightComponent;
+class USceneComponent;
 
 UCLASS()
 class DIVINEBEASTSARENA_API ADBACharacterPreviewActor : public AActor
@@ -19,6 +21,7 @@ public:
 	ADBACharacterPreviewActor();
 
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|Preview")
 	void SetPreviewZodiac(EDBAZodiac Zodiac);
@@ -26,19 +29,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Preview")
 	void SetRotationSpeed(float InDegreesPerSecond);
 
+	EDBAZodiac GetPreviewZodiac() const { return CurrentZodiac; }
+
 protected:
 	virtual void BeginPlay() override;
 
 private:
 	void ApplyPreviewAssets(EDBAZodiac Zodiac);
-	static FString GetMeshPathByZodiac(EDBAZodiac Zodiac);
-	static FString GetIdleAnimationPathByZodiac(EDBAZodiac Zodiac);
-	static FString GetMaterialPathByZodiac(EDBAZodiac Zodiac);
+
+	UFUNCTION()
+	void OnRep_CurrentZodiac();
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = "DBA|Preview")
+	TObjectPtr<USceneComponent> PreviewRoot;
+
+	UPROPERTY(VisibleAnywhere, Category = "DBA|Preview")
 	TObjectPtr<USkeletalMeshComponent> PreviewMeshComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "DBA|Preview")
+	TObjectPtr<UPointLightComponent> ZodiacTintLight;
 
 	UPROPERTY(EditAnywhere, Category = "DBA|Preview")
 	float RotationSpeedDegreesPerSecond = 0.0f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentZodiac)
+	EDBAZodiac CurrentZodiac = EDBAZodiac::Rat;
 };

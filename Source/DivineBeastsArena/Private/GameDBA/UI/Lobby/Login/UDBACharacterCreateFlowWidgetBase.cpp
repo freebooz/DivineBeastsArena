@@ -21,7 +21,6 @@
 #include "Engine/DirectionalLight.h"
 #include "Engine/SkyLight.h"
 #include "Engine/Texture2D.h"
-#include "EngineUtils.h"
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/UI/DBAUIFontUtils.h"
@@ -259,30 +258,6 @@ namespace
 					Image->SetVisibility(ESlateVisibility::HitTestInvisible);
 				}
 			});
-	}
-
-	ADBACharacterPresentationActor* ResolveCreatePresentationActor(UWorld* World)
-	{
-		if (!World)
-		{
-			return nullptr;
-		}
-
-		for (TActorIterator<ADBACharacterPresentationActor> It(World); It; ++It)
-		{
-			if (IsValid(*It))
-			{
-				return *It;
-			}
-		}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	return World->SpawnActor<ADBACharacterPresentationActor>(
-			ADBACharacterPresentationActor::StaticClass(),
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			SpawnParams);
 	}
 
 	void ApplyCreateMenuInputMode(UUserWidget* Widget)
@@ -881,7 +856,7 @@ void UDBACharacterCreateFlowWidgetBase::InitializePreviewViewport()
 		return;
 	}
 
-	PreviewActor = ResolveCreatePresentationActor(GetWorld());
+	PreviewActor = ADBACharacterPresentationActor::ResolveSharedPresentationStage(GetWorld());
 	if (PreviewActor)
 	{
 		PreviewActor->ActivatePresentationCamera(GetOwningPlayer());
@@ -898,8 +873,9 @@ void UDBACharacterCreateFlowWidgetBase::DestroyPreviewViewport()
 {
 	if (PreviewActor)
 	{
-		PreviewActor->Destroy();
-		PreviewActor = nullptr;
+		ADBACharacterPresentationActor* SharedStage = PreviewActor.Get();
+		ADBACharacterPresentationActor::ReleaseSharedPresentationStage(SharedStage);
+		PreviewActor = SharedStage;
 	}
 	if (PreviewDirectionalLight)
 	{

@@ -75,8 +75,8 @@ if ($Mode -eq "Clients" -or $Mode -eq "AutoClients" -or $Mode -eq "All") {
 
     if ($Mode -eq "AutoClients") {
         $ClientArgs = @(
-        @("/Game/Maps/Lobby/FrontendMap", "-nosteam", "-DBASkipSplash", "-DBAAutoLobbyFlow", "-DBASaveSlotSuffix=ClientA", "-DBAGuestAccountId=LobbyClientA", "-DBAGuestDisplayName=LobbyClientA", "-DBAAutoCharacterName=LobbyA_Rat", "-DBAAutoPartyLeader", "-DBAAutoInviteAccountId=LobbyClientB", "-WINDOWED", "-ResX=1280", "-ResY=720", "-WinX=50", "-WinY=50", "-abslog=$LogDir\ClientA.log"),
-        @("/Game/Maps/Lobby/FrontendMap", "-nosteam", "-DBASkipSplash", "-DBAAutoLobbyFlow", "-DBASaveSlotSuffix=ClientB", "-DBAGuestAccountId=LobbyClientB", "-DBAGuestDisplayName=LobbyClientB", "-DBAAutoCharacterName=LobbyB_Ox", "-WINDOWED", "-ResX=1280", "-ResY=720", "-WinX=1400", "-WinY=50", "-abslog=$LogDir\ClientB.log")
+        @("/Game/Maps/Lobby/FrontendMap", "-nosteam", "-DBASkipSplash", "-DBAAutoLobbyFlow", "-DBASaveSlotSuffix=ClientA", "-DBAGuestAccountId=LobbyClientA", "-DBAGuestDisplayName=LobbyClientA", "-DBAAutoCharacterName=LobbyA_Rat", "-DBAAutoZodiac=Rat", "-DBAAutoPartyLeader", "-DBAAutoInviteAccountId=LobbyClientB", "-WINDOWED", "-ResX=1280", "-ResY=720", "-WinX=50", "-WinY=50", "-abslog=$LogDir\ClientA.log"),
+        @("/Game/Maps/Lobby/FrontendMap", "-nosteam", "-DBASkipSplash", "-DBAAutoLobbyFlow", "-DBASaveSlotSuffix=ClientB", "-DBAGuestAccountId=LobbyClientB", "-DBAGuestDisplayName=LobbyClientB", "-DBAAutoCharacterName=LobbyB_Ox", "-DBAAutoZodiac=Ox", "-WINDOWED", "-ResX=1280", "-ResY=720", "-WinX=1400", "-WinY=50", "-abslog=$LogDir\ClientB.log")
         )
     }
     else {

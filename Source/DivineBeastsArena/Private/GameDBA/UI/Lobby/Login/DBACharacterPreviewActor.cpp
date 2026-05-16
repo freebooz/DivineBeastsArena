@@ -3,52 +3,54 @@
 #include "GameDBA/UI/Lobby/Login/DBACharacterPreviewActor.h"
 
 #include "Animation/AnimationAsset.h"
+#include "Components/PointLightComponent.h"
+#include "Components/SceneComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Materials/MaterialInterface.h"
+#include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
 #include "Engine/SkeletalMesh.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "Net/UnrealNetwork.h"
 
 namespace
 {
-	FString GetLegacyMeshPathByZodiac(EDBAZodiac Zodiac)
-	{
-		switch (Zodiac)
-		{
-		case EDBAZodiac::Rat: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat");
-		case EDBAZodiac::Ox: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Ox.SKM_DBA_Zodiac_Ox");
-		case EDBAZodiac::Tiger: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Tiger.SKM_DBA_Zodiac_Tiger");
-		case EDBAZodiac::Rabbit: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rabbit.SKM_DBA_Zodiac_Rabbit");
-		case EDBAZodiac::Dragon: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Dragon.SKM_DBA_Zodiac_Dragon");
-		case EDBAZodiac::Snake: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Snake.SKM_DBA_Zodiac_Snake");
-		case EDBAZodiac::Horse: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Horse.SKM_DBA_Zodiac_Horse");
-		case EDBAZodiac::Goat: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Goat.SKM_DBA_Zodiac_Goat");
-		case EDBAZodiac::Monkey: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Monkey.SKM_DBA_Zodiac_Monkey");
-		case EDBAZodiac::Rooster: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rooster.SKM_DBA_Zodiac_Rooster");
-		case EDBAZodiac::Dog: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Dog.SKM_DBA_Zodiac_Dog");
-		case EDBAZodiac::Pig: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Pig.SKM_DBA_Zodiac_Pig");
-		default:
-			return TEXT("/Game/DBA/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny");
-		}
-	}
+	constexpr float PreviewMeshDisplayScale = 1.0f;
+	constexpr float PreviewMeshFloorZ = 2.0f;
 }
 
 ADBACharacterPreviewActor::ADBACharacterPreviewActor()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	bAlwaysRelevant = true;
+	SetReplicates(true);
+	SetReplicateMovement(true);
+
+	PreviewRoot = CreateDefaultSubobject<USceneComponent>(TEXT("PreviewRoot"));
+	RootComponent = PreviewRoot;
 
 	PreviewMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("PreviewMeshComponent"));
-	RootComponent = PreviewMeshComponent;
+	PreviewMeshComponent->SetupAttachment(PreviewRoot);
 	PreviewMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	PreviewMeshComponent->SetGenerateOverlapEvents(false);
 	PreviewMeshComponent->SetVisibility(true);
 	PreviewMeshComponent->SetComponentTickEnabled(true);
 	PreviewMeshComponent->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
-	ApplyPreviewAssets(EDBAZodiac::Rat);
+	PreviewMeshComponent->SetRelativeRotation(ADBACharacterPresentationActor::GetPreviewMeshPlayerFacingRotation());
+
+	ZodiacTintLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("ZodiacTintLight"));
+	ZodiacTintLight->SetupAttachment(PreviewRoot);
+	ZodiacTintLight->SetMobility(EComponentMobility::Movable);
+	ZodiacTintLight->SetCastShadows(false);
+	ZodiacTintLight->SetIntensity(650000.0f);
+	ZodiacTintLight->SetAttenuationRadius(760.0f);
+	ZodiacTintLight->SetRelativeLocation(FVector(170.0f, 0.0f, 110.0f));
+
+	ApplyPreviewAssets(CurrentZodiac);
 }
 
 void ADBACharacterPreviewActor::BeginPlay()
 {
 	Super::BeginPlay();
+	ApplyPreviewAssets(CurrentZodiac);
 }
 
 void ADBACharacterPreviewActor::Tick(float DeltaSeconds)
@@ -63,12 +65,28 @@ void ADBACharacterPreviewActor::Tick(float DeltaSeconds)
 
 void ADBACharacterPreviewActor::SetPreviewZodiac(EDBAZodiac Zodiac)
 {
-	ApplyPreviewAssets(Zodiac);
+	CurrentZodiac = Zodiac == EDBAZodiac::None ? EDBAZodiac::Rat : Zodiac;
+	ApplyPreviewAssets(CurrentZodiac);
+	if (HasAuthority())
+	{
+		ForceNetUpdate();
+	}
 }
 
 void ADBACharacterPreviewActor::SetRotationSpeed(float InDegreesPerSecond)
 {
 	RotationSpeedDegreesPerSecond = InDegreesPerSecond;
+}
+
+void ADBACharacterPreviewActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ADBACharacterPreviewActor, CurrentZodiac);
+}
+
+void ADBACharacterPreviewActor::OnRep_CurrentZodiac()
+{
+	ApplyPreviewAssets(CurrentZodiac);
 }
 
 void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
@@ -79,8 +97,8 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 	}
 
 	const TArray<FString> MeshCandidates = {
-		GetMeshPathByZodiac(Zodiac),
-		GetLegacyMeshPathByZodiac(Zodiac),
+		ADBACharacterPresentationActor::GetPreviewMeshPathForZodiac(Zodiac),
+		ADBACharacterPresentationActor::GetPreviewLegacyMeshPathForZodiac(Zodiac),
 		TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat")
 	};
 
@@ -104,10 +122,27 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 		return;
 	}
 	PreviewMeshComponent->SetSkeletalMesh(ResolvedMesh);
+	PreviewMeshComponent->SetRelativeRotation(ADBACharacterPresentationActor::GetPreviewMeshPlayerFacingRotation());
+	PreviewMeshComponent->SetRelativeScale3D(FVector(PreviewMeshDisplayScale));
+	const FBox MeshBox = ResolvedMesh->GetBounds().GetBox();
+	const float MeshBottomOffsetZ = MeshBox.IsValid
+		? (-MeshBox.Min.Z * PreviewMeshDisplayScale) + PreviewMeshFloorZ
+		: 0.0f;
+	PreviewMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, MeshBottomOffsetZ));
+	PreviewMeshComponent->SetBoundsScale(2.0f);
+	PreviewMeshComponent->SetVisibility(true);
+	PreviewMeshComponent->SetHiddenInGame(false);
+	PreviewMeshComponent->UpdateBounds();
+	if (ZodiacTintLight)
+	{
+		ZodiacTintLight->SetLightColor(ADBACharacterPresentationActor::GetPreviewTintForZodiac(Zodiac));
+		ZodiacTintLight->SetVisibility(true);
+		ZodiacTintLight->SetHiddenInGame(false);
+	}
 
 	if (ResolvedMesh->GetSkeleton())
 	{
-		const FString IdleAnimationPath = GetIdleAnimationPathByZodiac(Zodiac);
+		const FString IdleAnimationPath = ADBACharacterPresentationActor::GetPreviewIdleAnimationPathForZodiac(Zodiac);
 		if (!IdleAnimationPath.IsEmpty())
 		{
 			if (UAnimationAsset* IdleAnimation = LoadObject<UAnimationAsset>(nullptr, *IdleAnimationPath))
@@ -124,47 +159,5 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPreviewActor] Mesh has no skeleton, skip idle animation."));
 	}
 
-	const FString MaterialPath = GetMaterialPathByZodiac(Zodiac);
-	if (!MaterialPath.IsEmpty())
-	{
-		if (UMaterialInterface* Material = LoadObject<UMaterialInterface>(nullptr, *MaterialPath))
-		{
-			const int32 MaterialSlotCount = PreviewMeshComponent->GetNumMaterials();
-			for (int32 MaterialIndex = 0; MaterialIndex < MaterialSlotCount; ++MaterialIndex)
-			{
-				PreviewMeshComponent->SetMaterial(MaterialIndex, Material);
-			}
-		}
-	}
-}
-
-FString ADBACharacterPreviewActor::GetMeshPathByZodiac(EDBAZodiac Zodiac)
-{
-	return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat");
-}
-
-FString ADBACharacterPreviewActor::GetIdleAnimationPathByZodiac(EDBAZodiac Zodiac)
-{
-	return TEXT("");
-}
-
-FString ADBACharacterPreviewActor::GetMaterialPathByZodiac(EDBAZodiac Zodiac)
-{
-	switch (Zodiac)
-	{
-	case EDBAZodiac::Rat: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_Rat.MI_DBA_Zodiac_Rat");
-	case EDBAZodiac::Ox: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_Ox.MI_DBA_Zodiac_Ox");
-	case EDBAZodiac::Tiger: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_Tiger.MI_DBA_Zodiac_Tiger");
-	case EDBAZodiac::Rabbit: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_Rabbit.MI_DBA_Zodiac_Rabbit");
-	case EDBAZodiac::Dragon: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_Dragon.MI_DBA_Zodiac_Dragon");
-	case EDBAZodiac::Snake: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_Snake.MI_DBA_Zodiac_Snake");
-	case EDBAZodiac::Horse: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_Horse.MI_DBA_Zodiac_Horse");
-	case EDBAZodiac::Goat: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_Goat.MI_DBA_Zodiac_Goat");
-	case EDBAZodiac::Monkey: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_Monkey.MI_DBA_Zodiac_Monkey");
-	case EDBAZodiac::Rooster: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_Rooster.MI_DBA_Zodiac_Rooster");
-	case EDBAZodiac::Dog: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_Dog.MI_DBA_Zodiac_Dog");
-	case EDBAZodiac::Pig: return TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_Pig.MI_DBA_Zodiac_Pig");
-	default:
-		return TEXT("/Game/DBA/Characters/Mannequins/Materials/Instances/Manny/MI_Manny_01.MI_Manny_01");
-	}
+	ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(PreviewMeshComponent, Zodiac, this);
 }

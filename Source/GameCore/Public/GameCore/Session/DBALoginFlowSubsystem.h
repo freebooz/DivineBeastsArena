@@ -79,6 +79,9 @@ protected:
 	UPROPERTY()
 	TArray<FDBACharacterSummary> CachedCharacters;
 
+	UPROPERTY()
+	EDBAZodiac CurrentSelectedLobbyZodiac = EDBAZodiac::None;
+
 	void SetFlowState(EDBALoginFlowState NewState);
 	void LoadCharactersAfterLogin();
 	void EnterMainLobby();

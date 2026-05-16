@@ -13,6 +13,7 @@
 
 class UDBAArenaHUDRootWidgetBase;
 class UDBAMainLobbyWidgetBase;
+class UDBALobbyPlayerHUDWidgetBase;
 class UAudioComponent;
 class USoundBase;
 
@@ -76,6 +77,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	void HideMainLobby();
 
+	/** 显示大厅玩家HUD */
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	void ShowLobbyPlayerHUD();
+
+	/** 隐藏大厅玩家HUD */
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	void HideLobbyPlayerHUD();
+
 	/** 显示战斗HUD */
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	void ShowArenaHUD();
@@ -96,6 +105,10 @@ protected:
 	/** 创建Lobby Widget */
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	virtual void CreateMainLobbyWidget();
+
+	/** 创建大厅玩家HUD Widget */
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	virtual void CreateLobbyPlayerHUDWidget();
 
 	/** 创建Arena HUD Widget */
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
@@ -120,6 +133,9 @@ protected:
 	TObjectPtr<UDBAMainLobbyWidgetBase> MainLobbyWidget;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
+	TObjectPtr<UDBALobbyPlayerHUDWidgetBase> LobbyPlayerHUDWidget;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
 	TObjectPtr<UDBAArenaHUDRootWidgetBase> ArenaHUDWidget;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
@@ -133,6 +149,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
 	TSubclassOf<UDBAMainLobbyWidgetBase> MainLobbyWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
+	TSubclassOf<UDBALobbyPlayerHUDWidgetBase> LobbyPlayerHUDWidgetClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
 	TSubclassOf<UDBAArenaHUDRootWidgetBase> ArenaHUDWidgetClass;
@@ -185,6 +204,7 @@ private:
 	void EnsureLoginFlowStartedFromManager();
 
 	bool bMainLobbyVisible = false;
+	bool bLobbyPlayerHUDVisible = false;
 	bool bArenaHUDVisible = false;
 	bool bFlowWidgetVisible = false;
 	bool bLoginFlowStartRequested = false;

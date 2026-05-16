@@ -11,6 +11,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameDBA/UI/Arena/UDBAArenaHUDRootWidgetBase.h"
 #include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBALobbyPlayerHUDWidgetBase.h"
 #include "GameDBA/UI/Lobby/Login/UDBALoginFlowWidgetBase.h"
 #include "GameDBA/UI/Lobby/Login/UDBACharacterSelectFlowWidgetBase.h"
 #include "GameDBA/UI/Lobby/Login/UDBACharacterCreateFlowWidgetBase.h"
@@ -124,6 +125,26 @@ namespace
 		}
 	}
 
+	void ApplyLobbyGameplayInputMode(UWorld* World)
+	{
+		if (!World)
+		{
+			return;
+		}
+
+		APlayerController* PC = World->GetFirstPlayerController();
+		if (!PC)
+		{
+			return;
+		}
+
+		FInputModeGameOnly InputMode;
+		PC->SetInputMode(InputMode);
+		PC->SetShowMouseCursor(false);
+		PC->bEnableClickEvents = false;
+		PC->bEnableMouseOverEvents = false;
+	}
+
 	bool IsServerLikeCommandLine()
 	{
 		return IsRunningDedicatedServer()
@@ -216,6 +237,16 @@ void UDBAGameUIManager::OnSubsystemInitialize()
 	{
 		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Server runtime skips frontend UI initialization."));
 		return;
+	}
+
+	LobbyPlayerHUDWidgetClass = ResolveWidgetClassPath<UDBALobbyPlayerHUDWidgetBase>({
+		TEXT("/Game/DBA/UI/Lobby/HUD/WBP_DBA_LobbyPlayerHUD"),
+		TEXT("/Game/Blueprints/UI/DBA/Lobby/WBP_DBA_LobbyPlayerHUD")
+	});
+	if (!LobbyPlayerHUDWidgetClass)
+	{
+		LobbyPlayerHUDWidgetClass = UDBALobbyPlayerHUDWidgetBase::StaticClass();
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Lobby player HUD widget blueprint unavailable, using native fallback"));
 	}
 	if (FParse::Param(FCommandLine::Get(), TEXT("DBASkipSplash")))
 	{
@@ -386,6 +417,9 @@ void UDBAGameUIManager::ShowMainLobby()
 		MainLobbyWidget->AddToViewport(0);
 		bMainLobbyVisible = true;
 	}
+
+	ShowLobbyPlayerHUD();
+	ApplyLobbyGameplayInputMode(GetWorld());
 }
 
 void UDBAGameUIManager::HideMainLobby()
@@ -395,6 +429,7 @@ void UDBAGameUIManager::HideMainLobby()
 		MainLobbyWidget->RemoveFromParent();
 		bMainLobbyVisible = false;
 	}
+	HideLobbyPlayerHUD();
 }
 
 void UDBAGameUIManager::RequestShowLoginFlowWidget()
@@ -443,7 +478,47 @@ void UDBAGameUIManager::ClearAllUI()
 	StopLoginFlowBackgroundMusic();
 	HideAllFlowWidgets();
 	HideMainLobby();
+	HideLobbyPlayerHUD();
 	HideArenaHUD();
+}
+
+void UDBAGameUIManager::ShowLobbyPlayerHUD()
+{
+	if (LobbyPlayerHUDWidget)
+	{
+		const UWorld* CurrentWorld = GetWorld();
+		const UWorld* WidgetWorld = LobbyPlayerHUDWidget->GetWorld();
+		const APlayerController* OwningPC = LobbyPlayerHUDWidget->GetOwningPlayer();
+		const UWorld* OwningPlayerWorld = OwningPC ? OwningPC->GetWorld() : nullptr;
+		const bool bWidgetWorldMatches = CurrentWorld && (WidgetWorld == CurrentWorld || OwningPlayerWorld == CurrentWorld);
+		if (!bWidgetWorldMatches)
+		{
+			LobbyPlayerHUDWidget->RemoveFromParent();
+			LobbyPlayerHUDWidget = nullptr;
+			bLobbyPlayerHUDVisible = false;
+		}
+	}
+
+	if (!LobbyPlayerHUDWidget)
+	{
+		CreateLobbyPlayerHUDWidget();
+	}
+
+	if (LobbyPlayerHUDWidget && !bLobbyPlayerHUDVisible)
+	{
+		LobbyPlayerHUDWidget->AddToViewport(50);
+		LobbyPlayerHUDWidget->RefreshFromCurrentCharacterData();
+		bLobbyPlayerHUDVisible = true;
+	}
+}
+
+void UDBAGameUIManager::HideLobbyPlayerHUD()
+{
+	if (LobbyPlayerHUDWidget && bLobbyPlayerHUDVisible)
+	{
+		LobbyPlayerHUDWidget->RemoveFromParent();
+		bLobbyPlayerHUDVisible = false;
+	}
 }
 
 void UDBAGameUIManager::CreateMainLobbyWidget()
@@ -656,6 +731,21 @@ void UDBAGameUIManager::ResetFlowWidgetRefreshRetry()
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(FlowWidgetRefreshRetryTimerHandle);
+	}
+}
+
+void UDBAGameUIManager::CreateLobbyPlayerHUDWidget()
+{
+	if (!LobbyPlayerHUDWidgetClass)
+	{
+		return;
+	}
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			LobbyPlayerHUDWidget = CreateWidget<UDBALobbyPlayerHUDWidgetBase>(PC, LobbyPlayerHUDWidgetClass);
+		}
 	}
 }
 

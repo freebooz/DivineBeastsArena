@@ -68,6 +68,53 @@ namespace
 		}
 		return Value.IsEmpty() ? DefaultValue : Value;
 	}
+
+	EDBAZodiac ParseZodiacName(const FString& Value)
+	{
+		struct FZodiacName
+		{
+			const TCHAR* Name;
+			EDBAZodiac Zodiac;
+		};
+
+		const FZodiacName Names[] = {
+			{ TEXT("Rat"), EDBAZodiac::Rat },
+			{ TEXT("Ox"), EDBAZodiac::Ox },
+			{ TEXT("Tiger"), EDBAZodiac::Tiger },
+			{ TEXT("Rabbit"), EDBAZodiac::Rabbit },
+			{ TEXT("Dragon"), EDBAZodiac::Dragon },
+			{ TEXT("Snake"), EDBAZodiac::Snake },
+			{ TEXT("Horse"), EDBAZodiac::Horse },
+			{ TEXT("Goat"), EDBAZodiac::Goat },
+			{ TEXT("Monkey"), EDBAZodiac::Monkey },
+			{ TEXT("Rooster"), EDBAZodiac::Rooster },
+			{ TEXT("Dog"), EDBAZodiac::Dog },
+			{ TEXT("Pig"), EDBAZodiac::Pig }
+		};
+
+		for (const FZodiacName& Entry : Names)
+		{
+			if (Value.Equals(Entry.Name, ESearchCase::IgnoreCase)
+				|| Value.EndsWith(FString(TEXT("_")) + Entry.Name, ESearchCase::IgnoreCase))
+			{
+				return Entry.Zodiac;
+			}
+		}
+
+		return EDBAZodiac::None;
+	}
+
+	EDBAZodiac ResolveAutoLobbyZodiac(const FString& CharacterName)
+	{
+		const EDBAZodiac CommandLineZodiac = ParseZodiacName(GetCommandLineValueOrDefault(TEXT("DBAAutoZodiac="), TEXT("")));
+		if (CommandLineZodiac != EDBAZodiac::None)
+		{
+			return CommandLineZodiac;
+		}
+
+		const EDBAZodiac NameZodiac = ParseZodiacName(CharacterName);
+		return NameZodiac == EDBAZodiac::None ? EDBAZodiac::Rat : NameZodiac;
+	}
 }
 
 UDBAGameInstance::UDBAGameInstance()
@@ -224,10 +271,10 @@ void UDBAGameInstance::ContinueAutoLobbyFlow(EDBALoginFlowState FlowState)
 	{
 		FDBACharacterCreateRequest Request;
 		Request.CharacterName = GetCommandLineValueOrDefault(TEXT("DBAAutoCharacterName="), TEXT("AutoLobbyRole"));
-		Request.Zodiac = EDBAZodiac::Rat;
+		Request.Zodiac = ResolveAutoLobbyZodiac(Request.CharacterName);
 		Request.PrimaryElement = EDBAElement::Water;
 		Request.FiveCamp = EDBAFiveCamp::East;
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow: create character %s."), *Request.CharacterName);
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow: create character %s zodiac=%d."), *Request.CharacterName, static_cast<int32>(Request.Zodiac));
 		LoginFlow->SubmitCharacterCreation(Request);
 		break;
 	}

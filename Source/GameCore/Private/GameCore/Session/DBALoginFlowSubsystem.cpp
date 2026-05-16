@@ -9,6 +9,78 @@
 #include "Misc/ConfigCacheIni.h"
 #include "GameFramework/PlayerController.h"
 
+namespace
+{
+	EDBAZodiac ParseZodiacName(const FString& Value)
+	{
+		struct FZodiacName
+		{
+			const TCHAR* Name;
+			EDBAZodiac Zodiac;
+		};
+
+		const FZodiacName Names[] = {
+			{ TEXT("Rat"), EDBAZodiac::Rat },
+			{ TEXT("Ox"), EDBAZodiac::Ox },
+			{ TEXT("Tiger"), EDBAZodiac::Tiger },
+			{ TEXT("Rabbit"), EDBAZodiac::Rabbit },
+			{ TEXT("Dragon"), EDBAZodiac::Dragon },
+			{ TEXT("Snake"), EDBAZodiac::Snake },
+			{ TEXT("Horse"), EDBAZodiac::Horse },
+			{ TEXT("Goat"), EDBAZodiac::Goat },
+			{ TEXT("Monkey"), EDBAZodiac::Monkey },
+			{ TEXT("Rooster"), EDBAZodiac::Rooster },
+			{ TEXT("Dog"), EDBAZodiac::Dog },
+			{ TEXT("Pig"), EDBAZodiac::Pig }
+		};
+
+		for (const FZodiacName& Entry : Names)
+		{
+			if (Value.Equals(Entry.Name, ESearchCase::IgnoreCase)
+				|| Value.EndsWith(FString(TEXT("_")) + Entry.Name, ESearchCase::IgnoreCase))
+			{
+				return Entry.Zodiac;
+			}
+		}
+
+		return EDBAZodiac::None;
+	}
+
+	EDBAZodiac ResolveSelectedLobbyZodiac(const TArray<FDBACharacterSummary>& Characters, const FDBACharacterId& SelectedCharacterId)
+	{
+		const FDBACharacterSummary* SelectedCharacter = Characters.FindByPredicate(
+			[&SelectedCharacterId](const FDBACharacterSummary& Character)
+			{
+				return Character.CharacterId == SelectedCharacterId;
+			});
+
+		if (!SelectedCharacter)
+		{
+			return EDBAZodiac::None;
+		}
+
+		const EDBAZodiac NameZodiac = ParseZodiacName(SelectedCharacter->CharacterName);
+		if (NameZodiac != EDBAZodiac::None)
+		{
+			return NameZodiac;
+		}
+
+		return SelectedCharacter->Zodiac == EDBAZodiac::None
+			? SelectedCharacter->DefaultZodiac
+			: SelectedCharacter->Zodiac;
+	}
+
+	void AppendLobbyTravelOptions(FString& LobbyServerAddress, EDBAZodiac Zodiac)
+	{
+		if (Zodiac == EDBAZodiac::None)
+		{
+			return;
+		}
+
+		LobbyServerAddress += FString::Printf(TEXT("?DBALobbyZodiac=%d"), static_cast<int32>(Zodiac));
+	}
+}
+
 bool UDBALoginFlowSubsystem::ShouldEnterCharacterCreate(int32 CharacterCount)
 {
 	return CharacterCount <= 0;
@@ -128,6 +200,12 @@ void UDBALoginFlowSubsystem::SubmitCharacterSelection(const FDBACharacterId& Cha
 		return;
 	}
 
+	const EDBAZodiac CachedZodiac = ResolveSelectedLobbyZodiac(CachedCharacters, CharacterId);
+	if (CachedZodiac != EDBAZodiac::None)
+	{
+		CurrentSelectedLobbyZodiac = CachedZodiac;
+	}
+
 	AccountService->SelectCharacter(CharacterId, FDBAOnCharacterSelected::CreateWeakLambda(this, [this](const FDBACharacterId& SelectedId)
 	{
 		if (SelectedId.IsValid())
@@ -159,6 +237,9 @@ void UDBALoginFlowSubsystem::SubmitCharacterCreation(const FDBACharacterCreateRe
 	{
 		if (Response.bSuccess)
 		{
+			CurrentSelectedLobbyZodiac = Response.CharacterSummary.Zodiac == EDBAZodiac::None
+				? Response.CharacterSummary.DefaultZodiac
+				: Response.CharacterSummary.Zodiac;
 			SubmitCharacterSelection(Response.CharacterSummary.CharacterId);
 			return;
 		}
@@ -211,6 +292,15 @@ void UDBALoginFlowSubsystem::EnterMainLobby()
 		{
 			if (APlayerController* PC = World->GetFirstPlayerController())
 			{
+				EDBAZodiac LobbyZodiac = CurrentSelectedLobbyZodiac;
+				if (LobbyZodiac == EDBAZodiac::None)
+				{
+					if (UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr)
+					{
+						LobbyZodiac = ResolveSelectedLobbyZodiac(CachedCharacters, AccountService->GetCurrentCharacterId());
+					}
+				}
+				AppendLobbyTravelOptions(LobbyServerAddress, LobbyZodiac);
 				UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] EnterMainLobby -> ClientTravel to shared lobby server: %s"), *LobbyServerAddress);
 				PC->ClientTravel(LobbyServerAddress, TRAVEL_Absolute);
 				return;

@@ -20,6 +20,7 @@ class USkyLightComponent;
 class UStaticMeshComponent;
 class USkeletalMesh;
 class UMaterialInterface;
+class UWorld;
 
 USTRUCT(BlueprintType)
 struct DIVINEBEASTSARENA_API FDBACharacterPresentationStageSpec
@@ -71,6 +72,16 @@ public:
 	UFUNCTION(BlueprintPure, Category = "DBA|CharacterPresentation")
 	static FDBACharacterPresentationStageSpec GetReferenceStageSpec();
 
+	static ADBACharacterPresentationActor* ResolveSharedPresentationStage(UWorld* World);
+	static void ReleaseSharedPresentationStage(ADBACharacterPresentationActor*& InOutActor);
+	static FString GetPreviewMeshPathForZodiac(EDBAZodiac Zodiac);
+	static FString GetPreviewLegacyMeshPathForZodiac(EDBAZodiac Zodiac);
+	static FString GetPreviewIdleAnimationPathForZodiac(EDBAZodiac Zodiac);
+	static FString GetPreviewMaterialPathForZodiac(EDBAZodiac Zodiac);
+	static FLinearColor GetPreviewTintForZodiac(EDBAZodiac Zodiac);
+	static FRotator GetPreviewMeshPlayerFacingRotation();
+	static bool ApplyZodiacMaterialToMesh(USkeletalMeshComponent* MeshComponent, EDBAZodiac Zodiac, UObject* Outer);
+
 	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterPresentation")
 	void SetPreviewZodiac(EDBAZodiac Zodiac);
 
@@ -88,11 +99,6 @@ private:
 	void ApplyPreviewAssets(EDBAZodiac Zodiac);
 	void ConfigureStageVisuals();
 	void ApplyStageSpec();
-
-	static FString GetMeshPathByZodiac(EDBAZodiac Zodiac);
-	static FString GetLegacyMeshPathByZodiac(EDBAZodiac Zodiac);
-	static FString GetIdleAnimationPathByZodiac(EDBAZodiac Zodiac);
-	static FString GetMaterialPathByZodiac(EDBAZodiac Zodiac);
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = "DBA|CharacterPresentation")
