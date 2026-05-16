@@ -27,6 +27,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Login")
 	void LoginAsGuest();
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|Login")
+	void LoginDebug(const FString& DisplayName = TEXT("frontend_debug"));
+
 	UPROPERTY(BlueprintAssignable, Category = "DBA|Login")
 	FDBALoginUIError OnLoginError;
 

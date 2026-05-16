@@ -58,6 +58,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby")
 	void ExitGame();
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
+	void BackendRefreshPlayerData();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
+	void BackendRefreshRoomList();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
+	void BackendCreateRoom();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
+	void BackendJoinRoom(const FString& RoomId);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
+	void BackendSetReady(bool bReady);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
+	void BackendStartRoom();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
+	void BackendStartMatchmaking(const FString& Mode, const FString& RegionCode);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
+	void BackendCancelMatchmaking();
+
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|MainLobby", meta = (DisplayName = "On Party Info Refreshed"))
 	void BP_OnPartyInfoRefreshed();

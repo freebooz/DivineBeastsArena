@@ -40,6 +40,9 @@ public:
 	void SubmitGuestLogin();
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|LoginFlow")
+	void SubmitDebugLogin(const FString& DisplayName = TEXT("frontend_debug"));
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|LoginFlow")
 	void SubmitCharacterSelection(const FDBACharacterId& CharacterId);
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|LoginFlow")
@@ -84,6 +87,7 @@ protected:
 
 	void SetFlowState(EDBALoginFlowState NewState);
 	void LoadCharactersAfterLogin();
+	void FetchPostLoginDataAndEnterLobby();
 	void EnterMainLobby();
 	void BroadcastErrorAndSetState(const FString& ErrorMessage, EDBALoginFlowState NewState);
 };

@@ -30,6 +30,7 @@ public class DivineBeastsArena : ModuleRules
             "AssetRegistry",
             "AIModule",
             "NavigationSystem",
+            "GameBackendClient",
         });
 
         if (Target.Type != TargetType.Server)
@@ -91,4 +92,3 @@ public class DivineBeastsArena : ModuleRules
         }
     }
 }
-

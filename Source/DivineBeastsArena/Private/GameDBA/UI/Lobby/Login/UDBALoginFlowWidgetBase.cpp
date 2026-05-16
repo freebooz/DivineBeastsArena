@@ -1,4 +1,4 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "GameDBA/UI/Lobby/Login/UDBALoginFlowWidgetBase.h"
 
@@ -362,6 +362,11 @@ void UDBALoginFlowWidgetBase::NativeConstruct()
 			TEXT("VisitorLoginButton"),
 			TEXT("TouristLoginButton")
 		}));
+		DebugLoginButton = Cast<UButton>(FindWidgetByNames(WidgetTree, {
+			TEXT("DebugLoginButton"),
+			TEXT("BtnDebugLogin"),
+			TEXT("Button_DebugLogin")
+		}));
 		ErrorText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("ErrorText") }));
 		StatusText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("StatusText") }));
 		TitleText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("TitleText") }));
@@ -379,6 +384,13 @@ void UDBALoginFlowWidgetBase::NativeConstruct()
 				WidgetTree,
 				{ TEXT("Guest"), TEXT("Visitor"), TEXT("Tourist"), TEXT("Passport") },
 				{ TEXT("Guest"), TEXT("Visitor"), TEXT("Tourist"), TEXT("\u6e38\u5ba2"), TEXT("\u901a\u884c\u8bc1"), TEXT("\u795e\u517d") });
+		}
+		if (!DebugLoginButton)
+		{
+			DebugLoginButton = FindButtonByHeuristics(
+				WidgetTree,
+				{ TEXT("Debug"), TEXT("DevLogin"), TEXT("TestLogin") },
+				{ TEXT("Debug"), TEXT("Dev"), TEXT("\u8c03\u8bd5\u767b\u5f55"), TEXT("\u6d4b\u8bd5\u767b\u5f55") });
 		}
 
 		if (!EmailInput)
@@ -413,9 +425,10 @@ void UDBALoginFlowWidgetBase::NativeConstruct()
 		EnsureNativeFallbackLayout();
 	}
 	BindControls();
-	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] Bound widgets: LoginButton=%s, GuestLoginButton=%s, EmailInput=%s, PasswordInput=%s"),
+	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] 组件绑定: LoginButton=%s, GuestLoginButton=%s, DebugLoginButton=%s, EmailInput=%s, PasswordInput=%s"),
 		LoginButton ? *LoginButton->GetName() : TEXT("NULL"),
 		GuestLoginButton ? *GuestLoginButton->GetName() : TEXT("NULL"),
+		DebugLoginButton ? *DebugLoginButton->GetName() : TEXT("NULL"),
 		EmailInput ? *EmailInput->GetName() : TEXT("NULL"),
 		PasswordInput ? *PasswordInput->GetName() : TEXT("NULL"));
 
@@ -476,16 +489,30 @@ void UDBALoginFlowWidgetBase::SubmitLogin()
 
 void UDBALoginFlowWidgetBase::SubmitGuestLogin()
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] SubmitGuestLogin clicked"));
+	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] \u70b9\u51fb\u8bbf\u5ba2\u767b\u5f55"));
 	if (UDBALoginFlowSubsystem* LoginFlow = GetLoginFlow())
 	{
 		ClearError();
-		SetStatus(NSLOCTEXT("DBALoginFlowWidget", "SigningInGuest", "Signing in as guest..."));
+		SetStatus(NSLOCTEXT("DBALoginFlowWidget", "SigningInGuest", "\u8bbf\u5ba2\u767b\u5f55\u4e2d..."));
 		LoginFlow->SubmitGuestLogin();
 	}
 	else
 	{
-		ShowError(TEXT("Login flow unavailable."));
+		ShowError(TEXT("\u767b\u5f55\u6d41\u7a0b\u4e0d\u53ef\u7528\u3002"));
+	}
+}
+
+void UDBALoginFlowWidgetBase::SubmitDebugLogin(const FString& DisplayName)
+{
+	if (UDBALoginFlowSubsystem* LoginFlow = GetLoginFlow())
+	{
+		ClearError();
+		SetStatus(NSLOCTEXT("DBALoginFlowWidget", "SigningInDebug", "\u8c03\u8bd5\u767b\u5f55\u4e2d..."));
+		LoginFlow->SubmitDebugLogin(DisplayName);
+	}
+	else
+	{
+		ShowError(TEXT("\u767b\u5f55\u6d41\u7a0b\u4e0d\u53ef\u7528\u3002"));
 	}
 }
 
@@ -498,7 +525,7 @@ void UDBALoginFlowWidgetBase::ShowError(const FString& ErrorMessage)
 		ErrorText->SetVisibility(ErrorMessage.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 	}
 	BP_OnShowError(ErrorMessage);
-	UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] Error: %s"), *ErrorMessage);
+	UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] 错误: %s"), *ErrorMessage);
 }
 
 void UDBALoginFlowWidgetBase::ClearError()
@@ -520,15 +547,23 @@ void UDBALoginFlowWidgetBase::HandleLoginClicked()
 
 void UDBALoginFlowWidgetBase::HandleGuestLoginClicked()
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] HandleGuestLoginClicked"));
+	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] \u70b9\u51fb\u8bbf\u5ba2\u767b\u5f55\u6309\u94ae"));
 	PlayButtonClickSfx();
 	SubmitGuestLogin();
 }
 
+void UDBALoginFlowWidgetBase::HandleDebugLoginClicked()
+{
+	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] \u70b9\u51fb\u8c03\u8bd5\u767b\u5f55\u6309\u94ae"));
+	PlayButtonClickSfx();
+	SubmitDebugLogin(TEXT("frontend_debug"));
+}
+
 void UDBALoginFlowWidgetBase::HandleFlowStateChanged(EDBALoginFlowState NewState)
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] Flow state changed: %d"), static_cast<int32>(NewState));
+	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] \u6d41\u7a0b\u72b6\u6001\u53d8\u66f4: %d"), static_cast<int32>(NewState));
 	SetStatus(GetLoginFlowStatusText(NewState));
+	UpdateLoadingStateByFlow(NewState);
 	if (NewState != EDBALoginFlowState::LoginScreen && NewState != EDBALoginFlowState::Error)
 	{
 		ClearError();
@@ -582,8 +617,10 @@ void UDBALoginFlowWidgetBase::EnsureNativeFallbackLayout()
 	GuestLoginButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("GuestLoginButton"));
 	GuestLoginButton->AddChild(MakeLoginButtonLabel(WidgetTree, NSLOCTEXT("DBALoginFlowWidget", "GuestButton", "Guest Login")));
 	RootBox->AddChildToVerticalBox(GuestLoginButton);
-
-	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] Native fallback layout created"));
+	DebugLoginButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("DebugLoginButton"));
+	DebugLoginButton->AddChild(MakeLoginButtonLabel(WidgetTree, NSLOCTEXT("DBALoginFlowWidget", "DebugButton", "Debug Login")));
+	RootBox->AddChildToVerticalBox(DebugLoginButton);
+	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] 已创建原生回退登录布局。"));
 }
 
 void UDBALoginFlowWidgetBase::BindControls()
@@ -595,7 +632,7 @@ void UDBALoginFlowWidgetBase::BindControls()
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] LoginButton is NULL, click event not bound."));
+		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] LoginButton \u4e3a\u7a7a\uff0c\u672a\u7ed1\u5b9a\u70b9\u51fb\u4e8b\u4ef6\u3002"));
 	}
 	if (GuestLoginButton)
 	{
@@ -605,10 +642,19 @@ void UDBALoginFlowWidgetBase::BindControls()
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] GuestLoginButton is NULL, click event not bound."));
+		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] GuestLoginButton \u4e3a\u7a7a\uff0c\u672a\u7ed1\u5b9a\u70b9\u51fb\u4e8b\u4ef6\u3002"));
+	}
+	if (DebugLoginButton)
+	{
+		DebugLoginButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleDebugLoginClicked);
+		DebugLoginButton->OnClicked.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleDebugLoginClicked);
+		DebugLoginButton->SetIsEnabled(true);
+	}
+	else
+	{
+		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] DebugLoginButton \u4e3a\u7a7a\uff0c\u672a\u7ed1\u5b9a\u70b9\u51fb\u4e8b\u4ef6\u3002"));
 	}
 }
-
 void UDBALoginFlowWidgetBase::UnbindControls()
 {
 	if (LoginButton)
@@ -618,6 +664,10 @@ void UDBALoginFlowWidgetBase::UnbindControls()
 	if (GuestLoginButton)
 	{
 		GuestLoginButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleGuestLoginClicked);
+	}
+	if (DebugLoginButton)
+	{
+		DebugLoginButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleDebugLoginClicked);
 	}
 }
 
@@ -647,7 +697,7 @@ void UDBALoginFlowWidgetBase::InitializeAudioAssets()
 		ButtonClickSound = LoadAssetIfCookedAvailable<USoundBase>(TEXT("/Game/DBA/Audio/UI/SFX/SFX_UI_ButtonClick.SFX_UI_ButtonClick"));
 		if (!ButtonClickSound)
 		{
-			UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] Button click sound not found."));
+			UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] 未找到按钮点击音效。"));
 		}
 	}
 
@@ -660,7 +710,7 @@ void UDBALoginFlowWidgetBase::InitializeAudioAssets()
 		}
 		if (!BackgroundMusicSound)
 		{
-			UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] BGM asset not found."));
+			UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] 未找到背景音乐资源。"));
 		}
 	}
 }
@@ -682,7 +732,7 @@ void UDBALoginFlowWidgetBase::StartBackgroundMusic()
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] Failed to spawn BGM component."));
+		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] 背景音乐组件创建失败。"));
 	}
 }
 
@@ -817,28 +867,28 @@ void UDBALoginFlowWidgetBase::BuildReferenceNativeLayout()
 	UVerticalBox* FormBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("ReferenceLoginForm"));
 	PanelBorder->SetContent(FormBox);
 
-	UButton* ServerButton = MakeTextButton(WidgetTree, TEXT("ReferenceServerButton"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceServer", "推荐服务器 · 青木幻林        v"), 25.0f, GoldText);
+	UButton* ServerButton = MakeTextButton(WidgetTree, TEXT("ReferenceServerButton"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceServer", "鎺ㄨ崘鏈嶅姟鍣?路 闈掓湪骞绘灄        v"), 25.0f, GoldText);
 	AddVerticalChild(FormBox, ServerButton, FMargin(0.0f, 0.0f, 0.0f, 18.0f));
 
 	EmailInput = WidgetTree->ConstructWidget<UEditableTextBox>(UEditableTextBox::StaticClass(), TEXT("EmailInput"));
-	EmailInput->SetHintText(NSLOCTEXT("DBALoginFlowWidget", "AccountHint", "请输入账号"));
+	EmailInput->SetHintText(NSLOCTEXT("DBALoginFlowWidget", "AccountHint", "\u8bf7\u8f93\u5165\u8d26\u53f7"));
 	ApplyEditableBoxStyle(EmailInput);
 	AddVerticalChild(FormBox, EmailInput, FMargin(0.0f, 0.0f, 0.0f, 16.0f));
 
 	PasswordInput = WidgetTree->ConstructWidget<UEditableTextBox>(UEditableTextBox::StaticClass(), TEXT("PasswordInput"));
-	PasswordInput->SetHintText(NSLOCTEXT("DBALoginFlowWidget", "ReferencePasswordHint", "请输入密码"));
+	PasswordInput->SetHintText(NSLOCTEXT("DBALoginFlowWidget", "ReferencePasswordHint", "\u8bf7\u8f93\u5165\u5bc6\u7801"));
 	PasswordInput->SetIsPassword(true);
 	ApplyEditableBoxStyle(PasswordInput);
 	AddVerticalChild(FormBox, PasswordInput, FMargin(0.0f, 0.0f, 0.0f, 12.0f));
 
 	UHorizontalBox* OptionRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ReferenceLoginOptions"));
 	AddVerticalChild(FormBox, OptionRow, FMargin(0.0f, 0.0f, 0.0f, 16.0f));
-	UTextBlock* RememberText = MakeText(WidgetTree, TEXT("ReferenceRememberText"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceRemember", "[x] 记住账号"), 22.0f, GoldText, ETextJustify::Left);
+	UTextBlock* RememberText = MakeText(WidgetTree, TEXT("ReferenceRememberText"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceRemember", "[x] 璁颁綇璐﹀彿"), 22.0f, GoldText, ETextJustify::Left);
 	if (UHorizontalBoxSlot* RememberSlot = OptionRow->AddChildToHorizontalBox(RememberText))
 	{
 		RememberSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	}
-	UTextBlock* ForgotText = MakeText(WidgetTree, TEXT("ReferenceForgotText"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceForgot", "忘记密码？"), 22.0f, GoldText, ETextJustify::Right);
+	UTextBlock* ForgotText = MakeText(WidgetTree, TEXT("ReferenceForgotText"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceForgot", "\u5fd8\u8bb0\u5bc6\u7801\uff1f"), 22.0f, GoldText, ETextJustify::Right);
 	OptionRow->AddChildToHorizontalBox(ForgotText);
 
 	LoginButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("LoginButton"));
@@ -853,7 +903,7 @@ void UDBALoginFlowWidgetBase::BuildReferenceNativeLayout()
 	StatusText->SetVisibility(ESlateVisibility::Collapsed);
 	AddVerticalChild(FormBox, StatusText, FMargin(0.0f, 6.0f, 0.0f, 0.0f));
 
-	UTextBlock* OtherLoginText = MakeText(WidgetTree, TEXT("ReferenceOtherLoginText"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceOtherLogin", "其他登录方式"), 22.0f, GoldText);
+	UTextBlock* OtherLoginText = MakeText(WidgetTree, TEXT("ReferenceOtherLoginText"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceOtherLogin", "鍏朵粬鐧诲綍鏂瑰紡"), 22.0f, GoldText);
 	AddCanvasChildAnchored(
 		RootCanvas,
 		OtherLoginText,
@@ -868,15 +918,20 @@ void UDBALoginFlowWidgetBase::BuildReferenceNativeLayout()
 		FAnchors(0.84f, 0.0f, 0.84f, 0.0f),
 		FMargin(0.0f, 822.0f, 512.0f, 96.0f),
 		FVector2D(0.5f, 0.0f));
-	GuestLoginButton = MakeTextButton(WidgetTree, TEXT("GuestLoginButton"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceGuestLogin", "神兽通行证"), 20.0f, GoldText);
+	GuestLoginButton = MakeTextButton(WidgetTree, TEXT("GuestLoginButton"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceGuestLogin", "\u795e\u517d\u901a\u884c\u8bc1"), 20.0f, GoldText);
 	if (UHorizontalBoxSlot* GuestSlot = OtherLoginRow->AddChildToHorizontalBox(GuestLoginButton))
 	{
 		GuestSlot->SetPadding(FMargin(0.0f, 0.0f, 34.0f, 0.0f));
 	}
-	OtherLoginRow->AddChildToHorizontalBox(MakeTextButton(WidgetTree, TEXT("ReferenceSpiritLogin"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceSpiritLogin", "灵语"), 20.0f, GoldText));
-	OtherLoginRow->AddChildToHorizontalBox(MakeTextButton(WidgetTree, TEXT("ReferenceJadeLogin"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceJadeLogin", "玉简登录"), 20.0f, GoldText));
+		OtherLoginRow->AddChildToHorizontalBox(MakeTextButton(WidgetTree, TEXT("ReferenceSpiritLogin"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceSpiritLogin", "??"), 20.0f, GoldText));
+	OtherLoginRow->AddChildToHorizontalBox(MakeTextButton(WidgetTree, TEXT("ReferenceJadeLogin"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceJadeLogin", "????"), 20.0f, GoldText));
+	DebugLoginButton = MakeTextButton(WidgetTree, TEXT("DebugLoginButton"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceDebugLogin", "????"), 20.0f, GoldText);
+	if (UHorizontalBoxSlot* DebugSlot = OtherLoginRow->AddChildToHorizontalBox(DebugLoginButton))
+	{
+		DebugSlot->SetPadding(FMargin(34.0f, 0.0f, 0.0f, 0.0f));
+	}
 
-	UButton* SwitchAccountButton = MakeTextButton(WidgetTree, TEXT("ReferenceSwitchAccount"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceSwitchAccount", "切换账号"), 20.0f, GoldText);
+	UButton* SwitchAccountButton = MakeTextButton(WidgetTree, TEXT("ReferenceSwitchAccount"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceSwitchAccount", "鍒囨崲璐﹀彿"), 20.0f, GoldText);
 	AddCanvasChildAnchored(
 		RootCanvas,
 		SwitchAccountButton,
@@ -907,6 +962,7 @@ void UDBALoginFlowWidgetBase::ApplyVisualStyle()
 
 	ApplyButtonTextureStyle(LoginButton);
 	ApplyGuestButtonStyle(GuestLoginButton);
+	ApplyGuestButtonStyle(DebugLoginButton);
 	ApplyEditableBoxStyle(EmailInput);
 	ApplyEditableBoxStyle(PasswordInput);
 }
@@ -943,6 +999,23 @@ void UDBALoginFlowWidgetBase::ApplyButtonTextureStyle(UButton* Button) const
 	Button->SetStyle(Style);
 }
 
+void UDBALoginFlowWidgetBase::UpdateLoadingStateByFlow(EDBALoginFlowState NewState)
+{
+	const bool bIsLoading = NewState == EDBALoginFlowState::TryAutoLogin || NewState == EDBALoginFlowState::LoadCharacterList;
+	if (LoginButton)
+	{
+		LoginButton->SetIsEnabled(!bIsLoading);
+	}
+	if (GuestLoginButton)
+	{
+		GuestLoginButton->SetIsEnabled(!bIsLoading);
+	}
+	if (DebugLoginButton)
+	{
+		DebugLoginButton->SetIsEnabled(!bIsLoading);
+	}
+}
+
 void UDBALoginFlowWidgetBase::ApplyGuestButtonStyle(UButton* Button) const
 {
 	if (!Button)
@@ -972,3 +1045,4 @@ void UDBALoginFlowWidgetBase::ApplyGuestButtonStyle(UButton* Button) const
 	Style.SetPressedPadding(FMargin(3.0f, 4.0f, 1.0f, 0.0f));
 	Button->SetStyle(Style);
 }
+

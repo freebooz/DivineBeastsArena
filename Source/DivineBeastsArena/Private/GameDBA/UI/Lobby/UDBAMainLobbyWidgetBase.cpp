@@ -22,6 +22,10 @@ void UDBAMainLobbyWidgetBase::NativeConstruct()
 	Super::NativeConstruct();
 
 	RefreshPartyInfo();
+	if (WidgetController)
+	{
+		WidgetController->InitializeBackendLobby();
+	}
 }
 
 void UDBAMainLobbyWidgetBase::NativeDestruct()
@@ -81,5 +85,69 @@ void UDBAMainLobbyWidgetBase::OpenSettings()
 
 void UDBAMainLobbyWidgetBase::ExitGame()
 {
+}
+
+void UDBAMainLobbyWidgetBase::BackendRefreshPlayerData()
+{
+	if (WidgetController)
+	{
+		WidgetController->RefreshPlayerData();
+	}
+}
+
+void UDBAMainLobbyWidgetBase::BackendRefreshRoomList()
+{
+	if (WidgetController)
+	{
+		WidgetController->RefreshRoomList();
+	}
+}
+
+void UDBAMainLobbyWidgetBase::BackendCreateRoom()
+{
+	if (WidgetController)
+	{
+		WidgetController->CreateRoom();
+	}
+}
+
+void UDBAMainLobbyWidgetBase::BackendJoinRoom(const FString& RoomId)
+{
+	if (WidgetController)
+	{
+		WidgetController->JoinRoom(RoomId);
+	}
+}
+
+void UDBAMainLobbyWidgetBase::BackendSetReady(bool bReady)
+{
+	if (WidgetController)
+	{
+		WidgetController->SetReady(bReady);
+	}
+}
+
+void UDBAMainLobbyWidgetBase::BackendStartRoom()
+{
+	if (WidgetController)
+	{
+		WidgetController->StartRoom();
+	}
+}
+
+void UDBAMainLobbyWidgetBase::BackendStartMatchmaking(const FString& Mode, const FString& RegionCode)
+{
+	if (WidgetController)
+	{
+		WidgetController->StartMatchmaking(Mode, RegionCode);
+	}
+}
+
+void UDBAMainLobbyWidgetBase::BackendCancelMatchmaking()
+{
+	if (WidgetController)
+	{
+		WidgetController->CancelMatchmaking();
+	}
 }
 

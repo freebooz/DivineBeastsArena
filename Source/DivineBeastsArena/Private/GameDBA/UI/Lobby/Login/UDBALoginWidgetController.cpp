@@ -35,6 +35,14 @@ void UDBALoginWidgetController::LoginAsGuest()
 	}
 }
 
+void UDBALoginWidgetController::LoginDebug(const FString& DisplayName)
+{
+	if (UDBALoginFlowSubsystem* Flow = GetLoginFlow())
+	{
+		Flow->SubmitDebugLogin(DisplayName);
+	}
+}
+
 void UDBALoginWidgetController::HandleFlowError(const FString& ErrorMessage)
 {
 	OnLoginError.Broadcast(ErrorMessage);

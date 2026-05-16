@@ -5,6 +5,8 @@
 #include "GameCore/Account/DBAAccountServiceBase.h"
 #include "GameCore/Party/DBAPartyServiceBase.h"
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
+#include "GameBackendClientSubsystem.h"
+#include "GameBackendTelemetryService.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/UI/DBAGameUIManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -124,12 +126,23 @@ UDBAGameInstance::UDBAGameInstance()
 void UDBAGameInstance::Init()
 {
 	Super::Init();
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Initialized."));
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 游戏实例初始化完成。"));
 }
 
 void UDBAGameInstance::Shutdown()
 {
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Shutdown."));
+	if (UGameBackendClientSubsystem* Backend = GetSubsystem<UGameBackendClientSubsystem>())
+	{
+		if (Backend->GetTelemetryService())
+		{
+			TMap<FString, FString> Props;
+			Props.Add(TEXT("phase"), TEXT("game_shutdown"));
+			Backend->GetTelemetryService()->TrackEvent(TEXT("client_exit"), Props);
+			Backend->GetTelemetryService()->Flush();
+		}
+	}
+
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 关闭游戏实例。"));
 	Super::Shutdown();
 }
 
@@ -137,7 +150,7 @@ void UDBAGameInstance::OnWorldChanged(UWorld* OldWorld, UWorld* NewWorld)
 {
 	Super::OnWorldChanged(OldWorld, NewWorld);
 
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] World changed: %s -> %s"),
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 世界切换: %s -> %s"),
 		OldWorld ? *OldWorld->GetName() : TEXT("None"),
 		NewWorld ? *NewWorld->GetName() : TEXT("None"));
 
@@ -189,7 +202,7 @@ void UDBAGameInstance::StartLoginFlow()
 {
 	if (IsDedicatedServerInstance() || IsServerRuntime(GetWorld()))
 	{
-		UE_LOG(LogDBACore, Verbose, TEXT("[DBAGameInstance] Server runtime skips frontend login flow."));
+		UE_LOG(LogDBACore, Verbose, TEXT("[DBAGameInstance] 服务器运行模式跳过前端登录流程。"));
 		return;
 	}
 
@@ -199,7 +212,7 @@ void UDBAGameInstance::StartLoginFlow()
 		{
 			bPendingStartLoginFlowOnFrontend = true;
 			const FName ConfiguredFrontendMapPath = GetConfiguredMapPath(TEXT("DefaultFrontendMap"), FrontendMapPath);
-			UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Switching to frontend map before login flow: %s"), *ConfiguredFrontendMapPath.ToString());
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 登录流程前切换到前端地图: %s"), *ConfiguredFrontendMapPath.ToString());
 			UGameplayStatics::OpenLevel(World, ConfiguredFrontendMapPath);
 			return;
 		}
@@ -223,7 +236,7 @@ void UDBAGameInstance::StartLoginFlow()
 	}
 
 	bLoginFlowStarted = true;
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Start login flow."));
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 启动登录流程。"));
 
 	if (UDBALoginFlowSubsystem* LoginFlow = GetSubsystem<UDBALoginFlowSubsystem>())
 	{
@@ -259,7 +272,7 @@ void UDBAGameInstance::TryStartAutoLobbyFlow()
 	bAutoLobbyFlowStarted = true;
 	LoginFlow->OnFlowStateChanged.RemoveDynamic(this, &UDBAGameInstance::HandleAutoLobbyFlowStateChanged);
 	LoginFlow->OnFlowStateChanged.AddDynamic(this, &UDBAGameInstance::HandleAutoLobbyFlowStateChanged);
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow enabled."));
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 自动大厅流程已启用。"));
 	ContinueAutoLobbyFlow(LoginFlow->GetFlowState());
 }
 
@@ -274,7 +287,7 @@ void UDBAGameInstance::ContinueAutoLobbyFlow(EDBALoginFlowState FlowState)
 	switch (FlowState)
 	{
 	case EDBALoginFlowState::LoginScreen:
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow: submit guest login."));
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 自动大厅流程：提交访客登录。"));
 		LoginFlow->SubmitGuestLogin();
 		break;
 	case EDBALoginFlowState::CharacterCreate:
@@ -284,7 +297,7 @@ void UDBAGameInstance::ContinueAutoLobbyFlow(EDBALoginFlowState FlowState)
 		Request.Zodiac = ResolveAutoLobbyZodiac(Request.CharacterName);
 		Request.PrimaryElement = EDBAElement::Water;
 		Request.FiveCamp = EDBAFiveCamp::East;
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow: create character %s zodiac=%d."), *Request.CharacterName, static_cast<int32>(Request.Zodiac));
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 自动大厅流程：创建角色 %s zodiac=%d。"), *Request.CharacterName, static_cast<int32>(Request.Zodiac));
 		LoginFlow->SubmitCharacterCreation(Request);
 		break;
 	}
@@ -293,13 +306,13 @@ void UDBAGameInstance::ContinueAutoLobbyFlow(EDBALoginFlowState FlowState)
 		const TArray<FDBACharacterSummary>& Characters = LoginFlow->GetCachedCharacters();
 		if (Characters.Num() > 0)
 		{
-			UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow: select character %s."), *Characters[0].CharacterName);
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 自动大厅流程：选择角色 %s。"), *Characters[0].CharacterName);
 			LoginFlow->SubmitCharacterSelection(Characters[0].CharacterId);
 		}
 		break;
 	}
 	case EDBALoginFlowState::MainLobby:
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow: reached main lobby."));
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 自动大厅流程：已到达主大厅。"));
 		RunAutoPartyStep();
 		break;
 	default:
@@ -326,11 +339,11 @@ void UDBAGameInstance::RunAutoPartyStep()
 	{
 		if (!PartyInfo.IsValid())
 		{
-			UE_LOG(LogDBACore, Error, TEXT("[DBAGameInstance] Auto lobby flow: create party failed."));
+			UE_LOG(LogDBACore, Error, TEXT("[DBAGameInstance] 自动大厅流程：创建队伍失败。"));
 			return;
 		}
 
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow: party created %s, members=%d."),
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 自动大厅流程：队伍创建成功 %s, 成员=%d。"),
 			*PartyInfo.PartyId.ToString(), PartyInfo.Members.Num());
 
 		FString InviteAccountId;
@@ -347,7 +360,7 @@ void UDBAGameInstance::RunAutoPartyStep()
 		PartyService->InvitePlayer(FDBAAccountId(InviteAccountId), FDBAOnPartyOperationComplete::CreateWeakLambda(this, [PartyService, InviteAccountId](bool bSuccess, const FString& ErrorMessage)
 		{
 			const FDBAPartyInfo& UpdatedParty = PartyService->GetCurrentPartyInfo();
-			UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow: invite %s success=%s error=%s members=%d."),
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 自动大厅流程：邀请 %s success=%s error=%s members=%d。"),
 				*InviteAccountId,
 				bSuccess ? TEXT("true") : TEXT("false"),
 				*ErrorMessage,

@@ -57,6 +57,9 @@ public:
 	virtual void SubmitGuestLogin();
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|Login")
+	virtual void SubmitDebugLogin(const FString& DisplayName = TEXT("frontend_debug"));
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Login")
 	virtual void ShowError(const FString& ErrorMessage);
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|Login")
@@ -68,6 +71,9 @@ protected:
 
 	UFUNCTION()
 	void HandleGuestLoginClicked();
+
+	UFUNCTION()
+	void HandleDebugLoginClicked();
 
 	UFUNCTION()
 	void HandleFlowStateChanged(EDBALoginFlowState NewState);
@@ -101,6 +107,7 @@ protected:
 	void ApplyVisualStyle();
 	void ApplyButtonTextureStyle(UButton* Button) const;
 	void ApplyGuestButtonStyle(UButton* Button) const;
+	void UpdateLoadingStateByFlow(EDBALoginFlowState NewState);
 
 protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
@@ -117,6 +124,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
 	TObjectPtr<UButton> GuestLoginButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UButton> DebugLoginButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
 	TObjectPtr<UTextBlock> ErrorText;
