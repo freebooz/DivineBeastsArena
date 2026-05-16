@@ -165,7 +165,17 @@ void UDBAGameInstance::OnWorldChanged(UWorld* OldWorld, UWorld* NewWorld)
 		return;
 	}
 
-	if (FlowState == EDBALoginFlowState::MainLobby && (IsLobbyWorld(NewWorld) || IsFrontendWorld(NewWorld)))
+	if (IsLobbyWorld(NewWorld))
+	{
+		if (UIManager)
+		{
+			UIManager->ShowMainLobby();
+		}
+		RunAutoPartyStep();
+		return;
+	}
+
+	if (FlowState == EDBALoginFlowState::MainLobby && IsFrontendWorld(NewWorld))
 	{
 		if (UIManager)
 		{

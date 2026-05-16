@@ -187,6 +187,17 @@ namespace
 		return IsServerLikeCommandLine()
 			|| (World && World->GetNetMode() == NM_DedicatedServer);
 	}
+
+	bool IsLobbyGameplayWorld(const UWorld* World)
+	{
+		if (!World || !World->PersistentLevel)
+		{
+			return false;
+		}
+
+		const FString LevelPath = World->PersistentLevel->GetOutermost()->GetName();
+		return LevelPath.Contains(TEXT("LobbyMap")) || LevelPath.Contains(TEXT("MainLobby"));
+	}
 }
 
 UDBAGameUIManager::UDBAGameUIManager()
@@ -423,6 +434,20 @@ void UDBAGameUIManager::ShowMainLobby()
 	StopLoginFlowBackgroundMusic();
 	HideAllFlowWidgets();
 
+	if (IsLobbyGameplayWorld(GetWorld()))
+	{
+		if (MainLobbyWidget && bMainLobbyVisible)
+		{
+			MainLobbyWidget->RemoveFromParent();
+			bMainLobbyVisible = false;
+		}
+
+		ShowLobbyPlayerHUD();
+		ApplyLobbyGameplayInputMode(GetWorld());
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Lobby gameplay HUD shown for LobbyMap."));
+		return;
+	}
+
 	if (MainLobbyWidget)
 	{
 		const UWorld* CurrentWorld = GetWorld();
@@ -536,9 +561,17 @@ void UDBAGameUIManager::ShowLobbyPlayerHUD()
 
 	if (LobbyPlayerHUDWidget && !bLobbyPlayerHUDVisible)
 	{
-		LobbyPlayerHUDWidget->AddToViewport(50);
+		LobbyPlayerHUDWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		LobbyPlayerHUDWidget->AddToViewport(1000);
 		LobbyPlayerHUDWidget->RefreshFromCurrentCharacterData();
 		bLobbyPlayerHUDVisible = true;
+		ResetLobbyHUDRefreshRetry();
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Lobby player HUD added to viewport: %s"),
+			*LobbyPlayerHUDWidget->GetClass()->GetName());
+	}
+	else if (!LobbyPlayerHUDWidget && IsLobbyGameplayWorld(GetWorld()))
+	{
+		ScheduleLobbyHUDRefreshRetry();
 	}
 }
 
@@ -764,6 +797,44 @@ void UDBAGameUIManager::ResetFlowWidgetRefreshRetry()
 	}
 }
 
+void UDBAGameUIManager::ScheduleLobbyHUDRefreshRetry()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (World->GetTimerManager().IsTimerActive(LobbyHUDRefreshRetryTimerHandle))
+	{
+		return;
+	}
+
+	++LobbyHUDRefreshRetryCount;
+	if (LobbyHUDRefreshRetryCount > 60)
+	{
+		UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] Lobby HUD retry exceeded limit."));
+		return;
+	}
+
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Lobby HUD not ready, scheduling retry %d."), LobbyHUDRefreshRetryCount);
+	World->GetTimerManager().SetTimer(
+		LobbyHUDRefreshRetryTimerHandle,
+		this,
+		&UDBAGameUIManager::ShowLobbyPlayerHUD,
+		0.15f,
+		false);
+}
+
+void UDBAGameUIManager::ResetLobbyHUDRefreshRetry()
+{
+	LobbyHUDRefreshRetryCount = 0;
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(LobbyHUDRefreshRetryTimerHandle);
+	}
+}
+
 void UDBAGameUIManager::CreateLobbyPlayerHUDWidget()
 {
 	if (!LobbyPlayerHUDWidgetClass)
@@ -775,6 +846,13 @@ void UDBAGameUIManager::CreateLobbyPlayerHUDWidget()
 		if (APlayerController* PC = World->GetFirstPlayerController())
 		{
 			LobbyPlayerHUDWidget = CreateWidget<UDBALobbyPlayerHUDWidgetBase>(PC, LobbyPlayerHUDWidgetClass);
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Lobby player HUD widget created: class=%s success=%s"),
+				*LobbyPlayerHUDWidgetClass->GetName(),
+				LobbyPlayerHUDWidget ? TEXT("true") : TEXT("false"));
+		}
+		else
+		{
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Lobby player HUD waiting for PlayerController."));
 		}
 	}
 }

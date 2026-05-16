@@ -2,8 +2,41 @@
 
 #include "GameDBA/Player/DBALobbyPlayerController.h"
 
+#include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/UI/DBAGameUIManager.h"
+#include "Engine/World.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+
+namespace
+{
+	bool IsLobbyGameplayWorld(const UWorld* World)
+	{
+		if (!World || !World->PersistentLevel)
+		{
+			return false;
+		}
+
+		const FString LevelPath = World->PersistentLevel->GetOutermost()->GetName();
+		return LevelPath.Contains(TEXT("LobbyMap")) || LevelPath.Contains(TEXT("MainLobby"));
+	}
+
+	void RequestLobbyHUDForLocalController(APlayerController* PlayerController)
+	{
+		if (!PlayerController || !PlayerController->IsLocalController() || !IsLobbyGameplayWorld(PlayerController->GetWorld()))
+		{
+			return;
+		}
+
+		if (UGameInstance* GameInstance = PlayerController->GetGameInstance())
+		{
+			if (UDBAGameUIManager* UIManager = GameInstance->GetSubsystem<UDBAGameUIManager>())
+			{
+				UIManager->ShowMainLobby();
+			}
+		}
+	}
+}
 
 ADBALobbyPlayerController::ADBALobbyPlayerController()
 {
@@ -24,6 +57,37 @@ void ADBALobbyPlayerController::BeginPlay()
 		SetInputMode(InputMode);
 		SetShowMouseCursor(false);
 		bEnableTouchEvents = true;
+		if (APawn* ControlledPawn = GetPawn())
+		{
+			SetViewTarget(ControlledPawn);
+			UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] BeginPlay view target set to pawn: %s"),
+				*ControlledPawn->GetName());
+		}
+		RequestLobbyHUDForLocalController(this);
+	}
+}
+
+void ADBALobbyPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	if (IsLocalController() && InPawn)
+	{
+		SetViewTarget(InPawn);
+		UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] OnPossess view target set to pawn: %s"),
+			*InPawn->GetName());
+		RequestLobbyHUDForLocalController(this);
+	}
+}
+
+void ADBALobbyPlayerController::AcknowledgePossession(APawn* P)
+{
+	Super::AcknowledgePossession(P);
+	if (IsLocalController() && P)
+	{
+		SetViewTarget(P);
+		UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] AcknowledgePossession view target set to pawn: %s"),
+			*P->GetName());
+		RequestLobbyHUDForLocalController(this);
 	}
 }
 
@@ -36,7 +100,7 @@ void ADBALobbyPlayerController::SetupInputComponent()
 		return;
 	}
 
-	// 兼容项目输入映射（PC/移动端虚拟摇杆）
+	// Keep both PC axis mappings and mobile virtual joystick mappings working.
 	InputComponent->BindAxis(TEXT("MoveForward"), this, &ADBALobbyPlayerController::MoveForwardAxis);
 	InputComponent->BindAxis(TEXT("MoveRight"), this, &ADBALobbyPlayerController::MoveRightAxis);
 	InputComponent->BindAxis(TEXT("Turn"), this, &ADBALobbyPlayerController::TurnAxis);
@@ -126,7 +190,7 @@ void ADBALobbyPlayerController::ApplyMovementInput(float ForwardValue, float Rig
 
 void ADBALobbyPlayerController::ApplyDesktopFallbackInput()
 {
-	// 当项目输入轴未配置时，提供PC键盘兜底输入。
+	// Fallback when project axis mappings are unavailable.
 	float Forward = CachedMoveForwardAxis;
 	float Right = CachedMoveRightAxis;
 
@@ -145,7 +209,7 @@ void ADBALobbyPlayerController::ApplyDesktopFallbackInput()
 
 void ADBALobbyPlayerController::ApplyMouseLookWhileRightButton()
 {
-	// PC端用右键按住时做镜头转向；移动端依赖触摸/轴输入，不走这里。
+	// Desktop mouse look while holding the right mouse button.
 	if (!IsInputKeyDown(EKeys::RightMouseButton))
 	{
 		return;

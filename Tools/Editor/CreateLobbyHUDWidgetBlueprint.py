@@ -29,11 +29,7 @@ def main():
 
     asset = editor_asset_lib.load_asset(ASSET_PATH)
     if asset:
-        if editor_asset_lib.delete_asset(ASSET_PATH):
-            log(f"Deleted existing asset before regeneration: {ASSET_PATH}")
-            asset = None
-        else:
-            fail(f"Failed to delete existing asset before regeneration: {ASSET_PATH}")
+        log(f"Asset already exists: {ASSET_PATH}")
 
     if not asset:
         factory = unreal.WidgetBlueprintFactory()

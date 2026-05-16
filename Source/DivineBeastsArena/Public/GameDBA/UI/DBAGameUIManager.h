@@ -192,6 +192,8 @@ private:
 	void ScheduleFlowWidgetRefreshRetry();
 	void ResetFlowWidgetRefreshRetry();
 	void HandleFlowWidgetRefreshRetry();
+	void ScheduleLobbyHUDRefreshRetry();
+	void ResetLobbyHUDRefreshRetry();
 
 	UFUNCTION()
 	void HandleLoginFlowBackgroundMusicFinished();
@@ -209,9 +211,11 @@ private:
 	bool bFlowWidgetVisible = false;
 	bool bLoginFlowStartRequested = false;
 	int32 FlowWidgetRefreshRetryCount = 0;
+	int32 LobbyHUDRefreshRetryCount = 0;
 
 	FTimerHandle SplashVideoTimerHandle;
 	FTimerHandle FlowWidgetRefreshRetryTimerHandle;
+	FTimerHandle LobbyHUDRefreshRetryTimerHandle;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAudioComponent> LoginFlowBackgroundMusicComponent;

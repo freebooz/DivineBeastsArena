@@ -5,18 +5,39 @@
 #include "GameDBA/GAS/DBAAbilitySystemComponent.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "GameDBA/RPC/DBARpcHandler.h"
+#include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "GameDBA/Animation/DBAZodiacAnimInstance.h"
 #include "Net/UnrealNetwork.h"
 
 ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
+	SetReplicateMovement(true);
 
 	// 閰嶇疆纰版挒
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
 	GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh"));
+	GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -88.0f));
+	GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+
+	LobbyCameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("LobbyCameraBoom"));
+	LobbyCameraBoom->SetupAttachment(RootComponent);
+	LobbyCameraBoom->TargetArmLength = 520.0f;
+	LobbyCameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 72.0f));
+	LobbyCameraBoom->SetRelativeRotation(FRotator(-18.0f, 0.0f, 0.0f));
+	LobbyCameraBoom->bUsePawnControlRotation = true;
+	LobbyCameraBoom->bInheritPitch = true;
+	LobbyCameraBoom->bInheritYaw = true;
+	LobbyCameraBoom->bInheritRoll = false;
+	LobbyCameraBoom->bDoCollisionTest = true;
+
+	LobbyFollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("LobbyFollowCamera"));
+	LobbyFollowCamera->SetupAttachment(LobbyCameraBoom, USpringArmComponent::SocketName);
+	LobbyFollowCamera->bUsePawnControlRotation = false;
 
 	// 閰嶇疆绉诲姩閫熷害
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -24,7 +45,13 @@ ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
 		Movement->MaxWalkSpeed = MaxWalkSpeed;
 		Movement->MaxWalkSpeedCrouched = MaxWalkSpeed;
 		Movement->BrakingDecelerationWalking = BrakingDeceleration;
+		Movement->bOrientRotationToMovement = true;
+		Movement->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
 	}
+
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
 }
 
 void ADBAZodiacCharacterBase::BeginPlay()

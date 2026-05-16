@@ -17,6 +17,11 @@
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/Player/DBALobbyPlayerController.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPreviewActor.h"
+#include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
+#include "Animation/AnimationAsset.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
@@ -128,6 +133,42 @@ namespace
 	{
 		return Options.Contains(TEXT("?listen"), ESearchCase::IgnoreCase)
 			|| Options.Equals(TEXT("listen"), ESearchCase::IgnoreCase);
+	}
+
+	void ApplyLobbyPawnVisuals(ACharacter* Character, EDBAZodiac Zodiac)
+	{
+		if (!Character || !Character->GetMesh())
+		{
+			return;
+		}
+
+		USkeletalMeshComponent* MeshComponent = Character->GetMesh();
+		if (!MeshComponent->GetSkeletalMeshAsset())
+		{
+			const TArray<FString> MeshCandidates = {
+				ADBACharacterPresentationActor::GetPreviewMeshPathForZodiac(Zodiac),
+				ADBACharacterPresentationActor::GetPreviewLegacyMeshPathForZodiac(Zodiac),
+				TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat")
+			};
+
+			for (const FString& MeshPath : MeshCandidates)
+			{
+				if (USkeletalMesh* Mesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath))
+				{
+					MeshComponent->SetSkeletalMesh(Mesh);
+					UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Lobby pawn mesh applied: pawn=%s mesh=%s"),
+						*Character->GetName(),
+						*MeshPath);
+					break;
+				}
+			}
+		}
+
+		MeshComponent->SetVisibility(true);
+		MeshComponent->SetHiddenInGame(false);
+		MeshComponent->SetComponentTickEnabled(true);
+		MeshComponent->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+		ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(MeshComponent, Zodiac, Character);
 	}
 }
 
@@ -346,6 +387,24 @@ APawn* ADBAGameModeBase::SpawnDefaultPawnAtTransform_Implementation(AController*
 	APawn* SpawnedPawn = GetWorld()->SpawnActor<APawn>(PawnClass, SpawnTransform, SpawnInfo);
 	if (SpawnedPawn)
 	{
+		SpawnedPawn->SetReplicates(true);
+		SpawnedPawn->SetReplicateMovement(true);
+
+		if (ACharacter* SpawnedCharacter = Cast<ACharacter>(SpawnedPawn))
+		{
+			EDBAZodiac PawnZodiac = EDBAZodiac::Rat;
+			if (APlayerController* PC = Cast<APlayerController>(NewPlayer))
+			{
+				const TObjectKey<APlayerController> PlayerKey(PC);
+				if (const EDBAZodiac* ResolvedZodiac = LobbyJoinZodiacs.Find(PlayerKey))
+				{
+					PawnZodiac = *ResolvedZodiac;
+				}
+			}
+
+			ApplyLobbyPawnVisuals(SpawnedCharacter, PawnZodiac);
+		}
+
 		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] SpawnDefaultPawnAtTransform (AlwaysSpawn): player=%s pawn=%s class=%s"),
 			*NewPlayer->GetName(),
 			*SpawnedPawn->GetName(),

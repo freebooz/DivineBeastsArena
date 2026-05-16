@@ -13,6 +13,8 @@
 
 class UDBAZodiacAnimInstance;
 class UDBAAbilitySystemComponent;
+class UCameraComponent;
+class USpringArmComponent;
 class ADBARpcHandler;
 
 /**
@@ -46,6 +48,12 @@ public:
 	UDBAAbilitySystemComponent* GetDBAAbilitySystemComponent() const;
 
 	/** 获取RPC处理器 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Camera")
+	USpringArmComponent* GetLobbyCameraBoom() const { return LobbyCameraBoom; }
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Camera")
+	UCameraComponent* GetLobbyFollowCamera() const { return LobbyFollowCamera; }
+
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character")
 	ADBARpcHandler* GetRpcHandler() const { return RpcHandler; }
 
@@ -176,6 +184,13 @@ public:
 	/** RPC 处理器实例 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RPC")
 	ADBARpcHandler* RpcHandler;
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DBA|Camera")
+	TObjectPtr<USpringArmComponent> LobbyCameraBoom;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DBA|Camera")
+	TObjectPtr<UCameraComponent> LobbyFollowCamera;
 
 public:
 	// ==================== 死亡状态 ====================

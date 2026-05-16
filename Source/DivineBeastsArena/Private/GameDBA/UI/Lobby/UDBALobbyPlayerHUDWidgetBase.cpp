@@ -20,6 +20,7 @@
 #include "GameCore/Account/DBAOnlineAccountService.h"
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
+#include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/Data/DBASkillDataRow.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
@@ -73,7 +74,14 @@ void UDBALobbyPlayerHUDWidgetBase::NativeOnInitialized()
 void UDBALobbyPlayerHUDWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+	BuildDefaultLayoutIfNeeded();
+	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	RefreshFromCurrentCharacterData();
+	UE_LOG(LogDBACore, Log, TEXT("[LobbyPlayerHUD] Constructed: Avatar=%s Skills=%d Minimap=%s Viewport=%s"),
+		AvatarRootBorder ? TEXT("true") : TEXT("false"),
+		SkillSlotBorders.Num(),
+		MinimapRootBorder ? TEXT("true") : TEXT("false"),
+		*UWidgetLayoutLibrary::GetViewportSize(this).ToString());
 }
 
 void UDBALobbyPlayerHUDWidgetBase::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
