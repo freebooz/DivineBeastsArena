@@ -5,8 +5,29 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$Root = "d:\DivineBeastsArena\Saved\StagedBuilds\Windows\DivineBeastsArena"
-$Exe = Join-Path $Root "Binaries\Win64\DivineBeastsArena.exe"
+$CandidateRoots = @(
+    "d:\DivineBeastsArena\Saved\StagedBuilds\Windows\Windows\DivineBeastsArena",
+    "d:\DivineBeastsArena\Saved\StagedBuilds\Windows\DivineBeastsArena"
+)
+
+$Root = $null
+$NewestExe = $null
+foreach ($CandidateRoot in $CandidateRoots) {
+    $CandidateExe = Join-Path $CandidateRoot "Binaries\Win64\DivineBeastsArena.exe"
+    if (Test-Path -LiteralPath $CandidateExe) {
+        $ExeItem = Get-Item -LiteralPath $CandidateExe
+        if (-not $NewestExe -or $ExeItem.LastWriteTime -gt $NewestExe.LastWriteTime) {
+            $NewestExe = $ExeItem
+            $Root = $CandidateRoot
+        }
+    }
+}
+
+if (-not $Root) {
+    throw "Missing staged executable under candidates: $($CandidateRoots -join ', ')"
+}
+
+$Exe = $NewestExe.FullName
 $LogDir = Join-Path $Root "Saved\Logs"
 $LockPath = Join-Path $env:TEMP "DivineBeastsArena_LaunchLobby.lock"
 

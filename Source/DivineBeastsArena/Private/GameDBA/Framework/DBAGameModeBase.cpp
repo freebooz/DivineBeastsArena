@@ -26,6 +26,8 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 
 namespace
 {
@@ -320,6 +322,19 @@ APawn* ADBAGameModeBase::SpawnDefaultPawnAtTransform_Implementation(AController*
 	if (!IsLobbyMapWorld(GetWorld()))
 	{
 		return Super::SpawnDefaultPawnAtTransform_Implementation(NewPlayer, SpawnTransform);
+	}
+
+	// Headless lobby server should not spawn an extra local host pawn.
+	if (FParse::Param(FCommandLine::Get(), TEXT("DBAHeadlessLobbyServer")))
+	{
+		if (APlayerController* PC = Cast<APlayerController>(NewPlayer))
+		{
+			if (PC->IsLocalController())
+			{
+				UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Skip local host pawn spawn for headless lobby server: %s"), *PC->GetName());
+				return nullptr;
+			}
+		}
 	}
 
 	UClass* PawnClass = GetDefaultPawnClassForController(NewPlayer);

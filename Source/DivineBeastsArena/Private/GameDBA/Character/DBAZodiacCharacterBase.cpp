@@ -6,6 +6,7 @@
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "GameDBA/RPC/DBARpcHandler.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
+#include "Animation/AnimationAsset.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -135,6 +136,7 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 
 	const EDBAZodiac CommonZodiac = ToCommonZodiac(ZodiacType);
 	const TArray<FString> MeshCandidates = {
+		TEXT("/Game/DBA/Characters/Rosales/Meshes/SK_Rosales.SK_Rosales"),
 		TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP.TutorialTPP"),
 		ADBACharacterPresentationActor::GetPreviewMeshPathForZodiac(CommonZodiac),
 		ADBACharacterPresentationActor::GetPreviewLegacyMeshPathForZodiac(CommonZodiac),
@@ -171,10 +173,13 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 
 		if (ResolvedMesh->GetSkeleton())
 		{
+			const bool bUsingRosalesMesh = ResolvedMeshPath.Contains(TEXT("/Game/DBA/Characters/Rosales/"));
 			const bool bUsingEngineTutorialMesh = ResolvedMeshPath.Contains(TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP"));
-			const FString AnimBlueprintPath = bUsingEngineTutorialMesh
+			const FString AnimBlueprintPath = bUsingRosalesMesh
+				? FString(TEXT("/Game/DBA/Characters/Rosales/AnimationBP/ABP_Rosales.ABP_Rosales_C"))
+				: (bUsingEngineTutorialMesh
 				? GetEngineTutorialAnimBlueprintPath()
-				: GetLobbyAnimBlueprintPathForZodiac(CommonZodiac);
+				: GetLobbyAnimBlueprintPathForZodiac(CommonZodiac));
 			UClass* AnimClass = AnimBlueprintPath.IsEmpty()
 				? nullptr
 				: LoadClass<UAnimInstance>(nullptr, *AnimBlueprintPath);
@@ -185,8 +190,22 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 			}
 			else
 			{
-				MeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
-				MeshComponent->SetAnimInstanceClass(UDBAZodiacAnimInstance::StaticClass());
+				// Fallback for imported meshes without a matching AnimBP.
+				const FString RosalesIdleAnimPath = TEXT("/Game/DBA/Characters/Rosales/Animations/AN_Standing_Idle.AN_Standing_Idle");
+				if (bUsingRosalesMesh)
+				{
+					if (UAnimationAsset* RosalesAnim = LoadObject<UAnimationAsset>(nullptr, *RosalesIdleAnimPath))
+					{
+						MeshComponent->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+						MeshComponent->SetAnimation(RosalesAnim);
+						MeshComponent->Play(true);
+					}
+				}
+				else
+				{
+					MeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+					MeshComponent->SetAnimInstanceClass(UDBAZodiacAnimInstance::StaticClass());
+				}
 			}
 		}
 		else

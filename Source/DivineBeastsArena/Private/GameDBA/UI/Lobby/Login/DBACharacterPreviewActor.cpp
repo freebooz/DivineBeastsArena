@@ -16,7 +16,7 @@ namespace
 	constexpr float PreviewActorMeshDisplayScale = 1.0f;
 	constexpr float PreviewActorMeshFloorZ = 2.0f;
 
-	bool IsLobbyGameplayWorld(const UWorld* World)
+	bool IsLobbyGameplayWorldForPreviewActor(const UWorld* World)
 	{
 		if (!World || !World->PersistentLevel)
 		{
@@ -60,7 +60,7 @@ void ADBACharacterPreviewActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (IsLobbyGameplayWorld(GetWorld()))
+	if (IsLobbyGameplayWorldForPreviewActor(GetWorld()))
 	{
 		Destroy();
 		return;

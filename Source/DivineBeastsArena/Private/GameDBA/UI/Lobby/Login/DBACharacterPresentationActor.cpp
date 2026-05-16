@@ -312,17 +312,27 @@ bool ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(USkeletalMeshComp
 	}
 
 	const FString MaterialPath = GetPreviewMaterialPathForZodiac(Zodiac);
-	UMaterialInterface* Material = MaterialPath.IsEmpty()
+	UMaterialInterface* LoadedZodiacMaterial = MaterialPath.IsEmpty()
 		? nullptr
 		: LoadObject<UMaterialInterface>(nullptr, *MaterialPath);
-	if (!Material)
+	UMaterialInterface* BaseMaterial = LoadedZodiacMaterial;
+	if (!BaseMaterial)
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPresentationActor] Failed to load zodiac material: %s"), *MaterialPath);
-		return false;
+		// Fallback for imported meshes (e.g. Kachujin): tint the mesh's own material.
+		BaseMaterial = MeshComponent->GetMaterial(0);
+		if (!BaseMaterial)
+		{
+			BaseMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Characters/Kachujin/kachujin_MAT.kachujin_MAT"));
+		}
+		if (!BaseMaterial)
+		{
+			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPresentationActor] Failed to resolve base material. ZodiacMaterial=%s"), *MaterialPath);
+			return false;
+		}
 	}
 
-	UMaterialInterface* MaterialToApply = Material;
-	if (UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(Material, Outer ? Outer : MeshComponent))
+	UMaterialInterface* MaterialToApply = BaseMaterial;
+	if (UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, Outer ? Outer : MeshComponent))
 	{
 		const FLinearColor Tint = GetPreviewTintForZodiac(Zodiac);
 		DynamicMaterial->SetVectorParameterValue(TEXT("Tint"), Tint);
@@ -340,7 +350,7 @@ bool ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(USkeletalMeshComp
 	}
 
 	UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] Applied zodiac material: %s Tint=%s Slots=%d"),
-		*MaterialPath,
+		LoadedZodiacMaterial ? *MaterialPath : TEXT("MeshBaseMaterialFallback"),
 		*GetPreviewTintForZodiac(Zodiac).ToString(),
 		MaterialSlotCount);
 	return true;
