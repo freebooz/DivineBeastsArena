@@ -16,6 +16,7 @@
 #include "GameDBA/UI/Lobby/Login/UDBACharacterCreateFlowWidgetBase.h"
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/CommandLine.h"
 #include "Sound/SoundBase.h"
 #include "Misc/PackageName.h"
 #include "UObject/ConstructorHelpers.h"
@@ -122,11 +123,30 @@ namespace
 			}
 		}
 	}
+
+	bool IsServerLikeCommandLine()
+	{
+		return IsRunningDedicatedServer()
+			|| FParse::Param(FCommandLine::Get(), TEXT("server"))
+			|| FParse::Param(FCommandLine::Get(), TEXT("DBAHeadlessLobbyServer"));
+	}
+
+	bool IsServerLikeRuntime(const UWorld* World)
+	{
+		return IsServerLikeCommandLine()
+			|| (World && World->GetNetMode() == NM_DedicatedServer);
+	}
 }
 
 UDBAGameUIManager::UDBAGameUIManager()
 	: Super()
 {
+	if (IsServerLikeCommandLine())
+	{
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Constructor skips UI class loading for server runtime."));
+		return;
+	}
+
 	MainLobbyWidgetClass = ResolveWidgetClassPath<UDBAMainLobbyWidgetBase>({
 		TEXT("/Game/DBA/UI/Lobby/MainLobby/WBP_DBA_MainLobby"),
 		TEXT("/Game/Blueprints/UI/DBA/Lobby/WBP_DBA_MainLobby")
@@ -192,6 +212,18 @@ void UDBAGameUIManager::OnSubsystemInitialize()
 {
 	Super::OnSubsystemInitialize();
 
+	if (IsServerLikeRuntime(GetWorld()))
+	{
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Server runtime skips frontend UI initialization."));
+		return;
+	}
+	if (FParse::Param(FCommandLine::Get(), TEXT("DBASkipSplash")))
+	{
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Splash skipped by command line."));
+		EnsureLoginFlowStartedFromManager();
+		return;
+	}
+
 	if (UDBALoginFlowSubsystem* LoginFlow = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBALoginFlowSubsystem>() : nullptr)
 	{
 		LoginFlow->OnFlowStateChanged.RemoveDynamic(this, &UDBAGameUIManager::HandleLoginFlowStateChanged);
@@ -207,6 +239,14 @@ void UDBAGameUIManager::OnSubsystemInitialize()
 void UDBAGameUIManager::TryShowSplashVideo()
 {
 	UWorld* World = GetWorld();
+	if (IsServerLikeRuntime(World))
+	{
+		if (World)
+		{
+			World->GetTimerManager().ClearTimer(SplashVideoTimerHandle);
+		}
+		return;
+	}
 	if (!World)
 	{
 		EnsureLoginFlowStartedFromManager();
@@ -639,6 +679,11 @@ void UDBAGameUIManager::SetFlowWidgetVisible(UUserWidget* WidgetToShow)
 
 void UDBAGameUIManager::ShowSplashVideo()
 {
+	if (IsServerLikeRuntime(GetWorld()))
+	{
+		return;
+	}
+
 	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] ShowSplashVideo called, Class: %s"), SplashVideoWidgetClass ? TEXT("Valid") : TEXT("NULL"));
 
 	if (!SplashVideoWidget)
@@ -703,6 +748,11 @@ void UDBAGameUIManager::HideSplashVideo()
 
 void UDBAGameUIManager::EnsureLoginFlowBackgroundMusic()
 {
+	if (IsServerLikeRuntime(GetWorld()))
+	{
+		return;
+	}
+
 	if (LoginFlowBackgroundMusicComponent)
 	{
 		return;

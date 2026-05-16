@@ -542,6 +542,12 @@ void UDBAMockAccountService::PerformGuestLogin(bool bCreateNew, FDBAOnLoginCompl
 
 FDBAAccountInfo UDBAMockAccountService::CreateNewGuestAccount()
 {
+	FDBAAccountInfo CommandLineAccountInfo = BuildCommandLineGuestAccountInfo();
+	if (CommandLineAccountInfo.IsValid())
+	{
+		return CommandLineAccountInfo;
+	}
+
 	FDBAAccountInfo AccountInfo;
 	AccountInfo.AccountId = GenerateGuestAccountId();
 	AccountInfo.DisplayName = FString::Printf(TEXT("游客_%s"), *FGuid::NewGuid().ToString().Left(8));

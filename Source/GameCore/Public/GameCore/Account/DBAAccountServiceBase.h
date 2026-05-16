@@ -164,6 +164,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Account")
 	bool SaveProfile();
 
+	static FString BuildScopedSaveSlotName(const FString& BaseSlotName);
+	static FDBAAccountInfo BuildCommandLineGuestAccountInfo();
+
 protected:
 	/**
 	 * 当前账户信息

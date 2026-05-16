@@ -2,11 +2,14 @@
 
 #include "GameDBA/GameInstance/DBAGameInstance.h"
 
+#include "GameCore/Account/DBAAccountServiceBase.h"
+#include "GameCore/Party/DBAPartyServiceBase.h"
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/UI/DBAGameUIManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/ConfigCacheIni.h"
+#include "Misc/CommandLine.h"
 
 namespace
 {
@@ -35,6 +38,13 @@ namespace
 			|| LevelPath.Contains(TEXT("MainLobby"));
 	}
 
+	bool IsServerRuntime(const UWorld* World)
+	{
+		return IsRunningDedicatedServer()
+			|| FParse::Param(FCommandLine::Get(), TEXT("server"))
+			|| (World && World->GetNetMode() == NM_DedicatedServer);
+	}
+
 	FName GetConfiguredMapPath(const TCHAR* ConfigKey, const FName& FallbackPath)
 	{
 		FString ConfigValue;
@@ -47,6 +57,16 @@ namespace
 			}
 		}
 		return FallbackPath;
+	}
+
+	FString GetCommandLineValueOrDefault(const TCHAR* Key, const FString& DefaultValue)
+	{
+		FString Value;
+		if (FParse::Value(FCommandLine::Get(), Key, Value))
+		{
+			Value.TrimStartAndEndInline();
+		}
+		return Value.IsEmpty() ? DefaultValue : Value;
 	}
 }
 
@@ -74,7 +94,7 @@ void UDBAGameInstance::OnWorldChanged(UWorld* OldWorld, UWorld* NewWorld)
 		OldWorld ? *OldWorld->GetName() : TEXT("None"),
 		NewWorld ? *NewWorld->GetName() : TEXT("None"));
 
-	if (IsDedicatedServerInstance())
+	if (IsDedicatedServerInstance() || IsServerRuntime(NewWorld))
 	{
 		return;
 	}
@@ -104,14 +124,15 @@ void UDBAGameInstance::OnWorldChanged(UWorld* OldWorld, UWorld* NewWorld)
 		{
 			UIManager->RequestShowLoginFlowWidget();
 		}
+		RunAutoPartyStep();
 	}
 }
 
 void UDBAGameInstance::StartLoginFlow()
 {
-	if (IsDedicatedServerInstance())
+	if (IsDedicatedServerInstance() || IsServerRuntime(GetWorld()))
 	{
-		UE_LOG(LogDBACore, Verbose, TEXT("[DBAGameInstance] Dedicated server instance skips frontend login flow."));
+		UE_LOG(LogDBACore, Verbose, TEXT("[DBAGameInstance] Server runtime skips frontend login flow."));
 		return;
 	}
 
@@ -140,6 +161,7 @@ void UDBAGameInstance::StartLoginFlow()
 		{
 			UIManager->RequestShowLoginFlowWidget();
 		}
+		TryStartAutoLobbyFlow();
 		return;
 	}
 
@@ -155,4 +177,124 @@ void UDBAGameInstance::StartLoginFlow()
 	{
 		UIManager->RequestShowLoginFlowWidget();
 	}
+
+	TryStartAutoLobbyFlow();
+}
+
+void UDBAGameInstance::HandleAutoLobbyFlowStateChanged(EDBALoginFlowState NewState)
+{
+	ContinueAutoLobbyFlow(NewState);
+}
+
+void UDBAGameInstance::TryStartAutoLobbyFlow()
+{
+	if (bAutoLobbyFlowStarted || !FParse::Param(FCommandLine::Get(), TEXT("DBAAutoLobbyFlow")))
+	{
+		return;
+	}
+
+	UDBALoginFlowSubsystem* LoginFlow = GetSubsystem<UDBALoginFlowSubsystem>();
+	if (!LoginFlow)
+	{
+		return;
+	}
+
+	bAutoLobbyFlowStarted = true;
+	LoginFlow->OnFlowStateChanged.RemoveDynamic(this, &UDBAGameInstance::HandleAutoLobbyFlowStateChanged);
+	LoginFlow->OnFlowStateChanged.AddDynamic(this, &UDBAGameInstance::HandleAutoLobbyFlowStateChanged);
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow enabled."));
+	ContinueAutoLobbyFlow(LoginFlow->GetFlowState());
+}
+
+void UDBAGameInstance::ContinueAutoLobbyFlow(EDBALoginFlowState FlowState)
+{
+	UDBALoginFlowSubsystem* LoginFlow = GetSubsystem<UDBALoginFlowSubsystem>();
+	if (!LoginFlow)
+	{
+		return;
+	}
+
+	switch (FlowState)
+	{
+	case EDBALoginFlowState::LoginScreen:
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow: submit guest login."));
+		LoginFlow->SubmitGuestLogin();
+		break;
+	case EDBALoginFlowState::CharacterCreate:
+	{
+		FDBACharacterCreateRequest Request;
+		Request.CharacterName = GetCommandLineValueOrDefault(TEXT("DBAAutoCharacterName="), TEXT("AutoLobbyRole"));
+		Request.Zodiac = EDBAZodiac::Rat;
+		Request.PrimaryElement = EDBAElement::Water;
+		Request.FiveCamp = EDBAFiveCamp::East;
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow: create character %s."), *Request.CharacterName);
+		LoginFlow->SubmitCharacterCreation(Request);
+		break;
+	}
+	case EDBALoginFlowState::CharacterSelect:
+	{
+		const TArray<FDBACharacterSummary>& Characters = LoginFlow->GetCachedCharacters();
+		if (Characters.Num() > 0)
+		{
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow: select character %s."), *Characters[0].CharacterName);
+			LoginFlow->SubmitCharacterSelection(Characters[0].CharacterId);
+		}
+		break;
+	}
+	case EDBALoginFlowState::MainLobby:
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow: reached main lobby."));
+		RunAutoPartyStep();
+		break;
+	default:
+		break;
+	}
+}
+
+void UDBAGameInstance::RunAutoPartyStep()
+{
+	if (bAutoLobbyPartyStepDone || !FParse::Param(FCommandLine::Get(), TEXT("DBAAutoPartyLeader")))
+	{
+		return;
+	}
+
+	UDBAPartyServiceBase* PartyService = GetSubsystem<UDBAPartyServiceBase>();
+	UDBAAccountServiceBase* AccountService = GetSubsystem<UDBAAccountServiceBase>();
+	if (!PartyService || !AccountService || !AccountService->IsLoggedIn())
+	{
+		return;
+	}
+
+	bAutoLobbyPartyStepDone = true;
+	PartyService->CreateParty(FDBAOnPartyCreated::CreateWeakLambda(this, [this, PartyService](const FDBAPartyInfo& PartyInfo)
+	{
+		if (!PartyInfo.IsValid())
+		{
+			UE_LOG(LogDBACore, Error, TEXT("[DBAGameInstance] Auto lobby flow: create party failed."));
+			return;
+		}
+
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow: party created %s, members=%d."),
+			*PartyInfo.PartyId.ToString(), PartyInfo.Members.Num());
+
+		FString InviteAccountId;
+		if (!FParse::Value(FCommandLine::Get(), TEXT("DBAAutoInviteAccountId="), InviteAccountId))
+		{
+			return;
+		}
+		InviteAccountId.TrimStartAndEndInline();
+		if (InviteAccountId.IsEmpty())
+		{
+			return;
+		}
+
+		PartyService->InvitePlayer(FDBAAccountId(InviteAccountId), FDBAOnPartyOperationComplete::CreateWeakLambda(this, [PartyService, InviteAccountId](bool bSuccess, const FString& ErrorMessage)
+		{
+			const FDBAPartyInfo& UpdatedParty = PartyService->GetCurrentPartyInfo();
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] Auto lobby flow: invite %s success=%s error=%s members=%d."),
+				*InviteAccountId,
+				bSuccess ? TEXT("true") : TEXT("false"),
+				*ErrorMessage,
+				UpdatedParty.Members.Num());
+		}));
+	}));
 }

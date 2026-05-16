@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("Server", "Clients", "All", "Stop")]
+    [ValidateSet("Server", "Clients", "AutoClients", "All", "Stop")]
     [string]$Mode = "All"
 )
 
@@ -33,7 +33,7 @@ function Get-DBAProcess {
 }
 
 function Test-IsServerProcess($Process) {
-    return $Process.CommandLine -match "(^|\s)-server(\s|$)"
+    return $Process.CommandLine -match "(^|\s)-server(\s|$)|DBAHeadlessLobbyServer"
 }
 
 function Stop-ProcessIds($Processes) {
@@ -55,22 +55,36 @@ if ($Mode -eq "Server" -or $Mode -eq "All") {
     Stop-ProcessIds $Servers
     Start-Sleep -Milliseconds 500
     Start-Process -FilePath $Exe -WorkingDirectory $Root -ArgumentList @(
-        "/Game/Maps/Lobby/LobbyMap",
+        "/Game/Maps/Lobby/LobbyMap?listen",
         "-server",
         "-nosteam",
         "-port=7777",
+        "-nullrhi",
+        "-nosound",
+        "-unattended",
+        "-NoSplash",
+        "-DBAHeadlessLobbyServer",
         "-log",
         "-abslog=$LogDir\LobbyServer.log"
     )
 }
 
-if ($Mode -eq "Clients" -or $Mode -eq "All") {
+if ($Mode -eq "Clients" -or $Mode -eq "AutoClients" -or $Mode -eq "All") {
     Stop-ProcessIds $Clients
     Start-Sleep -Milliseconds 500
-    $ClientArgs = @(
-        @("/Game/Maps/Lobby/FrontendMap", "-nosteam", "-log", "-WINDOWED", "-ResX=1280", "-ResY=720", "-WinX=50", "-WinY=50", "-abslog=$LogDir\ClientA.log"),
-        @("/Game/Maps/Lobby/FrontendMap", "-nosteam", "-log", "-WINDOWED", "-ResX=1280", "-ResY=720", "-WinX=1400", "-WinY=50", "-abslog=$LogDir\ClientB.log")
-    )
+
+    if ($Mode -eq "AutoClients") {
+        $ClientArgs = @(
+        @("/Game/Maps/Lobby/FrontendMap", "-nosteam", "-DBASkipSplash", "-DBAAutoLobbyFlow", "-DBASaveSlotSuffix=ClientA", "-DBAGuestAccountId=LobbyClientA", "-DBAGuestDisplayName=LobbyClientA", "-DBAAutoCharacterName=LobbyA_Rat", "-DBAAutoPartyLeader", "-DBAAutoInviteAccountId=LobbyClientB", "-WINDOWED", "-ResX=1280", "-ResY=720", "-WinX=50", "-WinY=50", "-abslog=$LogDir\ClientA.log"),
+        @("/Game/Maps/Lobby/FrontendMap", "-nosteam", "-DBASkipSplash", "-DBAAutoLobbyFlow", "-DBASaveSlotSuffix=ClientB", "-DBAGuestAccountId=LobbyClientB", "-DBAGuestDisplayName=LobbyClientB", "-DBAAutoCharacterName=LobbyB_Ox", "-WINDOWED", "-ResX=1280", "-ResY=720", "-WinX=1400", "-WinY=50", "-abslog=$LogDir\ClientB.log")
+        )
+    }
+    else {
+        $ClientArgs = @(
+            @("/Game/Maps/Lobby/FrontendMap", "-nosteam", "-log", "-WINDOWED", "-ResX=1280", "-ResY=720", "-WinX=50", "-WinY=50", "-abslog=$LogDir\ClientA.log"),
+            @("/Game/Maps/Lobby/FrontendMap", "-nosteam", "-log", "-WINDOWED", "-ResX=1280", "-ResY=720", "-WinX=1400", "-WinY=50", "-abslog=$LogDir\ClientB.log")
+        )
+    }
 
     for ($Index = 0; $Index -lt 2; ++$Index) {
         Start-Process -FilePath $Exe -WorkingDirectory $Root -ArgumentList $ClientArgs[$Index]

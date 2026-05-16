@@ -4,8 +4,26 @@
 #include "GameCore/Account/DBAAccountSaveGame.h"
 #include "GameCore/Account/DBASaveGameVersions.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/CommandLine.h"
 #include "Misc/Guid.h"
 #include "Misc/DateTime.h"
+
+namespace
+{
+FString SanitizeSaveSlotSuffix(FString Suffix)
+{
+	Suffix.TrimStartAndEndInline();
+	for (TCHAR& Character : Suffix)
+	{
+		const bool bAllowed = FChar::IsAlnum(Character) || Character == TEXT('_') || Character == TEXT('-');
+		if (!bAllowed)
+		{
+			Character = TEXT('_');
+		}
+	}
+	return Suffix;
+}
+}
 
 UDBAAccountServiceBase::UDBAAccountServiceBase()
 {
@@ -225,9 +243,55 @@ bool UDBAAccountServiceBase::SaveProfile()
 	return true;
 }
 
+FString UDBAAccountServiceBase::BuildScopedSaveSlotName(const FString& BaseSlotName)
+{
+	FString SlotSuffix;
+	if (!FParse::Value(FCommandLine::Get(), TEXT("DBASaveSlotSuffix="), SlotSuffix))
+	{
+		return BaseSlotName;
+	}
+
+	SlotSuffix = SanitizeSaveSlotSuffix(SlotSuffix);
+	return SlotSuffix.IsEmpty() ? BaseSlotName : FString::Printf(TEXT("%s_%s"), *BaseSlotName, *SlotSuffix);
+}
+
+FDBAAccountInfo UDBAAccountServiceBase::BuildCommandLineGuestAccountInfo()
+{
+	FString AccountId;
+	if (!FParse::Value(FCommandLine::Get(), TEXT("DBAGuestAccountId="), AccountId))
+	{
+		return FDBAAccountInfo();
+	}
+
+	AccountId.TrimStartAndEndInline();
+	if (AccountId.IsEmpty())
+	{
+		return FDBAAccountInfo();
+	}
+
+	FString DisplayName;
+	FParse::Value(FCommandLine::Get(), TEXT("DBAGuestDisplayName="), DisplayName);
+	DisplayName.TrimStartAndEndInline();
+	if (DisplayName.IsEmpty())
+	{
+		DisplayName = AccountId;
+	}
+
+	FDBAAccountInfo AccountInfo;
+	AccountInfo.AccountId = FDBAAccountId(AccountId);
+	AccountInfo.DisplayName = DisplayName;
+	AccountInfo.LoginType = EDBALoginType::Guest;
+	AccountInfo.Status = EDBAAccountStatus::Normal;
+	AccountInfo.Level = 1;
+	AccountInfo.Experience = 0;
+	AccountInfo.CreateTime = FDateTime::UtcNow().ToUnixTimestamp();
+	AccountInfo.LastLoginTime = AccountInfo.CreateTime;
+	return AccountInfo;
+}
+
 UDBAAccountSaveGame* UDBAAccountServiceBase::LoadAccountSaveGame()
 {
-	const FString SlotName = DBASaveGameVersions::SlotNames::ACCOUNT_SLOT;
+	const FString SlotName = BuildScopedSaveSlotName(DBASaveGameVersions::SlotNames::ACCOUNT_SLOT);
 
 	if (!UGameplayStatics::DoesSaveGameExist(SlotName, 0))
 	{
@@ -274,7 +338,7 @@ bool UDBAAccountServiceBase::SaveAccountSaveGame(UDBAAccountSaveGame* SaveGame)
 		return false;
 	}
 
-	const FString SlotName = DBASaveGameVersions::SlotNames::ACCOUNT_SLOT;
+	const FString SlotName = BuildScopedSaveSlotName(DBASaveGameVersions::SlotNames::ACCOUNT_SLOT);
 
 	SaveGame->UpdateLastSaveTime();
 
@@ -290,7 +354,7 @@ bool UDBAAccountServiceBase::SaveAccountSaveGame(UDBAAccountSaveGame* SaveGame)
 
 UDBAProfileSaveGame* UDBAAccountServiceBase::LoadProfileSaveGame()
 {
-	const FString SlotName = DBASaveGameVersions::SlotNames::PROFILE_SLOT;
+	const FString SlotName = BuildScopedSaveSlotName(DBASaveGameVersions::SlotNames::PROFILE_SLOT);
 
 	if (!UGameplayStatics::DoesSaveGameExist(SlotName, 0))
 	{
@@ -337,7 +401,7 @@ bool UDBAAccountServiceBase::SaveProfileSaveGame(UDBAProfileSaveGame* SaveGame)
 		return false;
 	}
 
-	const FString SlotName = DBASaveGameVersions::SlotNames::PROFILE_SLOT;
+	const FString SlotName = BuildScopedSaveSlotName(DBASaveGameVersions::SlotNames::PROFILE_SLOT);
 
 	SaveGame->UpdateLastSaveTime();
 

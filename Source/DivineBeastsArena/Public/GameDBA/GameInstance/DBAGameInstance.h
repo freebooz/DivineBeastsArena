@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "GameCore/Session/DBALoginFlowSubsystem.h"
 #include "DBAGameInstance.generated.h"
 
 /**
@@ -32,10 +33,23 @@ public:
 	void StartLoginFlow();
 
 private:
+	UFUNCTION()
+	void HandleAutoLobbyFlowStateChanged(EDBALoginFlowState NewState);
+
+	void TryStartAutoLobbyFlow();
+	void ContinueAutoLobbyFlow(EDBALoginFlowState FlowState);
+	void RunAutoPartyStep();
+
 	/** 是否已启动登录流程 */
 	UPROPERTY(Transient)
 	bool bLoginFlowStarted = false;
 
 	UPROPERTY(Transient)
 	bool bPendingStartLoginFlowOnFrontend = false;
+
+	UPROPERTY(Transient)
+	bool bAutoLobbyFlowStarted = false;
+
+	UPROPERTY(Transient)
+	bool bAutoLobbyPartyStepDone = false;
 };
