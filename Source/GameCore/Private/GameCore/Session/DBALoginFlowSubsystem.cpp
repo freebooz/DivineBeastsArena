@@ -167,11 +167,11 @@ namespace
 		FString Out = Message.IsEmpty() ? TEXT("\u8d26\u53f7\u5df2\u88ab\u5c01\u7981\u3002") : Message;
 		if (!Reason.IsEmpty())
 		{
-			Out += FString::Printf(TEXT("\n灏佺鍘熷洜锛?s"), *Reason);
+			Out += FString::Printf(TEXT("\n封禁原因: %s"), *Reason);
 		}
 		if (!UnbanTime.IsEmpty())
 		{
-			Out += FString::Printf(TEXT("\n瑙ｅ皝鏃堕棿(UTC)锛?s"), *UnbanTime);
+			Out += FString::Printf(TEXT("\n解封时间(UTC): %s"), *UnbanTime);
 		}
 		return Out;
 	}
@@ -189,7 +189,7 @@ void UDBALoginFlowSubsystem::SetFlowState(EDBALoginFlowState NewState)
 		return;
 	}
 
-	UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 娴佺▼鐘舵€佸垏鎹? %d -> %d"), static_cast<int32>(FlowState), static_cast<int32>(NewState));
+	UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 流浪状态切换： %d -> %d"), static_cast<int32>(FlowState), static_cast<int32>(NewState));
 	FlowState = NewState;
 	OnFlowStateChanged.Broadcast(NewState);
 }
@@ -237,63 +237,43 @@ void UDBALoginFlowSubsystem::SubmitLogin(const FString& Email, const FString& Pa
 
 void UDBALoginFlowSubsystem::SubmitGuestLogin()
 {
-	SubmitDebugLogin(TEXT("frontend_debug"));
+	SetFlowState(EDBALoginFlowState::TryAutoLogin);
+
+	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
+	if (!AccountService)
+	{
+		BroadcastErrorAndSetState(TEXT("Account service unavailable"), EDBALoginFlowState::LoginScreen);
+		return;
+	}
+
+	AccountService->GuestLogin(FDBAOnLoginComplete::CreateWeakLambda(this, [this](const FDBALoginResponse& Response)
+	{
+		if (Response.bSuccess)
+		{
+			LoadCharactersAfterLogin();
+			return;
+		}
+
+		BroadcastErrorAndSetState(Response.ErrorMessage, EDBALoginFlowState::LoginScreen);
+	}));
 }
 
 void UDBALoginFlowSubsystem::SubmitDebugLogin(const FString& DisplayName)
 {
-	UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 鍙戣捣璋冭瘯鐧诲綍锛岃处鍙?%s"), *DisplayName);
+	UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 发起调试登录：%s"), *DisplayName);
 	SetFlowState(EDBALoginFlowState::TryAutoLogin);
 
 	UGameBackendClientSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGameBackendClientSubsystem>() : nullptr;
-	if (!Backend || !Backend->GetHttpClient())
+	UGameBackendAuthService* AuthService = Backend ? Backend->GetAuthService() : nullptr;
+	if (!Backend || !AuthService)
 	{
 		BroadcastErrorAndSetState(TEXT("\u540e\u7aef\u5ba2\u6237\u7aef\u672a\u521d\u59cb\u5316\u3002"), EDBALoginFlowState::LoginScreen);
 		return;
 	}
 
-	const TSharedRef<FJsonObject> Request = MakeShared<FJsonObject>();
-	Request->SetStringField(TEXT("displayName"), DisplayName);
-	FString Body;
-	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Body);
-	FJsonSerializer::Serialize(Request, Writer);
-
-	Backend->GetHttpClient()->Post(TEXT("/api/auth/dev-login"), Body, [this, Backend](const FGameBackendHttpResult& Result)
-	{
-		const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
-		if (bSuccess)
-		{
-			FString AccessToken;
-			FString RefreshToken;
-			FString PlayerId;
-			if (!TryExtractAuthTokens(Result.DataJson, AccessToken, RefreshToken, PlayerId))
-			{
-				BroadcastErrorAndSetState(TEXT("\u767b\u5f55\u6210\u529f\uff0c\u4f46\u672a\u8fd4\u56de\u6709\u6548\u4ee4\u724c\u3002"), EDBALoginFlowState::LoginScreen);
-				return;
-			}
-
-			Backend->SetAuthTokens(AccessToken, RefreshToken, PlayerId);
-			if (Backend->GetTelemetryService())
-			{
-				TMap<FString, FString> Props;
-				Props.Add(TEXT("loginType"), TEXT("dev"));
-				Props.Add(TEXT("playerId"), PlayerId);
-				Backend->GetTelemetryService()->TrackEvent(TEXT("login_success"), Props);
-			}
-			FetchPostLoginDataAndEnterLobby();
-			return;
-		}
-
-		const FString ErrorMessage = BuildBanErrorMessage(Result.Code, Result.Message, Result.DataJson);
-		if (Backend->GetTelemetryService())
-		{
-			TMap<FString, FString> Props;
-			Props.Add(TEXT("loginType"), TEXT("dev"));
-			Props.Add(TEXT("error"), ErrorMessage.Left(256));
-			Backend->GetTelemetryService()->TrackEvent(TEXT("login_failed"), Props);
-		}
-		BroadcastErrorAndSetState(ErrorMessage.IsEmpty() ? TEXT("\u767b\u5f55\u5931\u8d25\u3002") : ErrorMessage, EDBALoginFlowState::LoginScreen);
-	}, false);
+	FGameBackendAuthResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBALoginFlowSubsystem, HandleDebugLoginAuthResponse));
+	AuthService->DevLogin(DisplayName, Callback);
 }
 
 void UDBALoginFlowSubsystem::LoadCharactersAfterLogin()
@@ -311,7 +291,7 @@ void UDBALoginFlowSubsystem::LoadCharactersAfterLogin()
 	{
 		CachedCharacters = Characters;
 		OnCharactersLoaded.Broadcast(CachedCharacters);
-		UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 瑙掕壊鍒楄〃鍔犺浇瀹屾垚锛屾暟閲?%d"), CachedCharacters.Num());
+		UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 角色列表加载完成：%d"), CachedCharacters.Num());
 		SetFlowState(ShouldEnterCharacterCreate(CachedCharacters.Num()) ? EDBALoginFlowState::CharacterCreate : EDBALoginFlowState::CharacterSelect);
 	}));
 }
@@ -319,33 +299,94 @@ void UDBALoginFlowSubsystem::LoadCharactersAfterLogin()
 void UDBALoginFlowSubsystem::FetchPostLoginDataAndEnterLobby()
 {
 	UGameBackendClientSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGameBackendClientSubsystem>() : nullptr;
-	if (!Backend || !Backend->GetHttpClient())
+	UGameBackendPlayerService* PlayerService = Backend ? Backend->GetPlayerService() : nullptr;
+	UGameBackendConfigService* ConfigService = Backend ? Backend->GetConfigService() : nullptr;
+	if (!Backend || !PlayerService || !ConfigService)
 	{
 		BroadcastErrorAndSetState(TEXT("\u540e\u7aef\u670d\u52a1\u4e0d\u53ef\u7528\u3002"), EDBALoginFlowState::LoginScreen);
 		return;
 	}
 
-	Backend->GetHttpClient()->Get(TEXT("/api/players/me/profile"), [this, Backend](const FGameBackendHttpResult& ProfileResult)
+	FGameBackendResponseDelegate ProfileCallback;
+	ProfileCallback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBALoginFlowSubsystem, HandleDebugLoginProfileResponse));
+	PlayerService->GetMyProfile(ProfileCallback);
+}
+
+void UDBALoginFlowSubsystem::HandleDebugLoginAuthResponse(
+	bool bSuccess,
+	const FString& ErrorMessage,
+	const FString& AccessToken,
+	const FString& RefreshToken,
+	const FString& PlayerId)
+{
+	UGameBackendClientSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGameBackendClientSubsystem>() : nullptr;
+	if (!Backend)
 	{
-		const bool bProfileOk = ProfileResult.bHttpRequestOk && ProfileResult.HttpStatus >= 200 && ProfileResult.HttpStatus < 300;
-		if (!bProfileOk)
+		BroadcastErrorAndSetState(TEXT("\u540e\u7aef\u5ba2\u6237\u7aef\u672a\u521d\u59cb\u5316\u3002"), EDBALoginFlowState::LoginScreen);
+		return;
+	}
+
+	if (bSuccess)
+	{
+		if (AccessToken.IsEmpty())
 		{
-			BroadcastErrorAndSetState(ProfileResult.Message.IsEmpty() ? TEXT("\u62c9\u53d6\u73a9\u5bb6\u8d44\u6599\u5931\u8d25\u3002") : ProfileResult.Message, EDBALoginFlowState::LoginScreen);
+			BroadcastErrorAndSetState(TEXT("\u767b\u5f55\u6210\u529f\uff0c\u4f46\u672a\u8fd4\u56de\u6709\u6548\u4ee4\u724c\u3002"), EDBALoginFlowState::LoginScreen);
 			return;
 		}
 
-		Backend->GetHttpClient()->Get(TEXT("/api/config/bundle"), [this](const FGameBackendHttpResult& ConfigResult)
+		Backend->SetAuthTokens(AccessToken, RefreshToken, PlayerId);
+		if (Backend->GetTelemetryService())
 		{
-			const bool bConfigOk = ConfigResult.bHttpRequestOk && ConfigResult.HttpStatus >= 200 && ConfigResult.HttpStatus < 300;
-			if (!bConfigOk)
-			{
-				BroadcastErrorAndSetState(ConfigResult.Message.IsEmpty() ? TEXT("\u62c9\u53d6\u914d\u7f6e\u5931\u8d25\u3002") : ConfigResult.Message, EDBALoginFlowState::LoginScreen);
-				return;
-			}
+			TMap<FString, FString> Props;
+			Props.Add(TEXT("loginType"), TEXT("dev"));
+			Props.Add(TEXT("playerId"), PlayerId);
+			Backend->GetTelemetryService()->TrackEvent(TEXT("login_success"), Props);
+		}
 
-			EnterMainLobby();
-		});
-	});
+		FetchPostLoginDataAndEnterLobby();
+		return;
+	}
+
+	if (Backend->GetTelemetryService())
+	{
+		TMap<FString, FString> Props;
+		Props.Add(TEXT("loginType"), TEXT("dev"));
+		Props.Add(TEXT("error"), ErrorMessage.Left(256));
+		Backend->GetTelemetryService()->TrackEvent(TEXT("login_failed"), Props);
+	}
+	BroadcastErrorAndSetState(ErrorMessage.IsEmpty() ? TEXT("\u767b\u5f55\u5931\u8d25\u3002") : ErrorMessage, EDBALoginFlowState::LoginScreen);
+}
+
+void UDBALoginFlowSubsystem::HandleDebugLoginProfileResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		BroadcastErrorAndSetState(ErrorMessage.IsEmpty() ? TEXT("\u62c9\u53d6\u73a9\u5bb6\u8d44\u6599\u5931\u8d25\u3002") : ErrorMessage, EDBALoginFlowState::LoginScreen);
+		return;
+	}
+
+	UGameBackendClientSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGameBackendClientSubsystem>() : nullptr;
+	UGameBackendConfigService* ConfigService = Backend ? Backend->GetConfigService() : nullptr;
+	if (!ConfigService)
+	{
+		BroadcastErrorAndSetState(TEXT("\u540e\u7aef\u670d\u52a1\u4e0d\u53ef\u7528\u3002"), EDBALoginFlowState::LoginScreen);
+		return;
+	}
+
+	FGameBackendResponseDelegate ConfigCallback;
+	ConfigCallback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBALoginFlowSubsystem, HandleDebugLoginConfigResponse));
+	ConfigService->GetConfigBundle(ConfigCallback);
+}
+
+void UDBALoginFlowSubsystem::HandleDebugLoginConfigResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		BroadcastErrorAndSetState(ErrorMessage.IsEmpty() ? TEXT("\u62c9\u53d6\u914d\u7f6e\u5931\u8d25\u3002") : ErrorMessage, EDBALoginFlowState::LoginScreen);
+		return;
+	}
+
+	EnterMainLobby();
 }
 
 void UDBALoginFlowSubsystem::SubmitCharacterSelection(const FDBACharacterId& CharacterId)
@@ -471,7 +512,7 @@ void UDBALoginFlowSubsystem::EnterMainLobby()
 					}
 				}
 				AppendLobbyTravelOptions(LobbyServerAddress, LobbyZodiac);
-				UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 杩涘叆澶у巺锛欳lientTravel 鍒板叡浜ぇ鍘呮湇 %s"), *LobbyServerAddress);
+				UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 进入大厳，ClientTravel到共享大厳服务器 %s"), *LobbyServerAddress);
 				PC->ClientTravel(LobbyServerAddress, TRAVEL_Absolute);
 				return;
 			}
@@ -499,7 +540,7 @@ void UDBALoginFlowSubsystem::EnterMainLobby()
 
 		if (!CurrentLevelPath.Contains(TEXT("LobbyMap")))
 		{
-			UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 杩涘叆澶у巺锛歄penLevel %s"), *MainLobbyMapPath);
+			UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 进入大厳，OpenLevel %s"), *MainLobbyMapPath);
 			UGameplayStatics::OpenLevel(World, FName(*MainLobbyMapPath));
 		}
 	}

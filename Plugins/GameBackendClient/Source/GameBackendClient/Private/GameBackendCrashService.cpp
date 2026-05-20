@@ -4,9 +4,11 @@
 
 #include "Async/Async.h"
 #include "Dom/JsonObject.h"
+#include "GameBackendClientSubsystem.h"
 #include "GameBackendHttpClient.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformFileManager.h"
+#include "Containers/StringConv.h"
 #include "Misc/Base64.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
@@ -19,6 +21,42 @@ namespace
 	{
 		return FilePath + TEXT(".uploaded");
 	}
+
+	bool IsUploadMarkFile(const FString& FilePath)
+	{
+		return FilePath.EndsWith(TEXT(".uploaded"), ESearchCase::IgnoreCase);
+	}
+
+	void SanitizeSensitiveLogText(FString& InOutText)
+	{
+		TArray<FString> Lines;
+		InOutText.ParseIntoArrayLines(Lines, false);
+
+		for (FString& Line : Lines)
+		{
+			const FString Lower = Line.ToLower();
+			const bool bSensitive = Lower.Contains(TEXT("accesstoken"))
+				|| Lower.Contains(TEXT("refreshtoken"))
+				|| Lower.Contains(TEXT("playersessiontoken"))
+				|| Lower.Contains(TEXT("authorization: bearer"));
+			if (!bSensitive)
+			{
+				continue;
+			}
+
+			int32 SeparatorIndex = INDEX_NONE;
+			if (!Line.FindChar(TEXT('='), SeparatorIndex))
+			{
+				Line.FindChar(TEXT(':'), SeparatorIndex);
+			}
+
+			Line = SeparatorIndex >= 0
+				? (Line.Left(SeparatorIndex + 1) + TEXT(" [REDACTED]"))
+				: TEXT("[REDACTED]");
+		}
+
+		InOutText = FString::Join(Lines, TEXT("\n"));
+	}
 }
 
 void UGameBackendCrashService::Initialize(UGameBackendClientSubsystem* InSubsystem, FGameBackendHttpClient* InHttpClient)
@@ -30,16 +68,14 @@ void UGameBackendCrashService::Initialize(UGameBackendClientSubsystem* InSubsyst
 void UGameBackendCrashService::ScanCrashFiles()
 {
 	const FString CrashRoot = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Crashes"));
-	if (!FPaths::DirectoryExists(CrashRoot))
+	if (FPaths::DirectoryExists(CrashRoot))
 	{
-		return;
-	}
-
-	TArray<FString> CrashDirs;
-	IFileManager::Get().FindFilesRecursive(CrashDirs, *CrashRoot, TEXT("*"), false, true, false);
-	for (const FString& Dir : CrashDirs)
-	{
-		UploadCrashDirectory(Dir);
+		TArray<FString> CrashDirs;
+		IFileManager::Get().FindFilesRecursive(CrashDirs, *CrashRoot, TEXT("*"), false, true, false);
+		for (const FString& Dir : CrashDirs)
+		{
+			UploadCrashDirectory(Dir);
+		}
 	}
 
 	TryUploadLatestClientLog();
@@ -62,7 +98,7 @@ void UGameBackendCrashService::UploadCrashReport(const FString& CrashFilePath, c
 	Async(EAsyncExecution::ThreadPool, [this, CrashFilePath, Callback]()
 	{
 		FString Error;
-		const FString Payload = BuildFileUploadPayload(CrashFilePath, MAX_int64, Error);
+		const FString Payload = BuildFileUploadPayload(CrashFilePath, MAX_int64, false, Error);
 		if (Payload.IsEmpty())
 		{
 			AsyncTask(ENamedThreads::GameThread, [Callback, Error]()
@@ -76,7 +112,7 @@ void UGameBackendCrashService::UploadCrashReport(const FString& CrashFilePath, c
 		{
 			HttpClient->Post(TEXT("/api/crashes/upload"), Payload, [this, CrashFilePath, Callback](const FGameBackendHttpResult& Result)
 			{
-				const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
+				const bool bSuccess = Result.IsSuccessful();
 				if (bSuccess)
 				{
 					MarkUploaded(CrashFilePath);
@@ -105,7 +141,7 @@ void UGameBackendCrashService::UploadClientLog(const FString& LogFilePath, const
 	Async(EAsyncExecution::ThreadPool, [this, LogFilePath, Callback]()
 	{
 		FString Error;
-		const FString Payload = BuildFileUploadPayload(LogFilePath, MaxLogUploadBytes, Error);
+		const FString Payload = BuildFileUploadPayload(LogFilePath, MaxLogUploadBytes, true, Error);
 		if (Payload.IsEmpty())
 		{
 			AsyncTask(ENamedThreads::GameThread, [Callback, Error]()
@@ -119,7 +155,7 @@ void UGameBackendCrashService::UploadClientLog(const FString& LogFilePath, const
 		{
 			HttpClient->Post(TEXT("/api/client-logs/upload"), Payload, [this, LogFilePath, Callback](const FGameBackendHttpResult& Result)
 			{
-				const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
+				const bool bSuccess = Result.IsSuccessful();
 				if (bSuccess)
 				{
 					MarkUploaded(LogFilePath);
@@ -137,6 +173,11 @@ void UGameBackendCrashService::UploadCrashDirectory(const FString& CrashDir)
 	IFileManager::Get().FindFilesRecursive(Files, *CrashDir, TEXT("*.*"), true, false, false);
 	for (const FString& FilePath : Files)
 	{
+		if (IsUploadMarkFile(FilePath))
+		{
+			continue;
+		}
+
 		if (IsAlreadyUploaded(FilePath))
 		{
 			continue;
@@ -185,7 +226,7 @@ void UGameBackendCrashService::MarkUploaded(const FString& FilePath) const
 	FFileHelper::SaveStringToFile(TEXT("uploaded=true"), *GetUploadMarkPath(FilePath), FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }
 
-FString UGameBackendCrashService::BuildFileUploadPayload(const FString& FilePath, int64 MaxBytes, FString& OutError) const
+FString UGameBackendCrashService::BuildFileUploadPayload(const FString& FilePath, int64 MaxBytes, bool bSanitizeSensitiveText, FString& OutError) const
 {
 	if (!FPaths::FileExists(FilePath))
 	{
@@ -194,7 +235,28 @@ FString UGameBackendCrashService::BuildFileUploadPayload(const FString& FilePath
 	}
 
 	TArray<uint8> Bytes;
-	if (!FFileHelper::LoadFileToArray(Bytes, *FilePath))
+	if (bSanitizeSensitiveText)
+	{
+		FString TextContent;
+		if (FFileHelper::LoadFileToString(TextContent, *FilePath))
+		{
+			SanitizeSensitiveLogText(TextContent);
+
+			FTCHARToUTF8 Utf8(*TextContent);
+			const int32 NumBytes = Utf8.Length();
+			Bytes.SetNum(NumBytes);
+			if (NumBytes > 0)
+			{
+				FMemory::Memcpy(Bytes.GetData(), Utf8.Get(), NumBytes);
+			}
+		}
+		else if (!FFileHelper::LoadFileToArray(Bytes, *FilePath))
+		{
+			OutError = TEXT("读取文件失败。");
+			return FString();
+		}
+	}
+	else if (!FFileHelper::LoadFileToArray(Bytes, *FilePath))
 	{
 		OutError = TEXT("读取文件失败。");
 		return FString();
@@ -217,4 +279,3 @@ FString UGameBackendCrashService::BuildFileUploadPayload(const FString& FilePath
 	FJsonSerializer::Serialize(Json, Writer);
 	return Out;
 }
-

@@ -48,6 +48,10 @@
 	],
 	"Plugins": [
 		{
+			"Name": "GameBackendClient",
+			"Enabled": true
+		},
+		{
 			"Name": "OnlineSubsystem",
 			"Enabled": true
 		},

@@ -10,6 +10,11 @@
 class UDBAMainLobbyWidgetController;
 class UDBAPartyPanelWidgetBase;
 class UDBAQueueModeSelectWidgetBase;
+class UButton;
+class UEditableTextBox;
+class UTextBlock;
+struct FDBALobbyPlayerSummary;
+enum class EDBALobbyBackendState : uint8;
 
 /**
  * DBAMainLobbyWidgetBase
@@ -82,7 +87,47 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
 	void BackendCancelMatchmaking();
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
+	void BackendJoinRoomFromInput();
+
 protected:
+	UFUNCTION()
+	void HandleBackendStateChanged(EDBALobbyBackendState NewState);
+
+	UFUNCTION()
+	void HandleBackendError(const FString& ErrorMessage);
+
+	UFUNCTION()
+	void HandlePlayerSummaryUpdated(const FDBALobbyPlayerSummary& Summary);
+
+	UFUNCTION()
+	void HandleCreateRoomClicked();
+
+	UFUNCTION()
+	void HandleRefreshRoomsClicked();
+
+	UFUNCTION()
+	void HandleJoinRoomClicked();
+
+	UFUNCTION()
+	void HandleReadyClicked();
+
+	UFUNCTION()
+	void HandleStartGameClicked();
+
+	UFUNCTION()
+	void HandleStartMatchClicked();
+
+	UFUNCTION()
+	void HandleCancelMatchClicked();
+
+	void BindBackendUiControls();
+	void BindControllerDelegates();
+	void UnbindControllerDelegates();
+	void UpdateBackendStateText(EDBALobbyBackendState NewState);
+	void UpdateBackendButtonsState(EDBALobbyBackendState NewState);
+	void UpdatePlayerSummaryText(const FDBALobbyPlayerSummary& Summary);
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|MainLobby", meta = (DisplayName = "On Party Info Refreshed"))
 	void BP_OnPartyInfoRefreshed();
 
@@ -101,4 +146,55 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby")
 	EDBAFiveCamp CurrentFiveCampTheme;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UButton> CreateRoomButton;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UButton> RefreshRoomsButton;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UButton> JoinRoomButton;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UButton> ReadyButton;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UButton> StartGameButton;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UButton> StartMatchButton;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UButton> CancelMatchButton;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UEditableTextBox> JoinRoomIdInput;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UEditableTextBox> MatchModeInput;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UEditableTextBox> MatchRegionInput;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> PlayerNameText;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> PlayerLevelText;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> PlayerExperienceText;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> PlayerGoldText;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> PlayerTicketsText;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> BackendStateText;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> BackendErrorText;
 };

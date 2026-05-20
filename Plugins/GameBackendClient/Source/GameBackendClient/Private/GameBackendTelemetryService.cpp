@@ -18,6 +18,42 @@ namespace
 	{
 		return FDateTime::UtcNow().ToIso8601();
 	}
+
+	bool IsSensitiveTelemetryKey(const FString& Key)
+	{
+		FString Normalized = Key.ToLower();
+		Normalized.ReplaceInline(TEXT("_"), TEXT(""));
+		Normalized.ReplaceInline(TEXT("-"), TEXT(""));
+
+		return Normalized.Contains(TEXT("accesstoken"))
+			|| Normalized.Contains(TEXT("refreshtoken"))
+			|| Normalized.Contains(TEXT("playersessiontoken"))
+			|| Normalized.Contains(TEXT("authorization"));
+	}
+
+	bool LooksLikeSensitiveTelemetryValue(const FString& Value)
+	{
+		const FString Lower = Value.ToLower();
+		return Lower.Contains(TEXT("bearer "))
+			|| Lower.Contains(TEXT("accesstoken"))
+			|| Lower.Contains(TEXT("refreshtoken"))
+			|| Lower.Contains(TEXT("playersessiontoken"));
+	}
+
+	TMap<FString, FString> SanitizeTelemetryProperties(const TMap<FString, FString>& InProperties)
+	{
+		TMap<FString, FString> Sanitized;
+		for (const TPair<FString, FString>& Pair : InProperties)
+		{
+			if (IsSensitiveTelemetryKey(Pair.Key) || LooksLikeSensitiveTelemetryValue(Pair.Value))
+			{
+				continue;
+			}
+
+			Sanitized.Add(Pair.Key, Pair.Value);
+		}
+		return Sanitized;
+	}
 }
 
 void UGameBackendTelemetryService::Initialize(UGameBackendClientSubsystem* InSubsystem, FGameBackendHttpClient* InHttpClient)
@@ -42,7 +78,7 @@ void UGameBackendTelemetryService::TrackEvent(const FString& EventName, const TM
 {
 	FGameBackendTelemetryEvent Event;
 	Event.EventName = EventName;
-	Event.Properties = Properties;
+	Event.Properties = SanitizeTelemetryProperties(Properties);
 	Event.TimestampUtc = GetUtcNowIso8601();
 	EventQueue.Add(MoveTemp(Event));
 
@@ -62,6 +98,7 @@ void UGameBackendTelemetryService::TrackBatch(const TArray<FGameBackendTelemetry
 {
 	for (FGameBackendTelemetryEvent Event : Events)
 	{
+		Event.Properties = SanitizeTelemetryProperties(Event.Properties);
 		if (Event.TimestampUtc.IsEmpty())
 		{
 			Event.TimestampUtc = GetUtcNowIso8601();
@@ -136,7 +173,7 @@ void UGameBackendTelemetryService::FlushInternal(bool bForce)
 	HttpClient->Post(TEXT("/api/telemetry/batch"), Payload, [this, UploadEvents, bForce](const FGameBackendHttpResult& Result)
 	{
 		bFlushing = false;
-		const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
+		const bool bSuccess = Result.IsSuccessful();
 		if (bSuccess)
 		{
 			EventQueue.RemoveAt(0, UploadEvents.Num(), EAllowShrinking::No);
@@ -178,4 +215,3 @@ FString UGameBackendTelemetryService::BuildBatchPayload(const TArray<FGameBacken
 	FJsonSerializer::Serialize(Root, Writer);
 	return Body;
 }
-

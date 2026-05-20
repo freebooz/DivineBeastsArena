@@ -28,6 +28,8 @@ public:
 	void RequestReconnectToken(const FString& SessionId, const FGameBackendResponseDelegate& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameBackend|Session")
+	void ConnectToDedicatedServer(const FString& SessionId, const FGameBackendResponseDelegate& Callback);
+
 	void ConnectToDedicatedServer(const FString& SessionId, const FString& ConnectionDataJson, const FGameBackendResponseDelegate& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameBackend|Session")

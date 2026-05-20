@@ -31,6 +31,7 @@ public class DivineBeastsArena : ModuleRules
             "AIModule",
             "NavigationSystem",
             "GameBackendClient",
+            "GameMoba",
         });
 
         if (Target.Type != TargetType.Server)

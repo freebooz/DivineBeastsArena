@@ -26,6 +26,9 @@ public:
 	FString BuildNumber = TEXT("100");
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Client")
+	FString ConfigVersion = TEXT("bootstrap_v1");
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Client")
 	FString Channel = TEXT("dev");
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Client")

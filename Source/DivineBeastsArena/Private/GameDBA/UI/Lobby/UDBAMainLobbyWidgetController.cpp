@@ -1,23 +1,32 @@
-﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// Copyright Freebooz Games, Inc. All Rights Reserved.
 
 #include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetController.h"
 
 #include "Dom/JsonObject.h"
+#include "Dom/JsonValue.h"
 #include "GameBackendClientSubsystem.h"
-#include "GameBackendHttpClient.h"
+#include "GameBackendMatchService.h"
+#include "GameBackendPlayerService.h"
+#include "GameBackendRoomService.h"
 #include "GameBackendSessionService.h"
 #include "GameBackendTelemetryService.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
-#include "Serialization/JsonWriter.h"
 #include "TimerManager.h"
 
 namespace
 {
-	FString ReadStringByKeys(const TSharedPtr<FJsonObject>& Obj, const TArray<FString>& Keys)
+	bool TryParseJsonObject(const FString& Json, TSharedPtr<FJsonObject>& OutRoot)
 	{
-		if (!Obj.IsValid())
+		OutRoot.Reset();
+		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Json);
+		return FJsonSerializer::Deserialize(Reader, OutRoot) && OutRoot.IsValid();
+	}
+
+	FString ReadStringByKeysDeep(const TSharedPtr<FJsonObject>& Obj, const TArray<FString>& Keys, int32 Depth = 0)
+	{
+		if (!Obj.IsValid() || Depth > 8)
 		{
 			return FString();
 		}
@@ -25,13 +34,106 @@ namespace
 		for (const FString& Key : Keys)
 		{
 			FString Value;
-			if (Obj->TryGetStringField(Key, Value))
+			if (Obj->TryGetStringField(Key, Value) && !Value.IsEmpty())
 			{
 				return Value;
 			}
 		}
 
+		for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : Obj->Values)
+		{
+			if (!Pair.Value.IsValid())
+			{
+				continue;
+			}
+
+			if (Pair.Value->Type == EJson::Object)
+			{
+				const FString NestedValue = ReadStringByKeysDeep(Pair.Value->AsObject(), Keys, Depth + 1);
+				if (!NestedValue.IsEmpty())
+				{
+					return NestedValue;
+				}
+				continue;
+			}
+
+			if (Pair.Value->Type == EJson::Array)
+			{
+				const TArray<TSharedPtr<FJsonValue>>& ArrayValues = Pair.Value->AsArray();
+				for (const TSharedPtr<FJsonValue>& Item : ArrayValues)
+				{
+					if (Item.IsValid() && Item->Type == EJson::Object)
+					{
+						const FString NestedValue = ReadStringByKeysDeep(Item->AsObject(), Keys, Depth + 1);
+						if (!NestedValue.IsEmpty())
+						{
+							return NestedValue;
+						}
+					}
+				}
+			}
+		}
+
 		return FString();
+	}
+
+	int32 ReadIntByKeysDeep(const TSharedPtr<FJsonObject>& Obj, const TArray<FString>& Keys, int32 Depth = 0)
+	{
+		if (!Obj.IsValid() || Depth > 8)
+		{
+			return 0;
+		}
+
+		for (const FString& Key : Keys)
+		{
+			double NumberValue = 0.0;
+			if (Obj->TryGetNumberField(Key, NumberValue))
+			{
+				return FMath::RoundToInt(NumberValue);
+			}
+
+			FString StringValue;
+			if (Obj->TryGetStringField(Key, StringValue) && !StringValue.IsEmpty())
+			{
+				return FCString::Atoi(*StringValue);
+			}
+		}
+
+		for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : Obj->Values)
+		{
+			if (!Pair.Value.IsValid())
+			{
+				continue;
+			}
+
+			if (Pair.Value->Type == EJson::Object)
+			{
+				const int32 NestedValue = ReadIntByKeysDeep(Pair.Value->AsObject(), Keys, Depth + 1);
+				if (NestedValue != 0)
+				{
+					return NestedValue;
+				}
+				continue;
+			}
+
+			if (Pair.Value->Type == EJson::Array)
+			{
+				const TArray<TSharedPtr<FJsonValue>>& ArrayValues = Pair.Value->AsArray();
+				for (const TSharedPtr<FJsonValue>& Item : ArrayValues)
+				{
+					if (Item.IsValid() && Item->Type == EJson::Object)
+					{
+						const int32 NestedValue = ReadIntByKeysDeep(Item->AsObject(), Keys, Depth + 1);
+						if (NestedValue != 0)
+						{
+							return NestedValue;
+						}
+					}
+				}
+			}
+		}
+
+		return 0;
 	}
 }
 
@@ -50,27 +152,34 @@ void UDBAMainLobbyWidgetController::RequestPartyInfo()
 
 void UDBAMainLobbyWidgetController::RequestSwitchFiveCampTheme(uint8 FiveCamp)
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] 鍒囨崲闃佃惀涓婚璇锋眰: %d"), FiveCamp);
+	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] Switch camp theme request: %d"), FiveCamp);
 }
 
 void UDBAMainLobbyWidgetController::RequestNavigateToNewbieVillage()
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] \u8bf7\u6c42\u8fdb\u5165\u65b0\u624b\u6751\u3002"));
+	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] Navigate to newbie village requested."));
 }
 
 void UDBAMainLobbyWidgetController::RequestNavigateToPractice()
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] \u8bf7\u6c42\u8fdb\u5165\u7ec3\u4e60\u6a21\u5f0f\u3002"));
+	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] Navigate to practice requested."));
 }
 
 void UDBAMainLobbyWidgetController::RequestExitGame()
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] \u8bf7\u6c42\u9000\u51fa\u6e38\u620f\u3002"));
+	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] Exit game requested."));
 }
 
 void UDBAMainLobbyWidgetController::InitializeBackendLobby()
 {
+	CurrentRoomId.Empty();
+	CurrentTicketId.Empty();
+	CurrentSessionId.Empty();
+	bReadyLocalState = false;
+	bProfileLoaded = false;
+	bInventoryLoaded = false;
 	SetBackendState(EDBALobbyBackendState::Idle);
+
 	RefreshPlayerData();
 	RefreshRoomList();
 }
@@ -78,311 +187,528 @@ void UDBAMainLobbyWidgetController::InitializeBackendLobby()
 void UDBAMainLobbyWidgetController::RefreshPlayerData()
 {
 	UGameBackendClientSubsystem* Backend = GetBackendSubsystem();
-	FGameBackendHttpClient* Http = Backend ? Backend->GetHttpClient() : nullptr;
-	if (!Http)
+	UGameBackendPlayerService* PlayerService = Backend ? Backend->GetPlayerService() : nullptr;
+	if (!PlayerService)
 	{
-		ReportBackendError(TEXT("\u540e\u7aef HTTP \u5ba2\u6237\u7aef\u4e0d\u53ef\u7528\u3002"));
+		ReportBackendError(TEXT("Player service unavailable."));
 		return;
 	}
 
 	SetBackendState(EDBALobbyBackendState::Loading);
-	Http->Get(TEXT("/api/players/me/profile"), [this, Http](const FGameBackendHttpResult& ProfileResult)
-	{
-		const bool bProfileOk = ProfileResult.bHttpRequestOk && ProfileResult.HttpStatus >= 200 && ProfileResult.HttpStatus < 300;
-		if (!bProfileOk)
-		{
-			ReportBackendError(ProfileResult.Message);
-			return;
-		}
-		OnProfileUpdated.Broadcast(ProfileResult.DataJson);
+	bProfileLoaded = false;
+	bInventoryLoaded = false;
 
-		Http->Get(TEXT("/api/players/me/inventory"), [this](const FGameBackendHttpResult& InventoryResult)
-		{
-			const bool bInventoryOk = InventoryResult.bHttpRequestOk && InventoryResult.HttpStatus >= 200 && InventoryResult.HttpStatus < 300;
-			if (!bInventoryOk)
-			{
-				ReportBackendError(InventoryResult.Message);
-				return;
-			}
-
-			OnInventoryUpdated.Broadcast(InventoryResult.DataJson);
-			SetBackendState(EDBALobbyBackendState::Idle);
-		});
-	});
+	FGameBackendResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAMainLobbyWidgetController, HandleGetProfileResponse));
+	PlayerService->GetMyProfile(Callback);
 }
 
 void UDBAMainLobbyWidgetController::RefreshRoomList()
 {
 	UGameBackendClientSubsystem* Backend = GetBackendSubsystem();
-	FGameBackendHttpClient* Http = Backend ? Backend->GetHttpClient() : nullptr;
-	if (!Http)
+	UGameBackendRoomService* RoomService = Backend ? Backend->GetRoomService() : nullptr;
+	if (!RoomService)
 	{
-		ReportBackendError(TEXT("\u540e\u7aef HTTP \u5ba2\u6237\u7aef\u4e0d\u53ef\u7528\u3002"));
+		ReportBackendError(TEXT("Room service unavailable."));
 		return;
 	}
 
 	SetBackendState(EDBALobbyBackendState::Loading);
-	Http->Get(TEXT("/api/rooms"), [this](const FGameBackendHttpResult& Result)
-	{
-		const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
-		if (!bSuccess)
-		{
-			ReportBackendError(Result.Message);
-			return;
-		}
-		OnRoomsUpdated.Broadcast(Result.DataJson);
-		SetBackendState(EDBALobbyBackendState::Idle);
-	});
+	FGameBackendResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAMainLobbyWidgetController, HandleGetRoomsResponse));
+	RoomService->GetRooms(Callback);
 }
 
 void UDBAMainLobbyWidgetController::CreateRoom()
 {
 	UGameBackendClientSubsystem* Backend = GetBackendSubsystem();
-	FGameBackendHttpClient* Http = Backend ? Backend->GetHttpClient() : nullptr;
-	if (!Http)
+	UGameBackendRoomService* RoomService = Backend ? Backend->GetRoomService() : nullptr;
+	if (!RoomService)
 	{
-		ReportBackendError(TEXT("\u540e\u7aef HTTP \u5ba2\u6237\u7aef\u4e0d\u53ef\u7528\u3002"));
+		ReportBackendError(TEXT("Room service unavailable."));
 		return;
 	}
 
 	SetBackendState(EDBALobbyBackendState::Loading);
 
-	const TSharedRef<FJsonObject> Request = MakeShared<FJsonObject>();
-	Request->SetStringField(TEXT("mode"), TEXT("default"));
-	Request->SetStringField(TEXT("region"), TEXT("local"));
-	Request->SetNumberField(TEXT("maxPlayers"), 10);
-	Request->SetBoolField(TEXT("private"), false);
-	FString Body;
-	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Body);
-	FJsonSerializer::Serialize(Request, Writer);
+	FGameBackendRoomCreateRequest Request;
+	Request.Mode = TEXT("default");
+	Request.Region = TEXT("local");
+	Request.MaxPlayers = 10;
+	Request.bPrivate = false;
 
-	Http->Post(TEXT("/api/rooms"), Body, [this](const FGameBackendHttpResult& Result)
-	{
-		const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
-		if (!bSuccess)
-		{
-			ReportBackendError(Result.Message);
-			return;
-		}
-		CurrentRoomId = ExtractStringByKeys(Result.DataJson, { TEXT("roomId"), TEXT("room_id"), TEXT("id") });
-		OnRoomsUpdated.Broadcast(Result.DataJson);
-		SetBackendState(EDBALobbyBackendState::InRoom);
-	});
+	FGameBackendResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAMainLobbyWidgetController, HandleCreateRoomResponse));
+	RoomService->CreateRoom(Request, Callback);
 }
 
 void UDBAMainLobbyWidgetController::JoinRoom(const FString& RoomId)
 {
 	UGameBackendClientSubsystem* Backend = GetBackendSubsystem();
-	FGameBackendHttpClient* Http = Backend ? Backend->GetHttpClient() : nullptr;
-	if (!Http)
+	UGameBackendRoomService* RoomService = Backend ? Backend->GetRoomService() : nullptr;
+	if (!RoomService)
 	{
-		ReportBackendError(TEXT("\u540e\u7aef HTTP \u5ba2\u6237\u7aef\u4e0d\u53ef\u7528\u3002"));
+		ReportBackendError(TEXT("Room service unavailable."));
 		return;
 	}
 
 	const FString SafeRoomId = RoomId.TrimStartAndEnd();
 	if (SafeRoomId.IsEmpty())
 	{
-		ReportBackendError(TEXT("\u623f\u95f4 ID \u4e0d\u80fd\u4e3a\u7a7a\u3002"));
+		ReportBackendError(TEXT("RoomId is empty."));
 		return;
 	}
 
+	PendingJoinRoomId = SafeRoomId;
 	SetBackendState(EDBALobbyBackendState::Loading);
-	Http->Post(FString::Printf(TEXT("/api/rooms/%s/join"), *SafeRoomId), TEXT("{}"), [this, SafeRoomId](const FGameBackendHttpResult& Result)
-	{
-		const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
-		if (!bSuccess)
-		{
-			ReportBackendError(Result.Message);
-			return;
-		}
-		CurrentRoomId = SafeRoomId;
-		OnRoomsUpdated.Broadcast(Result.DataJson);
-		SetBackendState(EDBALobbyBackendState::InRoom);
-	});
+
+	FGameBackendResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAMainLobbyWidgetController, HandleJoinRoomResponse));
+	RoomService->JoinRoom(SafeRoomId, Callback);
 }
 
 void UDBAMainLobbyWidgetController::LeaveRoom()
 {
 	UGameBackendClientSubsystem* Backend = GetBackendSubsystem();
-	FGameBackendHttpClient* Http = Backend ? Backend->GetHttpClient() : nullptr;
-	if (!Http)
+	UGameBackendRoomService* RoomService = Backend ? Backend->GetRoomService() : nullptr;
+	if (!RoomService)
 	{
-		ReportBackendError(TEXT("\u540e\u7aef HTTP \u5ba2\u6237\u7aef\u4e0d\u53ef\u7528\u3002"));
+		ReportBackendError(TEXT("Room service unavailable."));
 		return;
 	}
 
 	if (CurrentRoomId.IsEmpty())
 	{
-		SetBackendState(EDBALobbyBackendState::Idle);
+		ResolveStateAfterBackgroundRefresh();
 		return;
 	}
 
 	SetBackendState(EDBALobbyBackendState::Loading);
-	Http->Post(FString::Printf(TEXT("/api/rooms/%s/leave"), *CurrentRoomId), TEXT("{}"), [this](const FGameBackendHttpResult& Result)
-	{
-		const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
-		if (!bSuccess)
-		{
-			ReportBackendError(Result.Message);
-			return;
-		}
-
-		CurrentRoomId.Empty();
-		SetBackendState(EDBALobbyBackendState::Idle);
-		RefreshRoomList();
-	});
+	FGameBackendResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAMainLobbyWidgetController, HandleLeaveRoomResponse));
+	RoomService->LeaveRoom(CurrentRoomId, Callback);
 }
 
 void UDBAMainLobbyWidgetController::SetReady(bool bReady)
 {
 	UGameBackendClientSubsystem* Backend = GetBackendSubsystem();
-	FGameBackendHttpClient* Http = Backend ? Backend->GetHttpClient() : nullptr;
-	if (!Http)
+	UGameBackendRoomService* RoomService = Backend ? Backend->GetRoomService() : nullptr;
+	if (!RoomService)
 	{
-		ReportBackendError(TEXT("\u540e\u7aef HTTP \u5ba2\u6237\u7aef\u4e0d\u53ef\u7528\u3002"));
+		ReportBackendError(TEXT("Room service unavailable."));
 		return;
 	}
 
 	if (CurrentRoomId.IsEmpty())
 	{
-		ReportBackendError(TEXT("\u5f53\u524d\u672a\u52a0\u5165\u623f\u95f4\u3002"));
+		ReportBackendError(TEXT("Not in room."));
 		return;
 	}
 
+	bPendingReadyState = bReady;
 	SetBackendState(EDBALobbyBackendState::Loading);
 
-	const TSharedRef<FJsonObject> Request = MakeShared<FJsonObject>();
-	Request->SetBoolField(TEXT("isReady"), bReady);
-	FString Body;
-	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Body);
-	FJsonSerializer::Serialize(Request, Writer);
-
-	Http->Post(FString::Printf(TEXT("/api/rooms/%s/ready"), *CurrentRoomId), Body, [this, bReady](const FGameBackendHttpResult& Result)
-	{
-		const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
-		if (!bSuccess)
-		{
-			ReportBackendError(Result.Message);
-			return;
-		}
-
-		OnRoomsUpdated.Broadcast(Result.DataJson);
-		SetBackendState(bReady ? EDBALobbyBackendState::Ready : EDBALobbyBackendState::InRoom);
-	});
+	FGameBackendResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAMainLobbyWidgetController, HandleSetReadyResponse));
+	RoomService->SetReady(CurrentRoomId, bReady, Callback);
 }
 
 void UDBAMainLobbyWidgetController::StartRoom()
 {
 	UGameBackendClientSubsystem* Backend = GetBackendSubsystem();
-	FGameBackendHttpClient* Http = Backend ? Backend->GetHttpClient() : nullptr;
-	if (!Http)
+	UGameBackendRoomService* RoomService = Backend ? Backend->GetRoomService() : nullptr;
+	if (!RoomService)
 	{
-		ReportBackendError(TEXT("\u540e\u7aef HTTP \u5ba2\u6237\u7aef\u4e0d\u53ef\u7528\u3002"));
+		ReportBackendError(TEXT("Room service unavailable."));
 		return;
 	}
 
 	if (CurrentRoomId.IsEmpty())
 	{
-		ReportBackendError(TEXT("\u5f53\u524d\u672a\u52a0\u5165\u623f\u95f4\u3002"));
+		ReportBackendError(TEXT("Not in room."));
 		return;
 	}
 
 	SetBackendState(EDBALobbyBackendState::Loading);
-	Http->Post(FString::Printf(TEXT("/api/rooms/%s/start"), *CurrentRoomId), TEXT("{}"), [this](const FGameBackendHttpResult& Result)
-	{
-		const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
-		if (!bSuccess)
-		{
-			ReportBackendError(Result.Message);
-			return;
-		}
 
-		OnRoomsUpdated.Broadcast(Result.DataJson);
-		SetBackendState(EDBALobbyBackendState::InRoom);
-	});
+	FGameBackendResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAMainLobbyWidgetController, HandleStartRoomResponse));
+	RoomService->StartRoom(CurrentRoomId, Callback);
 }
 
 void UDBAMainLobbyWidgetController::StartMatchmaking(const FString& Mode, const FString& RegionCode)
 {
 	UGameBackendClientSubsystem* Backend = GetBackendSubsystem();
-	FGameBackendHttpClient* Http = Backend ? Backend->GetHttpClient() : nullptr;
-	if (!Http)
+	UGameBackendMatchService* MatchService = Backend ? Backend->GetMatchService() : nullptr;
+	if (!MatchService)
 	{
-		ReportBackendError(TEXT("\u540e\u7aef HTTP \u5ba2\u6237\u7aef\u4e0d\u53ef\u7528\u3002"));
+		ReportBackendError(TEXT("Match service unavailable."));
 		return;
 	}
 
+	const FString SafeMode = Mode.TrimStartAndEnd().IsEmpty() ? TEXT("default") : Mode.TrimStartAndEnd();
+	const FString SafeRegion = RegionCode.TrimStartAndEnd().IsEmpty() ? TEXT("local") : RegionCode.TrimStartAndEnd();
+	PendingMatchMode = SafeMode;
+	PendingMatchRegion = SafeRegion;
+
 	SetBackendState(EDBALobbyBackendState::Loading);
-
-	const TSharedRef<FJsonObject> Request = MakeShared<FJsonObject>();
-	Request->SetStringField(TEXT("mode"), Mode);
-	Request->SetStringField(TEXT("region"), RegionCode);
-	FString Body;
-	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Body);
-	FJsonSerializer::Serialize(Request, Writer);
-
-	Http->Post(TEXT("/api/matchmaking/tickets"), Body, [this, Mode, RegionCode](const FGameBackendHttpResult& Result)
-	{
-		const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
-		if (!bSuccess)
-		{
-			ReportBackendError(Result.Message);
-			return;
-		}
-
-		CurrentTicketId = ExtractStringByKeys(Result.DataJson, { TEXT("ticketId"), TEXT("ticket_id"), TEXT("id") });
-		if (CurrentTicketId.IsEmpty())
-		{
-			ReportBackendError(TEXT("\u521b\u5efa\u5339\u914d\u7968\u636e\u6210\u529f\uff0c\u4f46\u672a\u8fd4\u56de TicketId\u3002"));
-			return;
-		}
-
-		OnMatchTicketUpdated.Broadcast(Result.DataJson);
-		SetBackendState(EDBALobbyBackendState::Matching);
-		TMap<FString, FString> Props;
-		Props.Add(TEXT("mode"), Mode);
-		Props.Add(TEXT("region"), RegionCode);
-		TrackTelemetry(TEXT("matchmaking_started"), Props);
-		StartTicketPolling();
-	});
+	FGameBackendResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAMainLobbyWidgetController, HandleCreateTicketResponse));
+	MatchService->CreateTicket(SafeMode, SafeRegion, Callback);
 }
 
 void UDBAMainLobbyWidgetController::CancelMatchmaking()
 {
 	UGameBackendClientSubsystem* Backend = GetBackendSubsystem();
-	FGameBackendHttpClient* Http = Backend ? Backend->GetHttpClient() : nullptr;
-	if (!Http)
+	UGameBackendMatchService* MatchService = Backend ? Backend->GetMatchService() : nullptr;
+	if (!MatchService)
 	{
-		ReportBackendError(TEXT("\u540e\u7aef HTTP \u5ba2\u6237\u7aef\u4e0d\u53ef\u7528\u3002"));
+		ReportBackendError(TEXT("Match service unavailable."));
 		return;
 	}
 
 	StopTicketPolling();
 	if (CurrentTicketId.IsEmpty())
 	{
-		SetBackendState(EDBALobbyBackendState::Idle);
+		ResolveStateAfterBackgroundRefresh();
 		return;
 	}
 
-	Http->Delete(FString::Printf(TEXT("/api/matchmaking/tickets/%s"), *CurrentTicketId), [this](const FGameBackendHttpResult& Result)
-	{
-		const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
-		if (!bSuccess)
-		{
-			ReportBackendError(Result.Message);
-			return;
-		}
-
-		CurrentTicketId.Empty();
-		CurrentSessionId.Empty();
-		SetBackendState(EDBALobbyBackendState::Idle);
-	});
+	FGameBackendResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAMainLobbyWidgetController, HandleCancelTicketResponse));
+	MatchService->CancelTicket(CurrentTicketId, Callback);
 }
 
 void UDBAMainLobbyWidgetController::NotifyMatchFinishedClientView()
 {
 	TrackTelemetry(TEXT("match_finished_client_view"), TMap<FString, FString>());
+}
+
+void UDBAMainLobbyWidgetController::HandleGetProfileResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		ReportBackendError(ErrorMessage);
+		return;
+	}
+
+	bProfileLoaded = true;
+	OnProfileUpdated.Broadcast(DataJson);
+	UpdatePlayerSummaryFromProfile(DataJson);
+
+	UGameBackendClientSubsystem* Backend = GetBackendSubsystem();
+	UGameBackendPlayerService* PlayerService = Backend ? Backend->GetPlayerService() : nullptr;
+	if (!PlayerService)
+	{
+		ReportBackendError(TEXT("Player service unavailable."));
+		return;
+	}
+
+	FGameBackendResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAMainLobbyWidgetController, HandleGetInventoryResponse));
+	PlayerService->GetMyInventory(Callback);
+}
+
+void UDBAMainLobbyWidgetController::HandleGetInventoryResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		ReportBackendError(ErrorMessage);
+		return;
+	}
+
+	bInventoryLoaded = true;
+	OnInventoryUpdated.Broadcast(DataJson);
+	UpdatePlayerSummaryFromInventory(DataJson);
+	OnPlayerSummaryUpdated.Broadcast(PlayerSummary);
+	ResolveStateAfterBackgroundRefresh();
+}
+
+void UDBAMainLobbyWidgetController::HandleGetRoomsResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		ReportBackendError(ErrorMessage);
+		return;
+	}
+
+	OnRoomsUpdated.Broadcast(DataJson);
+	ResolveStateAfterBackgroundRefresh();
+}
+
+void UDBAMainLobbyWidgetController::HandleCreateRoomResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		ReportBackendError(ErrorMessage);
+		return;
+	}
+
+	const FString RoomId = ExtractStringByKeys(DataJson, { TEXT("roomId"), TEXT("room_id"), TEXT("id") });
+	if (!RoomId.IsEmpty())
+	{
+		CurrentRoomId = RoomId;
+	}
+	bReadyLocalState = false;
+	OnRoomsUpdated.Broadcast(DataJson);
+	SetBackendState(EDBALobbyBackendState::InRoom);
+}
+
+void UDBAMainLobbyWidgetController::HandleJoinRoomResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		ReportBackendError(ErrorMessage);
+		return;
+	}
+
+	if (!PendingJoinRoomId.IsEmpty())
+	{
+		CurrentRoomId = PendingJoinRoomId;
+	}
+	else
+	{
+		const FString RoomId = ExtractStringByKeys(DataJson, { TEXT("roomId"), TEXT("room_id"), TEXT("id") });
+		if (!RoomId.IsEmpty())
+		{
+			CurrentRoomId = RoomId;
+		}
+	}
+	PendingJoinRoomId.Empty();
+	bReadyLocalState = false;
+	OnRoomsUpdated.Broadcast(DataJson);
+	SetBackendState(EDBALobbyBackendState::InRoom);
+}
+
+void UDBAMainLobbyWidgetController::HandleLeaveRoomResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		ReportBackendError(ErrorMessage);
+		return;
+	}
+
+	CurrentRoomId.Empty();
+	bReadyLocalState = false;
+	OnRoomsUpdated.Broadcast(DataJson);
+	ResolveStateAfterBackgroundRefresh();
+	RefreshRoomList();
+}
+
+void UDBAMainLobbyWidgetController::HandleSetReadyResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		ReportBackendError(ErrorMessage);
+		return;
+	}
+
+	bReadyLocalState = bPendingReadyState;
+	OnRoomsUpdated.Broadcast(DataJson);
+	SetBackendState(bReadyLocalState ? EDBALobbyBackendState::Ready : EDBALobbyBackendState::InRoom);
+}
+
+void UDBAMainLobbyWidgetController::HandleStartRoomResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		ReportBackendError(ErrorMessage);
+		return;
+	}
+
+	OnRoomsUpdated.Broadcast(DataJson);
+	SetBackendState(EDBALobbyBackendState::InRoom);
+}
+
+void UDBAMainLobbyWidgetController::HandleCreateTicketResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		ReportBackendError(ErrorMessage);
+		return;
+	}
+
+	CurrentTicketId = ExtractStringByKeys(DataJson, { TEXT("ticketId"), TEXT("ticket_id"), TEXT("id") });
+	if (CurrentTicketId.IsEmpty())
+	{
+		ReportBackendError(TEXT("Ticket created but ticket id is missing."));
+		return;
+	}
+
+	OnMatchTicketUpdated.Broadcast(DataJson);
+	SetBackendState(EDBALobbyBackendState::Matching);
+
+	TMap<FString, FString> Props;
+	Props.Add(TEXT("mode"), PendingMatchMode);
+	Props.Add(TEXT("region"), PendingMatchRegion);
+	TrackTelemetry(TEXT("matchmaking_started"), Props);
+
+	StartTicketPolling();
+}
+
+void UDBAMainLobbyWidgetController::HandleGetTicketResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		ReportBackendError(ErrorMessage);
+		return;
+	}
+
+	OnMatchTicketUpdated.Broadcast(DataJson);
+	ResolveMatchAndConnect(DataJson);
+}
+
+void UDBAMainLobbyWidgetController::HandleCancelTicketResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		ReportBackendError(ErrorMessage);
+		return;
+	}
+
+	CurrentTicketId.Empty();
+	CurrentSessionId.Empty();
+	OnMatchTicketUpdated.Broadcast(DataJson);
+	ResolveStateAfterBackgroundRefresh();
+}
+
+void UDBAMainLobbyWidgetController::HandleGetSessionResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		ReportBackendError(ErrorMessage);
+		return;
+	}
+
+	UGameBackendClientSubsystem* Backend = GetBackendSubsystem();
+	UGameBackendSessionService* SessionService = Backend ? Backend->GetSessionService() : nullptr;
+	if (!SessionService)
+	{
+		ReportBackendError(TEXT("Session service unavailable."));
+		return;
+	}
+
+	SetBackendState(EDBALobbyBackendState::Connecting);
+	{
+		TMap<FString, FString> Props;
+		Props.Add(TEXT("sessionId"), CurrentSessionId);
+		TrackTelemetry(TEXT("connect_server_started"), Props);
+	}
+
+	FGameBackendResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAMainLobbyWidgetController, HandleGetConnectionResponse));
+	SessionService->GetConnection(CurrentSessionId, Callback);
+}
+
+void UDBAMainLobbyWidgetController::HandleGetConnectionResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		TMap<FString, FString> Props;
+		Props.Add(TEXT("reason"), ErrorMessage.Left(256));
+		TrackTelemetry(TEXT("connect_server_failed"), Props);
+		ReportBackendError(ErrorMessage);
+		return;
+	}
+
+	UGameBackendClientSubsystem* Backend = GetBackendSubsystem();
+	UGameBackendSessionService* SessionService = Backend ? Backend->GetSessionService() : nullptr;
+	if (!SessionService)
+	{
+		ReportBackendError(TEXT("Session service unavailable."));
+		return;
+	}
+
+	FGameBackendResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAMainLobbyWidgetController, HandleConnectToServerResponse));
+	SessionService->ConnectToDedicatedServer(CurrentSessionId, DataJson, Callback);
+}
+
+void UDBAMainLobbyWidgetController::HandleConnectToServerResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		TMap<FString, FString> Props;
+		Props.Add(TEXT("reason"), ErrorMessage.Left(256));
+		TrackTelemetry(TEXT("connect_server_failed"), Props);
+		ReportBackendError(ErrorMessage);
+		return;
+	}
+
+	TMap<FString, FString> SuccessProps;
+	SuccessProps.Add(TEXT("sessionId"), CurrentSessionId);
+	TrackTelemetry(TEXT("connect_server_succeeded"), SuccessProps);
+	SetBackendState(EDBALobbyBackendState::Connecting);
+
+	// DataJson for this callback is the travel url when connection is successful.
+	OnMatchTicketUpdated.Broadcast(DataJson);
+}
+
+void UDBAMainLobbyWidgetController::UpdatePlayerSummaryFromProfile(const FString& ProfileJson)
+{
+	TSharedPtr<FJsonObject> Root;
+	if (!TryParseJsonObject(ProfileJson, Root))
+	{
+		return;
+	}
+
+	const FString DisplayName = ReadStringByKeysDeep(Root, { TEXT("displayName"), TEXT("playerName"), TEXT("nickname"), TEXT("name") });
+	if (!DisplayName.IsEmpty())
+	{
+		PlayerSummary.DisplayName = DisplayName;
+	}
+
+	const FString PlayerId = ReadStringByKeysDeep(Root, { TEXT("playerId"), TEXT("player_id"), TEXT("uid") });
+	if (!PlayerId.IsEmpty())
+	{
+		PlayerSummary.PlayerId = PlayerId;
+	}
+
+	const int32 Level = ReadIntByKeysDeep(Root, { TEXT("level"), TEXT("playerLevel"), TEXT("lv"), TEXT("lvl") });
+	if (Level > 0)
+	{
+		PlayerSummary.Level = Level;
+	}
+
+	const int32 Experience = ReadIntByKeysDeep(Root, { TEXT("experience"), TEXT("exp"), TEXT("xp"), TEXT("currentExp") });
+	PlayerSummary.Experience = FMath::Max(0, Experience);
+}
+
+void UDBAMainLobbyWidgetController::UpdatePlayerSummaryFromInventory(const FString& InventoryJson)
+{
+	TSharedPtr<FJsonObject> Root;
+	if (!TryParseJsonObject(InventoryJson, Root))
+	{
+		return;
+	}
+
+	const int32 Gold = ReadIntByKeysDeep(Root, { TEXT("gold"), TEXT("coins"), TEXT("coin"), TEXT("currencyGold") });
+	PlayerSummary.Gold = FMath::Max(0, Gold);
+
+	const int32 Tickets = ReadIntByKeysDeep(Root, { TEXT("tickets"), TEXT("ticket"), TEXT("matchTickets"), TEXT("coupon") });
+	PlayerSummary.Tickets = FMath::Max(0, Tickets);
+}
+
+void UDBAMainLobbyWidgetController::ResolveStateAfterBackgroundRefresh()
+{
+	if (BackendState == EDBALobbyBackendState::Matching || BackendState == EDBALobbyBackendState::MatchFound || BackendState == EDBALobbyBackendState::Connecting)
+	{
+		return;
+	}
+
+	if (!CurrentTicketId.IsEmpty())
+	{
+		SetBackendState(EDBALobbyBackendState::Matching);
+		return;
+	}
+
+	if (!CurrentRoomId.IsEmpty())
+	{
+		SetBackendState(bReadyLocalState ? EDBALobbyBackendState::Ready : EDBALobbyBackendState::InRoom);
+		return;
+	}
+
+	SetBackendState(EDBALobbyBackendState::Idle);
 }
 
 void UDBAMainLobbyWidgetController::SetBackendState(EDBALobbyBackendState NewState)
@@ -391,17 +717,18 @@ void UDBAMainLobbyWidgetController::SetBackendState(EDBALobbyBackendState NewSta
 	{
 		return;
 	}
+
 	BackendState = NewState;
 	OnBackendStateChanged.Broadcast(NewState);
-	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] 鍚庣鐘舵€佸垏鎹? %d"), static_cast<int32>(NewState));
+	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] Backend state switched to %d"), static_cast<int32>(NewState));
 }
 
 void UDBAMainLobbyWidgetController::ReportBackendError(const FString& ErrorMessage)
 {
-	const FString SafeError = ErrorMessage.IsEmpty() ? TEXT("\u540e\u7aef\u8bf7\u6c42\u5931\u8d25\u3002") : ErrorMessage;
+	const FString SafeError = ErrorMessage.IsEmpty() ? TEXT("Backend request failed.") : ErrorMessage;
 	SetBackendState(EDBALobbyBackendState::Error);
 	OnBackendError.Broadcast(SafeError);
-	UE_LOG(LogDBAUI, Warning, TEXT("[MainLobby] 鍚庣閿欒: %s"), *SafeError);
+	UE_LOG(LogDBAUI, Warning, TEXT("[MainLobby] Backend error: %s"), *SafeError);
 }
 
 void UDBAMainLobbyWidgetController::StartTicketPolling()
@@ -409,7 +736,7 @@ void UDBAMainLobbyWidgetController::StartTicketPolling()
 	UWorld* World = GetWorld();
 	if (!World)
 	{
-		ReportBackendError(TEXT("\u4e16\u754c\u4e0a\u4e0b\u6587\u4e0d\u53ef\u7528\uff0c\u65e0\u6cd5\u8f6e\u8be2\u5339\u914d\u7968\u636e\u3002"));
+		ReportBackendError(TEXT("World context is invalid, cannot start ticket polling."));
 		return;
 	}
 
@@ -429,25 +756,16 @@ void UDBAMainLobbyWidgetController::StopTicketPolling()
 void UDBAMainLobbyWidgetController::PollTicketOnce()
 {
 	UGameBackendClientSubsystem* Backend = GetBackendSubsystem();
-	FGameBackendHttpClient* Http = Backend ? Backend->GetHttpClient() : nullptr;
-	if (!Http || CurrentTicketId.IsEmpty())
+	UGameBackendMatchService* MatchService = Backend ? Backend->GetMatchService() : nullptr;
+	if (!MatchService || CurrentTicketId.IsEmpty())
 	{
 		StopTicketPolling();
 		return;
 	}
 
-	Http->Get(FString::Printf(TEXT("/api/matchmaking/tickets/%s"), *CurrentTicketId), [this](const FGameBackendHttpResult& Result)
-	{
-		const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
-		if (!bSuccess)
-		{
-			ReportBackendError(Result.Message);
-			return;
-		}
-
-		OnMatchTicketUpdated.Broadcast(Result.DataJson);
-		ResolveMatchAndConnect(Result.DataJson);
-	});
+	FGameBackendResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAMainLobbyWidgetController, HandleGetTicketResponse));
+	MatchService->GetTicket(CurrentTicketId, Callback);
 }
 
 void UDBAMainLobbyWidgetController::ResolveMatchAndConnect(const FString& TicketDataJson)
@@ -461,52 +779,21 @@ void UDBAMainLobbyWidgetController::ResolveMatchAndConnect(const FString& Ticket
 	StopTicketPolling();
 	CurrentSessionId = SessionId;
 	SetBackendState(EDBALobbyBackendState::MatchFound);
-	{
-		TMap<FString, FString> Props;
-		Props.Add(TEXT("sessionId"), SessionId);
-		TrackTelemetry(TEXT("matchmaking_found"), Props);
-	}
+	TMap<FString, FString> Props;
+	Props.Add(TEXT("sessionId"), SessionId);
+	TrackTelemetry(TEXT("matchmaking_found"), Props);
 
 	UGameBackendClientSubsystem* Backend = GetBackendSubsystem();
-	FGameBackendHttpClient* Http = Backend ? Backend->GetHttpClient() : nullptr;
-	if (!Http || !Backend || !Backend->GetSessionService())
+	UGameBackendSessionService* SessionService = Backend ? Backend->GetSessionService() : nullptr;
+	if (!SessionService)
 	{
-		ReportBackendError(TEXT("\u540e\u7aef\u4f1a\u8bdd\u670d\u52a1\u4e0d\u53ef\u7528\u3002"));
+		ReportBackendError(TEXT("Session service unavailable."));
 		return;
 	}
 
-	Http->Get(FString::Printf(TEXT("/api/sessions/%s"), *SessionId), [this, Backend, Http, SessionId](const FGameBackendHttpResult& SessionResult)
-	{
-		const bool bSessionOk = SessionResult.bHttpRequestOk && SessionResult.HttpStatus >= 200 && SessionResult.HttpStatus < 300;
-		if (!bSessionOk)
-		{
-			ReportBackendError(SessionResult.Message);
-			return;
-		}
-
-		SetBackendState(EDBALobbyBackendState::Connecting);
-		{
-			TMap<FString, FString> Props;
-			Props.Add(TEXT("sessionId"), SessionId);
-			TrackTelemetry(TEXT("connect_server_started"), Props);
-		}
-
-		Http->Get(FString::Printf(TEXT("/api/sessions/%s/connection"), *SessionId), [this, Backend, SessionId](const FGameBackendHttpResult& ConnectionResult)
-		{
-			const bool bConnectionOk = ConnectionResult.bHttpRequestOk && ConnectionResult.HttpStatus >= 200 && ConnectionResult.HttpStatus < 300;
-			if (!bConnectionOk)
-			{
-				TMap<FString, FString> Props;
-				Props.Add(TEXT("reason"), ConnectionResult.Message.Left(256));
-				TrackTelemetry(TEXT("connect_server_failed"), Props);
-				ReportBackendError(ConnectionResult.Message);
-				return;
-			}
-
-			FGameBackendResponseDelegate Callback;
-			Backend->GetSessionService()->ConnectToDedicatedServer(SessionId, ConnectionResult.DataJson, Callback);
-		});
-	});
+	FGameBackendResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAMainLobbyWidgetController, HandleGetSessionResponse));
+	SessionService->GetSession(SessionId, Callback);
 }
 
 void UDBAMainLobbyWidgetController::TrackTelemetry(const FString& EventName, const TMap<FString, FString>& Properties) const
@@ -523,47 +810,24 @@ void UDBAMainLobbyWidgetController::TrackTelemetry(const FString& EventName, con
 FString UDBAMainLobbyWidgetController::ExtractStringByKeys(const FString& Json, const TArray<FString>& Keys) const
 {
 	TSharedPtr<FJsonObject> Root;
-	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Json);
-	if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid())
+	if (!TryParseJsonObject(Json, Root))
 	{
 		return FString();
 	}
 
-	FString Value = ReadStringByKeys(Root, Keys);
-	if (!Value.IsEmpty())
-	{
-		return Value;
-	}
-
-	if (Root->HasTypedField<EJson::Object>(TEXT("ticket")))
-	{
-		const TSharedPtr<FJsonObject> TicketObj = Root->GetObjectField(TEXT("ticket"));
-		Value = ReadStringByKeys(TicketObj, Keys);
-		if (!Value.IsEmpty())
-		{
-			return Value;
-		}
-	}
-
-	return FString();
+	return ReadStringByKeysDeep(Root, Keys);
 }
 
 bool UDBAMainLobbyWidgetController::IsTicketMatched(const FString& TicketDataJson, FString& OutSessionId) const
 {
 	TSharedPtr<FJsonObject> Root;
-	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(TicketDataJson);
-	if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid())
+	if (!TryParseJsonObject(TicketDataJson, Root))
 	{
 		return false;
 	}
 
-	const FString Status = ReadStringByKeys(Root, { TEXT("status"), TEXT("state") });
-	OutSessionId = ReadStringByKeys(Root, { TEXT("sessionId"), TEXT("session_id") });
-	if (OutSessionId.IsEmpty() && Root->HasTypedField<EJson::Object>(TEXT("ticket")))
-	{
-		const TSharedPtr<FJsonObject> TicketObj = Root->GetObjectField(TEXT("ticket"));
-		OutSessionId = ReadStringByKeys(TicketObj, { TEXT("sessionId"), TEXT("session_id") });
-	}
+	const FString Status = ReadStringByKeysDeep(Root, { TEXT("status"), TEXT("state") });
+	OutSessionId = ReadStringByKeysDeep(Root, { TEXT("sessionId"), TEXT("session_id") });
 
 	return Status.Equals(TEXT("matched"), ESearchCase::IgnoreCase)
 		|| Status.Equals(TEXT("found"), ESearchCase::IgnoreCase)

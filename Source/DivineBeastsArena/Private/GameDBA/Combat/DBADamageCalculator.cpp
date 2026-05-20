@@ -57,8 +57,8 @@ float UDBADamageCalculator::GetElementMultiplier(EDBAElement AttackElement, EDBA
 		return 1.0f;
 	}
 
-	// 五行相克: 火→金→木→土→水→火
-	// 攻击方克防守方时倍率为1.2，被克制时为0.8
+		// 五行相克: 火→金→木→土→水→火
+	// 攻击方克防守方时倍率为1.25，被克制时为0.8
 
 	const EDBAElement CounterMap[5] = {
 		EDBAElement::Fire,      // 金克木
@@ -76,7 +76,7 @@ float UDBADamageCalculator::GetElementMultiplier(EDBAElement AttackElement, EDBA
 			EDBAElement DefendedElement = CounterMap[(i + 1) % 5];
 			if (DefenseElement == DefendedElement)
 			{
-				return 1.2f; // 克制
+				return DBAConstants::ElementCounter_Normal; // 克制 1.25
 			}
 		}
 	}
@@ -88,12 +88,12 @@ float UDBADamageCalculator::GetElementMultiplier(EDBAElement AttackElement, EDBA
 		{
 			if (AttackElement == CounterMap[(i + 1) % 5])
 			{
-				return 0.8f; // 被克制
+				return DBAConstants::ElementCountered_Normal; // 被克制 0.80
 			}
 		}
 	}
 
-	return 1.0f; // 无克制关系
+	return DBAConstants::ElementNeutral; // 无克制关系 1.0
 }
 
 float UDBADamageCalculator::GetResonanceBonus(int32 ResonanceLevel)
@@ -243,7 +243,7 @@ FElementCounterResult UDBADamageCalculator::GetElementCounterResult(EDBAElementT
 	}
 
 	// 五行相克: 火→金→木→土→水→火 (Metal替代Gold)
-	// 攻击方克防守方时倍率为1.2，被克制时为0.8
+	// 攻击方克防守方时倍率为1.25，被克制时为0.8
 	const EDBAElementType CounterMap[5] = {
 		EDBAElementType::Fire,   // Metal克Wood
 		EDBAElementType::Wood,   // Wood克Earth
@@ -260,7 +260,7 @@ FElementCounterResult UDBADamageCalculator::GetElementCounterResult(EDBAElementT
 			EDBAElementType DefendedElement = CounterMap[(i + 1) % 5];
 			if (DefenseElement == DefendedElement)
 			{
-				Result.Multiplier = 1.2f;
+				Result.Multiplier = DBAConstants::ElementCounter_Normal; // 克制 1.25
 				Result.ResultType = EDBAElementCounterResult::Counter;
 				return Result;
 			}
@@ -274,14 +274,14 @@ FElementCounterResult UDBADamageCalculator::GetElementCounterResult(EDBAElementT
 		{
 			if (AttackElement == CounterMap[(i + 1) % 5])
 			{
-				Result.Multiplier = 0.8f;
+				Result.Multiplier = DBAConstants::ElementCountered_Normal; // 被克制 0.80
 				Result.ResultType = EDBAElementCounterResult::Countered;
 				return Result;
 			}
 		}
 	}
 
-	Result.Multiplier = 1.0f;
+	Result.Multiplier = DBAConstants::ElementNeutral; // 无克制关系 1.0
 	Result.ResultType = EDBAElementCounterResult::None;
 	return Result;
 }

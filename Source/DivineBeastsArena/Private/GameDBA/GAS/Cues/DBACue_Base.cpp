@@ -2,6 +2,7 @@
 #include "GameDBA/GAS/Cues/DBACue_Base.h"
 #include "GameDBA/Data/DBASkillDataRow.h"
 #include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystem.h"
 
 ADBACue_Base::ADBACue_Base()
 {

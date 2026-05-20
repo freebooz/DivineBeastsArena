@@ -9,6 +9,7 @@
 
 class UGameBackendClientSubsystem;
 class FGameBackendHttpClient;
+struct FGameBackendHttpResult;
 
 UCLASS(BlueprintType)
 class GAMEBACKENDCLIENT_API UGameBackendAuthService : public UObject

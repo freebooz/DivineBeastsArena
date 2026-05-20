@@ -9,8 +9,8 @@
 #include "DBAZodiacAbilityBase.generated.h"
 
 /**
- * 鐢熻倴鎶€鑳藉熀绫?(Passive 绛?
- * 鍐冲畾鑻遍泟韬唤銆佸瑙傚壀褰便€佸姩鐢诲熀璋? */
+ * 生肖技能基类(Passive 技能)
+ * 决定英雄身份、外观剑影、动画基类 */
 UCLASS(Abstract)
 class DIVINEBEASTSARENA_API UDBAZodiacAbilityBase : public UDBAMobaGameplayAbilityBase
 {
@@ -19,7 +19,7 @@ class DIVINEBEASTSARENA_API UDBAZodiacAbilityBase : public UDBAMobaGameplayAbili
 public:
 	UDBAZodiacAbilityBase();
 
-	/** 鎵€灞炵敓鑲栨爣璇?*/
+	/** 所属生肖标志 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Zodiac")
 	EDBAZodiacType ZodiacType;
 

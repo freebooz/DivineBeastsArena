@@ -26,7 +26,6 @@ public class GameMoba : ModuleRules
 			"InputCore",
 			"EnhancedInput",
 			"AIModule",
-			"GameCore",
 		});
 
 		PublicIncludePaths.Add("GameMoba/Public");

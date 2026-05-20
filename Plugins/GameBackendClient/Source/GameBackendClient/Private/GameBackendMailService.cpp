@@ -2,13 +2,14 @@
 
 #include "GameBackendMailService.h"
 
+#include "GameBackendClientSubsystem.h"
 #include "GameBackendHttpClient.h"
 
 namespace
 {
 	void ExecuteResponse(const FGameBackendResponseDelegate& Callback, const FGameBackendHttpResult& Result)
 	{
-		const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
+		const bool bSuccess = Result.IsSuccessful();
 		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("Request failed.") : Result.Message);
 		Callback.ExecuteIfBound(bSuccess, ErrorMessage, Result.DataJson);
 	}
@@ -69,4 +70,3 @@ void UGameBackendMailService::ClaimAll(const FGameBackendResponseDelegate& Callb
 	}
 	HttpClient->Post(TEXT("/api/players/me/mails/claim-all"), TEXT("{}"), [Callback](const FGameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });
 }
-

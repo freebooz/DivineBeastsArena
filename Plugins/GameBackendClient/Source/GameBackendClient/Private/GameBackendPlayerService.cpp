@@ -2,6 +2,7 @@
 
 #include "GameBackendPlayerService.h"
 
+#include "GameBackendClientSubsystem.h"
 #include "GameBackendHttpClient.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonSerializer.h"
@@ -11,7 +12,7 @@ namespace
 {
 	void ExecuteResponse(const FGameBackendResponseDelegate& Callback, const FGameBackendHttpResult& Result)
 	{
-		const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
+		const bool bSuccess = Result.IsSuccessful();
 		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("Request failed.") : Result.Message);
 		Callback.ExecuteIfBound(bSuccess, ErrorMessage, Result.DataJson);
 	}

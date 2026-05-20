@@ -22,7 +22,7 @@ namespace
 
 	void ExecuteResponseDelegate(const FGameBackendResponseDelegate& Callback, const FGameBackendHttpResult& Result)
 	{
-		const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
+		const bool bSuccess = Result.IsSuccessful();
 		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("Request failed.") : Result.Message);
 		Callback.ExecuteIfBound(bSuccess, ErrorMessage, Result.DataJson);
 	}
@@ -195,7 +195,7 @@ void UGameBackendAuthService::Logout(const FGameBackendResponseDelegate& Callbac
 
 	HttpClient->Post(TEXT("/api/auth/logout"), TEXT("{}"), [this, Callback](const FGameBackendHttpResult& Result)
 	{
-		if (Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300)
+		if (Result.IsSuccessful())
 		{
 			if (Subsystem.IsValid())
 			{
@@ -222,7 +222,7 @@ void UGameBackendAuthService::GetMe(const FGameBackendResponseDelegate& Callback
 
 void UGameBackendAuthService::HandleAuthResponse(const FGameBackendHttpResult& Result, const FGameBackendAuthResponseDelegate& Callback)
 {
-	const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
+	const bool bSuccess = Result.IsSuccessful();
 	if (!bSuccess)
 	{
 		const FString ErrorMessage = BuildBanMessage(Result.Code, Result.Message, Result.DataJson);

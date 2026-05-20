@@ -32,7 +32,7 @@ private:
 	void TryUploadLatestClientLog();
 	bool IsAlreadyUploaded(const FString& FilePath) const;
 	void MarkUploaded(const FString& FilePath) const;
-	FString BuildFileUploadPayload(const FString& FilePath, int64 MaxBytes, FString& OutError) const;
+	FString BuildFileUploadPayload(const FString& FilePath, int64 MaxBytes, bool bSanitizeSensitiveText, FString& OutError) const;
 
 private:
 	TWeakObjectPtr<UGameBackendClientSubsystem> Subsystem;

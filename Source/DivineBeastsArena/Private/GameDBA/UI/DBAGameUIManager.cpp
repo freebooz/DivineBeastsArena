@@ -7,6 +7,8 @@
 
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
+#include "GameBackendClientSubsystem.h"
+#include "GameBackendTelemetryService.h"
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
 #include "GameFramework/PlayerController.h"
 #include "GameDBA/UI/Arena/UDBAArenaHUDRootWidgetBase.h"
@@ -393,6 +395,18 @@ void UDBAGameUIManager::TransitionTo(EDBAUIState NewState)
 	if (CurrentState == NewState)
 	{
 		return;
+	}
+
+	const bool bReturningToLobbyFromMatch = CurrentState == EDBAUIState::InGame && NewState == EDBAUIState::Lobby;
+	if (bReturningToLobbyFromMatch)
+	{
+		if (UGameBackendClientSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGameBackendClientSubsystem>() : nullptr)
+		{
+			if (Backend->GetTelemetryService())
+			{
+				Backend->GetTelemetryService()->TrackEvent(TEXT("match_finished_client_view"), TMap<FString, FString>());
+			}
+		}
 	}
 
 	switch (CurrentState)

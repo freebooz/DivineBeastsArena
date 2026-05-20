@@ -4,14 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "GameBackendTypes.h"
+#include "Interfaces/IHttpRequest.h"
+#include "Interfaces/IHttpResponse.h"
 
 class UGameBackendClientSubsystem;
-class IHttpRequest;
-class IHttpResponse;
 
 struct FGameBackendHttpResult
 {
 	bool bHttpRequestOk = false;
+	bool bApiSuccess = true;
 	int32 HttpStatus = 0;
 	FString Code;
 	FString Message;
@@ -19,6 +20,11 @@ struct FGameBackendHttpResult
 	FString TraceId;
 	FString RawBody;
 	double DurationMs = 0.0;
+
+	bool IsSuccessful() const
+	{
+		return bHttpRequestOk && bApiSuccess && HttpStatus >= 200 && HttpStatus < 300;
+	}
 };
 
 using FGameBackendHttpCallback = TFunction<void(const FGameBackendHttpResult&)>;

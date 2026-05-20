@@ -24,9 +24,7 @@ public class GameBackendClient : ModuleRules
 			"SlateCore"
 		});
 
-		PublicIncludePaths.Add("GameBackendClient/Public");
-		PrivateIncludePaths.Add("GameBackendClient/Private");
-		bUseUnity = true;
+		bUseUnity = false;
 		CppStandard = CppStandardVersion.Cpp20;
 	}
 }

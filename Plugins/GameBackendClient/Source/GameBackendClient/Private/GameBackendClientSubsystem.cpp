@@ -66,7 +66,7 @@ void UGameBackendClientSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 	HttpClient = MakeShared<FGameBackendHttpClient>(this);
 	InitializeServices();
 
-	UE_LOG(LogGameBackendClient, Log, TEXT("鍚庣瀛愮郴缁熷垵濮嬪寲瀹屾垚銆俠aseUrl=%s version=%s channel=%s platform=%s"),
+	UE_LOG(LogGameBackendClient, Log, TEXT("后端子系统初始化完成。BaseUrl=%s version=%s channel=%s platform=%s"),
 		*BackendBaseUrl, *ClientVersion, *Channel, *Platform);
 
 	if (CrashService)
