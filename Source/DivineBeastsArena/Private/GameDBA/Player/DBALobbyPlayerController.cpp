@@ -2,6 +2,7 @@
 
 #include "GameDBA/Player/DBALobbyPlayerController.h"
 
+#include "GameDBA/Character/DBAZodiacCharacterBase.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/UI/DBAGameUIManager.h"
 #include "Engine/World.h"
@@ -137,6 +138,9 @@ void ADBALobbyPlayerController::SetupInputComponent()
 	InputComponent->BindKey(EKeys::D, IE_Released, this, &ADBALobbyPlayerController::HandleMoveRightReleased);
 	InputComponent->BindKey(EKeys::Right, IE_Pressed, this, &ADBALobbyPlayerController::HandleMoveRightPressed);
 	InputComponent->BindKey(EKeys::Right, IE_Released, this, &ADBALobbyPlayerController::HandleMoveRightReleased);
+
+	InputComponent->BindAction(TEXT("Skill01"), IE_Pressed, this, &ADBALobbyPlayerController::HandleSkill01Pressed);
+	InputComponent->BindKey(EKeys::F, IE_Pressed, this, &ADBALobbyPlayerController::HandleSkill01Pressed);
 }
 
 void ADBALobbyPlayerController::PlayerTick(float DeltaTime)
@@ -229,6 +233,16 @@ void ADBALobbyPlayerController::HandleMoveRightPressed()
 void ADBALobbyPlayerController::HandleMoveRightReleased()
 {
 	SetMovementTagActive(MoveRightTag, false);
+}
+
+void ADBALobbyPlayerController::HandleSkill01Pressed()
+{
+	if (ADBAZodiacCharacterBase* ZodiacPawn = Cast<ADBAZodiacCharacterBase>(GetPawn()))
+	{
+		ZodiacPawn->CastLobbyFireball();
+		UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] Skill01 pressed, casting lobby fireball from pawn: %s"),
+			*ZodiacPawn->GetName());
+	}
 }
 
 void ADBALobbyPlayerController::LookUpAxis(float Value)

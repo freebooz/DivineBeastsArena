@@ -76,10 +76,13 @@ public:
 	static void ReleaseSharedPresentationStage(ADBACharacterPresentationActor*& InOutActor);
 	static FString GetPreviewMeshPathForZodiac(EDBAZodiac Zodiac);
 	static FString GetPreviewLegacyMeshPathForZodiac(EDBAZodiac Zodiac);
+	static TArray<FString> GetLobbyDisplayMeshCandidatePathsForZodiac(EDBAZodiac Zodiac);
+	static FString GetLobbyDisplayAnimBlueprintPathForMeshPath(const FString& MeshPath, EDBAZodiac Zodiac);
 	static FString GetPreviewIdleAnimationPathForZodiac(EDBAZodiac Zodiac);
 	static FString GetPreviewMaterialPathForZodiac(EDBAZodiac Zodiac);
 	static FLinearColor GetPreviewTintForZodiac(EDBAZodiac Zodiac);
 	static FRotator GetPreviewMeshPlayerFacingRotation();
+	static bool ApplyLobbyDisplayAnimationToMesh(USkeletalMeshComponent* MeshComponent, const FString& MeshPath, EDBAZodiac Zodiac);
 	static bool ApplyZodiacMaterialToMesh(USkeletalMeshComponent* MeshComponent, EDBAZodiac Zodiac, UObject* Outer);
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterPresentation")

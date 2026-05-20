@@ -13,6 +13,21 @@
 #include "Misc/Guid.h"
 #include "Containers/Set.h"
 
+namespace
+{
+	bool IsReliableTintMaterialParent(const UMaterialInstanceDynamic* Material)
+	{
+		if (!Material || !Material->Parent)
+		{
+			return false;
+		}
+
+		const FString ParentPath = Material->Parent->GetPathName();
+		return ParentPath.Contains(TEXT("/Engine/BasicShapes/BasicShapeMaterial"))
+			|| ParentPath.Contains(TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_"));
+	}
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FDBACharacterPresentationStageSpecTest,
 	"DivineBeastsArena.UI.CharacterPresentation.StageSpec",
@@ -195,8 +210,8 @@ bool FDBACharacterPresentationMaterialApplicationTest::RunTest(const FString& Pa
 			TestNotNull(TEXT("Presentation zodiac material should be dynamic so color is applied even on slot 0"), AppliedMaterial);
 			if (AppliedMaterial)
 			{
-				TestTrue(TEXT("Presentation zodiac material should use the reliable colored engine parent"),
-					AppliedMaterial->Parent && AppliedMaterial->Parent->GetPathName().Contains(TEXT("/Engine/BasicShapes/BasicShapeMaterial")));
+				TestTrue(TEXT("Presentation zodiac material should use a reliable colored parent"),
+					IsReliableTintMaterialParent(AppliedMaterial));
 
 				const FLinearColor ExpectedTint = ADBACharacterPresentationActor::GetPreviewTintForZodiac(EDBAZodiac::Ox);
 				TestEqual(TEXT("Presentation zodiac material Color should match the zodiac tint"), AppliedMaterial->K2_GetVectorParameterValue(TEXT("Color")), ExpectedTint);
@@ -221,8 +236,8 @@ bool FDBACharacterPresentationMaterialApplicationTest::RunTest(const FString& Pa
 			TestNotNull(TEXT("Standalone preview zodiac material should be dynamic so color is applied even on slot 0"), AppliedMaterial);
 			if (AppliedMaterial)
 			{
-				TestTrue(TEXT("Standalone preview zodiac material should use the reliable colored engine parent"),
-					AppliedMaterial->Parent && AppliedMaterial->Parent->GetPathName().Contains(TEXT("/Engine/BasicShapes/BasicShapeMaterial")));
+				TestTrue(TEXT("Standalone preview zodiac material should use a reliable colored parent"),
+					IsReliableTintMaterialParent(AppliedMaterial));
 
 				const FLinearColor TigerTint = ADBACharacterPresentationActor::GetPreviewTintForZodiac(EDBAZodiac::Tiger);
 				const FLinearColor OxTint = ADBACharacterPresentationActor::GetPreviewTintForZodiac(EDBAZodiac::Ox);
@@ -231,6 +246,75 @@ bool FDBACharacterPresentationMaterialApplicationTest::RunTest(const FString& Pa
 			}
 		}
 		TestEqual(TEXT("Standalone preview mesh floor offset should not move the actor root"), PreviewActor->GetActorLocation(), ExpectedActorLocation);
+	}
+
+	World->DestroyWorld(false);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FDBACharacterPresentationUsesLobbyModelTest,
+	"DivineBeastsArena.UI.CharacterPresentation.UsesLobbyModel",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FDBACharacterPresentationUsesLobbyModelTest::RunTest(const FString& Parameters)
+{
+	const TArray<FString> RatCandidates = ADBACharacterPresentationActor::GetLobbyDisplayMeshCandidatePathsForZodiac(EDBAZodiac::Rat);
+	TestTrue(TEXT("Lobby display mesh candidates should prefer the Rosales lobby model"), RatCandidates.Num() > 0 && RatCandidates[0].Contains(TEXT("/Game/DBA/Characters/Rosales/Meshes/SK_Rosales")));
+
+	const FString UniqueWorldName = FString::Printf(
+		TEXT("DBACharacterPresentationUsesLobbyModelTest_%s"),
+		*FGuid::NewGuid().ToString(EGuidFormats::Digits));
+	UPackage* WorldPackage = CreatePackage(*FString::Printf(TEXT("/Temp/%s"), *UniqueWorldName));
+	UWorld* World = UWorld::CreateWorld(EWorldType::Game, false, FName(*UniqueWorldName), WorldPackage, false);
+	TestNotNull(TEXT("Test world should be created"), World);
+	if (!World)
+	{
+		return false;
+	}
+
+	ADBACharacterPresentationActor* PresentationActor = World->SpawnActor<ADBACharacterPresentationActor>();
+	TestNotNull(TEXT("Presentation actor should spawn"), PresentationActor);
+	if (PresentationActor)
+	{
+		PresentationActor->SetPreviewZodiac(EDBAZodiac::Rat);
+		USkeletalMeshComponent* PresentationMesh = PresentationActor->FindComponentByClass<USkeletalMeshComponent>();
+		TestNotNull(TEXT("Presentation actor should expose a preview mesh component"), PresentationMesh);
+		if (PresentationMesh && PresentationMesh->GetSkeletalMeshAsset())
+		{
+			TestTrue(
+				TEXT("Character select/create presentation should use the same Rosales model preferred by the lobby"),
+				PresentationMesh->GetSkeletalMeshAsset()->GetPathName().Contains(TEXT("/Game/DBA/Characters/Rosales/Meshes/SK_Rosales")));
+			TestEqual(
+				TEXT("Character select/create presentation should use animation blueprint mode"),
+				PresentationMesh->GetAnimationMode(),
+				EAnimationMode::AnimationBlueprint);
+			TestTrue(
+				TEXT("Character select/create presentation should use the Rosales animation blueprint"),
+				PresentationMesh->GetAnimClass() && PresentationMesh->GetAnimClass()->GetPathName().Contains(TEXT("/Game/DBA/Characters/Rosales/AnimationBP/ABP_Rosales")));
+		}
+	}
+
+	ADBACharacterPreviewActor* PreviewActor = World->SpawnActor<ADBACharacterPreviewActor>();
+	TestNotNull(TEXT("Standalone preview actor should spawn"), PreviewActor);
+	if (PreviewActor)
+	{
+		PreviewActor->SetPreviewZodiac(EDBAZodiac::Ox);
+		USkeletalMeshComponent* PreviewMesh = PreviewActor->FindComponentByClass<USkeletalMeshComponent>();
+		TestNotNull(TEXT("Standalone preview actor should expose a preview mesh component"), PreviewMesh);
+		if (PreviewMesh && PreviewMesh->GetSkeletalMeshAsset())
+		{
+			TestTrue(
+				TEXT("Standalone preview should use the same Rosales model preferred by the lobby"),
+				PreviewMesh->GetSkeletalMeshAsset()->GetPathName().Contains(TEXT("/Game/DBA/Characters/Rosales/Meshes/SK_Rosales")));
+			TestEqual(
+				TEXT("Standalone preview should use animation blueprint mode"),
+				PreviewMesh->GetAnimationMode(),
+				EAnimationMode::AnimationBlueprint);
+			TestTrue(
+				TEXT("Standalone preview should use the Rosales animation blueprint"),
+				PreviewMesh->GetAnimClass() && PreviewMesh->GetAnimClass()->GetPathName().Contains(TEXT("/Game/DBA/Characters/Rosales/AnimationBP/ABP_Rosales")));
+		}
 	}
 
 	World->DestroyWorld(false);

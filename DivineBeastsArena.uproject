@@ -58,6 +58,10 @@
 		{
 			"Name": "OnlineSubsystemUtils",
 			"Enabled": true
+		},
+		{
+			"Name": "Niagara",
+			"Enabled": true
 		}
 	],
 	"TargetPlatforms": [

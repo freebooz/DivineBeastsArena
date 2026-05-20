@@ -30,6 +30,7 @@ public class DivineBeastsArena : ModuleRules
             "AssetRegistry",
             "AIModule",
             "NavigationSystem",
+            "Niagara",
             "GameBackendClient",
             "GameMoba",
         });
@@ -40,7 +41,6 @@ public class DivineBeastsArena : ModuleRules
             {
                 "RenderCore",
                 "RHI",
-                "Niagara",
                 "AudioMixer",
             });
         }

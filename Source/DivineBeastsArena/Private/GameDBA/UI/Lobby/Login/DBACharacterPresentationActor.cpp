@@ -19,6 +19,8 @@
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameFramework/PlayerController.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Animation/AnimInstance.h"
+#include "Materials/Material.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 
@@ -56,6 +58,34 @@ namespace
 		TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_Dog.MI_DBA_Zodiac_Dog"),
 		TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_Pig.MI_DBA_Zodiac_Pig")
 	};
+
+	UMaterialInterface* LoadReliableFallbackMaterial()
+	{
+		return LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+	}
+
+	bool IsDefaultErrorMaterial(const UMaterialInterface* Material)
+	{
+		if (!Material)
+		{
+			return true;
+		}
+
+		const UMaterial* ResolvedMaterial = Material->GetMaterial();
+		if (!ResolvedMaterial)
+		{
+			return true;
+		}
+
+		const FString MaterialPath = ResolvedMaterial->GetPathName();
+		return MaterialPath.Contains(TEXT("/Engine/EngineMaterials/DefaultMaterial"))
+			|| MaterialPath.Contains(TEXT("/Engine/EngineMaterials/WorldGridMaterial"));
+	}
+
+	bool IsRosalesMeshPath(const FString& MeshPath)
+	{
+		return MeshPath.Contains(TEXT("/Game/DBA/Characters/Rosales/"));
+	}
 }
 
 ADBACharacterPresentationActor::ADBACharacterPresentationActor()
@@ -254,6 +284,47 @@ FString ADBACharacterPresentationActor::GetPreviewLegacyMeshPathForZodiac(EDBAZo
 	}
 }
 
+TArray<FString> ADBACharacterPresentationActor::GetLobbyDisplayMeshCandidatePathsForZodiac(EDBAZodiac Zodiac)
+{
+	return {
+		TEXT("/Game/DBA/Characters/Rosales/Meshes/SK_Rosales.SK_Rosales"),
+		TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP.TutorialTPP"),
+		GetPreviewMeshPathForZodiac(Zodiac),
+		GetPreviewLegacyMeshPathForZodiac(Zodiac),
+		TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat")
+	};
+}
+
+FString ADBACharacterPresentationActor::GetLobbyDisplayAnimBlueprintPathForMeshPath(const FString& MeshPath, EDBAZodiac Zodiac)
+{
+	if (MeshPath.Contains(TEXT("/Game/DBA/Characters/Rosales/")))
+	{
+		return TEXT("/Game/DBA/Characters/Rosales/AnimationBP/ABP_Rosales.ABP_Rosales_C");
+	}
+
+	if (MeshPath.Contains(TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP")))
+	{
+		return TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP_AnimBlueprint.TutorialTPP_AnimBlueprint_C");
+	}
+
+	switch (Zodiac)
+	{
+	case EDBAZodiac::Rat: return TEXT("/Game/Animation/Zodiac/Rat/ABP_Rat.ABP_Rat_C");
+	case EDBAZodiac::Ox: return TEXT("/Game/Animation/Zodiac/Ox/ABP_Ox.ABP_Ox_C");
+	case EDBAZodiac::Tiger: return TEXT("/Game/Animation/Zodiac/Tiger/ABP_Tiger.ABP_Tiger_C");
+	case EDBAZodiac::Rabbit: return TEXT("/Game/Animation/Zodiac/Rabbit/ABP_Rabbit.ABP_Rabbit_C");
+	case EDBAZodiac::Dragon: return TEXT("/Game/Animation/Zodiac/Dragon/ABP_Dragon.ABP_Dragon_C");
+	case EDBAZodiac::Snake: return TEXT("/Game/Animation/Zodiac/Snake/ABP_Snake.ABP_Snake_C");
+	case EDBAZodiac::Horse: return TEXT("/Game/Animation/Zodiac/Horse/ABP_Horse.ABP_Horse_C");
+	case EDBAZodiac::Goat: return TEXT("/Game/Animation/Zodiac/Goat/ABP_Goat.ABP_Goat_C");
+	case EDBAZodiac::Monkey: return TEXT("/Game/Animation/Zodiac/Monkey/ABP_Monkey.ABP_Monkey_C");
+	case EDBAZodiac::Rooster: return TEXT("/Game/Animation/Zodiac/Rooster/ABP_Rooster.ABP_Rooster_C");
+	case EDBAZodiac::Dog: return TEXT("/Game/Animation/Zodiac/Dog/ABP_Dog.ABP_Dog_C");
+	case EDBAZodiac::Pig: return TEXT("/Game/Animation/Zodiac/Pig/ABP_Pig.ABP_Pig_C");
+	default: return TEXT("/Game/Animation/Zodiac/Rat/ABP_Rat.ABP_Rat_C");
+	}
+}
+
 FString ADBACharacterPresentationActor::GetPreviewIdleAnimationPathForZodiac(EDBAZodiac Zodiac)
 {
 	return TEXT("");
@@ -304,6 +375,44 @@ FRotator ADBACharacterPresentationActor::GetPreviewMeshPlayerFacingRotation()
 	return FRotator(0.0f, -90.0f, 0.0f);
 }
 
+bool ADBACharacterPresentationActor::ApplyLobbyDisplayAnimationToMesh(USkeletalMeshComponent* MeshComponent, const FString& MeshPath, EDBAZodiac Zodiac)
+{
+	if (!MeshComponent || !MeshComponent->GetSkeletalMeshAsset() || !MeshComponent->GetSkeletalMeshAsset()->GetSkeleton())
+	{
+		return false;
+	}
+
+	const FString AnimBlueprintPath = GetLobbyDisplayAnimBlueprintPathForMeshPath(MeshPath, Zodiac);
+	if (!AnimBlueprintPath.IsEmpty())
+	{
+		if (UClass* AnimClass = LoadClass<UAnimInstance>(nullptr, *AnimBlueprintPath))
+		{
+			MeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+			MeshComponent->SetAnimInstanceClass(AnimClass);
+			UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] Applied lobby display AnimBP: %s"), *AnimBlueprintPath);
+			return true;
+		}
+	}
+
+	const FString IdleAnimationPath = IsRosalesMeshPath(MeshPath)
+		? FString(TEXT("/Game/DBA/Characters/Rosales/Animations/AN_Standing_Idle.AN_Standing_Idle"))
+		: GetPreviewIdleAnimationPathForZodiac(Zodiac);
+	if (!IdleAnimationPath.IsEmpty())
+	{
+		if (UAnimationAsset* IdleAnimation = LoadObject<UAnimationAsset>(nullptr, *IdleAnimationPath))
+		{
+			MeshComponent->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+			MeshComponent->SetAnimation(IdleAnimation);
+			MeshComponent->Play(true);
+			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPresentationActor] AnimBP missing, using idle animation fallback: %s"), *IdleAnimationPath);
+			return true;
+		}
+	}
+
+	UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPresentationActor] Failed to resolve lobby display animation. Mesh=%s AnimBP=%s"), *MeshPath, *AnimBlueprintPath);
+	return false;
+}
+
 bool ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(USkeletalMeshComponent* MeshComponent, EDBAZodiac Zodiac, UObject* Outer)
 {
 	if (!MeshComponent)
@@ -316,17 +425,19 @@ bool ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(USkeletalMeshComp
 		? nullptr
 		: LoadObject<UMaterialInterface>(nullptr, *MaterialPath);
 	UMaterialInterface* BaseMaterial = LoadedZodiacMaterial;
-	if (!BaseMaterial)
+	bool bUsedFallbackMaterial = false;
+	if (!BaseMaterial || IsDefaultErrorMaterial(BaseMaterial))
 	{
-		// Fallback for imported meshes (e.g. Kachujin): tint the mesh's own material.
+		// First fallback for imported meshes: tint the mesh's own material when it is valid.
 		BaseMaterial = MeshComponent->GetMaterial(0);
-		if (!BaseMaterial)
+		if (!BaseMaterial || IsDefaultErrorMaterial(BaseMaterial))
 		{
-			BaseMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Characters/Kachujin/kachujin_MAT.kachujin_MAT"));
+			BaseMaterial = LoadReliableFallbackMaterial();
+			bUsedFallbackMaterial = BaseMaterial != nullptr;
 		}
 		if (!BaseMaterial)
 		{
-			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPresentationActor] Failed to resolve base material. ZodiacMaterial=%s"), *MaterialPath);
+			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPresentationActor] Failed to resolve base or fallback material. ZodiacMaterial=%s"), *MaterialPath);
 			return false;
 		}
 	}
@@ -349,10 +460,11 @@ bool ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(USkeletalMeshComp
 		MeshComponent->SetMaterial(MaterialIndex, MaterialToApply);
 	}
 
-	UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] Applied zodiac material: %s Tint=%s Slots=%d"),
-		LoadedZodiacMaterial ? *MaterialPath : TEXT("MeshBaseMaterialFallback"),
+	UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] Applied zodiac material: %s Tint=%s Slots=%d Parent=%s"),
+		LoadedZodiacMaterial && !bUsedFallbackMaterial ? *MaterialPath : TEXT("ReliableTintFallback"),
 		*GetPreviewTintForZodiac(Zodiac).ToString(),
-		MaterialSlotCount);
+		MaterialSlotCount,
+		*BaseMaterial->GetPathName());
 	return true;
 }
 
@@ -571,10 +683,7 @@ void ADBACharacterPresentationActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 		return;
 	}
 
-	const TArray<FString> MeshCandidates = {
-		GetPreviewMeshPathForZodiac(Zodiac),
-		TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat")
-	};
+	const TArray<FString> MeshCandidates = GetLobbyDisplayMeshCandidatePathsForZodiac(Zodiac);
 
 	USkeletalMesh* ResolvedMesh = nullptr;
 	FString ResolvedMeshPath;
@@ -643,26 +752,7 @@ void ADBACharacterPresentationActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 		MeshBottomOffsetZ,
 		*PreviewMeshComponent->Bounds.GetBox().ToString());
 
-	if (ResolvedMesh->GetSkeleton())
-	{
-		const FString IdleAnimationPath = GetPreviewIdleAnimationPathForZodiac(Zodiac);
-		if (!IdleAnimationPath.IsEmpty())
-		{
-			if (UAnimationAsset* IdleAnimation = LoadObject<UAnimationAsset>(nullptr, *IdleAnimationPath))
-			{
-				PreviewMeshComponent->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-				PreviewMeshComponent->SetAnimation(IdleAnimation);
-				PreviewMeshComponent->Play(true);
-			}
-		}
-
-		if (PreviewMeshComponent->GetAnimationMode() != EAnimationMode::AnimationSingleNode)
-		{
-			PreviewMeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
-			PreviewMeshComponent->SetAnimInstanceClass(nullptr);
-		}
-	}
-	else
+	if (!ApplyLobbyDisplayAnimationToMesh(PreviewMeshComponent, ResolvedMeshPath, Zodiac))
 	{
 		PreviewMeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 	}

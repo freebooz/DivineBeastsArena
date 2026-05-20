@@ -2,7 +2,6 @@
 
 #include "GameDBA/UI/Lobby/Login/DBACharacterPreviewActor.h"
 
-#include "Animation/AnimationAsset.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -26,6 +25,7 @@ namespace
 		const FString LevelPath = World->PersistentLevel->GetOutermost()->GetName();
 		return LevelPath.Contains(TEXT("LobbyMap")) || LevelPath.Contains(TEXT("MainLobby"));
 	}
+
 }
 
 ADBACharacterPreviewActor::ADBACharacterPreviewActor()
@@ -112,10 +112,7 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 		return;
 	}
 
-	const TArray<FString> MeshCandidates = {
-		ADBACharacterPresentationActor::GetPreviewMeshPathForZodiac(Zodiac),
-		TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat")
-	};
+	const TArray<FString> MeshCandidates = ADBACharacterPresentationActor::GetLobbyDisplayMeshCandidatePathsForZodiac(Zodiac);
 
 	USkeletalMesh* ResolvedMesh = nullptr;
 	FString ResolvedMeshPath;
@@ -159,26 +156,7 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 		ZodiacTintLight->SetHiddenInGame(false);
 	}
 
-	if (ResolvedMesh->GetSkeleton())
-	{
-		const FString IdleAnimationPath = ADBACharacterPresentationActor::GetPreviewIdleAnimationPathForZodiac(Zodiac);
-		if (!IdleAnimationPath.IsEmpty())
-		{
-			if (UAnimationAsset* IdleAnimation = LoadObject<UAnimationAsset>(nullptr, *IdleAnimationPath))
-			{
-				PreviewMeshComponent->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-				PreviewMeshComponent->SetAnimation(IdleAnimation);
-				PreviewMeshComponent->Play(true);
-			}
-		}
-
-		if (PreviewMeshComponent->GetAnimationMode() != EAnimationMode::AnimationSingleNode)
-		{
-			PreviewMeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
-			PreviewMeshComponent->SetAnimInstanceClass(nullptr);
-		}
-	}
-	else
+	if (!ADBACharacterPresentationActor::ApplyLobbyDisplayAnimationToMesh(PreviewMeshComponent, ResolvedMeshPath, Zodiac))
 	{
 		PreviewMeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPreviewActor] Mesh has no skeleton, skip idle animation."));

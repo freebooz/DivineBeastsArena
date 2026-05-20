@@ -2,12 +2,13 @@
 // 鐢熻倴瑙掕壊妯″瀷鍩虹被
 
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
+#include "GameDBA/Combat/DBAFireballProjectile.h"
+#include "GameDBA/Combat/DBASkillProjectileBase.h"
+#include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/GAS/DBAAbilitySystemComponent.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "GameDBA/RPC/DBARpcHandler.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
-#include "Animation/AnimationAsset.h"
-#include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -39,30 +40,6 @@ namespace
 		}
 	}
 
-	FString GetLobbyAnimBlueprintPathForZodiac(EDBAZodiac Zodiac)
-	{
-		switch (Zodiac)
-		{
-		case EDBAZodiac::Rat: return TEXT("/Game/Animation/Zodiac/Rat/ABP_Rat.ABP_Rat_C");
-		case EDBAZodiac::Ox: return TEXT("/Game/Animation/Zodiac/Ox/ABP_Ox.ABP_Ox_C");
-		case EDBAZodiac::Tiger: return TEXT("/Game/Animation/Zodiac/Tiger/ABP_Tiger.ABP_Tiger_C");
-		case EDBAZodiac::Rabbit: return TEXT("/Game/Animation/Zodiac/Rabbit/ABP_Rabbit.ABP_Rabbit_C");
-		case EDBAZodiac::Dragon: return TEXT("/Game/Animation/Zodiac/Dragon/ABP_Dragon.ABP_Dragon_C");
-		case EDBAZodiac::Snake: return TEXT("/Game/Animation/Zodiac/Snake/ABP_Snake.ABP_Snake_C");
-		case EDBAZodiac::Horse: return TEXT("/Game/Animation/Zodiac/Horse/ABP_Horse.ABP_Horse_C");
-		case EDBAZodiac::Goat: return TEXT("/Game/Animation/Zodiac/Goat/ABP_Goat.ABP_Goat_C");
-		case EDBAZodiac::Monkey: return TEXT("/Game/Animation/Zodiac/Monkey/ABP_Monkey.ABP_Monkey_C");
-		case EDBAZodiac::Rooster: return TEXT("/Game/Animation/Zodiac/Rooster/ABP_Rooster.ABP_Rooster_C");
-		case EDBAZodiac::Dog: return TEXT("/Game/Animation/Zodiac/Dog/ABP_Dog.ABP_Dog_C");
-		case EDBAZodiac::Pig: return TEXT("/Game/Animation/Zodiac/Pig/ABP_Pig.ABP_Pig_C");
-		default: return TEXT("/Game/Animation/Zodiac/Rat/ABP_Rat.ABP_Rat_C");
-		}
-	}
-
-	FString GetEngineTutorialAnimBlueprintPath()
-	{
-		return TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP_AnimBlueprint.TutorialTPP_AnimBlueprint_C");
-	}
 }
 
 ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
@@ -105,6 +82,7 @@ ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
+	LobbyFireballProjectileClass = ADBAFireballProjectile::StaticClass();
 }
 
 void ADBAZodiacCharacterBase::BeginPlay()
@@ -135,13 +113,7 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 	}
 
 	const EDBAZodiac CommonZodiac = ToCommonZodiac(ZodiacType);
-	const TArray<FString> MeshCandidates = {
-		TEXT("/Game/DBA/Characters/Rosales/Meshes/SK_Rosales.SK_Rosales"),
-		TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP.TutorialTPP"),
-		ADBACharacterPresentationActor::GetPreviewMeshPathForZodiac(CommonZodiac),
-		ADBACharacterPresentationActor::GetPreviewLegacyMeshPathForZodiac(CommonZodiac),
-		TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat")
-	};
+	const TArray<FString> MeshCandidates = ADBACharacterPresentationActor::GetLobbyDisplayMeshCandidatePathsForZodiac(CommonZodiac);
 
 	USkeletalMesh* ResolvedMesh = nullptr;
 	FString ResolvedMeshPath;
@@ -173,39 +145,10 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 
 		if (ResolvedMesh->GetSkeleton())
 		{
-			const bool bUsingRosalesMesh = ResolvedMeshPath.Contains(TEXT("/Game/DBA/Characters/Rosales/"));
-			const bool bUsingEngineTutorialMesh = ResolvedMeshPath.Contains(TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP"));
-			const FString AnimBlueprintPath = bUsingRosalesMesh
-				? FString(TEXT("/Game/DBA/Characters/Rosales/AnimationBP/ABP_Rosales.ABP_Rosales_C"))
-				: (bUsingEngineTutorialMesh
-				? GetEngineTutorialAnimBlueprintPath()
-				: GetLobbyAnimBlueprintPathForZodiac(CommonZodiac));
-			UClass* AnimClass = AnimBlueprintPath.IsEmpty()
-				? nullptr
-				: LoadClass<UAnimInstance>(nullptr, *AnimBlueprintPath);
-			if (AnimClass)
+			if (!ADBACharacterPresentationActor::ApplyLobbyDisplayAnimationToMesh(MeshComponent, ResolvedMeshPath, CommonZodiac))
 			{
 				MeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
-				MeshComponent->SetAnimInstanceClass(AnimClass);
-			}
-			else
-			{
-				// Fallback for imported meshes without a matching AnimBP.
-				const FString RosalesIdleAnimPath = TEXT("/Game/DBA/Characters/Rosales/Animations/AN_Standing_Idle.AN_Standing_Idle");
-				if (bUsingRosalesMesh)
-				{
-					if (UAnimationAsset* RosalesAnim = LoadObject<UAnimationAsset>(nullptr, *RosalesIdleAnimPath))
-					{
-						MeshComponent->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-						MeshComponent->SetAnimation(RosalesAnim);
-						MeshComponent->Play(true);
-					}
-				}
-				else
-				{
-					MeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
-					MeshComponent->SetAnimInstanceClass(UDBAZodiacAnimInstance::StaticClass());
-				}
+				MeshComponent->SetAnimInstanceClass(UDBAZodiacAnimInstance::StaticClass());
 			}
 		}
 		else
@@ -236,6 +179,86 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 void ADBAZodiacCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+}
+
+void ADBAZodiacCharacterBase::CastLobbyFireball()
+{
+	FVector AimDirection = GetActorForwardVector();
+	if (const AController* OwningController = GetController())
+	{
+		AimDirection = OwningController->GetControlRotation().Vector();
+	}
+
+	AimDirection = AimDirection.GetSafeNormal();
+	if (AimDirection.IsNearlyZero())
+	{
+		AimDirection = GetActorForwardVector();
+	}
+
+	if (!HasAuthority())
+	{
+		ServerCastLobbyFireball(AimDirection);
+		return;
+	}
+
+	CastLobbyFireballInternal(AimDirection);
+}
+
+void ADBAZodiacCharacterBase::ServerCastLobbyFireball_Implementation(FVector_NetQuantizeNormal AimDirection)
+{
+	CastLobbyFireballInternal(FVector(AimDirection));
+}
+
+void ADBAZodiacCharacterBase::CastLobbyFireballInternal(const FVector& AimDirection)
+{
+	if (!GetWorld())
+	{
+		return;
+	}
+
+	const FVector SafeAimDirection = AimDirection.GetSafeNormal().IsNearlyZero()
+		? GetActorForwardVector()
+		: AimDirection.GetSafeNormal();
+
+	TSubclassOf<ADBASkillProjectileBase> ProjectileClass = LoadClass<ADBASkillProjectileBase>(
+		nullptr,
+		TEXT("/Game/DBA/Blueprints/Projectiles/BP_DBA_FireballProjectile.BP_DBA_FireballProjectile_C"));
+	if (!ProjectileClass)
+	{
+		ProjectileClass = LobbyFireballProjectileClass;
+		if (!ProjectileClass)
+		{
+			ProjectileClass = ADBAFireballProjectile::StaticClass();
+		}
+	}
+
+	const FVector SpawnLocation = GetActorLocation() + SafeAimDirection * 110.0f + FVector(0.0f, 0.0f, 74.0f);
+	const FRotator SpawnRotation = SafeAimDirection.Rotation();
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	ADBASkillProjectileBase* Fireball = GetWorld()->SpawnActor<ADBASkillProjectileBase>(
+		ProjectileClass,
+		SpawnLocation,
+		SpawnRotation,
+		SpawnParams);
+	if (!Fireball)
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] Failed to spawn lobby fireball. Class=%s"), *GetNameSafe(ProjectileClass));
+		return;
+	}
+
+	Fireball->InitializeProjectile(TEXT("Lobby.Fireball"), this, nullptr, LobbyFireballDamage, LobbyFireballSpeed, LobbyFireballRadius);
+	Fireball->LaunchProjectile(SafeAimDirection);
+	PlayAttackAnimation();
+
+	UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] Cast lobby fireball: caster=%s projectile=%s class=%s direction=%s"),
+		*GetName(),
+		*Fireball->GetName(),
+		*GetNameSafe(ProjectileClass),
+		*SafeAimDirection.ToString());
 }
 
 UDBAZodiacAnimInstance* ADBAZodiacCharacterBase::GetZodiacAnimInstance() const

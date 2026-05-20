@@ -16,6 +16,7 @@ class UDBAAbilitySystemComponent;
 class UCameraComponent;
 class USpringArmComponent;
 class ADBARpcHandler;
+class ADBASkillProjectileBase;
 
 /**
  * DBAZodiacCharacterBase
@@ -60,6 +61,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character")
 	ADBARpcHandler* GetRpcHandler() const { return RpcHandler; }
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Lobby|Spell")
+	void CastLobbyFireball();
 
 public:
 	// ==================== 属性访问 ====================
@@ -162,6 +166,23 @@ protected:
 	/** 角色元素类型 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Config")
 	EDBAElementType ElementType = EDBAElementType::None;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell")
+	TSubclassOf<ADBASkillProjectileBase> LobbyFireballProjectileClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell", meta = (ClampMin = "100.0"))
+	float LobbyFireballSpeed = 1450.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell", meta = (ClampMin = "1.0"))
+	float LobbyFireballRadius = 42.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell", meta = (ClampMin = "0.0"))
+	float LobbyFireballDamage = 35.0f;
+
+	UFUNCTION(Server, Reliable)
+	void ServerCastLobbyFireball(FVector_NetQuantizeNormal AimDirection);
+
+	void CastLobbyFireballInternal(const FVector& AimDirection);
 
 public:
 	// ==================== 移动配置 ====================

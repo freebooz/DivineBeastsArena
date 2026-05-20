@@ -40,6 +40,7 @@ protected:
 	void HandleMoveLeftReleased();
 	void HandleMoveRightPressed();
 	void HandleMoveRightReleased();
+	void HandleSkill01Pressed();
 
 	void ApplyMovementInput(float ForwardValue, float RightValue);
 	void EnsureMovementInputTags();

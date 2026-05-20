@@ -1,46 +1,51 @@
 // Copyright Freebooz Games, Inc. All Rights Reserved.
-// 技能投射物基类
 
 #include "GameDBA/Combat/DBASkillProjectileBase.h"
+
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Particles/ParticleSystemComponent.h"
-#include "GameFramework/ProjectileMovementComponent.h"
 #include "Engine/DamageEvents.h"
-#include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 
 ADBASkillProjectileBase::ADBASkillProjectileBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
+	SetReplicateMovement(true);
+	InitialLifeSpan = 5.0f;
 
-	// 创建根组件
-	USphereComponent* SphereComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
-	SphereComp->InitSphereRadius(Radius);
-	SphereComp->SetCollisionProfileName(TEXT("Projectile"));
-	RootComponent = SphereComp;
+	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
+	CollisionSphere->InitSphereRadius(Radius);
+	CollisionSphere->SetCollisionProfileName(TEXT("Projectile"));
+	CollisionSphere->SetGenerateOverlapEvents(true);
+	CollisionSphere->OnComponentHit.AddDynamic(this, &ADBASkillProjectileBase::HandleProjectileHit);
+	CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &ADBASkillProjectileBase::HandleProjectileOverlap);
+	RootComponent = CollisionSphere;
 
-	// 创建静态网格组件 (可见性)
 	UStaticMeshComponent* MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	MeshComp->SetupAttachment(RootComponent);
 	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	MeshComp->SetHiddenInGame(true);
 
-	// 创建投射物移动组件
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovement->UpdatedComponent = RootComponent;
 	ProjectileMovement->InitialSpeed = Speed;
 	ProjectileMovement->MaxSpeed = Speed * 1.5f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bInitialVelocityInLocalSpace = false;
+	ProjectileMovement->ProjectileGravityScale = 0.0f;
 
-	// 创建VFX组件
 	ProjectileVFX = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ProjectileVFX"));
 	ProjectileVFX->SetupAttachment(RootComponent);
 	ProjectileVFX->bAutoActivate = true;
 
-	// 初始参数
-	bReplicates = true;
-	SetReplicateMovement(true);
+	ProjectileNiagaraVFX = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ProjectileNiagaraVFX"));
+	ProjectileNiagaraVFX->SetupAttachment(RootComponent);
+	ProjectileNiagaraVFX->bAutoActivate = true;
 }
 
 void ADBASkillProjectileBase::InitializeProjectile(
@@ -54,37 +59,34 @@ void ADBASkillProjectileBase::InitializeProjectile(
 	SkillId = InSkillId;
 	ProjectileOwner = InOwner;
 	TargetActor = InTarget;
-	Damage = InDamage;
-	Speed = InSpeed;
-	Radius = InRadius;
+	SetProjectileProperties(InSpeed, InRadius, InDamage);
 
-	// 更新移动组件速度
-	if (ProjectileMovement)
+	if (CollisionSphere && InOwner)
 	{
-		ProjectileMovement->InitialSpeed = Speed;
-		ProjectileMovement->MaxSpeed = Speed * 1.5f;
+		CollisionSphere->IgnoreActorWhenMoving(InOwner, true);
 	}
 
-	// 更新碰撞半径
-	if (USphereComponent* Sphere = Cast<USphereComponent>(RootComponent))
-	{
-		Sphere->SetSphereRadius(Radius);
-	}
-
-	// 加载飞行特效
 	if (ProjectileVFXAsset.IsValid())
 	{
 		if (UParticleSystem* VFX = ProjectileVFXAsset.LoadSynchronous())
 		{
 			ProjectileVFX->SetTemplate(VFX);
+			ProjectileVFX->Activate(true);
 		}
 	}
 
-	// 设置初始速度方向朝向目标
+	if (!ProjectileNiagaraVFXAsset.IsNull())
+	{
+		if (UNiagaraSystem* VFX = ProjectileNiagaraVFXAsset.LoadSynchronous())
+		{
+			ProjectileNiagaraVFX->SetAsset(VFX);
+			ProjectileNiagaraVFX->Activate(true);
+		}
+	}
+
 	if (InTarget)
 	{
-		FVector Direction = (InTarget->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-		ProjectileMovement->Velocity = Direction * Speed;
+		LaunchProjectile(InTarget->GetActorLocation() - GetActorLocation());
 	}
 }
 
@@ -100,15 +102,48 @@ void ADBASkillProjectileBase::SetProjectileProperties(float InSpeed, float InRad
 		ProjectileMovement->MaxSpeed = Speed * 1.5f;
 	}
 
-	if (USphereComponent* Sphere = Cast<USphereComponent>(RootComponent))
+	if (CollisionSphere)
 	{
-		Sphere->SetSphereRadius(Radius);
+		CollisionSphere->SetSphereRadius(Radius);
 	}
+}
+
+void ADBASkillProjectileBase::LaunchProjectile(const FVector& Direction)
+{
+	if (!ProjectileMovement)
+	{
+		return;
+	}
+
+	const FVector SafeDirection = Direction.GetSafeNormal();
+	if (SafeDirection.IsNearlyZero())
+	{
+		return;
+	}
+
+	ProjectileMovement->Velocity = SafeDirection * Speed;
+	SetActorRotation(SafeDirection.Rotation());
 }
 
 void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocation)
 {
-	// 播放命中特效
+	if (!ImpactNiagaraVFXAsset.IsNull())
+	{
+		if (UNiagaraSystem* VFX = ImpactNiagaraVFXAsset.LoadSynchronous())
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(),
+				VFX,
+				HitLocation,
+				GetActorRotation(),
+				FVector(1.0f),
+				true,
+				true,
+				ENCPoolMethod::AutoRelease,
+				true);
+		}
+	}
+
 	if (ImpactVFXAsset.IsValid())
 	{
 		if (UParticleSystem* VFX = ImpactVFXAsset.LoadSynchronous())
@@ -117,7 +152,6 @@ void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocat
 		}
 	}
 
-	// 播放命中音效
 	if (ImpactSFXAsset.IsValid())
 	{
 		if (USoundBase* SFX = ImpactSFXAsset.LoadSynchronous())
@@ -126,8 +160,7 @@ void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocat
 		}
 	}
 
-	// 应用伤害
-	if (HitActor && Damage > 0)
+	if (HitActor && HitActor != ProjectileOwner && Damage > 0.0f)
 	{
 		FPointDamageEvent DamageEvent;
 		DamageEvent.Damage = Damage;
@@ -135,17 +168,43 @@ void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocat
 		HitActor->TakeDamage(Damage, DamageEvent, ProjectileOwner ? ProjectileOwner->GetInstigatorController() : nullptr, ProjectileOwner);
 	}
 
-	// 调用蓝图事件
 	BP_OnProjectileHit(HitActor, HitLocation);
-
-	// 销毁投射物
 	Destroy();
 }
 
 void ADBASkillProjectileBase::SetCollisionChannel(ECollisionChannel Channel)
 {
-	if (USphereComponent* Sphere = Cast<USphereComponent>(RootComponent))
+	if (CollisionSphere)
 	{
-		Sphere->SetCollisionObjectType(Channel);
+		CollisionSphere->SetCollisionObjectType(Channel);
+	}
+}
+
+void ADBASkillProjectileBase::HandleProjectileHit(
+	UPrimitiveComponent* HitComponent,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComponent,
+	FVector NormalImpulse,
+	const FHitResult& Hit)
+{
+	if (OtherActor && OtherActor != this && OtherActor != ProjectileOwner)
+	{
+		const FVector ImpactPoint = Hit.ImpactPoint.IsNearlyZero() ? GetActorLocation() : FVector(Hit.ImpactPoint);
+		OnProjectileHit(OtherActor, ImpactPoint);
+	}
+}
+
+void ADBASkillProjectileBase::HandleProjectileOverlap(
+	UPrimitiveComponent* OverlappedComponent,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComponent,
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult)
+{
+	if (OtherActor && OtherActor != this && OtherActor != ProjectileOwner)
+	{
+		const FVector ImpactPoint = SweepResult.ImpactPoint.IsNearlyZero() ? GetActorLocation() : FVector(SweepResult.ImpactPoint);
+		OnProjectileHit(OtherActor, ImpactPoint);
 	}
 }

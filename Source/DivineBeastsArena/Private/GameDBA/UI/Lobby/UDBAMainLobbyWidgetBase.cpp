@@ -13,7 +13,7 @@
 
 namespace
 {
-	UWidget* FindWidgetByNames(UWidgetTree* WidgetTree, const TArray<FName>& Names)
+	UWidget* FindLobbyWidgetByNames(UWidgetTree* WidgetTree, const TArray<FName>& Names)
 	{
 		if (!WidgetTree)
 		{
@@ -327,73 +327,73 @@ void UDBAMainLobbyWidgetBase::BindBackendUiControls()
 
 	if (!CreateRoomButton)
 	{
-		CreateRoomButton = Cast<UButton>(FindWidgetByNames(WidgetTree, { TEXT("CreateRoomButton"), TEXT("BtnCreateRoom"), TEXT("ButtonCreateRoom") }));
+		CreateRoomButton = Cast<UButton>(FindLobbyWidgetByNames(WidgetTree, { TEXT("CreateRoomButton"), TEXT("BtnCreateRoom"), TEXT("ButtonCreateRoom") }));
 	}
 	if (!RefreshRoomsButton)
 	{
-		RefreshRoomsButton = Cast<UButton>(FindWidgetByNames(WidgetTree, { TEXT("RefreshRoomsButton"), TEXT("BtnRefreshRooms"), TEXT("ButtonRefreshRooms") }));
+		RefreshRoomsButton = Cast<UButton>(FindLobbyWidgetByNames(WidgetTree, { TEXT("RefreshRoomsButton"), TEXT("BtnRefreshRooms"), TEXT("ButtonRefreshRooms") }));
 	}
 	if (!JoinRoomButton)
 	{
-		JoinRoomButton = Cast<UButton>(FindWidgetByNames(WidgetTree, { TEXT("JoinRoomButton"), TEXT("BtnJoinRoom"), TEXT("ButtonJoinRoom") }));
+		JoinRoomButton = Cast<UButton>(FindLobbyWidgetByNames(WidgetTree, { TEXT("JoinRoomButton"), TEXT("BtnJoinRoom"), TEXT("ButtonJoinRoom") }));
 	}
 	if (!ReadyButton)
 	{
-		ReadyButton = Cast<UButton>(FindWidgetByNames(WidgetTree, { TEXT("ReadyButton"), TEXT("BtnReady"), TEXT("ButtonReady") }));
+		ReadyButton = Cast<UButton>(FindLobbyWidgetByNames(WidgetTree, { TEXT("ReadyButton"), TEXT("BtnReady"), TEXT("ButtonReady") }));
 	}
 	if (!StartGameButton)
 	{
-		StartGameButton = Cast<UButton>(FindWidgetByNames(WidgetTree, { TEXT("StartGameButton"), TEXT("BtnStartGame"), TEXT("ButtonStartGame"), TEXT("StartRoomButton") }));
+		StartGameButton = Cast<UButton>(FindLobbyWidgetByNames(WidgetTree, { TEXT("StartGameButton"), TEXT("BtnStartGame"), TEXT("ButtonStartGame"), TEXT("StartRoomButton") }));
 	}
 	if (!StartMatchButton)
 	{
-		StartMatchButton = Cast<UButton>(FindWidgetByNames(WidgetTree, { TEXT("StartMatchButton"), TEXT("BtnStartMatch"), TEXT("ButtonStartMatch"), TEXT("StartMatchmakingButton") }));
+		StartMatchButton = Cast<UButton>(FindLobbyWidgetByNames(WidgetTree, { TEXT("StartMatchButton"), TEXT("BtnStartMatch"), TEXT("ButtonStartMatch"), TEXT("StartMatchmakingButton") }));
 	}
 	if (!CancelMatchButton)
 	{
-		CancelMatchButton = Cast<UButton>(FindWidgetByNames(WidgetTree, { TEXT("CancelMatchButton"), TEXT("BtnCancelMatch"), TEXT("ButtonCancelMatch"), TEXT("CancelMatchmakingButton") }));
+		CancelMatchButton = Cast<UButton>(FindLobbyWidgetByNames(WidgetTree, { TEXT("CancelMatchButton"), TEXT("BtnCancelMatch"), TEXT("ButtonCancelMatch"), TEXT("CancelMatchmakingButton") }));
 	}
 
 	if (!JoinRoomIdInput)
 	{
-		JoinRoomIdInput = Cast<UEditableTextBox>(FindWidgetByNames(WidgetTree, { TEXT("JoinRoomIdInput"), TEXT("InputJoinRoomId"), TEXT("RoomIdInput") }));
+		JoinRoomIdInput = Cast<UEditableTextBox>(FindLobbyWidgetByNames(WidgetTree, { TEXT("JoinRoomIdInput"), TEXT("InputJoinRoomId"), TEXT("RoomIdInput") }));
 	}
 	if (!MatchModeInput)
 	{
-		MatchModeInput = Cast<UEditableTextBox>(FindWidgetByNames(WidgetTree, { TEXT("MatchModeInput"), TEXT("InputMatchMode") }));
+		MatchModeInput = Cast<UEditableTextBox>(FindLobbyWidgetByNames(WidgetTree, { TEXT("MatchModeInput"), TEXT("InputMatchMode") }));
 	}
 	if (!MatchRegionInput)
 	{
-		MatchRegionInput = Cast<UEditableTextBox>(FindWidgetByNames(WidgetTree, { TEXT("MatchRegionInput"), TEXT("InputMatchRegion") }));
+		MatchRegionInput = Cast<UEditableTextBox>(FindLobbyWidgetByNames(WidgetTree, { TEXT("MatchRegionInput"), TEXT("InputMatchRegion") }));
 	}
 
 	if (!PlayerNameText)
 	{
-		PlayerNameText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("PlayerNameText"), TEXT("TxtPlayerName"), TEXT("TextPlayerName") }));
+		PlayerNameText = Cast<UTextBlock>(FindLobbyWidgetByNames(WidgetTree, { TEXT("PlayerNameText"), TEXT("TxtPlayerName"), TEXT("TextPlayerName") }));
 	}
 	if (!PlayerLevelText)
 	{
-		PlayerLevelText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("PlayerLevelText"), TEXT("TxtPlayerLevel"), TEXT("TextPlayerLevel") }));
+		PlayerLevelText = Cast<UTextBlock>(FindLobbyWidgetByNames(WidgetTree, { TEXT("PlayerLevelText"), TEXT("TxtPlayerLevel"), TEXT("TextPlayerLevel") }));
 	}
 	if (!PlayerExperienceText)
 	{
-		PlayerExperienceText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("PlayerExperienceText"), TEXT("TxtPlayerExp"), TEXT("TextPlayerExp") }));
+		PlayerExperienceText = Cast<UTextBlock>(FindLobbyWidgetByNames(WidgetTree, { TEXT("PlayerExperienceText"), TEXT("TxtPlayerExp"), TEXT("TextPlayerExp") }));
 	}
 	if (!PlayerGoldText)
 	{
-		PlayerGoldText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("PlayerGoldText"), TEXT("TxtPlayerGold"), TEXT("TextPlayerGold") }));
+		PlayerGoldText = Cast<UTextBlock>(FindLobbyWidgetByNames(WidgetTree, { TEXT("PlayerGoldText"), TEXT("TxtPlayerGold"), TEXT("TextPlayerGold") }));
 	}
 	if (!PlayerTicketsText)
 	{
-		PlayerTicketsText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("PlayerTicketsText"), TEXT("TxtPlayerTickets"), TEXT("TextPlayerTickets") }));
+		PlayerTicketsText = Cast<UTextBlock>(FindLobbyWidgetByNames(WidgetTree, { TEXT("PlayerTicketsText"), TEXT("TxtPlayerTickets"), TEXT("TextPlayerTickets") }));
 	}
 	if (!BackendStateText)
 	{
-		BackendStateText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("BackendStateText"), TEXT("TxtBackendState"), TEXT("TextBackendState") }));
+		BackendStateText = Cast<UTextBlock>(FindLobbyWidgetByNames(WidgetTree, { TEXT("BackendStateText"), TEXT("TxtBackendState"), TEXT("TextBackendState") }));
 	}
 	if (!BackendErrorText)
 	{
-		BackendErrorText = Cast<UTextBlock>(FindWidgetByNames(WidgetTree, { TEXT("BackendErrorText"), TEXT("TxtBackendError"), TEXT("TextBackendError"), TEXT("ErrorText") }));
+		BackendErrorText = Cast<UTextBlock>(FindLobbyWidgetByNames(WidgetTree, { TEXT("BackendErrorText"), TEXT("TxtBackendError"), TEXT("TextBackendError"), TEXT("ErrorText") }));
 	}
 
 	if (CreateRoomButton)
