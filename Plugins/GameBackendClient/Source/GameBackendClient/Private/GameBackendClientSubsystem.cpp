@@ -66,7 +66,7 @@ void UGameBackendClientSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 	HttpClient = MakeShared<FGameBackendHttpClient>(this);
 	InitializeServices();
 
-	UE_LOG(LogGameBackendClient, Log, TEXT("后端子系统初始化完成。BaseUrl=%s version=%s channel=%s platform=%s"),
+	UE_LOG(LogGameBackendClient, Log, TEXT("后端子系统初始化完成。基础地址=%s 版本=%s 渠道=%s 平台=%s"),
 		*BackendBaseUrl, *ClientVersion, *Channel, *Platform);
 
 	if (CrashService)
@@ -134,7 +134,7 @@ void UGameBackendClientSubsystem::SetAuthTokens(const FString& InAccessToken, co
 	AccessToken = InAccessToken;
 	RefreshToken = InRefreshToken;
 	PlayerId = InPlayerId;
-	UE_LOG(LogGameBackendClient, Log, TEXT("Auth tokens updated. playerId=%s"), *PlayerId);
+	UE_LOG(LogGameBackendClient, Log, TEXT("鉴权令牌已更新。玩家ID=%s"), *PlayerId);
 }
 
 void UGameBackendClientSubsystem::ClearAuthTokens()
@@ -142,7 +142,7 @@ void UGameBackendClientSubsystem::ClearAuthTokens()
 	AccessToken.Empty();
 	RefreshToken.Empty();
 	PlayerId.Empty();
-	UE_LOG(LogGameBackendClient, Log, TEXT("Auth tokens cleared."));
+	UE_LOG(LogGameBackendClient, Log, TEXT("鉴权令牌已清除。"));
 }
 
 void UGameBackendClientSubsystem::TestVersionCheck(const FGameBackendResponseDelegate& Callback)

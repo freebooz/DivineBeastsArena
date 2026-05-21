@@ -18,6 +18,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "Net/UnrealNetwork.h"
 
 namespace
 {
@@ -100,6 +101,10 @@ void ADBALobbyTrainingMonster::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	UpdateLobbyPatrol(DeltaSeconds);
+	if (!HasAuthority())
+	{
+		RefreshPatrolAnimationFromVelocity();
+	}
 }
 
 void ADBALobbyTrainingMonster::ConfigureLobbyMonster(int32 MonsterIndex)
@@ -145,7 +150,7 @@ void ADBALobbyTrainingMonster::ApplyLobbyMonsterVisuals()
 	}
 	else
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBALobbyTrainingMonster] Failed to load lobby monster mesh: %s"), *MeshPath);
+		UE_LOG(LogDBACore, Warning, TEXT("[DBALobbyTrainingMonster] 加载大厅怪物网格失败：%s"), *MeshPath);
 		return;
 	}
 
@@ -191,15 +196,15 @@ void ADBALobbyTrainingMonster::ApplyLobbyMonsterVisuals()
 	LobbyWalkAnimation = LoadObject<UAnimationAsset>(nullptr, LobbyMonsterWalkAnimationPath);
 	MeshComponent->SetAnimationMode(EAnimationMode::AnimationSingleNode);
 	CurrentLobbyAnimation = nullptr;
-	PlayLobbyMonsterAnimation(LobbyIdleAnimation);
+	SetPatrolMovingAnimation(bReplicatedPatrolMoving || GetVelocity().SizeSquared2D() > FMath::Square(5.0f), false);
 	if (!LobbyIdleAnimation || !LobbyWalkAnimation)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBALobbyTrainingMonster] Failed to load lobby movement animation(s): idle=%s walk=%s"),
+		UE_LOG(LogDBACore, Warning, TEXT("[DBALobbyTrainingMonster] 加载大厅怪物移动动画失败：待机=%s 行走=%s"),
 			LobbyMonsterIdleAnimationPath,
 			LobbyMonsterWalkAnimationPath);
 	}
 
-	UE_LOG(LogDBACore, Log, TEXT("[DBALobbyTrainingMonster] Lobby monster visuals applied: monster=%s mesh=%s material=%s slots=%d tint=%s animMode=single-node idle=%s walk=%s health=%.1f"),
+	UE_LOG(LogDBACore, Log, TEXT("[DBALobbyTrainingMonster] 大厅怪物外观已应用：怪物=%s 网格=%s 材质=%s 材质槽=%d 颜色=%s 动画模式=单节点 待机=%s 行走=%s 生命=%.1f"),
 		*GetName(),
 		*MeshPath,
 		ReliableMaterial ? *ReliableMaterial->GetPathName() : TEXT("<mesh-material>"),
@@ -239,7 +244,7 @@ void ADBALobbyTrainingMonster::ConfigurePatrolRoute()
 		Movement->MaxWalkSpeed = PatrolSpeed;
 	}
 
-	UE_LOG(LogDBACore, Log, TEXT("[DBALobbyTrainingMonster] Patrol route configured: monster=%s points=%d speed=%.1f radius=%.1f"),
+	UE_LOG(LogDBACore, Log, TEXT("[DBALobbyTrainingMonster] 巡逻路线已配置：怪物=%s 点数=%d 速度=%.1f 半径=%.1f"),
 		*GetName(),
 		PatrolPoints.Num(),
 		PatrolSpeed,
@@ -312,9 +317,31 @@ void ADBALobbyTrainingMonster::PlayLobbyMonsterAnimation(UAnimationAsset* Animat
 	CurrentLobbyAnimation = AnimationAsset;
 }
 
-void ADBALobbyTrainingMonster::SetPatrolMovingAnimation(bool bMoving)
+void ADBALobbyTrainingMonster::SetPatrolMovingAnimation(bool bMoving, bool bUpdateReplicatedState)
 {
+	if (bUpdateReplicatedState && HasAuthority())
+	{
+		bReplicatedPatrolMoving = bMoving;
+	}
+
 	PlayLobbyMonsterAnimation(bMoving && LobbyWalkAnimation ? LobbyWalkAnimation : LobbyIdleAnimation);
+}
+
+void ADBALobbyTrainingMonster::RefreshPatrolAnimationFromVelocity()
+{
+	const bool bMoving = bReplicatedPatrolMoving || GetVelocity().SizeSquared2D() > FMath::Square(5.0f);
+	SetPatrolMovingAnimation(bMoving, false);
+}
+
+void ADBALobbyTrainingMonster::OnRep_ReplicatedPatrolMoving()
+{
+	SetPatrolMovingAnimation(bReplicatedPatrolMoving, false);
+}
+
+void ADBALobbyTrainingMonster::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ADBALobbyTrainingMonster, bReplicatedPatrolMoving);
 }
 
 void ADBALobbyTrainingMonster::AdvancePatrolTarget()

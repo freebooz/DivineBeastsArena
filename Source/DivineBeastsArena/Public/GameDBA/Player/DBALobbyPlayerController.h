@@ -20,6 +20,33 @@ class DIVINEBEASTSARENA_API ADBALobbyPlayerController : public APlayerController
 public:
 	ADBALobbyPlayerController();
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|Lobby|Input")
+	void ToggleGameSettingsPanel();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Lobby|Input")
+	void ToggleInventoryPanel();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Lobby|Input")
+	void CancelMouseLookCapture();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Lobby|Camera")
+	void SetMouseLookSensitivityValue(float NewSensitivity);
+
+	UFUNCTION(BlueprintPure, Category = "DBA|Lobby|Camera")
+	float GetMouseLookSensitivityValue() const { return MouseLookSensitivity; }
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Lobby|Camera")
+	void SetCameraDistanceValue(float NewDistance);
+
+	UFUNCTION(BlueprintPure, Category = "DBA|Lobby|Camera")
+	float GetCameraDistanceValue() const;
+
+	UFUNCTION(BlueprintPure, Category = "DBA|Lobby|Camera")
+	float GetMinCameraDistanceValue() const { return MinCameraDistance; }
+
+	UFUNCTION(BlueprintPure, Category = "DBA|Lobby|Camera")
+	float GetMaxCameraDistanceValue() const { return MaxCameraDistance; }
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void OnPossess(APawn* InPawn) override;
@@ -38,6 +65,8 @@ protected:
 	void HandleRightMouseReleased();
 	void HandleMouseScrollUp();
 	void HandleMouseScrollDown();
+	void HandleEscapePressed();
+	void HandleInventoryPressed();
 	void HandleMoveForwardPressed();
 	void HandleMoveForwardReleased();
 	void HandleMoveBackwardPressed();
@@ -47,9 +76,14 @@ protected:
 	void HandleMoveRightPressed();
 	void HandleMoveRightReleased();
 	void HandleSkill01Pressed();
+	void HandleSkill02Pressed();
+	void HandleSkill03Pressed();
+	void HandleSkill04Pressed();
+	void HandleUltimatePressed();
 	void HandleSelectTargetPressed();
 
 	void ApplyMovementInput(float ForwardValue, float RightValue);
+	void CastEquippedSkillSlot(int32 SkillSlot);
 	void EnsureMovementInputTags();
 	void RefreshMovementInputTagsFromKeyboard();
 	void SetMovementTagActive(const FGameplayTag& Tag, bool bActive);
@@ -61,13 +95,22 @@ protected:
 	void SetMouseLookCaptureActive(bool bActive);
 	void ConfigurePawnForRightMouseLook(bool bActive);
 	void FacePawnToControlYaw();
+	void InitializeLobbyCameraForPawn(APawn* ControlledPawn);
+	void SaveMouseLookCursorPosition();
+	void RestoreMouseLookCursorPosition();
 	void ApplyTouchLook();
 	AActor* ResolveClickedAttackTarget() const;
 	void EnsureCustomSoftwareCursor();
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
-	float MouseLookSensitivity = 0.12f;
+	float MouseLookSensitivity = 0.25f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
+	float MouseYawSensitivityScale = 2.1f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
+	float MousePitchSensitivityScale = 1.35f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
 	float CameraZoomStep = 90.0f;
@@ -83,6 +126,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
 	float MaxCameraPitch = 55.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
+	float DefaultCameraPitch = -18.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
+	bool bRestoreCursorAfterMouseLook = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
 	float TouchLookSensitivity = 0.06f;
@@ -105,7 +154,9 @@ private:
 	bool bRightMouseLookHeld = false;
 	bool bMouseLookCaptureActive = false;
 	bool bPawnUsingRightMouseLook = false;
+	bool bHasSavedMouseLookCursorPosition = false;
 	bool bTouchLookWasPressed = false;
+	FVector2D SavedMouseLookCursorPosition = FVector2D::ZeroVector;
 	FVector2D LastTouchLookPos = FVector2D::ZeroVector;
 	UPROPERTY(Transient)
 	TWeakObjectPtr<AActor> SelectedAttackTarget;

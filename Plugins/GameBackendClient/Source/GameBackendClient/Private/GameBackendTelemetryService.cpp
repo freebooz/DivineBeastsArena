@@ -182,7 +182,7 @@ void UGameBackendTelemetryService::FlushInternal(bool bForce)
 
 		if (bForce)
 		{
-			UE_LOG(LogGameBackendClient, Warning, TEXT("埋点强制刷新失败，已保留到队列。message=%s"), *Result.Message);
+			UE_LOG(LogGameBackendClient, Warning, TEXT("埋点强制刷新失败，已保留到队列。消息=%s"), *Result.Message);
 		}
 	});
 }

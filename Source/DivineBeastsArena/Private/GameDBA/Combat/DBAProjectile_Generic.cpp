@@ -60,7 +60,7 @@ void ADBAProjectile_Generic::InitializeProjectile(
 	}
 
 	// 加载飞行特效
-	if (ProjectileVFXAsset.IsValid())
+	if (!ProjectileVFXAsset.IsNull())
 	{
 		if (UParticleSystem* VFX = ProjectileVFXAsset.LoadSynchronous())
 		{
@@ -75,7 +75,7 @@ void ADBAProjectile_Generic::InitializeProjectile(
 		ProjectileMovement->Velocity = Direction * Speed;
 	}
 
-	UE_LOG(LogDBACombat, Log, TEXT("[DBAProjectile_Generic] 初始化投射物: %s, Speed=%.1f, Radius=%.1f, Damage=%.1f"),
+	UE_LOG(LogDBACombat, Log, TEXT("[DBAProjectile_Generic] 初始化投射物：技能=%s 速度=%.1f 半径=%.1f 伤害=%.1f"),
 		*InSkillId.ToString(), Speed, Radius, Damage);
 }
 
@@ -104,5 +104,5 @@ void ADBAProjectile_Generic::LoadFromDataTable(FName InSkillId)
 	FlySFXAsset = Row->FlySFX;
 	ImpactSFXAsset = Row->ImpactSFX;
 
-	UE_LOG(LogDBACombat, Log, TEXT("[DBAProjectile_Generic] 从DataTable加载: %s, Speed=%.1f"), *InSkillId.ToString(), Speed);
+	UE_LOG(LogDBACombat, Log, TEXT("[DBAProjectile_Generic] 已从数据表加载：技能=%s 速度=%.1f"), *InSkillId.ToString(), Speed);
 }

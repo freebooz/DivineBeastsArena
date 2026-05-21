@@ -21,6 +21,8 @@ class DIVINEBEASTSARENA_API ADBALobbyTrainingMonster : public ADBAMonsterBase
 public:
 	ADBALobbyTrainingMonster();
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	UFUNCTION(BlueprintCallable, Category = "DBA|Lobby|Monster")
 	void ConfigureLobbyMonster(int32 MonsterIndex);
 
@@ -39,7 +41,11 @@ private:
 	void UpdateLobbyPatrol(float DeltaSeconds);
 	void AdvancePatrolTarget();
 	void PlayLobbyMonsterAnimation(UAnimationAsset* AnimationAsset);
-	void SetPatrolMovingAnimation(bool bMoving);
+	void SetPatrolMovingAnimation(bool bMoving, bool bUpdateReplicatedState = true);
+	void RefreshPatrolAnimationFromVelocity();
+
+	UFUNCTION()
+	void OnRep_ReplicatedPatrolMoving();
 
 private:
 	UPROPERTY(EditAnywhere, Category = "DBA|Lobby|Monster")
@@ -71,6 +77,9 @@ private:
 
 	UPROPERTY(Transient)
 	bool bPatrolRouteConfigured = false;
+
+	UPROPERTY(ReplicatedUsing = OnRep_ReplicatedPatrolMoving, Transient)
+	bool bReplicatedPatrolMoving = false;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimationAsset> LobbyIdleAnimation;

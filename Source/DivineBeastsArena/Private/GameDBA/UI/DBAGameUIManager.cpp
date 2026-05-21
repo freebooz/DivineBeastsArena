@@ -18,6 +18,8 @@
 #include "GameDBA/UI/Lobby/Login/UDBACharacterSelectFlowWidgetBase.h"
 #include "GameDBA/UI/Lobby/Login/UDBACharacterCreateFlowWidgetBase.h"
 #include "GameDBA/UI/Lobby/Loading/UDBALoadingScreenWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBAGameSettingsWidgetBase.h"
+#include "GameDBA/UI/Lobby/UDBAInventoryWidgetBase.h"
 #include "GameDBA/UI/Common/UDBASoftwareCursorWidget.h"
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -184,12 +186,21 @@ namespace
 			return;
 		}
 
-		FInputModeGameOnly InputMode;
-		InputMode.SetConsumeCaptureMouseDown(false);
+		FInputModeGameAndUI InputMode;
+		InputMode.SetHideCursorDuringCapture(false);
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		PC->SetInputMode(InputMode);
-		PC->SetShowMouseCursor(false);
-		PC->bEnableClickEvents = false;
+		PC->CurrentMouseCursor = EMouseCursor::Default;
+		PC->DefaultMouseCursor = EMouseCursor::Default;
+		PC->SetShowMouseCursor(true);
+		PC->bEnableClickEvents = true;
 		PC->bEnableMouseOverEvents = false;
+		if (UDBASoftwareCursorWidget* CursorWidget = CreateWidget<UDBASoftwareCursorWidget>(PC, UDBASoftwareCursorWidget::StaticClass()))
+		{
+			PC->SetMouseCursorWidget(EMouseCursor::Default, CursorWidget);
+			PC->SetMouseCursorWidget(EMouseCursor::Crosshairs, CursorWidget);
+			PC->SetMouseCursorWidget(EMouseCursor::Hand, CursorWidget);
+		}
 	}
 
 	bool IsServerLikeCommandLine()
@@ -215,6 +226,19 @@ namespace
 		const FString LevelPath = World->PersistentLevel->GetOutermost()->GetName();
 		return LevelPath.Contains(TEXT("LobbyMap")) || LevelPath.Contains(TEXT("MainLobby"));
 	}
+
+	void CenterModalWidgetInViewport(UUserWidget* Widget, const FVector2D& DesiredSize)
+	{
+		if (!Widget)
+		{
+			return;
+		}
+
+		Widget->SetAnchorsInViewport(FAnchors(0.5f, 0.5f));
+		Widget->SetAlignmentInViewport(FVector2D(0.5f, 0.5f));
+		Widget->SetPositionInViewport(FVector2D::ZeroVector, false);
+		Widget->SetDesiredSizeInViewport(DesiredSize);
+	}
 }
 
 UDBAGameUIManager::UDBAGameUIManager()
@@ -222,7 +246,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 {
 	if (IsServerLikeCommandLine())
 	{
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Constructor skips UI class loading for server runtime."));
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 检测到服务器运行环境，构造阶段跳过 UI 类加载。"));
 		return;
 	}
 
@@ -232,7 +256,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	});
 	if (!MainLobbyWidgetClass)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Main lobby widget blueprint unavailable"));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 主大厅控件蓝图不可用。"));
 	}
 
 	ArenaHUDWidgetClass = ResolveWidgetClassPath<UDBAArenaHUDRootWidgetBase>({
@@ -241,7 +265,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	});
 	if (!ArenaHUDWidgetClass)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Arena HUD widget blueprint unavailable"));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 竞技场 HUD 控件蓝图不可用。"));
 	}
 
 	LoginWidgetClass = ResolveWidgetClassPath<UDBALoginFlowWidgetBase>({
@@ -250,7 +274,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	if (!LoginWidgetClass)
 	{
 		LoginWidgetClass = UDBALoginFlowWidgetBase::StaticClass();
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Login widget blueprint unavailable, using native fallback"));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 登录控件蓝图不可用，使用 C++ 原生兜底控件。"));
 	}
 
 	CharacterSelectWidgetClass = ResolveWidgetClassPath<UDBACharacterSelectFlowWidgetBase>({
@@ -261,7 +285,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	if (!CharacterSelectWidgetClass)
 	{
 		CharacterSelectWidgetClass = UDBACharacterSelectFlowWidgetBase::StaticClass();
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Character select widget blueprint unavailable, using native fallback"));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 角色选择控件蓝图不可用，使用 C++ 原生兜底控件。"));
 	}
 
 	CharacterCreateWidgetClass = ResolveWidgetClassPath<UDBACharacterCreateFlowWidgetBase>({
@@ -272,7 +296,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	if (!CharacterCreateWidgetClass)
 	{
 		CharacterCreateWidgetClass = UDBACharacterCreateFlowWidgetBase::StaticClass();
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Character create widget blueprint unavailable, using native fallback"));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 角色创建控件蓝图不可用，使用 C++ 原生兜底控件。"));
 	}
 
 	LobbyLoadingWidgetClass = ResolveWidgetClassPath<UDBALoadingScreenWidgetBase>({
@@ -281,7 +305,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	});
 	if (!LobbyLoadingWidgetClass)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Lobby loading widget blueprint unavailable"));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 大厅加载控件蓝图不可用。"));
 	}
 
 	LobbyPlayerHUDWidgetClass = ResolveWidgetClassPath<UDBALobbyPlayerHUDWidgetBase>({
@@ -291,18 +315,41 @@ UDBAGameUIManager::UDBAGameUIManager()
 	if (!LobbyPlayerHUDWidgetClass)
 	{
 		LobbyPlayerHUDWidgetClass = UDBALobbyPlayerHUDWidgetBase::StaticClass();
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Lobby player HUD widget blueprint unavailable, using native fallback"));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 大厅玩家 HUD 控件蓝图不可用，使用 C++ 原生兜底控件。"));
+	}
+
+	GameSettingsWidgetClass = ResolveWidgetClassPath<UDBAGameSettingsWidgetBase>({
+		TEXT("/Game/DBA/UI/Lobby/System/WBP_DBA_GameSettings"),
+		TEXT("/Game/DBA/UI/Lobby/Settings/WBP_DBA_GameSettings"),
+		TEXT("/Game/DBA/UI/Lobby/Settings/WBP_DBA_SettingsRoot"),
+		TEXT("/Game/Blueprints/UI/DBA/Lobby/WBP_DBA_GameSettings")
+	});
+	if (!GameSettingsWidgetClass)
+	{
+		GameSettingsWidgetClass = UDBAGameSettingsWidgetBase::StaticClass();
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 游戏设置控件蓝图不可用，使用 C++ 原生兜底控件。"));
+	}
+
+	InventoryWidgetClass = ResolveWidgetClassPath<UDBAInventoryWidgetBase>({
+		TEXT("/Game/DBA/UI/Lobby/Inventory/WBP_DBA_Inventory"),
+		TEXT("/Game/DBA/UI/Lobby/Bag/WBP_DBA_Inventory"),
+		TEXT("/Game/Blueprints/UI/DBA/Lobby/WBP_DBA_Inventory")
+	});
+	if (!InventoryWidgetClass)
+	{
+		InventoryWidgetClass = UDBAInventoryWidgetBase::StaticClass();
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 背包控件蓝图不可用，使用 C++ 原生兜底控件。"));
 	}
 
 	static ConstructorHelpers::FClassFinder<UDBASplashVideoWidget> SplashVideoWidgetFinder(TEXT("/Game/UI/Splash/WBP_DBA_SplashVideo"));
 	if (SplashVideoWidgetFinder.Succeeded())
 	{
 		SplashVideoWidgetClass = SplashVideoWidgetFinder.Class;
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] SplashVideoWidgetClass found: %s"), *SplashVideoWidgetClass->GetName());
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 已找到启动视频控件类：%s"), *SplashVideoWidgetClass->GetName());
 	}
 	else
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] SplashVideoWidgetFinder failed to find class"));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 未找到启动视频控件类。"));
 	}
 }
 
@@ -312,12 +359,12 @@ void UDBAGameUIManager::OnSubsystemInitialize()
 
 	if (IsServerLikeRuntime(GetWorld()))
 	{
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Server runtime skips frontend UI initialization."));
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 服务器运行环境跳过前端 UI 初始化。"));
 		return;
 	}
 	if (FParse::Param(FCommandLine::Get(), TEXT("DBASkipSplash")))
 	{
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Splash skipped by command line."));
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 命令行要求跳过启动视频。"));
 		EnsureLoginFlowStartedFromManager();
 		return;
 	}
@@ -373,7 +420,7 @@ void UDBAGameUIManager::TryShowSplashVideo()
 	}
 	else
 	{
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Waiting for PlayerController... World: %s"), *World->GetName());
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 正在等待 PlayerController，世界=%s"), *World->GetName());
 	}
 }
 
@@ -483,7 +530,7 @@ void UDBAGameUIManager::ShowMainLobby()
 
 		ShowLobbyPlayerHUD();
 		ApplyLobbyGameplayInputMode(GetWorld());
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Lobby gameplay HUD shown for LobbyMap."));
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 已为大厅地图显示游戏 HUD。"));
 		return;
 	}
 
@@ -576,6 +623,8 @@ void UDBAGameUIManager::ClearAllUI()
 	HideMainLobby();
 	HideLobbyPlayerHUD();
 	HideArenaHUD();
+	HideGameSettings();
+	HideInventory();
 }
 
 void UDBAGameUIManager::ShowLobbyLoadingScreen()
@@ -622,7 +671,7 @@ void UDBAGameUIManager::ShowLobbyLoadingScreen()
 		LobbyLoadingWidget->ShowTips(NSLOCTEXT("DBAGameUIManager", "EnteringLobby", "Entering lobby..."));
 		ApplyFrontendInputMode(World, LobbyLoadingWidget);
 		bLobbyLoadingVisible = true;
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Lobby loading screen shown."));
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 已显示大厅加载界面。"));
 	}
 }
 
@@ -634,6 +683,112 @@ void UDBAGameUIManager::HideLobbyLoadingScreen()
 		LobbyLoadingWidget->RemoveFromParent();
 	}
 	bLobbyLoadingVisible = false;
+}
+
+void UDBAGameUIManager::ShowGameSettings()
+{
+	UWorld* World = GetWorld();
+	if (!World || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
+	if (!GameSettingsWidget)
+	{
+		CreateGameSettingsWidget();
+	}
+	if (GameSettingsWidget && !bGameSettingsVisible)
+	{
+		GameSettingsWidget->AddToViewport(12000);
+		CenterModalWidgetInViewport(GameSettingsWidget, FVector2D(680.0f, 520.0f));
+		GameSettingsWidget->RefreshFromRuntime();
+		ApplyFrontendInputMode(World, GameSettingsWidget);
+		bGameSettingsVisible = true;
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 已显示游戏设置界面。"));
+	}
+}
+
+void UDBAGameUIManager::HideGameSettings()
+{
+	if (GameSettingsWidget && bGameSettingsVisible)
+	{
+		GameSettingsWidget->RemoveFromParent();
+	}
+	bGameSettingsVisible = false;
+
+	if (InventoryWidget && bInventoryVisible)
+	{
+		ApplyFrontendInputMode(GetWorld(), InventoryWidget);
+	}
+	else
+	{
+		ApplyLobbyGameplayInputMode(GetWorld());
+	}
+}
+
+void UDBAGameUIManager::ToggleGameSettings()
+{
+	if (bGameSettingsVisible)
+	{
+		HideGameSettings();
+	}
+	else
+	{
+		ShowGameSettings();
+	}
+}
+
+void UDBAGameUIManager::ShowInventory()
+{
+	UWorld* World = GetWorld();
+	if (!World || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
+	if (!InventoryWidget)
+	{
+		CreateInventoryWidget();
+	}
+	if (InventoryWidget && !bInventoryVisible)
+	{
+		InventoryWidget->AddToViewport(11000);
+		CenterModalWidgetInViewport(InventoryWidget, FVector2D(760.0f, 540.0f));
+		InventoryWidget->RefreshInventory();
+		ApplyFrontendInputMode(World, InventoryWidget);
+		bInventoryVisible = true;
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 已显示背包界面。"));
+	}
+}
+
+void UDBAGameUIManager::HideInventory()
+{
+	if (InventoryWidget && bInventoryVisible)
+	{
+		InventoryWidget->RemoveFromParent();
+	}
+	bInventoryVisible = false;
+
+	if (GameSettingsWidget && bGameSettingsVisible)
+	{
+		ApplyFrontendInputMode(GetWorld(), GameSettingsWidget);
+	}
+	else
+	{
+		ApplyLobbyGameplayInputMode(GetWorld());
+	}
+}
+
+void UDBAGameUIManager::ToggleInventory()
+{
+	if (bInventoryVisible)
+	{
+		HideInventory();
+	}
+	else
+	{
+		ShowInventory();
+	}
 }
 
 void UDBAGameUIManager::ShowLobbyPlayerHUD()
@@ -665,7 +820,7 @@ void UDBAGameUIManager::ShowLobbyPlayerHUD()
 		LobbyPlayerHUDWidget->RefreshFromCurrentCharacterData();
 		bLobbyPlayerHUDVisible = true;
 		ResetLobbyHUDRefreshRetry();
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Lobby player HUD added to viewport: %s"),
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 大厅玩家 HUD 已添加到视口：%s"),
 			*LobbyPlayerHUDWidget->GetClass()->GetName());
 	}
 	else if (LobbyPlayerHUDWidget && bLobbyPlayerHUDVisible)
@@ -717,9 +872,39 @@ void UDBAGameUIManager::CreateArenaHUDWidget()
 	}
 }
 
+void UDBAGameUIManager::CreateGameSettingsWidget()
+{
+	if (!GameSettingsWidgetClass)
+	{
+		return;
+	}
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			GameSettingsWidget = CreateWidget<UDBAGameSettingsWidgetBase>(PC, GameSettingsWidgetClass);
+		}
+	}
+}
+
+void UDBAGameUIManager::CreateInventoryWidget()
+{
+	if (!InventoryWidgetClass)
+	{
+		return;
+	}
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			InventoryWidget = CreateWidget<UDBAInventoryWidgetBase>(PC, InventoryWidgetClass);
+		}
+	}
+}
+
 void UDBAGameUIManager::HandleLoginFlowStateChanged(EDBALoginFlowState NewState)
 {
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Login flow state changed: %d"), static_cast<int32>(NewState));
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 登录流程状态已变化：%d"), static_cast<int32>(NewState));
 	CachedLoginFlowState = NewState;
 	RefreshLoginFlowWidgetVisibility();
 
@@ -769,7 +954,7 @@ void UDBAGameUIManager::RefreshLoginFlowWidgetVisibility()
 		}
 		else
 		{
-			UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] CharacterSelect widget not ready, scheduling retry."));
+			UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 角色选择控件尚未就绪，准备重试。"));
 			ScheduleFlowWidgetRefreshRetry();
 		}
 		break;
@@ -786,7 +971,7 @@ void UDBAGameUIManager::RefreshLoginFlowWidgetVisibility()
 		}
 		else
 		{
-			UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] CharacterCreate widget not ready, scheduling retry."));
+			UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 角色创建控件尚未就绪，准备重试。"));
 			ScheduleFlowWidgetRefreshRetry();
 		}
 		break;
@@ -885,7 +1070,7 @@ void UDBAGameUIManager::ScheduleFlowWidgetRefreshRetry()
 	++FlowWidgetRefreshRetryCount;
 	if (FlowWidgetRefreshRetryCount > 30)
 	{
-		UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] Flow widget retry exceeded limit at state=%d"), static_cast<int32>(CachedLoginFlowState));
+		UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] 流程控件重试超过上限，状态=%d"), static_cast<int32>(CachedLoginFlowState));
 		return;
 	}
 
@@ -922,11 +1107,11 @@ void UDBAGameUIManager::ScheduleLobbyHUDRefreshRetry()
 	++LobbyHUDRefreshRetryCount;
 	if (LobbyHUDRefreshRetryCount > 60)
 	{
-		UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] Lobby HUD retry exceeded limit."));
+		UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] 大厅 HUD 重试超过上限。"));
 		return;
 	}
 
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Lobby HUD not ready, scheduling retry %d."), LobbyHUDRefreshRetryCount);
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 大厅 HUD 尚未就绪，准备第 %d 次重试。"), LobbyHUDRefreshRetryCount);
 	World->GetTimerManager().SetTimer(
 		LobbyHUDRefreshRetryTimerHandle,
 		this,
@@ -955,13 +1140,13 @@ void UDBAGameUIManager::CreateLobbyPlayerHUDWidget()
 		if (APlayerController* PC = World->GetFirstPlayerController())
 		{
 			LobbyPlayerHUDWidget = CreateWidget<UDBALobbyPlayerHUDWidgetBase>(PC, LobbyPlayerHUDWidgetClass);
-			UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Lobby player HUD widget created: class=%s success=%s"),
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 大厅玩家 HUD 控件已创建：类=%s 成功=%s"),
 				*LobbyPlayerHUDWidgetClass->GetName(),
-				LobbyPlayerHUDWidget ? TEXT("true") : TEXT("false"));
+				LobbyPlayerHUDWidget ? TEXT("是") : TEXT("否"));
 		}
 		else
 		{
-			UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Lobby player HUD waiting for PlayerController."));
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 大厅玩家 HUD 正在等待 PlayerController。"));
 		}
 	}
 }
@@ -991,18 +1176,18 @@ void UDBAGameUIManager::ShowSplashVideo()
 		return;
 	}
 
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] ShowSplashVideo called, Class: %s"), SplashVideoWidgetClass ? TEXT("Valid") : TEXT("NULL"));
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 请求显示启动视频，控件类=%s"), SplashVideoWidgetClass ? TEXT("有效") : TEXT("空"));
 
 	if (!SplashVideoWidget)
 	{
 		if (!SplashVideoWidgetClass)
 		{
-			UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] SplashVideoWidgetClass is NULL!"));
+			UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] 启动视频控件类为空。"));
 			return;
 		}
 		if (UWorld* World = GetWorld())
 		{
-			UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] World: %s, URL: %s, PlayerControllers: %d"), *World->GetName(), *World->URL.ToString(), World->GetNumPlayerControllers());
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 世界=%s URL=%s PlayerController数量=%d"), *World->GetName(), *World->URL.ToString(), World->GetNumPlayerControllers());
 			APlayerController* PC = World->GetGameInstance() ? World->GetGameInstance()->GetPrimaryPlayerController() : nullptr;
 			if (!PC)
 			{
@@ -1011,17 +1196,17 @@ void UDBAGameUIManager::ShowSplashVideo()
 			if (PC)
 			{
 				SplashVideoWidget = CreateWidget<UDBASplashVideoWidget>(PC, SplashVideoWidgetClass);
-				UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] SplashVideoWidget created: %s"), SplashVideoWidget ? TEXT("Success") : TEXT("Failed"));
+				UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 启动视频控件创建结果：%s"), SplashVideoWidget ? TEXT("成功") : TEXT("失败"));
 			}
 			else
 			{
-				UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] No PlayerController found in world '%s' (%d controllers)"), *World->GetName(), World->GetNumPlayerControllers());
+				UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 世界 %s 中没有找到 PlayerController，当前数量=%d"), *World->GetName(), World->GetNumPlayerControllers());
 				return;
 			}
 		}
 		else
 		{
-			UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] No World found"));
+			UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] 没有找到世界对象。"));
 		}
 	}
 	if (SplashVideoWidget)
@@ -1038,7 +1223,7 @@ void UDBAGameUIManager::ShowSplashVideo()
 		bFlowWidgetVisible = false;
 
 		SplashVideoWidget->AddToViewport(999);
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] SplashVideoWidget added to viewport"));
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 启动视频控件已添加到视口。"));
 
 		// 设置键盘焦点到启动视频控件，以便接收 ESC 按键
 		ApplySplashInputMode(GetWorld(), SplashVideoWidget);
@@ -1076,14 +1261,14 @@ void UDBAGameUIManager::EnsureLoginFlowBackgroundMusic()
 
 	if (!LoginFlowBackgroundMusicSound || !GetWorld())
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Login flow BGM unavailable."));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 登录流程背景音乐不可用。"));
 		return;
 	}
 
 	LoginFlowBackgroundMusicComponent = UGameplayStatics::SpawnSound2D(GetWorld(), LoginFlowBackgroundMusicSound, 0.72f, 1.0f, 0.0f, nullptr, false, false);
 	if (!LoginFlowBackgroundMusicComponent)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Failed to start login flow BGM."));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 启动登录流程背景音乐失败。"));
 		return;
 	}
 

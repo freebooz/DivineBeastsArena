@@ -53,7 +53,7 @@ float ADBAMonsterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damage
 	PlayHitVFX(DamageCauser);
 	MulticastShowDamageNumber(FinalDamage, GetActorLocation() + FVector(0.0f, 0.0f, 118.0f), false);
 
-	UE_LOG(LogDBACombat, Log, TEXT("[DBAMonsterBase] Monster hit: monster=%s type=%s damage=%.1f health=%.1f/%.1f causer=%s"),
+	UE_LOG(LogDBACombat, Log, TEXT("[DBAMonsterBase] 怪物受到伤害：怪物=%s 类型=%s 伤害=%.1f 生命=%.1f/%.1f 伤害来源=%s"),
 		*GetName(),
 		*MonsterType.ToString(),
 		FinalDamage,
@@ -64,7 +64,7 @@ float ADBAMonsterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damage
 	if (CurrentHealth <= 0.0f)
 	{
 		PlayDeathVFX();
-		UE_LOG(LogDBACombat, Log, TEXT("[DBAMonsterBase] Monster defeated: monster=%s type=%s"), *GetName(), *MonsterType.ToString());
+		UE_LOG(LogDBACombat, Log, TEXT("[DBAMonsterBase] 怪物已被击败：怪物=%s 类型=%s"), *GetName(), *MonsterType.ToString());
 		SetLifeSpan(1.0f);
 		SetActorEnableCollision(false);
 		if (GetMesh())

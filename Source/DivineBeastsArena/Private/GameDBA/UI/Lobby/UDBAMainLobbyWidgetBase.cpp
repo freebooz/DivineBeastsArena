@@ -7,6 +7,7 @@
 #include "Components/EditableTextBox.h"
 #include "Components/TextBlock.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/UI/DBAGameUIManager.h"
 #include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetController.h"
 #include "GameDBA/UI/Lobby/UDBAPartyPanelWidgetBase.h"
 #include "GameDBA/UI/Lobby/UDBAQueueModeSelectWidgetBase.h"
@@ -184,6 +185,13 @@ void UDBAMainLobbyWidgetBase::OpenFriendList()
 
 void UDBAMainLobbyWidgetBase::OpenSettings()
 {
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UDBAGameUIManager* UIManager = GameInstance->GetSubsystem<UDBAGameUIManager>())
+		{
+			UIManager->ShowGameSettings();
+		}
+	}
 }
 
 void UDBAMainLobbyWidgetBase::ExitGame()

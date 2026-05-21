@@ -19,7 +19,7 @@ UDBAFixedSkillGroupDataAsset* UDBAFixedSkillGroupLibrary::GetFixedSkillGroupById
 {
 	if (FixedSkillGroupId.IsNone())
 	{
-		UE_LOG(LogDBAData, Warning, TEXT("[UDBAFixedSkillGroupLibrary] Empty FixedSkillGroupId"));
+		UE_LOG(LogDBAData, Warning, TEXT("[UDBAFixedSkillGroupLibrary] 固定技能组 ID 为空。"));
 		return nullptr;
 	}
 
@@ -32,7 +32,7 @@ UDBAFixedSkillGroupDataAsset* UDBAFixedSkillGroupLibrary::GetFixedSkillGroupById
 		}
 	}
 
-	UE_LOG(LogDBAData, Warning, TEXT("[UDBAFixedSkillGroupLibrary] Fixed skill group not found: %s"), *FixedSkillGroupId.ToString());
+	UE_LOG(LogDBAData, Warning, TEXT("[UDBAFixedSkillGroupLibrary] 未找到固定技能组：%s"), *FixedSkillGroupId.ToString());
 	return nullptr;
 }
 
@@ -40,7 +40,7 @@ void UDBAFixedSkillGroupLibrary::LoadFixedSkillGroupByIdAsync(const FName& Fixed
 {
 	if (FixedSkillGroupId.IsNone())
 	{
-		UE_LOG(LogDBAData, Warning, TEXT("[UDBAFixedSkillGroupLibrary] Empty FixedSkillGroupId"));
+		UE_LOG(LogDBAData, Warning, TEXT("[UDBAFixedSkillGroupLibrary] 固定技能组 ID 为空。"));
 		OnLoadedDelegate.ExecuteIfBound(nullptr);
 		return;
 	}
@@ -48,7 +48,7 @@ void UDBAFixedSkillGroupLibrary::LoadFixedSkillGroupByIdAsync(const FName& Fixed
 	UAssetManager* AssetManager = UAssetManager::GetIfInitialized();
 	if (!AssetManager)
 	{
-		UE_LOG(LogDBAData, Error, TEXT("[UDBAFixedSkillGroupLibrary] AssetManager unavailable"));
+		UE_LOG(LogDBAData, Error, TEXT("[UDBAFixedSkillGroupLibrary] AssetManager 不可用。"));
 		OnLoadedDelegate.ExecuteIfBound(nullptr);
 		return;
 	}
@@ -62,7 +62,7 @@ void UDBAFixedSkillGroupLibrary::LoadFixedSkillGroupByIdAsync(const FName& Fixed
 			UDBAFixedSkillGroupDataAsset* LoadedAsset = Cast<UDBAFixedSkillGroupDataAsset>(LoadedObject);
 			if (!LoadedAsset)
 			{
-				UE_LOG(LogDBAData, Warning, TEXT("[UDBAFixedSkillGroupLibrary] Async load failed: %s"), *FixedSkillGroupId.ToString());
+				UE_LOG(LogDBAData, Warning, TEXT("[UDBAFixedSkillGroupLibrary] 异步加载失败：%s"), *FixedSkillGroupId.ToString());
 			}
 			OnLoadedDelegate.ExecuteIfBound(LoadedAsset);
 		},

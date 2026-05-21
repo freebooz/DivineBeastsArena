@@ -2,6 +2,7 @@
 
 #include "GameDBA/Combat/DBASkillProjectileBase.h"
 
+#include "Components/AudioComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/DamageEvents.h"
@@ -46,6 +47,11 @@ ADBASkillProjectileBase::ADBASkillProjectileBase()
 	ProjectileNiagaraVFX = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ProjectileNiagaraVFX"));
 	ProjectileNiagaraVFX->SetupAttachment(RootComponent);
 	ProjectileNiagaraVFX->bAutoActivate = true;
+
+	ProjectileLoopAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("ProjectileLoopAudio"));
+	ProjectileLoopAudio->SetupAttachment(RootComponent);
+	ProjectileLoopAudio->bAutoActivate = false;
+	ProjectileLoopAudio->bAllowSpatialization = true;
 }
 
 void ADBASkillProjectileBase::InitializeProjectile(
@@ -66,7 +72,7 @@ void ADBASkillProjectileBase::InitializeProjectile(
 		CollisionSphere->IgnoreActorWhenMoving(InOwner, true);
 	}
 
-	if (ProjectileVFXAsset.IsValid())
+	if (!ProjectileVFXAsset.IsNull())
 	{
 		if (UParticleSystem* VFX = ProjectileVFXAsset.LoadSynchronous())
 		{
@@ -81,6 +87,15 @@ void ADBASkillProjectileBase::InitializeProjectile(
 		{
 			ProjectileNiagaraVFX->SetAsset(VFX);
 			ProjectileNiagaraVFX->Activate(true);
+		}
+	}
+
+	if (!FlySFXAsset.IsNull() && ProjectileLoopAudio)
+	{
+		if (USoundBase* FlySFX = FlySFXAsset.LoadSynchronous())
+		{
+			ProjectileLoopAudio->SetSound(FlySFX);
+			ProjectileLoopAudio->Play();
 		}
 	}
 
@@ -144,7 +159,7 @@ void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocat
 		}
 	}
 
-	if (ImpactVFXAsset.IsValid())
+	if (!ImpactVFXAsset.IsNull())
 	{
 		if (UParticleSystem* VFX = ImpactVFXAsset.LoadSynchronous())
 		{
@@ -152,7 +167,7 @@ void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocat
 		}
 	}
 
-	if (ImpactSFXAsset.IsValid())
+	if (!ImpactSFXAsset.IsNull())
 	{
 		if (USoundBase* SFX = ImpactSFXAsset.LoadSynchronous())
 		{
@@ -166,6 +181,11 @@ void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocat
 		DamageEvent.Damage = Damage;
 		DamageEvent.HitInfo = FHitResult(HitActor, nullptr, HitLocation, FVector::ZeroVector);
 		HitActor->TakeDamage(Damage, DamageEvent, ProjectileOwner ? ProjectileOwner->GetInstigatorController() : nullptr, ProjectileOwner);
+	}
+
+	if (ProjectileLoopAudio)
+	{
+		ProjectileLoopAudio->Stop();
 	}
 
 	BP_OnProjectileHit(HitActor, HitLocation);

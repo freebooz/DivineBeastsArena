@@ -16,7 +16,7 @@ namespace
 	constexpr float PreviewActorMeshDisplayScale = 1.0f;
 	constexpr float PreviewActorMeshFloorZ = 2.0f;
 
-	void EnsureRosalesMeshUsesRosalesSkeleton(USkeletalMesh* Mesh, const FString& MeshPath)
+	void EnsurePreviewRosalesMeshUsesRosalesSkeleton(USkeletalMesh* Mesh, const FString& MeshPath)
 	{
 		if (!Mesh || !MeshPath.Contains(TEXT("/Game/DBA/Characters/Rosales/")))
 		{
@@ -136,7 +136,7 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 		{
 			if (USkeletalMesh* CandidateMesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath))
 			{
-				EnsureRosalesMeshUsesRosalesSkeleton(CandidateMesh, MeshPath);
+				EnsurePreviewRosalesMeshUsesRosalesSkeleton(CandidateMesh, MeshPath);
 				ResolvedMesh = CandidateMesh;
 				ResolvedMeshPath = MeshPath;
 				break;

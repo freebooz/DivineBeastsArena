@@ -156,6 +156,11 @@ namespace
 			|| HostName == TEXT("CharacterPreviewContainer");
 	}
 
+	bool IsBlockedCharacterCreateNavigationKey(const FKey& Key)
+	{
+		return Key == EKeys::Left || Key == EKeys::Right;
+	}
+
 	void ConfigureCreateOverlaySlot(UOverlaySlot* Slot)
 	{
 		if (!Slot)
@@ -345,6 +350,7 @@ namespace
 UDBACharacterCreateFlowWidgetBase::UDBACharacterCreateFlowWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
+	SetIsFocusable(true);
 }
 
 void UDBACharacterCreateFlowWidgetBase::NativeOnInitialized()
@@ -356,6 +362,7 @@ void UDBACharacterCreateFlowWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	SetIsFocusable(true);
 	EnsureNativeFallbackLayout();
 	ResolveBoundWidgetsFromWidgetTree();
 	ApplyBlueprintLayoutOverrides();
@@ -387,12 +394,35 @@ void UDBACharacterCreateFlowWidgetBase::NativeDestruct()
 	Super::NativeDestruct();
 }
 
+FReply UDBACharacterCreateFlowWidgetBase::NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (IsBlockedCharacterCreateNavigationKey(InKeyEvent.GetKey()))
+	{
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnPreviewKeyDown(InGeometry, InKeyEvent);
+}
+
+FReply UDBACharacterCreateFlowWidgetBase::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (IsBlockedCharacterCreateNavigationKey(InKeyEvent.GetKey()))
+	{
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
 FReply UDBACharacterCreateFlowWidgetBase::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
 	if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton && IsPointerOverPreviewHost(InMouseEvent.GetScreenSpacePosition()))
 	{
 		BeginPreviewRotationDrag(InMouseEvent.GetScreenSpacePosition());
-		return FReply::Handled().CaptureMouse(TakeWidget());
+		TSharedRef<SWidget> SlateWidget = TakeWidget();
+		return FReply::Handled()
+			.SetUserFocus(SlateWidget)
+			.CaptureMouse(SlateWidget);
 	}
 
 	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
@@ -413,7 +443,16 @@ FReply UDBACharacterCreateFlowWidgetBase::NativeOnMouseMove(const FGeometry& InG
 {
 	if (bIsPreviewRotationDragging && InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
 	{
-		UpdatePreviewRotationDrag(InMouseEvent.GetScreenSpacePosition());
+		const FVector2D MouseDelta = InMouseEvent.GetCursorDelta();
+		if (PreviewActor && FMath::Abs(MouseDelta.X) > KINDA_SMALL_NUMBER)
+		{
+			PreviewActor->AddPreviewYaw(MouseDelta.X * PreviewDragRotationDegreesPerPixel);
+			LastPreviewDragScreenPosition = InMouseEvent.GetScreenSpacePosition();
+		}
+		else
+		{
+			UpdatePreviewRotationDrag(InMouseEvent.GetScreenSpacePosition());
+		}
 		return FReply::Handled();
 	}
 

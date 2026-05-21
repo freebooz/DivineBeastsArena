@@ -137,7 +137,7 @@ void FGameBackendHttpClient::Send(FPendingRequest Request)
 		FGameBackendHttpResult Result;
 		Result.bHttpRequestOk = false;
 		Result.TraceId = Request.TraceId;
-		Result.Message = TEXT("ProcessRequest failed to start.");
+		Result.Message = TEXT("HTTP 请求启动失败。");
 		Finish(Request, Result);
 	}
 }
@@ -163,7 +163,7 @@ void FGameBackendHttpClient::OnComplete(FHttpRequestPtr HttpRequest, FHttpRespon
 	UE_LOG(
 		LogGameBackendClient,
 		Log,
-		TEXT("HTTP 璇锋眰 method=%s url=%s traceId=%s status=%d code=%s durationMs=%.2f"),
+		TEXT("HTTP 请求：方法=%s 地址=%s 追踪ID=%s 状态码=%d 业务码=%s 耗时毫秒=%.2f"),
 		*Request.Method,
 		*BuildAbsoluteUrl(Request.Path),
 		*Request.TraceId,
@@ -255,7 +255,7 @@ bool FGameBackendHttpClient::ParseEnvelope(const FString& Body, FGameBackendHttp
 	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Body);
 	if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid())
 	{
-		OutResult.Message = Body.IsEmpty() ? TEXT("Empty response body.") : TEXT("Invalid JSON response.");
+		OutResult.Message = Body.IsEmpty() ? TEXT("响应体为空。") : TEXT("JSON 响应格式无效。");
 		return false;
 	}
 
@@ -314,7 +314,7 @@ void FGameBackendHttpClient::Retry(const FPendingRequest& Request) const
 	UE_LOG(
 		LogGameBackendClient,
 		Warning,
-		TEXT("HTTP 閲嶈瘯 method=%s path=%s attempt=%d traceId=%s"),
+		TEXT("HTTP 重试：方法=%s 路径=%s 次数=%d 追踪ID=%s"),
 		*RetryRequest.Method,
 		*RetryRequest.Path,
 		RetryRequest.Attempt,

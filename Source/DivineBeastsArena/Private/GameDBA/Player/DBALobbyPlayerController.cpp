@@ -77,8 +77,9 @@ void ADBALobbyPlayerController::BeginPlay()
 		bEnableTouchEvents = true;
 		if (APawn* ControlledPawn = GetPawn())
 		{
+			InitializeLobbyCameraForPawn(ControlledPawn);
 			SetViewTarget(ControlledPawn);
-			UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] BeginPlay view target set to pawn: %s"),
+			UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] BeginPlay 已将视角目标设置为角色：%s"),
 				*ControlledPawn->GetName());
 		}
 		RequestLobbyHUDForLocalController(this);
@@ -96,8 +97,9 @@ void ADBALobbyPlayerController::OnPossess(APawn* InPawn)
 		SetShowMouseCursor(true);
 		EnsureCustomSoftwareCursor();
 		bEnableClickEvents = true;
+		InitializeLobbyCameraForPawn(InPawn);
 		SetViewTarget(InPawn);
-		UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] OnPossess view target set to pawn: %s"),
+		UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] OnPossess 已将视角目标设置为角色：%s"),
 			*InPawn->GetName());
 		RequestLobbyHUDForLocalController(this);
 	}
@@ -114,8 +116,9 @@ void ADBALobbyPlayerController::AcknowledgePossession(APawn* P)
 		SetShowMouseCursor(true);
 		EnsureCustomSoftwareCursor();
 		bEnableClickEvents = true;
+		InitializeLobbyCameraForPawn(P);
 		SetViewTarget(P);
-		UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] AcknowledgePossession view target set to pawn: %s"),
+		UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] AcknowledgePossession 已将视角目标设置为角色：%s"),
 			*P->GetName());
 		RequestLobbyHUDForLocalController(this);
 	}
@@ -134,7 +137,7 @@ void ADBALobbyPlayerController::EnsureCustomSoftwareCursor()
 	}
 	if (!SoftwareCursorWidget)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBALobbyPlayerController] Failed to create software cursor widget."));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBALobbyPlayerController] 创建软件鼠标指针控件失败。"));
 		return;
 	}
 
@@ -144,7 +147,7 @@ void ADBALobbyPlayerController::EnsureCustomSoftwareCursor()
 	CurrentMouseCursor = EMouseCursor::Default;
 	DefaultMouseCursor = EMouseCursor::Default;
 	SetShowMouseCursor(true);
-	UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] Custom software cursor applied: %s"),
+	UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] 已应用自定义软件鼠标指针：%s"),
 		*SoftwareCursorWidget->GetName());
 }
 
@@ -181,6 +184,10 @@ void ADBALobbyPlayerController::SetupInputComponent()
 	InputComponent->BindKey(EKeys::Right, IE_Released, this, &ADBALobbyPlayerController::HandleMoveRightReleased);
 
 	InputComponent->BindAction(TEXT("Skill01"), IE_Pressed, this, &ADBALobbyPlayerController::HandleSkill01Pressed);
+	InputComponent->BindAction(TEXT("Skill02"), IE_Pressed, this, &ADBALobbyPlayerController::HandleSkill02Pressed);
+	InputComponent->BindAction(TEXT("Skill03"), IE_Pressed, this, &ADBALobbyPlayerController::HandleSkill03Pressed);
+	InputComponent->BindAction(TEXT("Skill04"), IE_Pressed, this, &ADBALobbyPlayerController::HandleSkill04Pressed);
+	InputComponent->BindAction(TEXT("Ultimate"), IE_Pressed, this, &ADBALobbyPlayerController::HandleUltimatePressed);
 	InputComponent->BindKey(EKeys::F, IE_Pressed, this, &ADBALobbyPlayerController::HandleSkill01Pressed);
 	InputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &ADBALobbyPlayerController::HandleLeftMousePressed);
 	InputComponent->BindKey(EKeys::LeftMouseButton, IE_Released, this, &ADBALobbyPlayerController::HandleLeftMouseReleased);
@@ -188,6 +195,8 @@ void ADBALobbyPlayerController::SetupInputComponent()
 	InputComponent->BindKey(EKeys::RightMouseButton, IE_Released, this, &ADBALobbyPlayerController::HandleRightMouseReleased);
 	InputComponent->BindKey(EKeys::MouseScrollUp, IE_Pressed, this, &ADBALobbyPlayerController::HandleMouseScrollUp);
 	InputComponent->BindKey(EKeys::MouseScrollDown, IE_Pressed, this, &ADBALobbyPlayerController::HandleMouseScrollDown);
+	InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ADBALobbyPlayerController::HandleEscapePressed);
+	InputComponent->BindKey(EKeys::B, IE_Pressed, this, &ADBALobbyPlayerController::HandleInventoryPressed);
 }
 
 void ADBALobbyPlayerController::PlayerTick(float DeltaTime)
@@ -238,6 +247,60 @@ void ADBALobbyPlayerController::MoveRightAxis(float Value)
 	AnalogMoveRightAxis = FMath::IsNearlyZero(Value, 0.05f) ? 0.0f : FMath::Clamp(Value, -1.0f, 1.0f);
 }
 
+void ADBALobbyPlayerController::ToggleGameSettingsPanel()
+{
+	CancelMouseLookCapture();
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UDBAGameUIManager* UIManager = GameInstance->GetSubsystem<UDBAGameUIManager>())
+		{
+			UIManager->ToggleGameSettings();
+		}
+	}
+}
+
+void ADBALobbyPlayerController::ToggleInventoryPanel()
+{
+	CancelMouseLookCapture();
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UDBAGameUIManager* UIManager = GameInstance->GetSubsystem<UDBAGameUIManager>())
+		{
+			UIManager->ToggleInventory();
+		}
+	}
+}
+
+void ADBALobbyPlayerController::CancelMouseLookCapture()
+{
+	bLeftMouseLookHeld = false;
+	bRightMouseLookHeld = false;
+	SetMouseLookCaptureActive(false);
+	ConfigurePawnForRightMouseLook(false);
+}
+
+void ADBALobbyPlayerController::SetMouseLookSensitivityValue(float NewSensitivity)
+{
+	MouseLookSensitivity = FMath::Clamp(NewSensitivity, 0.02f, 0.80f);
+}
+
+void ADBALobbyPlayerController::SetCameraDistanceValue(float NewDistance)
+{
+	ADBAZodiacCharacterBase* ZodiacPawn = Cast<ADBAZodiacCharacterBase>(GetPawn());
+	USpringArmComponent* CameraBoom = ZodiacPawn ? ZodiacPawn->GetLobbyCameraBoom() : nullptr;
+	if (CameraBoom)
+	{
+		CameraBoom->TargetArmLength = FMath::Clamp(NewDistance, MinCameraDistance, MaxCameraDistance);
+	}
+}
+
+float ADBALobbyPlayerController::GetCameraDistanceValue() const
+{
+	const ADBAZodiacCharacterBase* ZodiacPawn = Cast<ADBAZodiacCharacterBase>(GetPawn());
+	const USpringArmComponent* CameraBoom = ZodiacPawn ? ZodiacPawn->GetLobbyCameraBoom() : nullptr;
+	return CameraBoom ? CameraBoom->TargetArmLength : 520.0f;
+}
+
 void ADBALobbyPlayerController::TurnAxis(float Value)
 {
 	CachedTurnAxis = Value;
@@ -245,9 +308,10 @@ void ADBALobbyPlayerController::TurnAxis(float Value)
 
 void ADBALobbyPlayerController::HandleLeftMousePressed()
 {
+	HandleSelectTargetPressed();
+	SaveMouseLookCursorPosition();
 	bLeftMouseLookHeld = true;
 	RefreshMouseLookCaptureMode();
-	HandleSelectTargetPressed();
 }
 
 void ADBALobbyPlayerController::HandleLeftMouseReleased()
@@ -258,6 +322,7 @@ void ADBALobbyPlayerController::HandleLeftMouseReleased()
 
 void ADBALobbyPlayerController::HandleRightMousePressed()
 {
+	SaveMouseLookCursorPosition();
 	bRightMouseLookHeld = true;
 	RefreshMouseLookCaptureMode();
 }
@@ -276,6 +341,16 @@ void ADBALobbyPlayerController::HandleMouseScrollUp()
 void ADBALobbyPlayerController::HandleMouseScrollDown()
 {
 	ApplyCameraZoom(-1.0f);
+}
+
+void ADBALobbyPlayerController::HandleEscapePressed()
+{
+	ToggleGameSettingsPanel();
+}
+
+void ADBALobbyPlayerController::HandleInventoryPressed()
+{
+	ToggleInventoryPanel();
 }
 
 void ADBALobbyPlayerController::HandleMoveForwardPressed()
@@ -320,18 +395,44 @@ void ADBALobbyPlayerController::HandleMoveRightReleased()
 
 void ADBALobbyPlayerController::HandleSkill01Pressed()
 {
+	CastEquippedSkillSlot(1);
+}
+
+void ADBALobbyPlayerController::HandleSkill02Pressed()
+{
+	CastEquippedSkillSlot(2);
+}
+
+void ADBALobbyPlayerController::HandleSkill03Pressed()
+{
+	CastEquippedSkillSlot(3);
+}
+
+void ADBALobbyPlayerController::HandleSkill04Pressed()
+{
+	CastEquippedSkillSlot(4);
+}
+
+void ADBALobbyPlayerController::HandleUltimatePressed()
+{
+	CastEquippedSkillSlot(5);
+}
+
+void ADBALobbyPlayerController::CastEquippedSkillSlot(int32 SkillSlot)
+{
 	if (ADBAZodiacCharacterBase* ZodiacPawn = Cast<ADBAZodiacCharacterBase>(GetPawn()))
 	{
 		AActor* Target = SelectedAttackTarget.IsValid() ? SelectedAttackTarget.Get() : nullptr;
 		if (Target)
 		{
-			ZodiacPawn->CastLobbyFireballAtTarget(Target);
+			ZodiacPawn->CastEquippedSkillAtTarget(SkillSlot, Target);
 		}
 		else
 		{
-			ZodiacPawn->CastLobbyFireball();
+			ZodiacPawn->CastEquippedSkill(SkillSlot);
 		}
-		UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] Skill01 pressed, casting lobby fireball from pawn: %s target=%s"),
+		UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] 触发装配技能：槽位=%d 角色=%s 目标=%s"),
+			SkillSlot,
 			*ZodiacPawn->GetName(),
 			*GetNameSafe(Target));
 	}
@@ -339,18 +440,23 @@ void ADBALobbyPlayerController::HandleSkill01Pressed()
 
 void ADBALobbyPlayerController::HandleSelectTargetPressed()
 {
+	AActor* Target = ResolveClickedAttackTarget();
+	if (!Target)
+	{
+		return;
+	}
+
 	if (ADBALobbyTrainingMonster* PreviousTarget = Cast<ADBALobbyTrainingMonster>(SelectedAttackTarget.Get()))
 	{
 		PreviousTarget->SetLobbySelected(false);
 	}
 
-	AActor* Target = ResolveClickedAttackTarget();
 	SelectedAttackTarget = Target;
 	if (ADBALobbyTrainingMonster* NewTarget = Cast<ADBALobbyTrainingMonster>(Target))
 	{
 		NewTarget->SetLobbySelected(true);
 	}
-	UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] Selected attack target: %s"), *GetNameSafe(Target));
+	UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] 已选中攻击目标：%s"), *GetNameSafe(Target));
 }
 
 void ADBALobbyPlayerController::LookUpAxis(float Value)
@@ -465,15 +571,19 @@ void ADBALobbyPlayerController::ApplyMouseLook()
 	float MouseDeltaY = 0.0f;
 	GetInputMouseDelta(MouseDeltaX, MouseDeltaY);
 
-	float YawInput = MouseDeltaX * MouseLookSensitivity;
-	float PitchInput = -MouseDeltaY * MouseLookSensitivity;
+	const float YawSensitivity = MouseLookSensitivity * MouseYawSensitivityScale;
+	const float PitchSensitivity = MouseLookSensitivity * MousePitchSensitivityScale;
+	float YawInput = MouseDeltaX * YawSensitivity;
+	float PitchInput = MouseDeltaY * PitchSensitivity;
 	if (FMath::IsNearlyZero(MouseDeltaX) && FMath::IsNearlyZero(MouseDeltaY))
 	{
-		YawInput = CachedTurnAxis * MouseLookSensitivity;
-		PitchInput = CachedLookUpAxis * MouseLookSensitivity;
+		YawInput = CachedTurnAxis * YawSensitivity;
+		PitchInput = -CachedLookUpAxis * PitchSensitivity;
 	}
 
 	ApplyCameraInput(YawInput, PitchInput, bIsRightLooking);
+	CachedTurnAxis = 0.0f;
+	CachedLookUpAxis = 0.0f;
 }
 
 void ADBALobbyPlayerController::ApplyCameraInput(float YawInput, float PitchInput, bool bTurnCharacter)
@@ -534,8 +644,15 @@ void ADBALobbyPlayerController::SetMouseLookCaptureActive(bool bActive)
 	if (bActive)
 	{
 		FInputModeGameOnly InputMode;
+		InputMode.SetConsumeCaptureMouseDown(false);
 		SetInputMode(InputMode);
-		SetShowMouseCursor(false);
+		CurrentMouseCursor = EMouseCursor::Default;
+		DefaultMouseCursor = EMouseCursor::Default;
+		SetShowMouseCursor(true);
+		if (!SoftwareCursorWidget)
+		{
+			EnsureCustomSoftwareCursor();
+		}
 		bEnableClickEvents = false;
 		bEnableMouseOverEvents = false;
 		return;
@@ -554,6 +671,7 @@ void ADBALobbyPlayerController::SetMouseLookCaptureActive(bool bActive)
 	{
 		EnsureCustomSoftwareCursor();
 	}
+	RestoreMouseLookCursorPosition();
 }
 
 void ADBALobbyPlayerController::ConfigurePawnForRightMouseLook(bool bActive)
@@ -566,6 +684,7 @@ void ADBALobbyPlayerController::ConfigurePawnForRightMouseLook(bool bActive)
 		if (UCharacterMovementComponent* Movement = ControlledCharacter->GetCharacterMovement())
 		{
 			Movement->bOrientRotationToMovement = !bActive;
+			Movement->bUseControllerDesiredRotation = bActive;
 		}
 	}
 
@@ -585,6 +704,56 @@ void ADBALobbyPlayerController::FacePawnToControlYaw()
 
 	const FRotator DesiredRotation(0.0f, GetControlRotation().Yaw, 0.0f);
 	ControlledPawn->SetActorRotation(DesiredRotation);
+}
+
+void ADBALobbyPlayerController::InitializeLobbyCameraForPawn(APawn* ControlledPawn)
+{
+	if (!ControlledPawn)
+	{
+		return;
+	}
+
+	const FRotator PawnRotation = ControlledPawn->GetActorRotation();
+	FRotator CameraRotation = GetControlRotation();
+	const float NormalizedPitch = FRotator::NormalizeAxis(CameraRotation.Pitch);
+	if (FMath::IsNearlyZero(NormalizedPitch, 1.0f))
+	{
+		CameraRotation.Pitch = FMath::Clamp(DefaultCameraPitch, MinCameraPitch, MaxCameraPitch);
+	}
+	CameraRotation.Yaw = PawnRotation.Yaw;
+	CameraRotation.Roll = 0.0f;
+	SetControlRotation(CameraRotation);
+	ConfigurePawnForRightMouseLook(false);
+}
+
+void ADBALobbyPlayerController::SaveMouseLookCursorPosition()
+{
+	if (bMouseLookCaptureActive || bHasSavedMouseLookCursorPosition)
+	{
+		return;
+	}
+
+	float MouseX = 0.0f;
+	float MouseY = 0.0f;
+	if (GetMousePosition(MouseX, MouseY))
+	{
+		SavedMouseLookCursorPosition = FVector2D(MouseX, MouseY);
+		bHasSavedMouseLookCursorPosition = true;
+	}
+}
+
+void ADBALobbyPlayerController::RestoreMouseLookCursorPosition()
+{
+	if (!bRestoreCursorAfterMouseLook || !bHasSavedMouseLookCursorPosition)
+	{
+		bHasSavedMouseLookCursorPosition = false;
+		return;
+	}
+
+	SetMouseLocation(
+		FMath::RoundToInt(SavedMouseLookCursorPosition.X),
+		FMath::RoundToInt(SavedMouseLookCursorPosition.Y));
+	bHasSavedMouseLookCursorPosition = false;
 }
 
 AActor* ADBALobbyPlayerController::ResolveClickedAttackTarget() const
@@ -633,6 +802,6 @@ void ADBALobbyPlayerController::ApplyTouchLook()
 	LastTouchLookPos = CurrentPos;
 	if (!Delta.IsNearlyZero())
 	{
-		ApplyCameraInput(Delta.X * TouchLookSensitivity, -Delta.Y * TouchLookSensitivity, true);
+		ApplyCameraInput(Delta.X * TouchLookSensitivity * MouseYawSensitivityScale, Delta.Y * TouchLookSensitivity * MousePitchSensitivityScale, true);
 	}
 }

@@ -409,7 +409,7 @@ bool ADBACharacterPresentationActor::ApplyLobbyDisplayAnimationToMesh(USkeletalM
 			MeshComponent->SetAnimationMode(EAnimationMode::AnimationSingleNode);
 			MeshComponent->SetAnimation(IdleAnimation);
 			MeshComponent->Play(true);
-			UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] Applied Rosales lobby idle animation: %s"), *RosalesIdleAnimationPath);
+			UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] 已应用 Rosales 大厅待机动画：%s"), *RosalesIdleAnimationPath);
 			return true;
 		}
 	}
@@ -421,7 +421,7 @@ bool ADBACharacterPresentationActor::ApplyLobbyDisplayAnimationToMesh(USkeletalM
 		{
 			MeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 			MeshComponent->SetAnimInstanceClass(AnimClass);
-			UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] Applied lobby display AnimBP: %s"), *AnimBlueprintPath);
+			UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] 已应用大厅展示动画蓝图：%s"), *AnimBlueprintPath);
 			return true;
 		}
 	}
@@ -436,12 +436,12 @@ bool ADBACharacterPresentationActor::ApplyLobbyDisplayAnimationToMesh(USkeletalM
 			MeshComponent->SetAnimationMode(EAnimationMode::AnimationSingleNode);
 			MeshComponent->SetAnimation(IdleAnimation);
 			MeshComponent->Play(true);
-			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPresentationActor] AnimBP missing, using idle animation fallback: %s"), *IdleAnimationPath);
+			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPresentationActor] 动画蓝图缺失，使用待机动画兜底：%s"), *IdleAnimationPath);
 			return true;
 		}
 	}
 
-	UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPresentationActor] Failed to resolve lobby display animation. Mesh=%s AnimBP=%s"), *MeshPath, *AnimBlueprintPath);
+	UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPresentationActor] 解析大厅展示动画失败。网格=%s 动画蓝图=%s"), *MeshPath, *AnimBlueprintPath);
 	return false;
 }
 
@@ -473,7 +473,7 @@ bool ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(USkeletalMeshComp
 		}
 		if (!BaseMaterial)
 		{
-			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPresentationActor] Failed to resolve base or fallback material. ZodiacMaterial=%s"), *MaterialPath);
+			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPresentationActor] 解析基础材质或兜底材质失败。生肖材质=%s"), *MaterialPath);
 			return false;
 		}
 	}
@@ -510,7 +510,7 @@ bool ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(USkeletalMeshComp
 		MeshComponent->SetMaterial(MaterialIndex, MaterialToApply);
 	}
 
-	UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] Applied zodiac material: %s Tint=%s Slots=%d Parent=%s TextureTint=%s"),
+	UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] 已应用生肖材质：材质=%s 颜色=%s 槽位=%d 父材质=%s 纹理染色=%s"),
 		LoadedZodiacMaterial && !bUsedFallbackMaterial ? *MaterialPath : TEXT("ReliableTintFallback"),
 		*Tint.ToString(),
 		MaterialSlotCount,
@@ -563,14 +563,14 @@ void ADBACharacterPresentationActor::ActivatePresentationCamera(APlayerControlle
 			PresentationCamera->Activate(true);
 		}
 		PlayerController->SetViewTargetWithBlend(this, BlendTime);
-		UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] Activated presentation camera. Actor=%s Camera=%s Location=%s"),
+		UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] 已激活展示摄像机。Actor=%s 摄像机=%s 位置=%s"),
 			*GetName(),
 			PresentationCamera && PresentationCamera->IsActive() ? TEXT("Active") : TEXT("Inactive"),
 			*GetActorLocation().ToString());
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPresentationActor] Failed to activate presentation camera: no PlayerController."));
+		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPresentationActor] 激活展示摄像机失败：没有 PlayerController。"));
 	}
 }
 
@@ -770,10 +770,10 @@ void ADBACharacterPresentationActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 
 	if (!ResolvedMesh)
 	{
-		UE_LOG(LogDBAUI, Error, TEXT("[CharacterPresentationActor] Failed to load any preview skeletal mesh."));
+		UE_LOG(LogDBAUI, Error, TEXT("[CharacterPresentationActor] 加载预览骨骼网格失败。"));
 		return;
 	}
-	UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] Loaded mesh: %s Skeleton=%s"),
+	UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] 已加载网格：%s 骨骼=%s"),
 		*ResolvedMeshPath,
 		ResolvedMesh->GetSkeleton() ? TEXT("Valid") : TEXT("None"));
 
@@ -799,7 +799,7 @@ void ADBACharacterPresentationActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 	{
 		RimLight->SetLightColor(ZodiacTint);
 	}
-	UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] Mesh applied. Scale=%.2f OffsetZ=%.2f Bounds=%s"),
+	UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] 网格已应用。缩放=%.2f Z偏移=%.2f 包围盒=%s"),
 		PreviewMeshDisplayScale,
 		MeshBottomOffsetZ,
 		*PreviewMeshComponent->Bounds.GetBox().ToString());

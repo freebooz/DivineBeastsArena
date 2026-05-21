@@ -15,6 +15,8 @@ class UDBAArenaHUDRootWidgetBase;
 class UDBAMainLobbyWidgetBase;
 class UDBALobbyPlayerHUDWidgetBase;
 class UDBALoadingScreenWidgetBase;
+class UDBAGameSettingsWidgetBase;
+class UDBAInventoryWidgetBase;
 class UAudioComponent;
 class USoundBase;
 
@@ -104,6 +106,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	void HideLobbyLoadingScreen();
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	void ShowGameSettings();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	void HideGameSettings();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	void ToggleGameSettings();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	bool IsGameSettingsVisible() const { return bGameSettingsVisible; }
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	void ShowInventory();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	void HideInventory();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	void ToggleInventory();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	bool IsInventoryVisible() const { return bInventoryVisible; }
+
 	/** 外部请求显示登录流程界面 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	void RequestShowLoginFlowWidget();
@@ -120,6 +146,12 @@ protected:
 	/** 创建Arena HUD Widget */
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	virtual void CreateArenaHUDWidget();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	virtual void CreateGameSettingsWidget();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	virtual void CreateInventoryWidget();
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	virtual void ShowLoginFlowWidget();
@@ -157,6 +189,12 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
 	TObjectPtr<UDBALoadingScreenWidgetBase> LobbyLoadingWidget;
 
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
+	TObjectPtr<UDBAGameSettingsWidgetBase> GameSettingsWidget;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
+	TObjectPtr<UDBAInventoryWidgetBase> InventoryWidget;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
 	TSubclassOf<UDBAMainLobbyWidgetBase> MainLobbyWidgetClass;
 
@@ -177,6 +215,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
 	TSubclassOf<UDBALoadingScreenWidgetBase> LobbyLoadingWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
+	TSubclassOf<UDBAGameSettingsWidgetBase> GameSettingsWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
+	TSubclassOf<UDBAInventoryWidgetBase> InventoryWidgetClass;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
 	TObjectPtr<class UDBASplashVideoWidget> SplashVideoWidget;
@@ -223,6 +267,8 @@ private:
 	bool bArenaHUDVisible = false;
 	bool bFlowWidgetVisible = false;
 	bool bLobbyLoadingVisible = false;
+	bool bGameSettingsVisible = false;
+	bool bInventoryVisible = false;
 	bool bLoginFlowStartRequested = false;
 	int32 FlowWidgetRefreshRetryCount = 0;
 	int32 LobbyHUDRefreshRetryCount = 0;

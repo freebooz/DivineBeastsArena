@@ -10,6 +10,7 @@
 
 class UNiagaraComponent;
 class UNiagaraSystem;
+class UAudioComponent;
 class UPrimitiveComponent;
 class USoundBase;
 class USphereComponent;
@@ -55,6 +56,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UNiagaraComponent> ProjectileNiagaraVFX;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UAudioComponent> ProjectileLoopAudio;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Config")

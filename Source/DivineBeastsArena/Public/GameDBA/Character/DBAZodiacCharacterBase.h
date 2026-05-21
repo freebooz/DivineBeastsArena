@@ -70,6 +70,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Lobby|Spell")
 	void CastLobbyFireballAtTarget(AActor* TargetActor);
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|Lobby|Spell")
+	void CastEquippedSkill(int32 SkillSlot);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Lobby|Spell")
+	void CastEquippedSkillAtTarget(int32 SkillSlot, AActor* TargetActor);
+
 public:
 	// ==================== 属性访问 ====================
 
@@ -193,7 +199,15 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerCastLobbyFireballAtTarget(AActor* TargetActor, FVector_NetQuantizeNormal FallbackAimDirection);
 
+	UFUNCTION(Server, Reliable)
+	void ServerCastEquippedSkill(int32 SkillSlot, AActor* TargetActor, FVector_NetQuantizeNormal FallbackAimDirection);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastPlayLobbySkillCastFeedback(int32 SkillSlot);
+
 	void CastLobbyFireballInternal(const FVector& AimDirection, AActor* TargetActor = nullptr);
+	void CastEquippedSkillInternal(int32 SkillSlot, const FVector& AimDirection, AActor* TargetActor = nullptr);
+	void PlayLobbySkillCastFeedbackLocal(int32 SkillSlot);
 	void UpdateLobbyLocomotionAnimation();
 	UAnimationAsset* LoadLobbyAnimation(const FString& AnimationPath);
 

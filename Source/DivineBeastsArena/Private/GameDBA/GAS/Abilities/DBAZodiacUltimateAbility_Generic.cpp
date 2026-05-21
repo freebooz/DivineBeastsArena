@@ -13,7 +13,7 @@ void UDBAZodiacUltimateAbility_Generic::ActivateAbility(
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
 {
-	UE_LOG(LogDBACombat, Log, TEXT("UDBAZodiacUltimateAbility_Generic::ActivateAbility - UltimateSkillID: %s"), *UltimateSkillID.ToString());
+	UE_LOG(LogDBACombat, Log, TEXT("[UDBAZodiacUltimateAbility_Generic] 激活生肖终极技能：技能ID=%s"), *UltimateSkillID.ToString());
 
 	// 调用蓝图事件
 	OnUltimateActivatedBP(UltimateSkillID);
@@ -29,7 +29,7 @@ void UDBAZodiacUltimateAbility_Generic::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	UE_LOG(LogDBACombat, Log, TEXT("UDBAZodiacUltimateAbility_Generic::EndAbility - UltimateSkillID: %s, bWasCancelled: %d"), *UltimateSkillID.ToString(), bWasCancelled);
+	UE_LOG(LogDBACombat, Log, TEXT("[UDBAZodiacUltimateAbility_Generic] 结束生肖终极技能：技能ID=%s 是否取消=%s"), *UltimateSkillID.ToString(), bWasCancelled ? TEXT("是") : TEXT("否"));
 
 	// 调用蓝图事件
 	OnUltimateEndedBP(UltimateSkillID, bWasCancelled);

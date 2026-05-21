@@ -186,11 +186,11 @@ void ADBAGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] BeginPlay - DivineBeastsArena started"));
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] 游戏模式开始运行，DivineBeastsArena 已启动。"));
 
 	if (GetNetMode() == NM_DedicatedServer)
 	{
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Running in dedicated server mode"));
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] 当前运行模式：独立服务器。"));
 	}
 
 	if (IsLobbyMapWorld(GetWorld()))
@@ -201,7 +201,7 @@ void ADBAGameModeBase::BeginPlay()
 		}
 		LobbyDisplayActors.Reset();
 		SpawnLobbyTrainingMonsters();
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Lobby character preview actors disabled; using player pawns only."));
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] 大厅角色预览 Actor 已禁用，仅使用玩家角色 Pawn。"));
 	}
 }
 
@@ -246,7 +246,7 @@ void ADBAGameModeBase::SpawnLobbyTrainingMonsters()
 		{
 			Monster->ConfigureLobbyMonster(Index);
 			LobbyTrainingMonsters.Add(Monster);
-			UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Spawned lobby training monster: index=%d actor=%s location=%s"),
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] 已生成大厅训练怪物：序号=%d Actor=%s 位置=%s"),
 				Index,
 				*Monster->GetName(),
 				*SpawnLocation.ToString());
@@ -264,7 +264,7 @@ FString ADBAGameModeBase::InitNewPlayer(APlayerController* NewPlayerController, 
 		const EDBAZodiac LobbyZodiac = ResolveLobbyDisplayZodiac(Options, JoinIndex);
 		LobbyJoinIndices.Add(PlayerKey, JoinIndex);
 		LobbyJoinZodiacs.Add(PlayerKey, LobbyZodiac);
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Lobby player initialized: %s index=%d zodiac=%d options=%s"),
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] 大厅玩家初始化完成：玩家=%s 序号=%d 生肖=%d 参数=%s"),
 			*NewPlayerController->GetName(),
 			JoinIndex,
 			static_cast<int32>(LobbyZodiac),
@@ -382,7 +382,7 @@ APawn* ADBAGameModeBase::SpawnDefaultPawnAtTransform_Implementation(AController*
 		{
 			if (PC->IsLocalController())
 			{
-				UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Skip local host pawn spawn for headless lobby server: %s"), *PC->GetName());
+				UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] 无头大厅服务器跳过本地主机 Pawn 生成：%s"), *PC->GetName());
 				return nullptr;
 			}
 		}
@@ -420,7 +420,7 @@ APawn* ADBAGameModeBase::SpawnDefaultPawnAtTransform_Implementation(AController*
 			ApplyLobbyPawnVisuals(SpawnedCharacter, PawnZodiac);
 		}
 
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] SpawnDefaultPawnAtTransform (AlwaysSpawn): player=%s pawn=%s class=%s"),
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] 已生成默认 Pawn（强制生成）：玩家=%s Pawn=%s 类=%s"),
 			*NewPlayer->GetName(),
 			*SpawnedPawn->GetName(),
 			*PawnClass->GetName());

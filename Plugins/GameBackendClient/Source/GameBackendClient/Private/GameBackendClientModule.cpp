@@ -10,12 +10,12 @@ class FGameBackendClientModule : public IModuleInterface
 public:
 	virtual void StartupModule() override
 	{
-		UE_LOG(LogGameBackendClient, Log, TEXT("GameBackendClient module started."));
+		UE_LOG(LogGameBackendClient, Log, TEXT("GameBackendClient 模块已启动。"));
 	}
 
 	virtual void ShutdownModule() override
 	{
-		UE_LOG(LogGameBackendClient, Log, TEXT("GameBackendClient module shutdown."));
+		UE_LOG(LogGameBackendClient, Log, TEXT("GameBackendClient 模块已关闭。"));
 	}
 };
 

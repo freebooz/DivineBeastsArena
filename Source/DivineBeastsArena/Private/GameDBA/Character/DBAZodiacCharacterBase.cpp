@@ -3,11 +3,13 @@
 
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
 #include "GameDBA/Combat/DBAFireballProjectile.h"
+#include "GameDBA/Combat/DBAProjectile_Generic.h"
 #include "GameDBA/Combat/DBASkillProjectileBase.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/GAS/DBAAbilitySystemComponent.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "GameDBA/RPC/DBARpcHandler.h"
+#include "GameDBA/Services/DBASkillGroupGeneratorSubsystem.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
 #include "Camera/CameraComponent.h"
 #include "Animation/AnimationAsset.h"
@@ -18,10 +20,125 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameDBA/Animation/DBAZodiacAnimInstance.h"
+#include "Kismet/GameplayStatics.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "Net/UnrealNetwork.h"
+#include "Sound/SoundBase.h"
 
 namespace
 {
+	struct FLobbyEquippedSkillCastSpec
+	{
+		int32 SkillSlot = 1;
+		FName FallbackSkillId = TEXT("Lobby.Skill01");
+		float Damage = 35.0f;
+		float Speed = 1450.0f;
+		float Radius = 42.0f;
+		float Cooldown = 3.0f;
+		float CastVFXScale = 1.0f;
+		const TCHAR* CastNiagaraPath = nullptr;
+		const TCHAR* ProjectileNiagaraPath = nullptr;
+		const TCHAR* ImpactNiagaraPath = nullptr;
+		const TCHAR* CastSFXPath = nullptr;
+		const TCHAR* FlySFXPath = nullptr;
+		const TCHAR* ImpactSFXPath = nullptr;
+	};
+
+	const FLobbyEquippedSkillCastSpec& GetDefaultLobbySkillSpec(int32 SkillSlot)
+	{
+		static const FLobbyEquippedSkillCastSpec Skill01{
+			1,
+			TEXT("Lobby.Skill01.Fire"),
+			35.0f,
+			1450.0f,
+			42.0f,
+			3.0f,
+			1.0f,
+			TEXT("/Game/DBA/VFX/Abilities/FireLion/NS_FireLion_Q_FlameClaw_Slash.NS_FireLion_Q_FlameClaw_Slash"),
+			TEXT("/Game/DBA/VFX/Fireball/NS_DBA_Fireball_Projectile.NS_DBA_Fireball_Projectile"),
+			TEXT("/Game/DBA/VFX/Fireball/NS_DBA_Fireball_Impact.NS_DBA_Fireball_Impact"),
+			TEXT("/Game/DBA/Audio/SFX/Abilities/FireLion/SFX_FireLion_Q_FlameClaw_Slash.SFX_FireLion_Q_FlameClaw_Slash"),
+			TEXT("/Game/DBA/Audio/SFX/Common/Status/SFX_Status_Burning_Loop.SFX_Status_Burning_Loop"),
+			TEXT("/Game/DBA/Audio/SFX/Abilities/FireLion/SFX_FireLion_Q_FlameClaw_Impact.SFX_FireLion_Q_FlameClaw_Impact")
+		};
+		static const FLobbyEquippedSkillCastSpec Skill02{
+			2,
+			TEXT("Lobby.Skill02.Water"),
+			42.0f,
+			1350.0f,
+			46.0f,
+			4.5f,
+			1.0f,
+			TEXT("/Game/DBA/VFX/Common/Status/NS_Status_Wet.NS_Status_Wet"),
+			TEXT("/Game/DBA/VFX/Abilities/WaterDragon/NS_WaterDragon_Q_WaterBlast_Projectile.NS_WaterDragon_Q_WaterBlast_Projectile"),
+			TEXT("/Game/DBA/VFX/Abilities/WaterDragon/NS_WaterDragon_Q_WaterBlast_Impact.NS_WaterDragon_Q_WaterBlast_Impact"),
+			TEXT("/Game/DBA/Audio/SFX/Abilities/WaterDragon/SFX_WaterDragon_Q_WaterBlast_Cast.SFX_WaterDragon_Q_WaterBlast_Cast"),
+			TEXT("/Game/DBA/Audio/SFX/Common/Status/SFX_Status_Wet.SFX_Status_Wet"),
+			TEXT("/Game/DBA/Audio/SFX/Abilities/WaterDragon/SFX_WaterDragon_Q_WaterBlast_Impact.SFX_WaterDragon_Q_WaterBlast_Impact")
+		};
+		static const FLobbyEquippedSkillCastSpec Skill03{
+			3,
+			TEXT("Lobby.Skill03.Wood"),
+			48.0f,
+			1220.0f,
+			48.0f,
+			6.0f,
+			1.05f,
+			TEXT("/Game/DBA/VFX/Common/Status/NS_Status_HealingOverTime.NS_Status_HealingOverTime"),
+			TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingSeed_Projectile.NS_WoodCrane_Q_HealingSeed_Projectile"),
+			TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingBurst_Impact.NS_WoodCrane_Q_HealingBurst_Impact"),
+			TEXT("/Game/DBA/Audio/SFX/Abilities/WoodCrane/SFX_WoodCrane_Q_HealingSeed_Cast.SFX_WoodCrane_Q_HealingSeed_Cast"),
+			TEXT("/Game/DBA/Audio/SFX/Common/Status/SFX_Status_HealingOverTime.SFX_Status_HealingOverTime"),
+			TEXT("/Game/DBA/Audio/SFX/Abilities/WoodCrane/SFX_WoodCrane_Q_HealingBurst_Impact.SFX_WoodCrane_Q_HealingBurst_Impact")
+		};
+		static const FLobbyEquippedSkillCastSpec Skill04{
+			4,
+			TEXT("Lobby.Skill04.Gold"),
+			56.0f,
+			1580.0f,
+			38.0f,
+			7.5f,
+			1.0f,
+			TEXT("/Game/DBA/VFX/Abilities/GoldPhoenix/NS_GoldPhoenix_Q_GoldFeather_Impact.NS_GoldPhoenix_Q_GoldFeather_Impact"),
+			TEXT("/Game/DBA/VFX/Abilities/GoldPhoenix/NS_GoldPhoenix_Q_GoldFeather_Projectile.NS_GoldPhoenix_Q_GoldFeather_Projectile"),
+			TEXT("/Game/DBA/VFX/Abilities/GoldPhoenix/NS_GoldPhoenix_Q_GoldFeather_Impact.NS_GoldPhoenix_Q_GoldFeather_Impact"),
+			TEXT("/Game/DBA/Audio/SFX/Abilities/GoldPhoenix/SFX_GoldPhoenix_Q_GoldFeather_Cast.SFX_GoldPhoenix_Q_GoldFeather_Cast"),
+			nullptr,
+			TEXT("/Game/DBA/Audio/SFX/Abilities/GoldPhoenix/SFX_GoldPhoenix_Q_GoldFeather_Impact.SFX_GoldPhoenix_Q_GoldFeather_Impact")
+		};
+		static const FLobbyEquippedSkillCastSpec Ultimate{
+			5,
+			TEXT("Lobby.Ultimate"),
+			86.0f,
+			1700.0f,
+			64.0f,
+			12.0f,
+			1.35f,
+			TEXT("/Game/DBA/VFX/Abilities/FireLion/NS_FireLion_R_DivineBeastTransform.NS_FireLion_R_DivineBeastTransform"),
+			TEXT("/Game/DBA/VFX/Abilities/FireLion/NS_FireLion_E_FlameLeap_Trail.NS_FireLion_E_FlameLeap_Trail"),
+			TEXT("/Game/DBA/VFX/Common/Impact/NS_Impact_Magic_Burst.NS_Impact_Magic_Burst"),
+			TEXT("/Game/DBA/Audio/SFX/Abilities/FireLion/SFX_FireLion_R_DivineBeastTransform.SFX_FireLion_R_DivineBeastTransform"),
+			nullptr,
+			TEXT("/Game/DBA/Audio/SFX/Abilities/FireLion/SFX_FireLion_E_FlameLeap_Impact.SFX_FireLion_E_FlameLeap_Impact")
+		};
+
+		switch (SkillSlot)
+		{
+		case 1: return Skill01;
+		case 2: return Skill02;
+		case 3: return Skill03;
+		case 4: return Skill04;
+		case 5: return Ultimate;
+		default: return Skill01;
+		}
+	}
+
+	bool IsLobbyEquippedSkillSlot(int32 SkillSlot)
+	{
+		return SkillSlot >= 1 && SkillSlot <= 5;
+	}
+
 	EDBAZodiac ToCommonZodiac(EDBAZodiacType ZodiacType)
 	{
 		switch (ZodiacType)
@@ -42,6 +159,95 @@ namespace
 		}
 	}
 
+	EDBAElement ToCommonElement(EDBAElementType ElementType)
+	{
+		switch (ElementType)
+		{
+		case EDBAElementType::Fire: return EDBAElement::Fire;
+		case EDBAElementType::Water: return EDBAElement::Water;
+		case EDBAElementType::Wood: return EDBAElement::Wood;
+		case EDBAElementType::Metal: return EDBAElement::Gold;
+		case EDBAElementType::Earth: return EDBAElement::Earth;
+		default: return EDBAElement::Fire;
+		}
+	}
+
+	FVector ResolveHorizontalAimDirection(const FVector& DesiredDirection, const FVector& FallbackDirection)
+	{
+		FVector HorizontalDirection(DesiredDirection.X, DesiredDirection.Y, 0.0f);
+		if (HorizontalDirection.IsNearlyZero())
+		{
+			HorizontalDirection = FVector(FallbackDirection.X, FallbackDirection.Y, 0.0f);
+		}
+		if (HorizontalDirection.IsNearlyZero())
+		{
+			HorizontalDirection = FVector::ForwardVector;
+		}
+		return HorizontalDirection.GetSafeNormal();
+	}
+
+	FName ResolveEquippedLobbySkillId(const ADBAZodiacCharacterBase* Character, int32 SkillSlot)
+	{
+		const FLobbyEquippedSkillCastSpec& DefaultSpec = GetDefaultLobbySkillSpec(SkillSlot);
+		if (!Character || !Character->GetWorld())
+		{
+			return DefaultSpec.FallbackSkillId;
+		}
+
+		UGameInstance* GameInstance = Character->GetWorld()->GetGameInstance();
+		UDBASkillGroupGeneratorSubsystem* SkillGroups = GameInstance
+			? GameInstance->GetSubsystem<UDBASkillGroupGeneratorSubsystem>()
+			: nullptr;
+		if (!SkillGroups)
+		{
+			return DefaultSpec.FallbackSkillId;
+		}
+
+		FDBAZodiacElementFixedSkillGroupRow SkillGroup;
+		if (!SkillGroups->GetSkillGroup(ToCommonZodiac(Character->GetZodiacType()), ToCommonElement(Character->GetElementType()), SkillGroup))
+		{
+			return DefaultSpec.FallbackSkillId;
+		}
+
+		switch (SkillSlot)
+		{
+		case 1: return SkillGroup.ElementSkill1Id.IsNone() ? DefaultSpec.FallbackSkillId : SkillGroup.ElementSkill1Id;
+		case 2: return SkillGroup.ElementSkill2Id.IsNone() ? DefaultSpec.FallbackSkillId : SkillGroup.ElementSkill2Id;
+		case 3: return SkillGroup.ElementSkill3Id.IsNone() ? DefaultSpec.FallbackSkillId : SkillGroup.ElementSkill3Id;
+		case 4: return SkillGroup.ElementSkill4Id.IsNone() ? DefaultSpec.FallbackSkillId : SkillGroup.ElementSkill4Id;
+		case 5: return SkillGroup.ZodiacUltimateSkillId.IsNone() ? DefaultSpec.FallbackSkillId : SkillGroup.ZodiacUltimateSkillId;
+		default: return DefaultSpec.FallbackSkillId;
+		}
+	}
+
+	void SetSoftNiagaraAsset(TSoftObjectPtr<UNiagaraSystem>& OutAsset, const TCHAR* AssetPath)
+	{
+		if (AssetPath && FCString::Strlen(AssetPath) > 0)
+		{
+			OutAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(AssetPath));
+		}
+	}
+
+	void SetSoftSoundAsset(TSoftObjectPtr<USoundBase>& OutAsset, const TCHAR* AssetPath)
+	{
+		if (AssetPath && FCString::Strlen(AssetPath) > 0)
+		{
+			OutAsset = TSoftObjectPtr<USoundBase>(FSoftObjectPath(AssetPath));
+		}
+	}
+
+	void ApplyLobbySkillProjectileAssets(ADBASkillProjectileBase* Projectile, const FLobbyEquippedSkillCastSpec& Spec)
+	{
+		if (!Projectile)
+		{
+			return;
+		}
+
+		SetSoftNiagaraAsset(Projectile->ProjectileNiagaraVFXAsset, Spec.ProjectileNiagaraPath);
+		SetSoftNiagaraAsset(Projectile->ImpactNiagaraVFXAsset, Spec.ImpactNiagaraPath);
+		SetSoftSoundAsset(Projectile->FlySFXAsset, Spec.FlySFXPath);
+		SetSoftSoundAsset(Projectile->ImpactSFXAsset, Spec.ImpactSFXPath);
+	}
 }
 
 ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
@@ -87,7 +293,10 @@ ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
 	LobbyFireballProjectileClass = ADBAFireballProjectile::StaticClass();
 	SkillCooldowns.Init(0.0f, 7);
 	SkillMaxCooldowns.Init(0.0f, 7);
-	SkillMaxCooldowns[1] = LobbyFireballCooldown;
+	for (int32 SkillSlot = 1; SkillSlot <= 5; ++SkillSlot)
+	{
+		SkillMaxCooldowns[SkillSlot] = GetDefaultLobbySkillSpec(SkillSlot).Cooldown;
+	}
 }
 
 void ADBAZodiacCharacterBase::BeginPlay()
@@ -126,7 +335,11 @@ void ADBAZodiacCharacterBase::Tick(float DeltaSeconds)
 		{
 			SkillMaxCooldowns.SetNumZeroed(7);
 		}
-		SkillMaxCooldowns[1] = FMath::Max(SkillMaxCooldowns[1], LobbyFireballCooldown);
+		for (int32 SkillSlot = 1; SkillSlot <= 5; ++SkillSlot)
+		{
+			const float DefaultCooldown = SkillSlot == 1 ? LobbyFireballCooldown : GetDefaultLobbySkillSpec(SkillSlot).Cooldown;
+			SkillMaxCooldowns[SkillSlot] = FMath::Max(SkillMaxCooldowns[SkillSlot], DefaultCooldown);
+		}
 	}
 
 	if (LobbyAttackAnimationTimeRemaining > 0.0f)
@@ -204,7 +417,7 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 		else
 		{
 			MeshComponent->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-			UE_LOG(LogTemp, Warning, TEXT("[DBAZodiacCharacterBase] Mesh has no skeleton, animation blueprint skipped: %s"), *ResolvedMeshPath);
+			UE_LOG(LogTemp, Warning, TEXT("[DBAZodiacCharacterBase] 网格没有骨骼，已跳过动画蓝图：%s"), *ResolvedMeshPath);
 		}
 	}
 
@@ -216,11 +429,11 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 	MeshComponent->UpdateBounds();
 	ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(MeshComponent, CommonZodiac, this);
 
-	UE_LOG(LogTemp, Log, TEXT("[DBAZodiacCharacterBase] Lobby visuals applied: actor=%s zodiac=%d mesh=%s skeleton=%s anim=%s location=%s rotation=%s"),
+	UE_LOG(LogTemp, Log, TEXT("[DBAZodiacCharacterBase] 大厅角色外观已应用：Actor=%s 生肖=%d 网格=%s 骨骼=%s 动画=%s 相对位置=%s 相对旋转=%s"),
 		*GetName(),
 		static_cast<int32>(CommonZodiac),
 		ResolvedMeshPath.IsEmpty() ? TEXT("<unchanged>") : *ResolvedMeshPath,
-		ResolvedMesh && ResolvedMesh->GetSkeleton() ? TEXT("true") : TEXT("false"),
+		ResolvedMesh && ResolvedMesh->GetSkeleton() ? TEXT("是") : TEXT("否"),
 		MeshComponent->GetAnimInstance() ? *MeshComponent->GetAnimInstance()->GetClass()->GetName() : *GetNameSafe(CurrentLobbyAnimation),
 		*MeshComponent->GetRelativeLocation().ToString(),
 		*MeshComponent->GetRelativeRotation().ToString());
@@ -239,7 +452,7 @@ void ADBAZodiacCharacterBase::CastLobbyFireball()
 		AimDirection = OwningController->GetControlRotation().Vector();
 	}
 
-	AimDirection = AimDirection.GetSafeNormal();
+	AimDirection = ResolveHorizontalAimDirection(AimDirection, GetActorForwardVector());
 	if (AimDirection.IsNearlyZero())
 	{
 		AimDirection = GetActorForwardVector();
@@ -259,13 +472,14 @@ void ADBAZodiacCharacterBase::CastLobbyFireballAtTarget(AActor* TargetActor)
 	FVector AimDirection = GetActorForwardVector();
 	if (TargetActor)
 	{
-		AimDirection = (TargetActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+		AimDirection = ResolveHorizontalAimDirection(TargetActor->GetActorLocation() - GetActorLocation(), GetActorForwardVector());
 	}
 	else if (const AController* OwningController = GetController())
 	{
 		AimDirection = OwningController->GetControlRotation().Vector();
 	}
 
+	AimDirection = ResolveHorizontalAimDirection(AimDirection, GetActorForwardVector());
 	if (AimDirection.IsNearlyZero())
 	{
 		AimDirection = GetActorForwardVector();
@@ -308,23 +522,16 @@ void ADBAZodiacCharacterBase::CastLobbyFireballInternal(const FVector& AimDirect
 	SkillMaxCooldowns[1] = FMath::Max(SkillMaxCooldowns[1], LobbyFireballCooldown);
 	if (SkillCooldowns.IsValidIndex(1) && SkillCooldowns[1] > 0.0f)
 	{
-		UE_LOG(LogDBACombat, Verbose, TEXT("[DBAZodiacCharacterBase] Lobby fireball blocked by cooldown: caster=%s remaining=%.2f"),
+		UE_LOG(LogDBACombat, Verbose, TEXT("[DBAZodiacCharacterBase] 大厅火球被冷却阻止：施法者=%s 剩余=%.2f"),
 			*GetName(),
 			SkillCooldowns[1]);
 		return;
 	}
 
-	FVector SafeAimDirection = AimDirection.GetSafeNormal().IsNearlyZero()
-		? GetActorForwardVector()
-		: AimDirection.GetSafeNormal();
+	FVector SafeAimDirection = ResolveHorizontalAimDirection(AimDirection, GetActorForwardVector());
 	if (IsValid(TargetActor) && TargetActor != this)
 	{
-		const FVector TargetLocation = TargetActor->GetActorLocation() + FVector(0.0f, 0.0f, 55.0f);
-		SafeAimDirection = (TargetLocation - (GetActorLocation() + FVector(0.0f, 0.0f, 74.0f))).GetSafeNormal();
-		if (SafeAimDirection.IsNearlyZero())
-		{
-			SafeAimDirection = GetActorForwardVector();
-		}
+		SafeAimDirection = ResolveHorizontalAimDirection(TargetActor->GetActorLocation() - GetActorLocation(), SafeAimDirection);
 	}
 
 	TSubclassOf<ADBASkillProjectileBase> ProjectileClass = LoadClass<ADBASkillProjectileBase>(
@@ -353,7 +560,7 @@ void ADBAZodiacCharacterBase::CastLobbyFireballInternal(const FVector& AimDirect
 		SpawnParams);
 	if (!Fireball)
 	{
-		UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] Failed to spawn lobby fireball. Class=%s"), *GetNameSafe(ProjectileClass));
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 生成大厅火球失败：类=%s"), *GetNameSafe(ProjectileClass));
 		return;
 	}
 
@@ -372,7 +579,7 @@ void ADBAZodiacCharacterBase::CastLobbyFireballInternal(const FVector& AimDirect
 		PlayAttackAnimation();
 	}
 
-	UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] Cast lobby fireball: caster=%s projectile=%s class=%s target=%s direction=%s"),
+	UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放大厅火球：施法者=%s 投射物=%s 类=%s 目标=%s 水平方向=%s"),
 		*GetName(),
 		*Fireball->GetName(),
 		*GetNameSafe(ProjectileClass),
@@ -399,7 +606,7 @@ UAnimationAsset* ADBAZodiacCharacterBase::LoadLobbyAnimation(const FString& Anim
 	UAnimationAsset* Animation = LoadObject<UAnimationAsset>(nullptr, *AnimationPath);
 	if (!Animation)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[DBAZodiacCharacterBase] Failed to load lobby animation: %s"), *AnimationPath);
+		UE_LOG(LogTemp, Warning, TEXT("[DBAZodiacCharacterBase] 加载大厅动画失败：%s"), *AnimationPath);
 	}
 	return Animation;
 }
@@ -441,10 +648,10 @@ void ADBAZodiacCharacterBase::UpdateLobbyLocomotionAnimation()
 	MeshComponent->Play(!bPlayingAttack);
 	CurrentLobbyAnimation = DesiredAnimation;
 
-	UE_LOG(LogTemp, Log, TEXT("[DBAZodiacCharacterBase] Applied lobby single-node animation: actor=%s animation=%s looping=%s velocity=%s"),
+	UE_LOG(LogTemp, Log, TEXT("[DBAZodiacCharacterBase] 已应用大厅单节点动画：Actor=%s 动画=%s 循环=%s 速度=%s"),
 		*GetName(),
 		*DesiredAnimation->GetPathName(),
-		bPlayingAttack ? TEXT("false") : TEXT("true"),
+		bPlayingAttack ? TEXT("否") : TEXT("是"),
 		*GetVelocity().ToString());
 }
 

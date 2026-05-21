@@ -31,6 +31,8 @@ public class DivineBeastsArena : ModuleRules
             "AIModule",
             "NavigationSystem",
             "Niagara",
+            "Json",
+            "JsonUtilities",
             "GameBackendClient",
             "GameMoba",
         });

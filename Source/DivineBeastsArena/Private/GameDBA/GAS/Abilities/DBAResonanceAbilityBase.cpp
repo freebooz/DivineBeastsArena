@@ -26,5 +26,5 @@ void UDBAResonanceAbilityBase::ActivateAbility(
 
 void UDBAResonanceAbilityBase::ApplyResonanceEffect(int32 CurrentResonanceLevel)
 {
-	UE_LOG(LogDBACombat, Verbose, TEXT("[DBAResonanceAbilityBase] Resonance level: %d"), CurrentResonanceLevel);
+	UE_LOG(LogDBACombat, Verbose, TEXT("[DBAResonanceAbilityBase] 当前共鸣等级：%d"), CurrentResonanceLevel);
 }

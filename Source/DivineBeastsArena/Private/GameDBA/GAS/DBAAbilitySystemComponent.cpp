@@ -70,7 +70,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 	UDBAFixedSkillGroupDataAsset* AbilitySet = UDBAFixedSkillGroupLibrary::GetFixedSkillGroupById(FixedSkillGroupId);
 	if (!AbilitySet)
 	{
-		UE_LOG(LogDBACombat, Warning, TEXT("[DBAAbilitySystemComponent] Fixed skill group not found: %s"), *FixedSkillGroupId.ToString());
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAAbilitySystemComponent] 未找到固定技能组：%s"), *FixedSkillGroupId.ToString());
 		return;
 	}
 
@@ -308,7 +308,7 @@ void UDBAAbilitySystemComponent::TriggerGameplayCue(const FGameplayTag& CueTag, 
 {
 	if (!CueTag.IsValid())
 	{
-		UE_LOG(LogDBACombat, Warning, TEXT("[DBAAbilitySystemComponent] Invalid GameplayCue tag"));
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAAbilitySystemComponent] GameplayCue 标签无效。"));
 		return;
 	}
 

@@ -66,6 +66,6 @@ void UDBAGE_Generic::LoadAndApplyModifiers()
 		DurationMagnitude = FScalableFloat(SkillRow->ControlTime);
 	}
 
-	UE_LOG(LogDBACombat, Log, TEXT("[DBAGE_Generic] 加载技能配置: %s, BaseDamage=%.1f, HealAmount=%.1f, ShieldValue=%.1f"),
+	UE_LOG(LogDBACombat, Log, TEXT("[DBAGE_Generic] 已加载技能配置：技能=%s 基础伤害=%.1f 治疗量=%.1f 护盾值=%.1f"),
 		*SkillID.ToString(), SkillRow->BaseDamage, SkillRow->HealAmount, SkillRow->ShieldValue);
 }
