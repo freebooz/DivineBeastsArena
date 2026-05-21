@@ -5,6 +5,7 @@
 #include "EngineUtils.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
+#include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/HorizontalBox.h"
@@ -26,6 +27,7 @@
 #include "GameDBA/Data/DBAFixedSkillGroupData.h"
 #include "GameDBA/Data/DBASkillDataRow.h"
 #include "GameDBA/GAS/DBAAbilitySetLibrary.h"
+#include "GameDBA/Player/DBALobbyPlayerController.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
@@ -36,8 +38,8 @@ namespace
 {
 	constexpr int32 LobbySkillSlotCount = 7;
 	const FVector2D LobbyAvatarPanelLimit(190.0f, 58.0f);
-	const FVector2D LobbySkillSlotLimit(32.0f, 32.0f);
-	const FVector2D LobbySkillBarLimit(258.0f, 40.0f);
+	const FVector2D LobbySkillSlotLimit(42.667f, 42.667f);
+	const FVector2D LobbySkillBarLimit(344.0f, 53.333f);
 	const TCHAR* DesktopSkillHotkeys[LobbySkillSlotCount] = { TEXT("AUTO"), TEXT("1"), TEXT("2"), TEXT("3"), TEXT("4"), TEXT("5"), TEXT("AUTO") };
 	const TCHAR* MobileSkillHotkeys[LobbySkillSlotCount] = { TEXT("AUTO"), TEXT("S1"), TEXT("S2"), TEXT("S3"), TEXT("S4"), TEXT("ULT"), TEXT("AUTO") };
 
@@ -192,6 +194,28 @@ namespace
 			FLinearColor(0.15f, 0.85f, 0.95f, 0.92f)
 		};
 		return Colors[FMath::Clamp(Index, 0, LobbySkillSlotCount - 1)];
+	}
+
+	FButtonStyle MakeSkillSlotButtonStyle()
+	{
+		FSlateBrush NormalBrush;
+		NormalBrush.DrawAs = ESlateBrushDrawType::Box;
+		NormalBrush.TintColor = FSlateColor(FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
+
+		FSlateBrush HoveredBrush = NormalBrush;
+		HoveredBrush.TintColor = FSlateColor(FLinearColor(1.0f, 0.82f, 0.22f, 0.14f));
+
+		FSlateBrush PressedBrush = NormalBrush;
+		PressedBrush.TintColor = FSlateColor(FLinearColor(1.0f, 0.64f, 0.14f, 0.28f));
+
+		FButtonStyle Style;
+		Style.SetNormal(NormalBrush);
+		Style.SetHovered(HoveredBrush);
+		Style.SetPressed(PressedBrush);
+		Style.SetDisabled(NormalBrush);
+		Style.SetNormalPadding(FMargin(0.0f));
+		Style.SetPressedPadding(FMargin(0.0f));
+		return Style;
 	}
 }
 
@@ -556,6 +580,7 @@ void UDBALobbyPlayerHUDWidgetBase::BuildBottomSkillBar(UCanvasPanel* RootCanvas)
 
 	const TCHAR* const* Hotkeys = bMobile ? MobileSkillHotkeys : DesktopSkillHotkeys;
 	SkillSlotBorders.Reset();
+	SkillSlotButtons.Reset();
 	SkillSlotBackdropImages.Reset();
 	SkillCooldownOverlayImages.Reset();
 	SkillReadyGlowImages.Reset();
@@ -575,7 +600,35 @@ void UDBALobbyPlayerHUDWidgetBase::BuildBottomSkillBar(UCanvasPanel* RootCanvas)
 		USizeBox* SlotSizeBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), *FString::Printf(TEXT("LobbyHUD_SkillSize_%d"), Index));
 		SlotSizeBox->SetWidthOverride(LocalSlotSize.X);
 		SlotSizeBox->SetHeightOverride(LocalSlotSize.Y);
-		SlotSizeBox->AddChild(SlotBorder);
+
+		UButton* SlotButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), *FString::Printf(TEXT("LobbyHUD_SkillButton_%d"), Index));
+		SlotButton->SetStyle(MakeSkillSlotButtonStyle());
+		SlotButton->IsFocusable = false;
+		SlotButton->SetClickMethod(EButtonClickMethod::MouseDown);
+		SlotButton->SetTouchMethod(EButtonTouchMethod::Down);
+		SlotButton->AddChild(SlotBorder);
+		SlotSizeBox->AddChild(SlotButton);
+		switch (Index)
+		{
+		case 1:
+			SlotButton->OnClicked.AddDynamic(this, &UDBALobbyPlayerHUDWidgetBase::HandleSkill01ButtonClicked);
+			break;
+		case 2:
+			SlotButton->OnClicked.AddDynamic(this, &UDBALobbyPlayerHUDWidgetBase::HandleSkill02ButtonClicked);
+			break;
+		case 3:
+			SlotButton->OnClicked.AddDynamic(this, &UDBALobbyPlayerHUDWidgetBase::HandleSkill03ButtonClicked);
+			break;
+		case 4:
+			SlotButton->OnClicked.AddDynamic(this, &UDBALobbyPlayerHUDWidgetBase::HandleSkill04ButtonClicked);
+			break;
+		case 5:
+			SlotButton->OnClicked.AddDynamic(this, &UDBALobbyPlayerHUDWidgetBase::HandleUltimateButtonClicked);
+			break;
+		default:
+			SlotButton->SetIsEnabled(false);
+			break;
+		}
 
 		if (UHorizontalBoxSlot* SkillHBoxSlot = SkillBarHBox->AddChildToHorizontalBox(SlotSizeBox))
 		{
@@ -657,6 +710,7 @@ void UDBALobbyPlayerHUDWidgetBase::BuildBottomSkillBar(UCanvasPanel* RootCanvas)
 		SlotBorder->SetDesiredSizeScale(FVector2D(1.0f, 1.0f));
 
 		SkillSlotBorders.Add(SlotBorder);
+		SkillSlotButtons.Add(SlotButton);
 		SkillSlotBackdropImages.Add(SlotBackdrop);
 		SkillCooldownOverlayImages.Add(CooldownOverlay);
 		SkillReadyGlowImages.Add(ReadyGlow);
@@ -664,6 +718,40 @@ void UDBALobbyPlayerHUDWidgetBase::BuildBottomSkillBar(UCanvasPanel* RootCanvas)
 		SkillCooldownTexts.Add(CooldownText);
 		SkillHotkeyTexts.Add(HotkeyText);
 	}
+}
+
+void UDBALobbyPlayerHUDWidgetBase::HandleSkillButtonClicked(int32 SkillSlot)
+{
+	if (ADBALobbyPlayerController* LobbyPC = Cast<ADBALobbyPlayerController>(GetOwningPlayer()))
+	{
+		LobbyPC->CastEquippedSkillSlot(SkillSlot);
+		UE_LOG(LogDBACore, Log, TEXT("[LobbyPlayerHUD] 鼠标点击技能栏施放：槽位=%d"), SkillSlot);
+	}
+}
+
+void UDBALobbyPlayerHUDWidgetBase::HandleSkill01ButtonClicked()
+{
+	HandleSkillButtonClicked(1);
+}
+
+void UDBALobbyPlayerHUDWidgetBase::HandleSkill02ButtonClicked()
+{
+	HandleSkillButtonClicked(2);
+}
+
+void UDBALobbyPlayerHUDWidgetBase::HandleSkill03ButtonClicked()
+{
+	HandleSkillButtonClicked(3);
+}
+
+void UDBALobbyPlayerHUDWidgetBase::HandleSkill04ButtonClicked()
+{
+	HandleSkillButtonClicked(4);
+}
+
+void UDBALobbyPlayerHUDWidgetBase::HandleUltimateButtonClicked()
+{
+	HandleSkillButtonClicked(5);
 }
 
 void UDBALobbyPlayerHUDWidgetBase::BuildTopRightMinimap(UCanvasPanel* RootCanvas)

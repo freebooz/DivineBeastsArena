@@ -8,6 +8,7 @@
 #include "UDBALobbyPlayerHUDWidgetBase.generated.h"
 
 class UBorder;
+class UButton;
 class UCanvasPanel;
 class UImage;
 class UTextBlock;
@@ -50,6 +51,22 @@ protected:
 	void ResolveSkillLabelsForSummary(const FDBACharacterSummary& Summary, TArray<FText>& OutSkillLabels) const;
 	void ResolveSkillHotkeysForSummary(const FDBACharacterSummary& Summary, TArray<FText>& OutSkillHotkeys) const;
 	bool ResolveCurrentCharacterSummary(FDBACharacterSummary& OutSummary) const;
+	void HandleSkillButtonClicked(int32 SkillSlot);
+
+	UFUNCTION()
+	void HandleSkill01ButtonClicked();
+
+	UFUNCTION()
+	void HandleSkill02ButtonClicked();
+
+	UFUNCTION()
+	void HandleSkill03ButtonClicked();
+
+	UFUNCTION()
+	void HandleSkill04ButtonClicked();
+
+	UFUNCTION()
+	void HandleUltimateButtonClicked();
 
 	static FText ZodiacToShortText(EDBAZodiac Zodiac);
 	static FText ElementToShortText(EDBAElement Element);
@@ -103,6 +120,9 @@ protected:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UBorder>> SkillSlotBorders;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UButton>> SkillSlotButtons;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UBorder> SkillBarRootBorder;

@@ -283,7 +283,8 @@ ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
 		Movement->MaxWalkSpeed = MaxWalkSpeed;
 		Movement->MaxWalkSpeedCrouched = MaxWalkSpeed;
 		Movement->BrakingDecelerationWalking = BrakingDeceleration;
-		Movement->bOrientRotationToMovement = true;
+		Movement->bOrientRotationToMovement = false;
+		Movement->bUseControllerDesiredRotation = false;
 		Movement->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
 	}
 
@@ -446,6 +447,16 @@ void ADBAZodiacCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerI
 
 void ADBAZodiacCharacterBase::CastLobbyFireball()
 {
+	CastEquippedSkill(1);
+}
+
+void ADBAZodiacCharacterBase::CastLobbyFireballAtTarget(AActor* TargetActor)
+{
+	CastEquippedSkillAtTarget(1, TargetActor);
+}
+
+void ADBAZodiacCharacterBase::CastEquippedSkill(int32 SkillSlot)
+{
 	FVector AimDirection = GetActorForwardVector();
 	if (const AController* OwningController = GetController())
 	{
@@ -460,14 +471,14 @@ void ADBAZodiacCharacterBase::CastLobbyFireball()
 
 	if (!HasAuthority())
 	{
-		ServerCastLobbyFireball(AimDirection);
+		ServerCastEquippedSkill(SkillSlot, nullptr, AimDirection);
 		return;
 	}
 
-	CastLobbyFireballInternal(AimDirection);
+	CastEquippedSkillInternal(SkillSlot, AimDirection);
 }
 
-void ADBAZodiacCharacterBase::CastLobbyFireballAtTarget(AActor* TargetActor)
+void ADBAZodiacCharacterBase::CastEquippedSkillAtTarget(int32 SkillSlot, AActor* TargetActor)
 {
 	FVector AimDirection = GetActorForwardVector();
 	if (TargetActor)
@@ -487,28 +498,56 @@ void ADBAZodiacCharacterBase::CastLobbyFireballAtTarget(AActor* TargetActor)
 
 	if (!HasAuthority())
 	{
-		ServerCastLobbyFireballAtTarget(TargetActor, AimDirection);
+		ServerCastEquippedSkill(SkillSlot, TargetActor, AimDirection);
 		return;
 	}
 
-	CastLobbyFireballInternal(AimDirection, TargetActor);
+	CastEquippedSkillInternal(SkillSlot, AimDirection, TargetActor);
 }
 
 void ADBAZodiacCharacterBase::ServerCastLobbyFireball_Implementation(FVector_NetQuantizeNormal AimDirection)
 {
-	CastLobbyFireballInternal(FVector(AimDirection));
+	CastEquippedSkillInternal(1, FVector(AimDirection));
 }
 
 void ADBAZodiacCharacterBase::ServerCastLobbyFireballAtTarget_Implementation(AActor* TargetActor, FVector_NetQuantizeNormal FallbackAimDirection)
 {
-	CastLobbyFireballInternal(FVector(FallbackAimDirection), TargetActor);
+	CastEquippedSkillInternal(1, FVector(FallbackAimDirection), TargetActor);
+}
+
+void ADBAZodiacCharacterBase::ServerCastEquippedSkill_Implementation(int32 SkillSlot, AActor* TargetActor, FVector_NetQuantizeNormal FallbackAimDirection)
+{
+	CastEquippedSkillInternal(SkillSlot, FVector(FallbackAimDirection), TargetActor);
 }
 
 void ADBAZodiacCharacterBase::CastLobbyFireballInternal(const FVector& AimDirection, AActor* TargetActor)
 {
+	CastEquippedSkillInternal(1, AimDirection, TargetActor);
+}
+
+void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const FVector& AimDirection, AActor* TargetActor)
+{
 	if (!GetWorld())
 	{
 		return;
+	}
+
+	if (!IsLobbyEquippedSkillSlot(SkillSlot))
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 装配技能槽位无效：施法者=%s 槽位=%d"),
+			*GetName(),
+			SkillSlot);
+		return;
+	}
+
+	FLobbyEquippedSkillCastSpec Spec = GetDefaultLobbySkillSpec(SkillSlot);
+	Spec.FallbackSkillId = ResolveEquippedLobbySkillId(this, SkillSlot);
+	if (SkillSlot == 1)
+	{
+		Spec.Damage = LobbyFireballDamage;
+		Spec.Speed = LobbyFireballSpeed;
+		Spec.Radius = LobbyFireballRadius;
+		Spec.Cooldown = LobbyFireballCooldown;
 	}
 
 	if (SkillCooldowns.Num() < 7)
@@ -519,12 +558,14 @@ void ADBAZodiacCharacterBase::CastLobbyFireballInternal(const FVector& AimDirect
 	{
 		SkillMaxCooldowns.SetNumZeroed(7);
 	}
-	SkillMaxCooldowns[1] = FMath::Max(SkillMaxCooldowns[1], LobbyFireballCooldown);
-	if (SkillCooldowns.IsValidIndex(1) && SkillCooldowns[1] > 0.0f)
+	SkillMaxCooldowns[SkillSlot] = FMath::Max(SkillMaxCooldowns[SkillSlot], Spec.Cooldown);
+	if (SkillCooldowns.IsValidIndex(SkillSlot) && SkillCooldowns[SkillSlot] > 0.0f)
 	{
-		UE_LOG(LogDBACombat, Verbose, TEXT("[DBAZodiacCharacterBase] 大厅火球被冷却阻止：施法者=%s 剩余=%.2f"),
+		UE_LOG(LogDBACombat, Verbose, TEXT("[DBAZodiacCharacterBase] 装配技能被冷却阻止：施法者=%s 槽位=%d 技能=%s 剩余=%.2f"),
 			*GetName(),
-			SkillCooldowns[1]);
+			SkillSlot,
+			*Spec.FallbackSkillId.ToString(),
+			SkillCooldowns[SkillSlot]);
 		return;
 	}
 
@@ -537,12 +578,19 @@ void ADBAZodiacCharacterBase::CastLobbyFireballInternal(const FVector& AimDirect
 	TSubclassOf<ADBASkillProjectileBase> ProjectileClass = LoadClass<ADBASkillProjectileBase>(
 		nullptr,
 		TEXT("/Game/DBA/Blueprints/Projectiles/BP_DBA_FireballProjectile.BP_DBA_FireballProjectile_C"));
-	if (!ProjectileClass)
+	if (SkillSlot != 1 || !ProjectileClass)
 	{
-		ProjectileClass = LobbyFireballProjectileClass;
-		if (!ProjectileClass)
+		if (SkillSlot == 1)
 		{
-			ProjectileClass = ADBAFireballProjectile::StaticClass();
+			ProjectileClass = LobbyFireballProjectileClass;
+			if (!ProjectileClass)
+			{
+				ProjectileClass = ADBAFireballProjectile::StaticClass();
+			}
+		}
+		else
+		{
+			ProjectileClass = ADBAProjectile_Generic::StaticClass();
 		}
 	}
 
@@ -560,14 +608,39 @@ void ADBAZodiacCharacterBase::CastLobbyFireballInternal(const FVector& AimDirect
 		SpawnParams);
 	if (!Fireball)
 	{
-		UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 生成大厅火球失败：类=%s"), *GetNameSafe(ProjectileClass));
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 生成装配技能投射物失败：槽位=%d 技能=%s 类=%s"),
+			SkillSlot,
+			*Spec.FallbackSkillId.ToString(),
+			*GetNameSafe(ProjectileClass));
 		return;
 	}
 
-	Fireball->InitializeProjectile(TEXT("Lobby.Fireball"), this, TargetActor, LobbyFireballDamage, LobbyFireballSpeed, LobbyFireballRadius);
+	ApplyLobbySkillProjectileAssets(Fireball, Spec);
+	Fireball->InitializeProjectile(Spec.FallbackSkillId, this, TargetActor, Spec.Damage, Spec.Speed, Spec.Radius);
 	Fireball->LaunchProjectile(SafeAimDirection);
-	SkillCooldowns[1] = LobbyFireballCooldown;
-	SkillMaxCooldowns[1] = LobbyFireballCooldown;
+	SkillCooldowns[SkillSlot] = Spec.Cooldown;
+	SkillMaxCooldowns[SkillSlot] = Spec.Cooldown;
+	MulticastPlayLobbySkillCastFeedback(SkillSlot);
+
+	UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放装配技能：施法者=%s 槽位=%d 技能=%s 投射物=%s 类=%s 目标=%s 水平方向=%s"),
+		*GetName(),
+		SkillSlot,
+		*Spec.FallbackSkillId.ToString(),
+		*Fireball->GetName(),
+		*GetNameSafe(ProjectileClass),
+		*GetNameSafe(TargetActor),
+		*SafeAimDirection.ToString());
+}
+
+void ADBAZodiacCharacterBase::MulticastPlayLobbySkillCastFeedback_Implementation(int32 SkillSlot)
+{
+	PlayLobbySkillCastFeedbackLocal(SkillSlot);
+}
+
+void ADBAZodiacCharacterBase::PlayLobbySkillCastFeedbackLocal(int32 SkillSlot)
+{
+	const FLobbyEquippedSkillCastSpec& Spec = GetDefaultLobbySkillSpec(SkillSlot);
+
 	if (bUseLobbySingleNodeLocomotion && LobbyAttackAnimation)
 	{
 		LobbyAttackAnimationTimeRemaining = LobbyAttackAnimationDuration;
@@ -579,12 +652,36 @@ void ADBAZodiacCharacterBase::CastLobbyFireballInternal(const FVector& AimDirect
 		PlayAttackAnimation();
 	}
 
-	UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放大厅火球：施法者=%s 投射物=%s 类=%s 目标=%s 水平方向=%s"),
-		*GetName(),
-		*Fireball->GetName(),
-		*GetNameSafe(ProjectileClass),
-		*GetNameSafe(TargetActor),
-		*SafeAimDirection.ToString());
+	if (GetNetMode() == NM_DedicatedServer || !GetWorld())
+	{
+		return;
+	}
+
+	const FVector CastLocation = GetActorLocation() + GetActorForwardVector() * 72.0f + FVector(0.0f, 0.0f, 88.0f);
+	if (Spec.CastNiagaraPath && FCString::Strlen(Spec.CastNiagaraPath) > 0)
+	{
+		if (UNiagaraSystem* CastVFX = LoadObject<UNiagaraSystem>(nullptr, Spec.CastNiagaraPath))
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(),
+				CastVFX,
+				CastLocation,
+				GetActorRotation(),
+				FVector(Spec.CastVFXScale),
+				true,
+				true,
+				ENCPoolMethod::AutoRelease,
+				true);
+		}
+	}
+
+	if (Spec.CastSFXPath && FCString::Strlen(Spec.CastSFXPath) > 0)
+	{
+		if (USoundBase* CastSFX = LoadObject<USoundBase>(nullptr, Spec.CastSFXPath))
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), CastSFX, CastLocation, 0.85f);
+		}
+	}
 }
 
 UDBAZodiacAnimInstance* ADBAZodiacCharacterBase::GetZodiacAnimInstance() const

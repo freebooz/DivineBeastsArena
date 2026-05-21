@@ -68,6 +68,7 @@ void ADBALobbyPlayerController::BeginPlay()
 	if (IsLocalController())
 	{
 		EnsureMovementInputTags();
+		MouseYawSensitivityScale = FMath::Max(MouseYawSensitivityScale, 21.0f);
 		FInputModeGameAndUI InputMode;
 		InputMode.SetHideCursorDuringCapture(false);
 		SetInputMode(InputMode);
@@ -683,7 +684,7 @@ void ADBALobbyPlayerController::ConfigurePawnForRightMouseLook(bool bActive)
 		ControlledCharacter->bUseControllerRotationYaw = bActive;
 		if (UCharacterMovementComponent* Movement = ControlledCharacter->GetCharacterMovement())
 		{
-			Movement->bOrientRotationToMovement = !bActive;
+			Movement->bOrientRotationToMovement = false;
 			Movement->bUseControllerDesiredRotation = bActive;
 		}
 	}

@@ -27,53 +27,10 @@ void ADBAProjectile_Generic::InitializeProjectile(
 		LoadFromDataTable(InSkillId);
 	}
 
-	// 然后用传入的参数覆盖
-	SkillId = InSkillId;
-	ProjectileOwner = InOwner;
-	TargetActor = InTarget;
-
-	// 只有当传入值大于0时才覆盖DataTable的值
-	if (InDamage > 0)
-	{
-		Damage = InDamage;
-	}
-	if (InSpeed > 0)
-	{
-		Speed = InSpeed;
-	}
-	if (InRadius > 0)
-	{
-		Radius = InRadius;
-	}
-
-	// 更新移动组件
-	if (ProjectileMovement)
-	{
-		ProjectileMovement->InitialSpeed = Speed;
-		ProjectileMovement->MaxSpeed = Speed * 1.5f;
-	}
-
-	// 更新碰撞半径
-	if (USphereComponent* Sphere = Cast<USphereComponent>(RootComponent))
-	{
-		Sphere->SetSphereRadius(Radius);
-	}
-
-	// 加载飞行特效
-	if (!ProjectileVFXAsset.IsNull())
-	{
-		if (UParticleSystem* VFX = ProjectileVFXAsset.LoadSynchronous())
-		{
-			ProjectileVFX->SetTemplate(VFX);
-		}
-	}
-
-	// 设置初始速度方向指向目标
-	if (InTarget)
-	{
-		FVector Direction = (InTarget->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-		ProjectileMovement->Velocity = Direction * Speed;
-	}
+	const float EffectiveDamage = InDamage > 0.0f ? InDamage : Damage;
+	const float EffectiveSpeed = InSpeed > 0.0f ? InSpeed : Speed;
+	const float EffectiveRadius = InRadius > 0.0f ? InRadius : Radius;
+	Super::InitializeProjectile(InSkillId, InOwner, InTarget, EffectiveDamage, EffectiveSpeed, EffectiveRadius);
 
 	UE_LOG(LogDBACombat, Log, TEXT("[DBAProjectile_Generic] 初始化投射物：技能=%s 速度=%.1f 半径=%.1f 伤害=%.1f"),
 		*InSkillId.ToString(), Speed, Radius, Damage);

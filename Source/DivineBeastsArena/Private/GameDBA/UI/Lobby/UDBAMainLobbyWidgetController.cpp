@@ -17,14 +17,14 @@
 
 namespace
 {
-	bool TryParseJsonObject(const FString& Json, TSharedPtr<FJsonObject>& OutRoot)
+	bool TryParseMainLobbyJsonObject(const FString& Json, TSharedPtr<FJsonObject>& OutRoot)
 	{
 		OutRoot.Reset();
 		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Json);
 		return FJsonSerializer::Deserialize(Reader, OutRoot) && OutRoot.IsValid();
 	}
 
-	FString ReadStringByKeysDeep(const TSharedPtr<FJsonObject>& Obj, const TArray<FString>& Keys, int32 Depth = 0)
+	FString ReadMainLobbyStringByKeysDeep(const TSharedPtr<FJsonObject>& Obj, const TArray<FString>& Keys, int32 Depth = 0)
 	{
 		if (!Obj.IsValid() || Depth > 8)
 		{
@@ -49,7 +49,7 @@ namespace
 
 			if (Pair.Value->Type == EJson::Object)
 			{
-				const FString NestedValue = ReadStringByKeysDeep(Pair.Value->AsObject(), Keys, Depth + 1);
+				const FString NestedValue = ReadMainLobbyStringByKeysDeep(Pair.Value->AsObject(), Keys, Depth + 1);
 				if (!NestedValue.IsEmpty())
 				{
 					return NestedValue;
@@ -64,7 +64,7 @@ namespace
 				{
 					if (Item.IsValid() && Item->Type == EJson::Object)
 					{
-						const FString NestedValue = ReadStringByKeysDeep(Item->AsObject(), Keys, Depth + 1);
+						const FString NestedValue = ReadMainLobbyStringByKeysDeep(Item->AsObject(), Keys, Depth + 1);
 						if (!NestedValue.IsEmpty())
 						{
 							return NestedValue;
@@ -77,7 +77,7 @@ namespace
 		return FString();
 	}
 
-	int32 ReadIntByKeysDeep(const TSharedPtr<FJsonObject>& Obj, const TArray<FString>& Keys, int32 Depth = 0)
+	int32 ReadMainLobbyIntByKeysDeep(const TSharedPtr<FJsonObject>& Obj, const TArray<FString>& Keys, int32 Depth = 0)
 	{
 		if (!Obj.IsValid() || Depth > 8)
 		{
@@ -108,7 +108,7 @@ namespace
 
 			if (Pair.Value->Type == EJson::Object)
 			{
-				const int32 NestedValue = ReadIntByKeysDeep(Pair.Value->AsObject(), Keys, Depth + 1);
+				const int32 NestedValue = ReadMainLobbyIntByKeysDeep(Pair.Value->AsObject(), Keys, Depth + 1);
 				if (NestedValue != 0)
 				{
 					return NestedValue;
@@ -123,7 +123,7 @@ namespace
 				{
 					if (Item.IsValid() && Item->Type == EJson::Object)
 					{
-						const int32 NestedValue = ReadIntByKeysDeep(Item->AsObject(), Keys, Depth + 1);
+						const int32 NestedValue = ReadMainLobbyIntByKeysDeep(Item->AsObject(), Keys, Depth + 1);
 						if (NestedValue != 0)
 						{
 							return NestedValue;
@@ -647,45 +647,45 @@ void UDBAMainLobbyWidgetController::HandleConnectToServerResponse(bool bSuccess,
 void UDBAMainLobbyWidgetController::UpdatePlayerSummaryFromProfile(const FString& ProfileJson)
 {
 	TSharedPtr<FJsonObject> Root;
-	if (!TryParseJsonObject(ProfileJson, Root))
+	if (!TryParseMainLobbyJsonObject(ProfileJson, Root))
 	{
 		return;
 	}
 
-	const FString DisplayName = ReadStringByKeysDeep(Root, { TEXT("displayName"), TEXT("playerName"), TEXT("nickname"), TEXT("name") });
+	const FString DisplayName = ReadMainLobbyStringByKeysDeep(Root, { TEXT("displayName"), TEXT("playerName"), TEXT("nickname"), TEXT("name") });
 	if (!DisplayName.IsEmpty())
 	{
 		PlayerSummary.DisplayName = DisplayName;
 	}
 
-	const FString PlayerId = ReadStringByKeysDeep(Root, { TEXT("playerId"), TEXT("player_id"), TEXT("uid") });
+	const FString PlayerId = ReadMainLobbyStringByKeysDeep(Root, { TEXT("playerId"), TEXT("player_id"), TEXT("uid") });
 	if (!PlayerId.IsEmpty())
 	{
 		PlayerSummary.PlayerId = PlayerId;
 	}
 
-	const int32 Level = ReadIntByKeysDeep(Root, { TEXT("level"), TEXT("playerLevel"), TEXT("lv"), TEXT("lvl") });
+	const int32 Level = ReadMainLobbyIntByKeysDeep(Root, { TEXT("level"), TEXT("playerLevel"), TEXT("lv"), TEXT("lvl") });
 	if (Level > 0)
 	{
 		PlayerSummary.Level = Level;
 	}
 
-	const int32 Experience = ReadIntByKeysDeep(Root, { TEXT("experience"), TEXT("exp"), TEXT("xp"), TEXT("currentExp") });
+	const int32 Experience = ReadMainLobbyIntByKeysDeep(Root, { TEXT("experience"), TEXT("exp"), TEXT("xp"), TEXT("currentExp") });
 	PlayerSummary.Experience = FMath::Max(0, Experience);
 }
 
 void UDBAMainLobbyWidgetController::UpdatePlayerSummaryFromInventory(const FString& InventoryJson)
 {
 	TSharedPtr<FJsonObject> Root;
-	if (!TryParseJsonObject(InventoryJson, Root))
+	if (!TryParseMainLobbyJsonObject(InventoryJson, Root))
 	{
 		return;
 	}
 
-	const int32 Gold = ReadIntByKeysDeep(Root, { TEXT("gold"), TEXT("coins"), TEXT("coin"), TEXT("currencyGold") });
+	const int32 Gold = ReadMainLobbyIntByKeysDeep(Root, { TEXT("gold"), TEXT("coins"), TEXT("coin"), TEXT("currencyGold") });
 	PlayerSummary.Gold = FMath::Max(0, Gold);
 
-	const int32 Tickets = ReadIntByKeysDeep(Root, { TEXT("tickets"), TEXT("ticket"), TEXT("matchTickets"), TEXT("coupon") });
+	const int32 Tickets = ReadMainLobbyIntByKeysDeep(Root, { TEXT("tickets"), TEXT("ticket"), TEXT("matchTickets"), TEXT("coupon") });
 	PlayerSummary.Tickets = FMath::Max(0, Tickets);
 }
 
@@ -810,24 +810,24 @@ void UDBAMainLobbyWidgetController::TrackTelemetry(const FString& EventName, con
 FString UDBAMainLobbyWidgetController::ExtractStringByKeys(const FString& Json, const TArray<FString>& Keys) const
 {
 	TSharedPtr<FJsonObject> Root;
-	if (!TryParseJsonObject(Json, Root))
+	if (!TryParseMainLobbyJsonObject(Json, Root))
 	{
 		return FString();
 	}
 
-	return ReadStringByKeysDeep(Root, Keys);
+	return ReadMainLobbyStringByKeysDeep(Root, Keys);
 }
 
 bool UDBAMainLobbyWidgetController::IsTicketMatched(const FString& TicketDataJson, FString& OutSessionId) const
 {
 	TSharedPtr<FJsonObject> Root;
-	if (!TryParseJsonObject(TicketDataJson, Root))
+	if (!TryParseMainLobbyJsonObject(TicketDataJson, Root))
 	{
 		return false;
 	}
 
-	const FString Status = ReadStringByKeysDeep(Root, { TEXT("status"), TEXT("state") });
-	OutSessionId = ReadStringByKeysDeep(Root, { TEXT("sessionId"), TEXT("session_id") });
+	const FString Status = ReadMainLobbyStringByKeysDeep(Root, { TEXT("status"), TEXT("state") });
+	OutSessionId = ReadMainLobbyStringByKeysDeep(Root, { TEXT("sessionId"), TEXT("session_id") });
 
 	return Status.Equals(TEXT("matched"), ESearchCase::IgnoreCase)
 		|| Status.Equals(TEXT("found"), ESearchCase::IgnoreCase)

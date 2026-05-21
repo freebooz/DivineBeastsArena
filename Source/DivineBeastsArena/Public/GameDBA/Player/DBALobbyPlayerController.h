@@ -47,6 +47,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "DBA|Lobby|Camera")
 	float GetMaxCameraDistanceValue() const { return MaxCameraDistance; }
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|Lobby|Input")
+	void CastEquippedSkillSlot(int32 SkillSlot);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void OnPossess(APawn* InPawn) override;
@@ -83,7 +86,6 @@ protected:
 	void HandleSelectTargetPressed();
 
 	void ApplyMovementInput(float ForwardValue, float RightValue);
-	void CastEquippedSkillSlot(int32 SkillSlot);
 	void EnsureMovementInputTags();
 	void RefreshMovementInputTagsFromKeyboard();
 	void SetMovementTagActive(const FGameplayTag& Tag, bool bActive);
@@ -107,7 +109,7 @@ protected:
 	float MouseLookSensitivity = 0.25f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
-	float MouseYawSensitivityScale = 2.1f;
+	float MouseYawSensitivityScale = 21.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
 	float MousePitchSensitivityScale = 1.35f;

@@ -100,14 +100,7 @@ void ADBAFireballProjectile::BeginPlay()
 			ProjectileNiagaraVFX->Activate(true);
 		}
 	}
-	if (FireballLoopAudio && !FlySFXAsset.IsNull())
-	{
-		if (USoundBase* FlySFX = FlySFXAsset.LoadSynchronous())
-		{
-			FireballLoopAudio->SetSound(FlySFX);
-			FireballLoopAudio->Play();
-		}
-	}
+	// 飞行循环音效由通用投射物基类在 InitializeProjectile 中播放，确保运行时覆盖的技能音效也生效。
 }
 
 void ADBAFireballProjectile::Tick(float DeltaSeconds)
