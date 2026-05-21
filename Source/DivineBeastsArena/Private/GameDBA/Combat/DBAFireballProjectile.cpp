@@ -64,8 +64,8 @@ ADBAFireballProjectile::ADBAFireballProjectile()
 		FireballCoreMaterial = MaterialFinder.Object;
 	}
 
-	ProjectileNiagaraVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/DBA/VFX/Common/Status/NS_Status_Burning.NS_Status_Burning")));
-	ImpactNiagaraVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/DBA/VFX/Abilities/FireLion/NS_FireLion_E_FlameLeap_Impact.NS_FireLion_E_FlameLeap_Impact")));
+	ProjectileNiagaraVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/DBA/VFX/Fireball/NS_DBA_Fireball_Projectile.NS_DBA_Fireball_Projectile")));
+	ImpactNiagaraVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/DBA/VFX/Fireball/NS_DBA_Fireball_Impact.NS_DBA_Fireball_Impact")));
 	FlySFXAsset = TSoftObjectPtr<USoundBase>(FSoftObjectPath(TEXT("/Game/DBA/Audio/SFX/Common/Status/SFX_Status_Burning_Loop.SFX_Status_Burning_Loop")));
 	ImpactSFXAsset = TSoftObjectPtr<USoundBase>(FSoftObjectPath(TEXT("/Game/DBA/Audio/SFX/Abilities/FireLion/SFX_FireLion_E_FlameLeap_Impact.SFX_FireLion_E_FlameLeap_Impact")));
 }

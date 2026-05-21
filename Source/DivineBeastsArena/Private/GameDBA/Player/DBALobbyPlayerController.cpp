@@ -582,7 +582,7 @@ void ADBALobbyPlayerController::ApplyMouseLook()
 		PitchInput = -CachedLookUpAxis * PitchSensitivity;
 	}
 
-	ApplyCameraInput(YawInput, PitchInput, bIsRightLooking);
+	ApplyCameraInput(YawInput, PitchInput, bIsLeftLooking || bIsRightLooking);
 	CachedTurnAxis = 0.0f;
 	CachedLookUpAxis = 0.0f;
 }
@@ -631,7 +631,7 @@ void ADBALobbyPlayerController::RefreshMouseLookCaptureMode()
 {
 	const bool bShouldCapture = bLeftMouseLookHeld || bRightMouseLookHeld;
 	SetMouseLookCaptureActive(bShouldCapture);
-	ConfigurePawnForRightMouseLook(bRightMouseLookHeld);
+	ConfigurePawnForRightMouseLook(bShouldCapture);
 }
 
 void ADBALobbyPlayerController::SetMouseLookCaptureActive(bool bActive)

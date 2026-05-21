@@ -7,10 +7,20 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/DamageEvents.h"
 #include "Engine/World.h"
+#include "GameDBA/Core/DBALogChannels.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
+#include "Particles/ParticleSystem.h"
+
+namespace
+{
+	FString SoftObjectPathString(const FSoftObjectPath& Path)
+	{
+		return Path.IsValid() ? Path.ToString() : FString();
+	}
+}
 
 ADBASkillProjectileBase::ADBASkillProjectileBase()
 {
@@ -72,36 +82,82 @@ void ADBASkillProjectileBase::InitializeProjectile(
 		CollisionSphere->IgnoreActorWhenMoving(InOwner, true);
 	}
 
-	if (!ProjectileVFXAsset.IsNull())
+	const FString ProjectileVFXPath = SoftObjectPathString(ProjectileVFXAsset.ToSoftObjectPath());
+	const FString ProjectileNiagaraVFXPath = SoftObjectPathString(ProjectileNiagaraVFXAsset.ToSoftObjectPath());
+	const FString FlySFXPath = SoftObjectPathString(FlySFXAsset.ToSoftObjectPath());
+	ApplyProjectileVisualsLocal(ProjectileVFXPath, ProjectileNiagaraVFXPath, FlySFXPath);
+	if (HasAuthority() && GetNetMode() != NM_Standalone)
 	{
-		if (UParticleSystem* VFX = ProjectileVFXAsset.LoadSynchronous())
-		{
-			ProjectileVFX->SetTemplate(VFX);
-			ProjectileVFX->Activate(true);
-		}
-	}
-
-	if (!ProjectileNiagaraVFXAsset.IsNull())
-	{
-		if (UNiagaraSystem* VFX = ProjectileNiagaraVFXAsset.LoadSynchronous())
-		{
-			ProjectileNiagaraVFX->SetAsset(VFX);
-			ProjectileNiagaraVFX->Activate(true);
-		}
-	}
-
-	if (!FlySFXAsset.IsNull() && ProjectileLoopAudio)
-	{
-		if (USoundBase* FlySFX = FlySFXAsset.LoadSynchronous())
-		{
-			ProjectileLoopAudio->SetSound(FlySFX);
-			ProjectileLoopAudio->Play();
-		}
+		MulticastApplyProjectileVisuals(ProjectileVFXPath, ProjectileNiagaraVFXPath, FlySFXPath);
 	}
 
 	if (InTarget)
 	{
 		LaunchProjectile(InTarget->GetActorLocation() - GetActorLocation());
+	}
+}
+
+void ADBASkillProjectileBase::MulticastApplyProjectileVisuals_Implementation(
+	const FString& ProjectileVFXPath,
+	const FString& ProjectileNiagaraVFXPath,
+	const FString& FlySFXPath)
+{
+	if (HasAuthority())
+	{
+		return;
+	}
+
+	ApplyProjectileVisualsLocal(ProjectileVFXPath, ProjectileNiagaraVFXPath, FlySFXPath);
+}
+
+void ADBASkillProjectileBase::ApplyProjectileVisualsLocal(
+	const FString& ProjectileVFXPath,
+	const FString& ProjectileNiagaraVFXPath,
+	const FString& FlySFXPath)
+{
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+
+	if (!ProjectileVFXPath.IsEmpty())
+	{
+		if (UParticleSystem* VFX = LoadObject<UParticleSystem>(nullptr, *ProjectileVFXPath))
+		{
+			ProjectileVFX->SetTemplate(VFX);
+			ProjectileVFX->Activate(true);
+		}
+		else
+		{
+			UE_LOG(LogDBACombat, Warning, TEXT("[DBASkillProjectileBase] 加载投射物 Cascade 飞行特效失败：技能=%s 路径=%s"),
+				*SkillId.ToString(),
+				*ProjectileVFXPath);
+		}
+	}
+
+	if (!ProjectileNiagaraVFXPath.IsEmpty())
+	{
+		if (UNiagaraSystem* VFX = LoadObject<UNiagaraSystem>(nullptr, *ProjectileNiagaraVFXPath))
+		{
+			ProjectileNiagaraVFX->SetAsset(VFX);
+			ProjectileNiagaraVFX->SetVisibility(true);
+			ProjectileNiagaraVFX->Activate(true);
+		}
+		else
+		{
+			UE_LOG(LogDBACombat, Warning, TEXT("[DBASkillProjectileBase] 加载投射物 Niagara 飞行特效失败：技能=%s 路径=%s"),
+				*SkillId.ToString(),
+				*ProjectileNiagaraVFXPath);
+		}
+	}
+
+	if (!FlySFXPath.IsEmpty() && ProjectileLoopAudio)
+	{
+		if (USoundBase* FlySFX = LoadObject<USoundBase>(nullptr, *FlySFXPath))
+		{
+			ProjectileLoopAudio->SetSound(FlySFX);
+			ProjectileLoopAudio->Play();
+		}
 	}
 }
 
@@ -142,37 +198,13 @@ void ADBASkillProjectileBase::LaunchProjectile(const FVector& Direction)
 
 void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocation)
 {
-	if (!ImpactNiagaraVFXAsset.IsNull())
+	const FString ImpactVFXPath = SoftObjectPathString(ImpactVFXAsset.ToSoftObjectPath());
+	const FString ImpactNiagaraVFXPath = SoftObjectPathString(ImpactNiagaraVFXAsset.ToSoftObjectPath());
+	const FString ImpactSFXPath = SoftObjectPathString(ImpactSFXAsset.ToSoftObjectPath());
+	PlayImpactFeedbackLocal(ImpactVFXPath, ImpactNiagaraVFXPath, ImpactSFXPath, HitLocation, GetActorRotation());
+	if (HasAuthority() && GetNetMode() != NM_Standalone)
 	{
-		if (UNiagaraSystem* VFX = ImpactNiagaraVFXAsset.LoadSynchronous())
-		{
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(),
-				VFX,
-				HitLocation,
-				GetActorRotation(),
-				FVector(1.0f),
-				true,
-				true,
-				ENCPoolMethod::AutoRelease,
-				true);
-		}
-	}
-
-	if (!ImpactVFXAsset.IsNull())
-	{
-		if (UParticleSystem* VFX = ImpactVFXAsset.LoadSynchronous())
-		{
-			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, HitLocation, FRotator::ZeroRotator, true);
-		}
-	}
-
-	if (!ImpactSFXAsset.IsNull())
-	{
-		if (USoundBase* SFX = ImpactSFXAsset.LoadSynchronous())
-		{
-			UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, HitLocation);
-		}
+		MulticastPlayImpactFeedback(ImpactVFXPath, ImpactNiagaraVFXPath, ImpactSFXPath, HitLocation, GetActorRotation());
 	}
 
 	if (HitActor && HitActor != ProjectileOwner && Damage > 0.0f)
@@ -192,6 +224,67 @@ void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocat
 	Destroy();
 }
 
+void ADBASkillProjectileBase::MulticastPlayImpactFeedback_Implementation(
+	const FString& ImpactVFXPath,
+	const FString& ImpactNiagaraVFXPath,
+	const FString& ImpactSFXPath,
+	FVector_NetQuantize HitLocation,
+	FRotator HitRotation)
+{
+	if (HasAuthority())
+	{
+		return;
+	}
+
+	PlayImpactFeedbackLocal(ImpactVFXPath, ImpactNiagaraVFXPath, ImpactSFXPath, HitLocation, HitRotation);
+}
+
+void ADBASkillProjectileBase::PlayImpactFeedbackLocal(
+	const FString& ImpactVFXPath,
+	const FString& ImpactNiagaraVFXPath,
+	const FString& ImpactSFXPath,
+	const FVector& HitLocation,
+	const FRotator& HitRotation)
+{
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+
+	if (!ImpactNiagaraVFXPath.IsEmpty())
+	{
+		if (UNiagaraSystem* VFX = LoadObject<UNiagaraSystem>(nullptr, *ImpactNiagaraVFXPath))
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(),
+				VFX,
+				HitLocation,
+				HitRotation,
+				FVector(1.0f),
+				true,
+				true,
+				ENCPoolMethod::AutoRelease,
+				true);
+		}
+	}
+
+	if (!ImpactVFXPath.IsEmpty())
+	{
+		if (UParticleSystem* VFX = LoadObject<UParticleSystem>(nullptr, *ImpactVFXPath))
+		{
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, HitLocation, FRotator::ZeroRotator, true);
+		}
+	}
+
+	if (!ImpactSFXPath.IsEmpty())
+	{
+		if (USoundBase* SFX = LoadObject<USoundBase>(nullptr, *ImpactSFXPath))
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, HitLocation);
+		}
+	}
+}
+
 void ADBASkillProjectileBase::SetCollisionChannel(ECollisionChannel Channel)
 {
 	if (CollisionSphere)
@@ -207,6 +300,11 @@ void ADBASkillProjectileBase::HandleProjectileHit(
 	FVector NormalImpulse,
 	const FHitResult& Hit)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	if (OtherActor && OtherActor != this && OtherActor != ProjectileOwner)
 	{
 		const FVector ImpactPoint = Hit.ImpactPoint.IsNearlyZero() ? GetActorLocation() : FVector(Hit.ImpactPoint);
@@ -222,6 +320,11 @@ void ADBASkillProjectileBase::HandleProjectileOverlap(
 	bool bFromSweep,
 	const FHitResult& SweepResult)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	if (OtherActor && OtherActor != this && OtherActor != ProjectileOwner)
 	{
 		const FVector ImpactPoint = SweepResult.ImpactPoint.IsNearlyZero() ? GetActorLocation() : FVector(SweepResult.ImpactPoint);

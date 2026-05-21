@@ -116,8 +116,8 @@ namespace
 			12.0f,
 			1.35f,
 			TEXT("/Game/DBA/VFX/Abilities/FireLion/NS_FireLion_R_DivineBeastTransform.NS_FireLion_R_DivineBeastTransform"),
-			TEXT("/Game/DBA/VFX/Abilities/FireLion/NS_FireLion_E_FlameLeap_Trail.NS_FireLion_E_FlameLeap_Trail"),
-			TEXT("/Game/DBA/VFX/Common/Impact/NS_Impact_Magic_Burst.NS_Impact_Magic_Burst"),
+			TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy"),
+			TEXT("/Game/ProjectileHitVFX/NS/NS_HIt_Explosion.NS_HIt_Explosion"),
 			TEXT("/Game/DBA/Audio/SFX/Abilities/FireLion/SFX_FireLion_R_DivineBeastTransform.SFX_FireLion_R_DivineBeastTransform"),
 			nullptr,
 			TEXT("/Game/DBA/Audio/SFX/Abilities/FireLion/SFX_FireLion_E_FlameLeap_Impact.SFX_FireLion_E_FlameLeap_Impact")
@@ -389,7 +389,7 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 	if (ResolvedMesh)
 	{
 		MeshComponent->SetSkeletalMesh(ResolvedMesh);
-		const float MeshScale = 1.0f;
+		const float MeshScale = 4.0f / 3.0f;
 		const float CapsuleHalfHeight = GetCapsuleComponent() ? GetCapsuleComponent()->GetScaledCapsuleHalfHeight() : 88.0f;
 		const FBox MeshBox = ResolvedMesh->GetBounds().GetBox();
 		const float MeshBottomOffsetZ = MeshBox.IsValid ? (-MeshBox.Min.Z * MeshScale) + 2.0f : 0.0f;

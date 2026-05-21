@@ -45,6 +45,15 @@ public:
 	void SetCollisionChannel(ECollisionChannel Channel);
 
 protected:
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastApplyProjectileVisuals(const FString& ProjectileVFXPath, const FString& ProjectileNiagaraVFXPath, const FString& FlySFXPath);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlayImpactFeedback(const FString& ImpactVFXPath, const FString& ImpactNiagaraVFXPath, const FString& ImpactSFXPath, FVector_NetQuantize HitLocation, FRotator HitRotation);
+
+	void ApplyProjectileVisualsLocal(const FString& ProjectileVFXPath, const FString& ProjectileNiagaraVFXPath, const FString& FlySFXPath);
+	void PlayImpactFeedbackLocal(const FString& ImpactVFXPath, const FString& ImpactNiagaraVFXPath, const FString& ImpactSFXPath, const FVector& HitLocation, const FRotator& HitRotation);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USphereComponent> CollisionSphere;
 

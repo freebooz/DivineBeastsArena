@@ -603,7 +603,6 @@ void UDBALobbyPlayerHUDWidgetBase::BuildBottomSkillBar(UCanvasPanel* RootCanvas)
 
 		UButton* SlotButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), *FString::Printf(TEXT("LobbyHUD_SkillButton_%d"), Index));
 		SlotButton->SetStyle(MakeSkillSlotButtonStyle());
-		SlotButton->IsFocusable = false;
 		SlotButton->SetClickMethod(EButtonClickMethod::MouseDown);
 		SlotButton->SetTouchMethod(EButtonTouchMethod::Down);
 		SlotButton->AddChild(SlotBorder);
@@ -992,12 +991,14 @@ void UDBALobbyPlayerHUDWidgetBase::ApplyResponsiveLayout(const FVector2D& Viewpo
 	{
 		SkillBarRootSlot->SetPosition(FVector2D(0.0f, bMobileLike ? -8.0f : -18.0f));
 		SkillBarRootSlot->SetAutoSize(false);
-		SkillBarRootSlot->SetSize(LobbySkillBarLimit * (bMobileLike ? BaseScale : 1.0f));
+		const float SkillBarScale = bMobilePlatform ? BaseScale : 1.0f;
+		SkillBarRootSlot->SetSize(LobbySkillBarLimit * SkillBarScale);
 	}
 
 	if (SkillBarBackdropImage)
 	{
-		SkillBarBackdropImage->SetDesiredSizeOverride(LobbySkillBarLimit * (bMobileLike ? BaseScale : 1.0f));
+		const float SkillBarScale = bMobilePlatform ? BaseScale : 1.0f;
+		SkillBarBackdropImage->SetDesiredSizeOverride(LobbySkillBarLimit * SkillBarScale);
 	}
 
 	if (MinimapRootSlot)
