@@ -2,12 +2,16 @@
 
 #include "GameDBA/Combat/DBAFireballProjectile.h"
 
+#include "Components/AudioComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
+#include "Sound/SoundBase.h"
 #include "UObject/ConstructorHelpers.h"
 
 ADBAFireballProjectile::ADBAFireballProjectile()
@@ -33,6 +37,8 @@ ADBAFireballProjectile::ADBAFireballProjectile()
 	FireballCore->SetupAttachment(RootComponent);
 	FireballCore->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	FireballCore->SetRelativeScale3D(FVector(0.42f));
+	FireballCore->SetHiddenInGame(true);
+	FireballCore->SetVisibility(false);
 
 	FireballLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FireballLight"));
 	FireballLight->SetupAttachment(RootComponent);
@@ -40,6 +46,11 @@ ADBAFireballProjectile::ADBAFireballProjectile()
 	FireballLight->Intensity = 6500.0f;
 	FireballLight->AttenuationRadius = 520.0f;
 	FireballLight->bUseInverseSquaredFalloff = false;
+
+	FireballLoopAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("FireballLoopAudio"));
+	FireballLoopAudio->SetupAttachment(RootComponent);
+	FireballLoopAudio->bAutoActivate = false;
+	FireballLoopAudio->bAllowSpatialization = true;
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMeshFinder(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
 	if (SphereMeshFinder.Succeeded())
@@ -53,8 +64,10 @@ ADBAFireballProjectile::ADBAFireballProjectile()
 		FireballCoreMaterial = MaterialFinder.Object;
 	}
 
-	ProjectileNiagaraVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/DBA/VFX/Fireball/NS_DBA_Fireball_Projectile.NS_DBA_Fireball_Projectile")));
-	ImpactNiagaraVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/DBA/VFX/Fireball/NS_DBA_Fireball_Impact.NS_DBA_Fireball_Impact")));
+	ProjectileNiagaraVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/DBA/VFX/Common/Status/NS_Status_Burning.NS_Status_Burning")));
+	ImpactNiagaraVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/DBA/VFX/Abilities/FireLion/NS_FireLion_E_FlameLeap_Impact.NS_FireLion_E_FlameLeap_Impact")));
+	FlySFXAsset = TSoftObjectPtr<USoundBase>(FSoftObjectPath(TEXT("/Game/DBA/Audio/SFX/Common/Status/SFX_Status_Burning_Loop.SFX_Status_Burning_Loop")));
+	ImpactSFXAsset = TSoftObjectPtr<USoundBase>(FSoftObjectPath(TEXT("/Game/DBA/Audio/SFX/Abilities/FireLion/SFX_FireLion_E_FlameLeap_Impact.SFX_FireLion_E_FlameLeap_Impact")));
 }
 
 void ADBAFireballProjectile::BeginPlay()
@@ -70,6 +83,29 @@ void ADBAFireballProjectile::BeginPlay()
 			DynamicMaterial->SetVectorParameterValue(TEXT("BaseColor"), FireballColor);
 			DynamicMaterial->SetVectorParameterValue(TEXT("EmissiveColor"), FireballColor * 8.0f);
 			FireballCore->SetMaterial(0, DynamicMaterial);
+		}
+	}
+
+	if (FireballCore)
+	{
+		FireballCore->SetHiddenInGame(true);
+		FireballCore->SetVisibility(false);
+		FireballCore->SetStaticMesh(nullptr);
+	}
+	if (ProjectileNiagaraVFX && !ProjectileNiagaraVFXAsset.IsNull())
+	{
+		if (UNiagaraSystem* BurningVFX = ProjectileNiagaraVFXAsset.LoadSynchronous())
+		{
+			ProjectileNiagaraVFX->SetAsset(BurningVFX);
+			ProjectileNiagaraVFX->Activate(true);
+		}
+	}
+	if (FireballLoopAudio && !FlySFXAsset.IsNull())
+	{
+		if (USoundBase* FlySFX = FlySFXAsset.LoadSynchronous())
+		{
+			FireballLoopAudio->SetSound(FlySFX);
+			FireballLoopAudio->Play();
 		}
 	}
 }
@@ -96,6 +132,14 @@ void ADBAFireballProjectile::OnProjectileHit(AActor* HitActor, FVector HitLocati
 	if (FireballLight)
 	{
 		FireballLight->Deactivate();
+	}
+	if (FireballLoopAudio)
+	{
+		FireballLoopAudio->Stop();
+	}
+	if (!ImpactSFXAsset.IsNull())
+	{
+		ImpactSFXAsset.LoadSynchronous();
 	}
 	Super::OnProjectileHit(HitActor, HitLocation);
 }

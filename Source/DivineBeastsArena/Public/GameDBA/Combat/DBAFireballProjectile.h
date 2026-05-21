@@ -7,6 +7,7 @@
 #include "DBAFireballProjectile.generated.h"
 
 class UMaterialInterface;
+class UAudioComponent;
 class UPointLightComponent;
 class UStaticMeshComponent;
 
@@ -28,6 +29,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UPointLightComponent> FireballLight;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UAudioComponent> FireballLoopAudio;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Fireball")
 	TObjectPtr<UMaterialInterface> FireballCoreMaterial;

@@ -10,6 +10,7 @@
 #include "DBAGameModeBase.generated.h"
 
 class ADBACharacterPreviewActor;
+class ADBALobbyTrainingMonster;
 class APlayerController;
 class AController;
 class APawn;
@@ -35,6 +36,7 @@ protected:
 
 private:
 	void SpawnOrUpdateLobbyDisplayForPlayer(APlayerController* PlayerController);
+	void SpawnLobbyTrainingMonsters();
 	UClass* ResolveLobbyPawnClass(EDBAZodiac Zodiac) const;
 
 private:
@@ -42,4 +44,5 @@ private:
 	TMap<TObjectKey<APlayerController>, int32> LobbyJoinIndices;
 	TMap<TObjectKey<APlayerController>, EDBAZodiac> LobbyJoinZodiacs;
 	TMap<TObjectKey<APlayerController>, TWeakObjectPtr<ADBACharacterPreviewActor>> LobbyDisplayActors;
+	TArray<TWeakObjectPtr<ADBALobbyTrainingMonster>> LobbyTrainingMonsters;
 };

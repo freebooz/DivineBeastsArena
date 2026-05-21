@@ -13,6 +13,7 @@
 
 class UDBAZodiacAnimInstance;
 class UDBAAbilitySystemComponent;
+class UAnimationAsset;
 class UCameraComponent;
 class USpringArmComponent;
 class ADBARpcHandler;
@@ -35,6 +36,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	void ApplyLobbyVisuals();
 
@@ -64,6 +66,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|Lobby|Spell")
 	void CastLobbyFireball();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Lobby|Spell")
+	void CastLobbyFireballAtTarget(AActor* TargetActor);
 
 public:
 	// ==================== 属性访问 ====================
@@ -179,10 +184,18 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell", meta = (ClampMin = "0.0"))
 	float LobbyFireballDamage = 35.0f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell", meta = (ClampMin = "0.1"))
+	float LobbyFireballCooldown = 3.0f;
+
 	UFUNCTION(Server, Reliable)
 	void ServerCastLobbyFireball(FVector_NetQuantizeNormal AimDirection);
 
-	void CastLobbyFireballInternal(const FVector& AimDirection);
+	UFUNCTION(Server, Reliable)
+	void ServerCastLobbyFireballAtTarget(AActor* TargetActor, FVector_NetQuantizeNormal FallbackAimDirection);
+
+	void CastLobbyFireballInternal(const FVector& AimDirection, AActor* TargetActor = nullptr);
+	void UpdateLobbyLocomotionAnimation();
+	UAnimationAsset* LoadLobbyAnimation(const FString& AnimationPath);
 
 public:
 	// ==================== 移动配置 ====================
@@ -198,6 +211,12 @@ public:
 	/** 停止减速度 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Movement")
 	float BrakingDeceleration = 2048.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Animation")
+	float LobbyRunAnimationThreshold = 20.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Animation")
+	float LobbyAttackAnimationDuration = 0.9f;
 
 public:
 	// ==================== RPC 相关 ====================
@@ -216,6 +235,21 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DBA|Camera")
 	TObjectPtr<UCameraComponent> LobbyFollowCamera;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> LobbyIdleAnimation;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> LobbyRunAnimation;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> LobbyAttackAnimation;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> CurrentLobbyAnimation;
+
+	float LobbyAttackAnimationTimeRemaining = 0.0f;
+	bool bUseLobbySingleNodeLocomotion = false;
 
 public:
 	// ==================== 死亡状态 ====================

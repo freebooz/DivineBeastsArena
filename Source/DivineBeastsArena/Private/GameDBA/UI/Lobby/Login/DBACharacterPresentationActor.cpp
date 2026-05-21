@@ -3,6 +3,7 @@
 #include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
 
 #include "Animation/AnimationAsset.h"
+#include "Animation/Skeleton.h"
 #include "Camera/CameraComponent.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
@@ -15,6 +16,7 @@
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Scene.h"
+#include "Engine/Texture.h"
 #include "EngineUtils.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameFramework/PlayerController.h"
@@ -28,6 +30,19 @@ namespace
 {
 	constexpr float PreviewMeshDisplayScale = 1.0f;
 	constexpr float PreviewMeshFloorZ = 2.0f;
+
+	void EnsureRosalesMeshUsesRosalesSkeleton(USkeletalMesh* Mesh, const FString& MeshPath)
+	{
+		if (!Mesh || !MeshPath.Contains(TEXT("/Game/DBA/Characters/Rosales/")))
+		{
+			return;
+		}
+
+		if (USkeleton* RosalesSkeleton = LoadObject<USkeleton>(nullptr, TEXT("/Game/DBA/Characters/Rosales/Meshes/SKEL_Rosales.SKEL_Rosales")))
+		{
+			Mesh->SetSkeleton(RosalesSkeleton);
+		}
+	}
 
 	const TCHAR* const ZodiacPreviewMeshPaths[] = {
 		TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Meshes/SKM_DBA_Zodiac_Rat.SKM_DBA_Zodiac_Rat"),
@@ -61,6 +76,10 @@ namespace
 
 	UMaterialInterface* LoadReliableFallbackMaterial()
 	{
+		if (UMaterialInterface* RuntimeTintMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/DBA/Materials/M_DBA_RuntimeTint.M_DBA_RuntimeTint")))
+		{
+			return RuntimeTintMaterial;
+		}
 		return LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
 	}
 
@@ -382,6 +401,19 @@ bool ADBACharacterPresentationActor::ApplyLobbyDisplayAnimationToMesh(USkeletalM
 		return false;
 	}
 
+	if (IsRosalesMeshPath(MeshPath))
+	{
+		const FString RosalesIdleAnimationPath(TEXT("/Game/DBA/Characters/Rosales/Animations/AN_Standing_Idle.AN_Standing_Idle"));
+		if (UAnimationAsset* IdleAnimation = LoadObject<UAnimationAsset>(nullptr, *RosalesIdleAnimationPath))
+		{
+			MeshComponent->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+			MeshComponent->SetAnimation(IdleAnimation);
+			MeshComponent->Play(true);
+			UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] Applied Rosales lobby idle animation: %s"), *RosalesIdleAnimationPath);
+			return true;
+		}
+	}
+
 	const FString AnimBlueprintPath = GetLobbyDisplayAnimBlueprintPathForMeshPath(MeshPath, Zodiac);
 	if (!AnimBlueprintPath.IsEmpty())
 	{
@@ -424,8 +456,12 @@ bool ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(USkeletalMeshComp
 	UMaterialInterface* LoadedZodiacMaterial = MaterialPath.IsEmpty()
 		? nullptr
 		: LoadObject<UMaterialInterface>(nullptr, *MaterialPath);
-	UMaterialInterface* BaseMaterial = LoadedZodiacMaterial;
-	bool bUsedFallbackMaterial = false;
+	const FString MeshPath = MeshComponent->GetSkeletalMeshAsset()
+		? MeshComponent->GetSkeletalMeshAsset()->GetPathName()
+		: FString();
+	const bool bForceReliableTintMaterial = MeshPath.Contains(TEXT("/Game/DBA/Characters/Rosales/"));
+	UMaterialInterface* BaseMaterial = bForceReliableTintMaterial ? LoadReliableFallbackMaterial() : LoadedZodiacMaterial;
+	bool bUsedFallbackMaterial = bForceReliableTintMaterial && BaseMaterial != nullptr;
 	if (!BaseMaterial || IsDefaultErrorMaterial(BaseMaterial))
 	{
 		// First fallback for imported meshes: tint the mesh's own material when it is valid.
@@ -443,28 +479,43 @@ bool ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(USkeletalMeshComp
 	}
 
 	UMaterialInterface* MaterialToApply = BaseMaterial;
-	if (UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, Outer ? Outer : MeshComponent))
-	{
-		const FLinearColor Tint = GetPreviewTintForZodiac(Zodiac);
-		DynamicMaterial->SetVectorParameterValue(TEXT("Tint"), Tint);
-		DynamicMaterial->SetVectorParameterValue(TEXT("BaseColor"), Tint);
-		DynamicMaterial->SetVectorParameterValue(TEXT("Color"), Tint);
-		DynamicMaterial->SetVectorParameterValue(TEXT("BodyColor"), Tint);
-		DynamicMaterial->SetVectorParameterValue(TEXT("PrimaryColor"), Tint);
-		MaterialToApply = DynamicMaterial;
-	}
-
 	const int32 MaterialSlotCount = FMath::Max(1, MeshComponent->GetNumMaterials());
+	const FLinearColor Tint = GetPreviewTintForZodiac(Zodiac);
 	for (int32 MaterialIndex = 0; MaterialIndex < MaterialSlotCount; ++MaterialIndex)
 	{
+		MaterialToApply = BaseMaterial;
+		if (UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, Outer ? Outer : MeshComponent))
+		{
+			DynamicMaterial->SetVectorParameterValue(TEXT("Tint"), Tint);
+			DynamicMaterial->SetVectorParameterValue(TEXT("BaseColor"), Tint);
+			DynamicMaterial->SetVectorParameterValue(TEXT("Color"), Tint);
+			DynamicMaterial->SetVectorParameterValue(TEXT("BodyColor"), Tint);
+			DynamicMaterial->SetVectorParameterValue(TEXT("PrimaryColor"), Tint);
+
+			if (bForceReliableTintMaterial)
+			{
+				const TCHAR* TexturePath = MaterialIndex == 0
+					? TEXT("/Game/DBA/Characters/Rosales/Meshes/T_Rosales_Diffuse.T_Rosales_Diffuse")
+					: TEXT("/Game/DBA/Characters/Rosales/Meshes/T_Rosales_Diffuse_Body.T_Rosales_Diffuse_Body");
+				if (UTexture* AlbedoTexture = LoadObject<UTexture>(nullptr, TexturePath))
+				{
+					DynamicMaterial->SetTextureParameterValue(TEXT("AlbedoTexture"), AlbedoTexture);
+					DynamicMaterial->SetTextureParameterValue(TEXT("BaseTexture"), AlbedoTexture);
+					DynamicMaterial->SetTextureParameterValue(TEXT("DiffuseTexture"), AlbedoTexture);
+				}
+			}
+
+			MaterialToApply = DynamicMaterial;
+		}
 		MeshComponent->SetMaterial(MaterialIndex, MaterialToApply);
 	}
 
-	UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] Applied zodiac material: %s Tint=%s Slots=%d Parent=%s"),
+	UE_LOG(LogDBAUI, Log, TEXT("[CharacterPresentationActor] Applied zodiac material: %s Tint=%s Slots=%d Parent=%s TextureTint=%s"),
 		LoadedZodiacMaterial && !bUsedFallbackMaterial ? *MaterialPath : TEXT("ReliableTintFallback"),
-		*GetPreviewTintForZodiac(Zodiac).ToString(),
+		*Tint.ToString(),
 		MaterialSlotCount,
-		*BaseMaterial->GetPathName());
+		*BaseMaterial->GetPathName(),
+		bForceReliableTintMaterial ? TEXT("RosalesAlbedo") : TEXT("Default"));
 	return true;
 }
 
@@ -695,6 +746,7 @@ void ADBACharacterPresentationActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 		{
 			if (USkeletalMesh* CandidateMesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath))
 			{
+				EnsureRosalesMeshUsesRosalesSkeleton(CandidateMesh, MeshPath);
 				if (!FirstLoadedMesh)
 				{
 					FirstLoadedMesh = CandidateMesh;

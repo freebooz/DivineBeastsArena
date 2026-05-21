@@ -82,6 +82,7 @@ protected:
 	void EnsureNativeFallbackLayout();
 	void ResolveBoundWidgetsFromWidgetTree();
 	void ApplyBlueprintLayoutOverrides();
+	void ApplyLocalizedText();
 	void BindControls();
 	void UnbindControls();
 	void RefreshCharacterText();

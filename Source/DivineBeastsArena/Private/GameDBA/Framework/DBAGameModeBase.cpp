@@ -14,6 +14,7 @@
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Rooster.h"
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Snake.h"
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Tiger.h"
+#include "GameDBA/Character/Monster/DBALobbyTrainingMonster.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/Player/DBALobbyPlayerController.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPreviewActor.h"
@@ -199,7 +200,57 @@ void ADBAGameModeBase::BeginPlay()
 			It->Destroy();
 		}
 		LobbyDisplayActors.Reset();
+		SpawnLobbyTrainingMonsters();
 		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Lobby character preview actors disabled; using player pawns only."));
+	}
+}
+
+void ADBAGameModeBase::SpawnLobbyTrainingMonsters()
+{
+	if (!HasAuthority() || !GetWorld())
+	{
+		return;
+	}
+
+	for (TActorIterator<ADBALobbyTrainingMonster> It(GetWorld()); It; ++It)
+	{
+		It->Destroy();
+	}
+	LobbyTrainingMonsters.Reset();
+
+	const FVector BaseLocation(680.0f, -900.0f, 96.0f);
+	constexpr float MonsterSpacingX = 420.0f;
+	constexpr float MonsterSpacingY = 420.0f;
+	constexpr int32 MonsterCount = 10;
+	constexpr int32 MonstersPerRow = 5;
+
+	for (int32 Index = 0; Index < MonsterCount; ++Index)
+	{
+		const int32 Row = Index / MonstersPerRow;
+		const int32 Column = Index % MonstersPerRow;
+		const FVector SpawnLocation = BaseLocation + FVector(
+			static_cast<float>(Row) * MonsterSpacingX,
+			static_cast<float>(Column) * MonsterSpacingY,
+			0.0f);
+		const FRotator SpawnRotation(0.0f, 180.0f + static_cast<float>(Column) * 12.0f, 0.0f);
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		ADBALobbyTrainingMonster* Monster = GetWorld()->SpawnActor<ADBALobbyTrainingMonster>(
+			ADBALobbyTrainingMonster::StaticClass(),
+			SpawnLocation,
+			SpawnRotation,
+			SpawnParams);
+
+		if (Monster)
+		{
+			Monster->ConfigureLobbyMonster(Index);
+			LobbyTrainingMonsters.Add(Monster);
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Spawned lobby training monster: index=%d actor=%s location=%s"),
+				Index,
+				*Monster->GetName(),
+				*SpawnLocation.ToString());
+		}
 	}
 }
 

@@ -3,6 +3,7 @@
 #include "GameDBA/UI/Lobby/Login/UDBACharacterCreateWidgetController.h"
 
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
+#include "GameDBA/UI/DBAGameUIManager.h"
 
 UDBACharacterCreateWidgetController::UDBACharacterCreateWidgetController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -36,6 +37,13 @@ void UDBACharacterCreateWidgetController::Submit()
 {
 	if (UDBALoginFlowSubsystem* Flow = GetLoginFlow())
 	{
+		if (UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		{
+			if (UDBAGameUIManager* UIManager = GameInstance->GetSubsystem<UDBAGameUIManager>())
+			{
+				UIManager->ShowLobbyLoadingScreen();
+			}
+		}
 		Flow->SubmitCharacterCreation(PendingRequest);
 	}
 }

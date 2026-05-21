@@ -32,6 +32,12 @@ protected:
 	void MoveRightAxis(float Value);
 	void TurnAxis(float Value);
 	void LookUpAxis(float Value);
+	void HandleLeftMousePressed();
+	void HandleLeftMouseReleased();
+	void HandleRightMousePressed();
+	void HandleRightMouseReleased();
+	void HandleMouseScrollUp();
+	void HandleMouseScrollDown();
 	void HandleMoveForwardPressed();
 	void HandleMoveForwardReleased();
 	void HandleMoveBackwardPressed();
@@ -41,6 +47,7 @@ protected:
 	void HandleMoveRightPressed();
 	void HandleMoveRightReleased();
 	void HandleSkill01Pressed();
+	void HandleSelectTargetPressed();
 
 	void ApplyMovementInput(float ForwardValue, float RightValue);
 	void EnsureMovementInputTags();
@@ -48,11 +55,34 @@ protected:
 	void SetMovementTagActive(const FGameplayTag& Tag, bool bActive);
 	FVector2D ResolveTaggedMovementInput() const;
 	void ApplyMouseLook();
+	void ApplyCameraInput(float YawInput, float PitchInput, bool bTurnCharacter);
+	void ApplyCameraZoom(float WheelSteps);
+	void RefreshMouseLookCaptureMode();
+	void SetMouseLookCaptureActive(bool bActive);
+	void ConfigurePawnForRightMouseLook(bool bActive);
+	void FacePawnToControlYaw();
 	void ApplyTouchLook();
+	AActor* ResolveClickedAttackTarget() const;
+	void EnsureCustomSoftwareCursor();
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
 	float MouseLookSensitivity = 0.12f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
+	float CameraZoomStep = 90.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
+	float MinCameraDistance = 280.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
+	float MaxCameraDistance = 950.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
+	float MinCameraPitch = -65.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
+	float MaxCameraPitch = 55.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
 	float TouchLookSensitivity = 0.06f;
@@ -71,6 +101,15 @@ private:
 	FGameplayTag MoveRightTag;
 	FGameplayTagContainer ActiveMovementInputTags;
 	bool bJumpHeld = false;
+	bool bLeftMouseLookHeld = false;
+	bool bRightMouseLookHeld = false;
+	bool bMouseLookCaptureActive = false;
+	bool bPawnUsingRightMouseLook = false;
 	bool bTouchLookWasPressed = false;
 	FVector2D LastTouchLookPos = FVector2D::ZeroVector;
+	UPROPERTY(Transient)
+	TWeakObjectPtr<AActor> SelectedAttackTarget;
+
+	UPROPERTY(Transient)
+	TObjectPtr<class UDBASoftwareCursorWidget> SoftwareCursorWidget;
 };

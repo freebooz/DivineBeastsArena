@@ -33,6 +33,7 @@ void UDBAOverheadWidgetComponent::CreateOverheadWidget()
 		{
 			OverheadWidget->AddToViewport();
 			OverheadWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+			SetHealthBarPercent(CachedHealthPercent);
 		}
 	}
 }
@@ -41,9 +42,13 @@ void UDBAOverheadWidgetComponent::SetHealthBarPercent(float Percent)
 {
 	CachedHealthPercent = FMath::Clamp(Percent, 0.0f, 1.0f);
 
-	if (UProgressBar* HealthBar = Cast<UProgressBar>(OverheadWidget->GetWidgetFromName(TEXT("HealthBar"))))
+	if (OverheadWidget)
 	{
-		HealthBar->SetPercent(CachedHealthPercent);
+		if (UProgressBar* HealthBar = Cast<UProgressBar>(OverheadWidget->GetWidgetFromName(TEXT("HealthBar"))))
+		{
+			HealthBar->SetPercent(CachedHealthPercent);
+			HealthBar->SetFillColorAndOpacity(HealthBarColor);
+		}
 	}
 }
 

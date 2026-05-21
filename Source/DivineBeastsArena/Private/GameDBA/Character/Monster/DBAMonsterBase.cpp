@@ -2,14 +2,19 @@
 // 怪物模型基类
 
 #include "GameDBA/Character/Monster/DBAMonsterBase.h"
+#include "GameDBA/Combat/Feedback/DBAFloatingDamageComponent.h"
+#include "GameDBA/Core/DBALogChannels.h"
 #include "Components/CapsuleComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
 #include "Engine/World.h"
+#include "Net/UnrealNetwork.h"
 
 ADBAMonsterBase::ADBAMonsterBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
+	SetReplicateMovement(true);
 
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
 	GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh"));
@@ -18,6 +23,65 @@ ADBAMonsterBase::ADBAMonsterBase()
 void ADBAMonsterBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (HasAuthority())
+	{
+		CurrentHealth = MaxHealth;
+	}
+}
+
+void ADBAMonsterBase::OnRep_CurrentHealth()
+{
+}
+
+float ADBAMonsterBase::GetHealthPercent() const
+{
+	return MaxHealth > 0.0f ? FMath::Clamp(CurrentHealth / MaxHealth, 0.0f, 1.0f) : 0.0f;
+}
+
+float ADBAMonsterBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	const float AppliedDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	const float FinalDamage = AppliedDamage > 0.0f ? AppliedDamage : DamageAmount;
+	if (!HasAuthority() || FinalDamage <= 0.0f || CurrentHealth <= 0.0f)
+	{
+		return FinalDamage;
+	}
+
+	CurrentHealth = FMath::Clamp(CurrentHealth - FinalDamage, 0.0f, MaxHealth);
+	OnRep_CurrentHealth();
+	PlayHitVFX(DamageCauser);
+	MulticastShowDamageNumber(FinalDamage, GetActorLocation() + FVector(0.0f, 0.0f, 118.0f), false);
+
+	UE_LOG(LogDBACombat, Log, TEXT("[DBAMonsterBase] Monster hit: monster=%s type=%s damage=%.1f health=%.1f/%.1f causer=%s"),
+		*GetName(),
+		*MonsterType.ToString(),
+		FinalDamage,
+		CurrentHealth,
+		MaxHealth,
+		*GetNameSafe(DamageCauser));
+
+	if (CurrentHealth <= 0.0f)
+	{
+		PlayDeathVFX();
+		UE_LOG(LogDBACombat, Log, TEXT("[DBAMonsterBase] Monster defeated: monster=%s type=%s"), *GetName(), *MonsterType.ToString());
+		SetLifeSpan(1.0f);
+		SetActorEnableCollision(false);
+		if (GetMesh())
+		{
+			GetMesh()->SetHiddenInGame(true);
+		}
+	}
+
+	return FinalDamage;
+}
+
+void ADBAMonsterBase::MulticastShowDamageNumber_Implementation(float DamageAmount, FVector_NetQuantize ImpactPoint, bool bIsCritical)
+{
+	if (UDBAFloatingDamageComponent* DamageComponent = FindComponentByClass<UDBAFloatingDamageComponent>())
+	{
+		DamageComponent->SpawnDamageNumber(DamageAmount, bIsCritical, 4, FVector(ImpactPoint));
+	}
 }
 
 void ADBAMonsterBase::PlayHitVFX(AActor* Attacker)
@@ -59,4 +123,10 @@ void ADBAMonsterBase::PlayDeathVFX()
 		FRotator Rotation = FRotator::ZeroRotator;
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, DeathLocation, Rotation, true);
 	}
+}
+
+void ADBAMonsterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ADBAMonsterBase, CurrentHealth);
 }

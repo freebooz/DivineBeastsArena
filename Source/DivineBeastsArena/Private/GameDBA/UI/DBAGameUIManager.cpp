@@ -17,6 +17,8 @@
 #include "GameDBA/UI/Lobby/Login/UDBALoginFlowWidgetBase.h"
 #include "GameDBA/UI/Lobby/Login/UDBACharacterSelectFlowWidgetBase.h"
 #include "GameDBA/UI/Lobby/Login/UDBACharacterCreateFlowWidgetBase.h"
+#include "GameDBA/UI/Lobby/Loading/UDBALoadingScreenWidgetBase.h"
+#include "GameDBA/UI/Common/UDBASoftwareCursorWidget.h"
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/CommandLine.h"
@@ -93,6 +95,12 @@ namespace
 		PC->SetShowMouseCursor(true);
 		PC->bEnableClickEvents = true;
 		PC->bEnableMouseOverEvents = true;
+		if (UDBASoftwareCursorWidget* CursorWidget = CreateWidget<UDBASoftwareCursorWidget>(PC, UDBASoftwareCursorWidget::StaticClass()))
+		{
+			PC->SetMouseCursorWidget(EMouseCursor::Default, CursorWidget);
+			PC->SetMouseCursorWidget(EMouseCursor::Crosshairs, CursorWidget);
+			PC->SetMouseCursorWidget(EMouseCursor::Hand, CursorWidget);
+		}
 		FocusWidget->SetFocus();
 	}
 
@@ -136,6 +144,12 @@ namespace
 		PC->SetShowMouseCursor(true);
 		PC->bEnableClickEvents = true;
 		PC->bEnableMouseOverEvents = true;
+		if (UDBASoftwareCursorWidget* CursorWidget = CreateWidget<UDBASoftwareCursorWidget>(PC, UDBASoftwareCursorWidget::StaticClass()))
+		{
+			PC->SetMouseCursorWidget(EMouseCursor::Default, CursorWidget);
+			PC->SetMouseCursorWidget(EMouseCursor::Crosshairs, CursorWidget);
+			PC->SetMouseCursorWidget(EMouseCursor::Hand, CursorWidget);
+		}
 		FocusWidget->SetFocus();
 	}
 
@@ -259,6 +273,15 @@ UDBAGameUIManager::UDBAGameUIManager()
 	{
 		CharacterCreateWidgetClass = UDBACharacterCreateFlowWidgetBase::StaticClass();
 		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Character create widget blueprint unavailable, using native fallback"));
+	}
+
+	LobbyLoadingWidgetClass = ResolveWidgetClassPath<UDBALoadingScreenWidgetBase>({
+		TEXT("/Game/DBA/UI/Lobby/Loading/WBP_DBA_LoadingScreen"),
+		TEXT("/Game/Blueprints/UI/DBA/Lobby/WBP_DBA_LoadingScreen")
+	});
+	if (!LobbyLoadingWidgetClass)
+	{
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Lobby loading widget blueprint unavailable"));
 	}
 
 	LobbyPlayerHUDWidgetClass = ResolveWidgetClassPath<UDBALobbyPlayerHUDWidgetBase>({
@@ -451,6 +474,7 @@ void UDBAGameUIManager::ShowMainLobby()
 
 	if (IsLobbyGameplayWorldForUIManager(GetWorld()))
 	{
+		HideLobbyLoadingScreen();
 		if (MainLobbyWidget && bMainLobbyVisible)
 		{
 			MainLobbyWidget->RemoveFromParent();
@@ -484,6 +508,7 @@ void UDBAGameUIManager::ShowMainLobby()
 	}
 	if (MainLobbyWidget && !bMainLobbyVisible)
 	{
+		HideLobbyLoadingScreen();
 		MainLobbyWidget->AddToViewport(0);
 		bMainLobbyVisible = true;
 	}
@@ -546,10 +571,69 @@ void UDBAGameUIManager::HideArenaHUD()
 void UDBAGameUIManager::ClearAllUI()
 {
 	StopLoginFlowBackgroundMusic();
+	HideLobbyLoadingScreen();
 	HideAllFlowWidgets();
 	HideMainLobby();
 	HideLobbyPlayerHUD();
 	HideArenaHUD();
+}
+
+void UDBAGameUIManager::ShowLobbyLoadingScreen()
+{
+	UWorld* World = GetWorld();
+	if (!World || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
+	if (LobbyLoadingWidget)
+	{
+		const UWorld* WidgetWorld = LobbyLoadingWidget->GetWorld();
+		const APlayerController* OwningPC = LobbyLoadingWidget->GetOwningPlayer();
+		const UWorld* OwningPlayerWorld = OwningPC ? OwningPC->GetWorld() : nullptr;
+		const bool bWidgetWorldMatches = WidgetWorld == World || OwningPlayerWorld == World;
+		if (!bWidgetWorldMatches)
+		{
+			LobbyLoadingWidget->RemoveFromParent();
+			LobbyLoadingWidget = nullptr;
+			bLobbyLoadingVisible = false;
+		}
+	}
+
+	if (!LobbyLoadingWidget && LobbyLoadingWidgetClass)
+	{
+		APlayerController* PC = World->GetFirstPlayerController();
+		if (!PC && World->GetGameInstance())
+		{
+			PC = World->GetGameInstance()->GetPrimaryPlayerController();
+		}
+		if (PC)
+		{
+			LobbyLoadingWidget = CreateWidget<UDBALoadingScreenWidgetBase>(PC, LobbyLoadingWidgetClass);
+		}
+	}
+
+	if (LobbyLoadingWidget && !bLobbyLoadingVisible)
+	{
+		HideMainLobby();
+		HideAllFlowWidgets();
+		LobbyLoadingWidget->AddToViewport(10000);
+		LobbyLoadingWidget->UpdateLoadingProgress(0.35f);
+		LobbyLoadingWidget->ShowTips(NSLOCTEXT("DBAGameUIManager", "EnteringLobby", "Entering lobby..."));
+		ApplyFrontendInputMode(World, LobbyLoadingWidget);
+		bLobbyLoadingVisible = true;
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Lobby loading screen shown."));
+	}
+}
+
+void UDBAGameUIManager::HideLobbyLoadingScreen()
+{
+	if (LobbyLoadingWidget && bLobbyLoadingVisible)
+	{
+		LobbyLoadingWidget->UpdateLoadingProgress(1.0f);
+		LobbyLoadingWidget->RemoveFromParent();
+	}
+	bLobbyLoadingVisible = false;
 }
 
 void UDBAGameUIManager::ShowLobbyPlayerHUD()
@@ -639,7 +723,7 @@ void UDBAGameUIManager::HandleLoginFlowStateChanged(EDBALoginFlowState NewState)
 	CachedLoginFlowState = NewState;
 	RefreshLoginFlowWidgetVisibility();
 
-	if (NewState == EDBALoginFlowState::MainLobby)
+	if (NewState == EDBALoginFlowState::MainLobby && IsLobbyGameplayWorldForUIManager(GetWorld()))
 	{
 		TransitionTo(EDBAUIState::Lobby);
 	}
@@ -712,8 +796,14 @@ void UDBAGameUIManager::RefreshLoginFlowWidgetVisibility()
 		ResetFlowWidgetRefreshRetry();
 		StopLoginFlowBackgroundMusic();
 		RemoveAllViewportLoginWidgets(GetWorld());
-		HideAllFlowWidgets();
-		ShowMainLobby();
+		if (IsLobbyGameplayWorldForUIManager(GetWorld()))
+		{
+			ShowMainLobby();
+		}
+		else
+		{
+			ShowLobbyLoadingScreen();
+		}
 		break;
 	}
 	default:

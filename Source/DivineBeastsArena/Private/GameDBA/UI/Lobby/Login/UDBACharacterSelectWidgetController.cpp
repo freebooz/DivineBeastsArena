@@ -3,6 +3,7 @@
 #include "GameDBA/UI/Lobby/Login/UDBACharacterSelectWidgetController.h"
 
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
+#include "GameDBA/UI/DBAGameUIManager.h"
 
 UDBACharacterSelectWidgetController::UDBACharacterSelectWidgetController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -23,6 +24,13 @@ void UDBACharacterSelectWidgetController::SelectCharacter(const FDBACharacterId&
 {
 	if (UDBALoginFlowSubsystem* Flow = GetLoginFlow())
 	{
+		if (UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		{
+			if (UDBAGameUIManager* UIManager = GameInstance->GetSubsystem<UDBAGameUIManager>())
+			{
+				UIManager->ShowLobbyLoadingScreen();
+			}
+		}
 		Flow->SubmitCharacterSelection(CharacterId);
 	}
 }

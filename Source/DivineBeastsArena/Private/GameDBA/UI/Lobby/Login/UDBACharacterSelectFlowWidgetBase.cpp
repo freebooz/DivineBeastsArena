@@ -21,6 +21,7 @@
 #include "Engine/SkyLight.h"
 #include "Engine/Texture2D.h"
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
+#include "GameDBA/UI/DBAGameUIManager.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/UI/DBAUIFontUtils.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
@@ -40,6 +41,57 @@ namespace
 			TextBlock->SetText(Label);
 		}
 		return TextBlock;
+	}
+
+	UTextBlock* GetSelectButtonLabel(UButton* Button)
+	{
+		if (const UContentWidget* ContentHost = Cast<UContentWidget>(Button))
+		{
+			return Cast<UTextBlock>(ContentHost->GetContent());
+		}
+		return nullptr;
+	}
+
+	void SetSelectButtonLabel(UButton* Button, const FText& Label)
+	{
+		if (UTextBlock* TextBlock = GetSelectButtonLabel(Button))
+		{
+			TextBlock->SetText(Label);
+		}
+	}
+
+	void SetSelectTextBlockByNames(UWidgetTree* WidgetTree, const TArray<FName>& Names, const FText& Text)
+	{
+		if (!WidgetTree)
+		{
+			return;
+		}
+
+		for (const FName& Name : Names)
+		{
+			if (UTextBlock* TextBlock = Cast<UTextBlock>(WidgetTree->FindWidget(Name)))
+			{
+				TextBlock->SetText(Text);
+			}
+		}
+	}
+
+	void ReplaceSelectTextBlockValue(UWidgetTree* WidgetTree, const FString& EnglishText, const FText& ChineseText)
+	{
+		if (!WidgetTree)
+		{
+			return;
+		}
+
+		WidgetTree->ForEachWidgetAndDescendants(
+			[&EnglishText, &ChineseText](UWidget* Widget)
+			{
+				UTextBlock* TextBlock = Cast<UTextBlock>(Widget);
+				if (TextBlock && TextBlock->GetText().ToString().Equals(EnglishText, ESearchCase::IgnoreCase))
+				{
+					TextBlock->SetText(ChineseText);
+				}
+			});
 	}
 
 	UWidget* ResolveSelectPreviewHost(UWidgetTree* WidgetTree, UWidget* CurrentHost)
@@ -289,6 +341,7 @@ void UDBACharacterSelectFlowWidgetBase::NativeConstruct()
 	EnsureNativeFallbackLayout();
 	ResolveBoundWidgetsFromWidgetTree();
 	ApplyBlueprintLayoutOverrides();
+	ApplyLocalizedText();
 	BindControls();
 	InitializeAudioAssets();
 	DBAUIFonts::ApplyGameFontToWidgetTree(WidgetTree);
@@ -417,18 +470,25 @@ void UDBACharacterSelectFlowWidgetBase::ConfirmSelectedCharacter()
 {
 	if (!SelectedCharacterId.IsValid())
 	{
-		SetStatus(NSLOCTEXT("DBACharacterSelectWidget", "NoSelection", "No character selected."));
+		SetStatus(NSLOCTEXT("DBACharacterSelectWidget", "NoSelection", "尚未选择角色。"));
 		return;
 	}
 
 	if (UDBALoginFlowSubsystem* LoginFlow = GetLoginFlow())
 	{
-		SetStatus(NSLOCTEXT("DBACharacterSelectWidget", "EnteringLobby", "Entering lobby..."));
+		SetStatus(NSLOCTEXT("DBACharacterSelectWidget", "EnteringLobby", "正在进入大厅..."));
+		if (UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		{
+			if (UDBAGameUIManager* UIManager = GameInstance->GetSubsystem<UDBAGameUIManager>())
+			{
+				UIManager->ShowLobbyLoadingScreen();
+			}
+		}
 		LoginFlow->SubmitCharacterSelection(SelectedCharacterId);
 	}
 	else
 	{
-		SetStatus(NSLOCTEXT("DBACharacterSelectWidget", "FlowUnavailable", "Login flow unavailable."));
+		SetStatus(NSLOCTEXT("DBACharacterSelectWidget", "FlowUnavailable", "登录流程不可用。"));
 	}
 }
 
@@ -444,7 +504,7 @@ void UDBACharacterSelectFlowWidgetBase::RefreshCharacterList()
 {
 	if (UDBALoginFlowSubsystem* LoginFlow = GetLoginFlow())
 	{
-		SetStatus(NSLOCTEXT("DBACharacterSelectWidget", "Refreshing", "Refreshing character list..."));
+		SetStatus(NSLOCTEXT("DBACharacterSelectWidget", "Refreshing", "正在刷新角色列表..."));
 		LoginFlow->RefreshCharacterList();
 	}
 }
@@ -488,7 +548,7 @@ void UDBACharacterSelectFlowWidgetBase::EnsureNativeFallbackLayout()
 	WidgetTree->RootWidget = RootBox;
 
 	UTextBlock* TitleText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("NativeSelectTitle"));
-	TitleText->SetText(NSLOCTEXT("DBACharacterSelectWidget", "Title", "Select Character"));
+	TitleText->SetText(NSLOCTEXT("DBACharacterSelectWidget", "Title", "选择角色"));
 	RootBox->AddChildToVerticalBox(TitleText);
 
 	StatusText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("StatusText"));
@@ -498,15 +558,15 @@ void UDBACharacterSelectFlowWidgetBase::EnsureNativeFallbackLayout()
 	RootBox->AddChildToVerticalBox(CharacterListText);
 
 	ConfirmButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("ConfirmButton"));
-	ConfirmButton->AddChild(MakeSelectButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterSelectWidget", "ConfirmButton", "Enter Lobby")));
+	ConfirmButton->AddChild(MakeSelectButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterSelectWidget", "ConfirmButton", "进入大厅")));
 	RootBox->AddChildToVerticalBox(ConfirmButton);
 
 	CreateButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("CreateButton"));
-	CreateButton->AddChild(MakeSelectButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterSelectWidget", "CreateButton", "Create Character")));
+	CreateButton->AddChild(MakeSelectButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterSelectWidget", "CreateButton", "创建角色")));
 	RootBox->AddChildToVerticalBox(CreateButton);
 
 	RefreshButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("RefreshButton"));
-	RefreshButton->AddChild(MakeSelectButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterSelectWidget", "RefreshButton", "Refresh")));
+	RefreshButton->AddChild(MakeSelectButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterSelectWidget", "RefreshButton", "刷新列表")));
 	RootBox->AddChildToVerticalBox(RefreshButton);
 
 	CharacterPreviewViewport = WidgetTree->ConstructWidget<UViewport>(UViewport::StaticClass(), TEXT("CharacterPreviewViewport"));
@@ -603,6 +663,28 @@ void UDBACharacterSelectFlowWidgetBase::ApplyBlueprintLayoutOverrides()
 		FVector2D(0.0f, 0.0f));
 }
 
+void UDBACharacterSelectFlowWidgetBase::ApplyLocalizedText()
+{
+	const FText TitleText = NSLOCTEXT("DBACharacterSelectWidget", "Title", "选择角色");
+	const FText ConfirmText = NSLOCTEXT("DBACharacterSelectWidget", "ConfirmButton", "进入大厅");
+	const FText CreateText = NSLOCTEXT("DBACharacterSelectWidget", "CreateButton", "创建角色");
+	const FText RefreshText = NSLOCTEXT("DBACharacterSelectWidget", "RefreshButton", "刷新列表");
+
+	SetSelectTextBlockByNames(WidgetTree, { TEXT("NativeSelectTitle"), TEXT("TitleText"), TEXT("CharacterSelectTitle"), TEXT("SelectTitle") }, TitleText);
+	SetSelectTextBlockByNames(WidgetTree, { TEXT("ConfirmButtonText"), TEXT("EnterLobbyText"), TEXT("EnterText") }, ConfirmText);
+	SetSelectTextBlockByNames(WidgetTree, { TEXT("CreateButtonText"), TEXT("CreateCharacterText") }, CreateText);
+	SetSelectTextBlockByNames(WidgetTree, { TEXT("RefreshButtonText"), TEXT("RefreshListText"), TEXT("ReloadButtonText") }, RefreshText);
+
+	SetSelectButtonLabel(ConfirmButton, ConfirmText);
+	SetSelectButtonLabel(CreateButton, CreateText);
+	SetSelectButtonLabel(RefreshButton, RefreshText);
+
+	ReplaceSelectTextBlockValue(WidgetTree, TEXT("Select Character"), TitleText);
+	ReplaceSelectTextBlockValue(WidgetTree, TEXT("Enter Lobby"), ConfirmText);
+	ReplaceSelectTextBlockValue(WidgetTree, TEXT("Create Character"), CreateText);
+	ReplaceSelectTextBlockValue(WidgetTree, TEXT("Refresh"), RefreshText);
+}
+
 void UDBACharacterSelectFlowWidgetBase::BindControls()
 {
 	if (ConfirmButton)
@@ -647,7 +729,7 @@ void UDBACharacterSelectFlowWidgetBase::RefreshCharacterText()
 
 	if (CurrentCharacters.Num() == 0)
 	{
-		CharacterListText->SetText(NSLOCTEXT("DBACharacterSelectWidget", "NoCharacters", "No characters found."));
+		CharacterListText->SetText(NSLOCTEXT("DBACharacterSelectWidget", "NoCharacters", "暂无角色，请创建角色。"));
 		return;
 	}
 
@@ -655,7 +737,7 @@ void UDBACharacterSelectFlowWidgetBase::RefreshCharacterText()
 	for (const FDBACharacterSummary& Character : CurrentCharacters)
 	{
 		const FString Prefix = Character.CharacterId == SelectedCharacterId ? TEXT("> ") : TEXT("  ");
-		Lines.Add(FString::Printf(TEXT("%s%s  Lv.%d"), *Prefix, *Character.CharacterName, Character.Level));
+		Lines.Add(FString::Printf(TEXT("%s%s  等级%d"), *Prefix, *Character.CharacterName, Character.Level));
 	}
 	CharacterListText->SetText(FText::FromString(FString::Join(Lines, TEXT("\n"))));
 }

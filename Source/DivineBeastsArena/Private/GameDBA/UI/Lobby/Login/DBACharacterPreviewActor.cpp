@@ -6,6 +6,7 @@
 #include "Components/SceneComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
+#include "Animation/Skeleton.h"
 #include "Engine/SkeletalMesh.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "Net/UnrealNetwork.h"
@@ -14,6 +15,19 @@ namespace
 {
 	constexpr float PreviewActorMeshDisplayScale = 1.0f;
 	constexpr float PreviewActorMeshFloorZ = 2.0f;
+
+	void EnsureRosalesMeshUsesRosalesSkeleton(USkeletalMesh* Mesh, const FString& MeshPath)
+	{
+		if (!Mesh || !MeshPath.Contains(TEXT("/Game/DBA/Characters/Rosales/")))
+		{
+			return;
+		}
+
+		if (USkeleton* RosalesSkeleton = LoadObject<USkeleton>(nullptr, TEXT("/Game/DBA/Characters/Rosales/Meshes/SKEL_Rosales.SKEL_Rosales")))
+		{
+			Mesh->SetSkeleton(RosalesSkeleton);
+		}
+	}
 
 	bool IsLobbyGameplayWorldForPreviewActor(const UWorld* World)
 	{
@@ -122,6 +136,7 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 		{
 			if (USkeletalMesh* CandidateMesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath))
 			{
+				EnsureRosalesMeshUsesRosalesSkeleton(CandidateMesh, MeshPath);
 				ResolvedMesh = CandidateMesh;
 				ResolvedMeshPath = MeshPath;
 				break;

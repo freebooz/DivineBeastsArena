@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/TextRenderComponent.h"
+#include "Engine/World.h"
 
 UDBAFloatingDamageComponent::UDBAFloatingDamageComponent()
 	: Super()
@@ -126,33 +127,47 @@ void UDBAFloatingDamageComponent::ClearAllDamageNumbers()
 	ActiveDamageEntries.Empty();
 }
 
-void UDBAFloatingDamageComponent::SpawnDamageNumberEntry(const FDBAFloatingDamageEntry& Entry)
+void UDBAFloatingDamageComponent::SpawnDamageNumberEntry(FDBAFloatingDamageEntry& Entry)
 {
-	if (!DamageNumberSystem)
-	{
-		return;
-	}
-
 	if (UWorld* World = GetWorld())
 	{
-		UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			World,
-			DamageNumberSystem,
-			Entry.WorldLocation,
-			FRotator::ZeroRotator,
-			FVector(1.0f),
-			true,
-			true,
-			ENCPoolMethod::AutoRelease,
-			true
-		);
-
-		if (NiagaraComp)
+		if (DamageNumberSystem)
 		{
-			// 璁剧疆User鍙傛暟
-			NiagaraComp->SetVariableLinearColor(FName("DamageColor"), Entry.Color);
-			NiagaraComp->SetVariableFloat(FName("DamageValue"), Entry.Damage);
-			NiagaraComp->SetVariableBool(FName("bIsCritical"), Entry.bIsCritical);
+			UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				World,
+				DamageNumberSystem,
+				Entry.WorldLocation,
+				FRotator::ZeroRotator,
+				FVector(1.0f),
+				true,
+				true,
+				ENCPoolMethod::AutoRelease,
+				true
+			);
+
+			if (NiagaraComp)
+			{
+				// 璁剧疆User鍙傛暟
+				NiagaraComp->SetVariableLinearColor(FName("DamageColor"), Entry.Color);
+				NiagaraComp->SetVariableFloat(FName("DamageValue"), Entry.Damage);
+				NiagaraComp->SetVariableBool(FName("bIsCritical"), Entry.bIsCritical);
+				Entry.NiagaraComponent = NiagaraComp;
+			}
+			return;
+		}
+
+		UTextRenderComponent* TextComp = NewObject<UTextRenderComponent>(GetOwner());
+		if (TextComp)
+		{
+			TextComp->RegisterComponentWithWorld(World);
+			TextComp->SetWorldLocation(Entry.WorldLocation);
+			TextComp->SetWorldRotation(FRotator(0.0f, 180.0f, 0.0f));
+			TextComp->SetHorizontalAlignment(EHTA_Center);
+			TextComp->SetVerticalAlignment(EVRTA_TextCenter);
+			TextComp->SetTextRenderColor(Entry.Color.ToFColor(true));
+			TextComp->SetWorldSize(Entry.bIsCritical ? 48.0f : 36.0f);
+			TextComp->SetText(FText::AsNumber(FMath::RoundToInt(Entry.Damage)));
+			Entry.TextComponent = TextComp;
 		}
 	}
 }
@@ -161,6 +176,14 @@ void UDBAFloatingDamageComponent::UpdateDamageEntry(FDBAFloatingDamageEntry& Ent
 {
 	// 鍚戜笂椋樺姩鐨勯€熷害浼氶€愭笎鍑忓皬
 	Entry.Velocity.Z = FMath::Max(Entry.Velocity.Z - 200.0f * DeltaTime, 0.0f);
+	if (Entry.TextComponent.IsValid())
+	{
+		Entry.TextComponent->SetWorldLocation(Entry.WorldLocation);
+		const float Alpha = Entry.TotalTime > 0.0f ? FMath::Clamp(Entry.RemainingTime / Entry.TotalTime, 0.0f, 1.0f) : 0.0f;
+		FLinearColor FadedColor = Entry.Color;
+		FadedColor.A = Alpha;
+		Entry.TextComponent->SetTextRenderColor(FadedColor.ToFColor(true));
+	}
 }
 
 void UDBAFloatingDamageComponent::RecycleDamageEntry(FDBAFloatingDamageEntry& Entry)
@@ -169,6 +192,11 @@ void UDBAFloatingDamageComponent::RecycleDamageEntry(FDBAFloatingDamageEntry& En
 	{
 		Entry.NiagaraComponent->Deactivate();
 		Entry.NiagaraComponent = nullptr;
+	}
+	if (Entry.TextComponent.IsValid())
+	{
+		Entry.TextComponent->DestroyComponent();
+		Entry.TextComponent = nullptr;
 	}
 
 	if (AvailableDamageEntries.Num() < PoolSize)

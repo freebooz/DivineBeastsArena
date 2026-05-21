@@ -22,6 +22,7 @@
 #include "Engine/SkyLight.h"
 #include "Engine/Texture2D.h"
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
+#include "GameDBA/UI/DBAGameUIManager.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/UI/DBAUIFontUtils.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
@@ -40,7 +41,7 @@ namespace
 		{
 			return Enum->GetDisplayNameTextByValue(static_cast<int64>(Value));
 		}
-		return FText::FromString(TEXT("Unknown"));
+		return NSLOCTEXT("DBACharacterCreateWidget", "UnknownEnum", "未知");
 	}
 
 	UTextBlock* MakeCreateButtonLabel(UWidgetTree* WidgetTree, const FText& Label)
@@ -51,6 +52,57 @@ namespace
 			TextBlock->SetText(Label);
 		}
 		return TextBlock;
+	}
+
+	UTextBlock* GetCreateButtonLabel(UButton* Button)
+	{
+		if (const UContentWidget* ContentHost = Cast<UContentWidget>(Button))
+		{
+			return Cast<UTextBlock>(ContentHost->GetContent());
+		}
+		return nullptr;
+	}
+
+	void SetCreateButtonLabel(UButton* Button, const FText& Label)
+	{
+		if (UTextBlock* TextBlock = GetCreateButtonLabel(Button))
+		{
+			TextBlock->SetText(Label);
+		}
+	}
+
+	void SetCreateTextBlockByNames(UWidgetTree* WidgetTree, const TArray<FName>& Names, const FText& Text)
+	{
+		if (!WidgetTree)
+		{
+			return;
+		}
+
+		for (const FName& Name : Names)
+		{
+			if (UTextBlock* TextBlock = Cast<UTextBlock>(WidgetTree->FindWidget(Name)))
+			{
+				TextBlock->SetText(Text);
+			}
+		}
+	}
+
+	void ReplaceCreateTextBlockValue(UWidgetTree* WidgetTree, const FString& EnglishText, const FText& ChineseText)
+	{
+		if (!WidgetTree)
+		{
+			return;
+		}
+
+		WidgetTree->ForEachWidgetAndDescendants(
+			[&EnglishText, &ChineseText](UWidget* Widget)
+			{
+				UTextBlock* TextBlock = Cast<UTextBlock>(Widget);
+				if (TextBlock && TextBlock->GetText().ToString().Equals(EnglishText, ESearchCase::IgnoreCase))
+				{
+					TextBlock->SetText(ChineseText);
+				}
+			});
 	}
 
 	template <typename EnumType>
@@ -307,6 +359,7 @@ void UDBACharacterCreateFlowWidgetBase::NativeConstruct()
 	EnsureNativeFallbackLayout();
 	ResolveBoundWidgetsFromWidgetTree();
 	ApplyBlueprintLayoutOverrides();
+	ApplyLocalizedText();
 	BindControls();
 	InitializeAudioAssets();
 	DBAUIFonts::ApplyGameFontToWidgetTree(WidgetTree);
@@ -461,13 +514,20 @@ void UDBACharacterCreateFlowWidgetBase::Submit()
 
 	if (UDBALoginFlowSubsystem* LoginFlow = GetLoginFlow())
 	{
-		ShowValidationMessage(true, NSLOCTEXT("DBACharacterCreateWidget", "Creating", "Creating character..."));
+		ShowValidationMessage(true, NSLOCTEXT("DBACharacterCreateWidget", "Creating", "正在创建角色..."));
+		if (UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		{
+			if (UDBAGameUIManager* UIManager = GameInstance->GetSubsystem<UDBAGameUIManager>())
+			{
+				UIManager->ShowLobbyLoadingScreen();
+			}
+		}
 		LoginFlow->SubmitCharacterCreation(Request);
 		UE_LOG(LogDBAUI, Log, TEXT("[CharacterCreateWidget] Submitted character creation: %s"), *CharacterName);
 	}
 	else
 	{
-		ShowValidationMessage(false, NSLOCTEXT("DBACharacterCreateWidget", "FlowUnavailable", "Login flow unavailable."));
+		ShowValidationMessage(false, NSLOCTEXT("DBACharacterCreateWidget", "FlowUnavailable", "登录流程不可用。"));
 	}
 }
 
@@ -528,14 +588,14 @@ void UDBACharacterCreateFlowWidgetBase::EnsureNativeFallbackLayout()
 	WidgetTree->RootWidget = RootBox;
 
 	UTextBlock* TitleText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("NativeCreateTitle"));
-	TitleText->SetText(NSLOCTEXT("DBACharacterCreateWidget", "Title", "Create Character"));
+	TitleText->SetText(NSLOCTEXT("DBACharacterCreateWidget", "Title", "创建角色"));
 	RootBox->AddChildToVerticalBox(TitleText);
 
 	ValidationText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ValidationText"));
 	RootBox->AddChildToVerticalBox(ValidationText);
 
 	CharacterNameInput = WidgetTree->ConstructWidget<UEditableTextBox>(UEditableTextBox::StaticClass(), TEXT("CharacterNameInput"));
-	CharacterNameInput->SetHintText(NSLOCTEXT("DBACharacterCreateWidget", "NameHint", "Character name"));
+	CharacterNameInput->SetHintText(NSLOCTEXT("DBACharacterCreateWidget", "NameHint", "请输入角色名称"));
 	RootBox->AddChildToVerticalBox(CharacterNameInput);
 
 	ZodiacButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("ZodiacButton"));
@@ -554,11 +614,11 @@ void UDBACharacterCreateFlowWidgetBase::EnsureNativeFallbackLayout()
 	RootBox->AddChildToVerticalBox(FiveCampButton);
 
 	CreateButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("CreateButton"));
-	CreateButton->AddChild(MakeCreateButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterCreateWidget", "CreateButton", "Create and Enter")));
+	CreateButton->AddChild(MakeCreateButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterCreateWidget", "CreateButton", "创建并进入")));
 	RootBox->AddChildToVerticalBox(CreateButton);
 
 	BackButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("BackButton"));
-	BackButton->AddChild(MakeCreateButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterCreateWidget", "BackButton", "Back to Character Select")));
+	BackButton->AddChild(MakeCreateButtonLabel(WidgetTree, NSLOCTEXT("DBACharacterCreateWidget", "BackButton", "返回角色选择")));
 	RootBox->AddChildToVerticalBox(BackButton);
 
 	CharacterPreviewViewport = WidgetTree->ConstructWidget<UViewport>(UViewport::StaticClass(), TEXT("CharacterPreviewViewport"));
@@ -618,13 +678,25 @@ void UDBACharacterCreateFlowWidgetBase::ResolveBoundWidgetsFromWidgetTree()
 	{
 		ZodiacText = Cast<UTextBlock>(FindNamedWidget({ TEXT("ZodiacText"), TEXT("RaceText") }));
 	}
+	if (!ZodiacText)
+	{
+		ZodiacText = GetCreateButtonLabel(ZodiacButton);
+	}
 	if (!ElementText)
 	{
 		ElementText = Cast<UTextBlock>(FindNamedWidget({ TEXT("ElementText") }));
 	}
+	if (!ElementText)
+	{
+		ElementText = GetCreateButtonLabel(ElementButton);
+	}
 	if (!FiveCampText)
 	{
 		FiveCampText = Cast<UTextBlock>(FindNamedWidget({ TEXT("FiveCampText"), TEXT("CampText") }));
+	}
+	if (!FiveCampText)
+	{
+		FiveCampText = GetCreateButtonLabel(FiveCampButton);
 	}
 	if (!CharacterPreviewHost)
 	{
@@ -679,6 +751,30 @@ void UDBACharacterCreateFlowWidgetBase::ApplyBlueprintLayoutOverrides()
 		FAnchors(0.78f, 0.79f, 0.96f, 0.85f),
 		FMargin(0.0f, 0.0f, 0.0f, 0.0f),
 		FVector2D(0.0f, 0.0f));
+}
+
+void UDBACharacterCreateFlowWidgetBase::ApplyLocalizedText()
+{
+	const FText TitleText = NSLOCTEXT("DBACharacterCreateWidget", "Title", "创建角色");
+	const FText NameHintText = NSLOCTEXT("DBACharacterCreateWidget", "NameHint", "请输入角色名称");
+	const FText CreateText = NSLOCTEXT("DBACharacterCreateWidget", "CreateButton", "创建并进入");
+	const FText BackText = NSLOCTEXT("DBACharacterCreateWidget", "BackButton", "返回角色选择");
+
+	if (CharacterNameInput)
+	{
+		CharacterNameInput->SetHintText(NameHintText);
+	}
+
+	SetCreateTextBlockByNames(WidgetTree, { TEXT("NativeCreateTitle"), TEXT("TitleText"), TEXT("CharacterCreateTitle"), TEXT("CreateTitle") }, TitleText);
+	SetCreateTextBlockByNames(WidgetTree, { TEXT("CreateButtonText"), TEXT("ConfirmCreateButtonText") }, CreateText);
+	SetCreateTextBlockByNames(WidgetTree, { TEXT("BackButtonText"), TEXT("BackToSelectText"), TEXT("BackToSelectButtonText") }, BackText);
+
+	SetCreateButtonLabel(CreateButton, CreateText);
+	SetCreateButtonLabel(BackButton, BackText);
+
+	ReplaceCreateTextBlockValue(WidgetTree, TEXT("Create Character"), TitleText);
+	ReplaceCreateTextBlockValue(WidgetTree, TEXT("Create and Enter"), CreateText);
+	ReplaceCreateTextBlockValue(WidgetTree, TEXT("Back to Character Select"), BackText);
 }
 
 void UDBACharacterCreateFlowWidgetBase::BindControls()
@@ -753,11 +849,11 @@ bool UDBACharacterCreateFlowWidgetBase::Validate()
 
 	if (SelectedZodiac == EDBAZodiac::None || SelectedElement == EDBAElement::None)
 	{
-		ShowValidationMessage(false, NSLOCTEXT("DBACharacterCreateWidget", "MissingSelection", "Please select zodiac and element."));
+		ShowValidationMessage(false, NSLOCTEXT("DBACharacterCreateWidget", "MissingSelection", "请选择生肖和元素。"));
 		return false;
 	}
 
-	ShowValidationMessage(true, NSLOCTEXT("DBACharacterCreateWidget", "Ready", "Ready."));
+	ShowValidationMessage(true, NSLOCTEXT("DBACharacterCreateWidget", "Ready", "已准备好。"));
 	return bIsCreateValid;
 }
 
@@ -765,14 +861,14 @@ bool UDBACharacterCreateFlowWidgetBase::ValidateCharacterName(FText& OutMessage)
 {
 	if (CharacterName.IsEmpty())
 	{
-		OutMessage = NSLOCTEXT("DBACharacterCreateWidget", "MissingName", "Enter a character name.");
+		OutMessage = NSLOCTEXT("DBACharacterCreateWidget", "MissingName", "请输入角色名称。");
 		return false;
 	}
 
 	const int32 NameLen = CharacterName.Len();
 	if (NameLen < 2 || NameLen > 14)
 	{
-		OutMessage = NSLOCTEXT("DBACharacterCreateWidget", "NameLen", "Name length must be 2-14 characters.");
+		OutMessage = NSLOCTEXT("DBACharacterCreateWidget", "NameLen", "名称长度需为 2-14 个字符。");
 		return false;
 	}
 
@@ -783,7 +879,7 @@ bool UDBACharacterCreateFlowWidgetBase::ValidateCharacterName(FText& OutMessage)
 		const bool bIsCJK = Ch >= 0x4E00 && Ch <= 0x9FFF;
 		if (!bIsAsciiWord && !bIsCJK)
 		{
-			OutMessage = NSLOCTEXT("DBACharacterCreateWidget", "NameChars", "Name only supports Chinese, letters, digits, underscore.");
+			OutMessage = NSLOCTEXT("DBACharacterCreateWidget", "NameChars", "名称仅支持中文、字母、数字和下划线。");
 			return false;
 		}
 		if (!FChar::IsDigit(Ch))
@@ -794,7 +890,7 @@ bool UDBACharacterCreateFlowWidgetBase::ValidateCharacterName(FText& OutMessage)
 
 	if (bAllDigits)
 	{
-		OutMessage = NSLOCTEXT("DBACharacterCreateWidget", "AllDigits", "Name cannot be all digits.");
+		OutMessage = NSLOCTEXT("DBACharacterCreateWidget", "AllDigits", "名称不能全部为数字。");
 		return false;
 	}
 
@@ -806,15 +902,15 @@ void UDBACharacterCreateFlowWidgetBase::RefreshChoiceText()
 {
 	if (ZodiacText)
 	{
-		ZodiacText->SetText(FText::Format(NSLOCTEXT("DBACharacterCreateWidget", "ZodiacFormat", "Zodiac: {0}"), EnumValueText(SelectedZodiac)));
+		ZodiacText->SetText(FText::Format(NSLOCTEXT("DBACharacterCreateWidget", "ZodiacFormat", "生肖：{0}"), EnumValueText(SelectedZodiac)));
 	}
 	if (ElementText)
 	{
-		ElementText->SetText(FText::Format(NSLOCTEXT("DBACharacterCreateWidget", "ElementFormat", "Element: {0}"), EnumValueText(SelectedElement)));
+		ElementText->SetText(FText::Format(NSLOCTEXT("DBACharacterCreateWidget", "ElementFormat", "元素：{0}"), EnumValueText(SelectedElement)));
 	}
 	if (FiveCampText)
 	{
-		FiveCampText->SetText(FText::Format(NSLOCTEXT("DBACharacterCreateWidget", "CampFormat", "Camp: {0}"), EnumValueText(SelectedFiveCamp)));
+		FiveCampText->SetText(FText::Format(NSLOCTEXT("DBACharacterCreateWidget", "CampFormat", "阵营：{0}"), EnumValueText(SelectedFiveCamp)));
 	}
 }
 

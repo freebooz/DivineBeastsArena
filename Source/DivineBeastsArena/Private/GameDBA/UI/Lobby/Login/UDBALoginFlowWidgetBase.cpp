@@ -299,13 +299,13 @@ namespace
 		case EDBALoginFlowState::TryAutoLogin:
 			return NSLOCTEXT("DBALoginFlowWidget", "SigningIn", "Signing in...");
 		case EDBALoginFlowState::LoadCharacterList:
-			return NSLOCTEXT("DBALoginFlowWidget", "LoadingCharacters", "Loading characters...");
+			return NSLOCTEXT("DBALoginFlowWidget", "LoadingCharacters", "正在加载角色列表...");
 		case EDBALoginFlowState::CharacterSelect:
-			return NSLOCTEXT("DBALoginFlowWidget", "ChooseCharacter", "Choose a character.");
+			return NSLOCTEXT("DBALoginFlowWidget", "ChooseCharacter", "请选择角色。");
 		case EDBALoginFlowState::CharacterCreate:
-			return NSLOCTEXT("DBALoginFlowWidget", "CreateCharacter", "Create your first character.");
+			return NSLOCTEXT("DBALoginFlowWidget", "CreateCharacter", "请创建角色。");
 		case EDBALoginFlowState::MainLobby:
-			return NSLOCTEXT("DBALoginFlowWidget", "EnteringLobby", "Entering lobby...");
+			return NSLOCTEXT("DBALoginFlowWidget", "EnteringLobby", "正在进入大厅...");
 		default:
 			return FText::GetEmpty();
 		}

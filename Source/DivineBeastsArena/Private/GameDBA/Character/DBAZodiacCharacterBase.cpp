@@ -10,6 +10,8 @@
 #include "GameDBA/RPC/DBARpcHandler.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
 #include "Camera/CameraComponent.h"
+#include "Animation/AnimationAsset.h"
+#include "Animation/Skeleton.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
@@ -83,6 +85,9 @@ ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 	LobbyFireballProjectileClass = ADBAFireballProjectile::StaticClass();
+	SkillCooldowns.Init(0.0f, 7);
+	SkillMaxCooldowns.Init(0.0f, 7);
+	SkillMaxCooldowns[1] = LobbyFireballCooldown;
 }
 
 void ADBAZodiacCharacterBase::BeginPlay()
@@ -102,6 +107,34 @@ void ADBAZodiacCharacterBase::BeginPlay()
 			RpcHandler->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
 		}
 	}
+}
+
+void ADBAZodiacCharacterBase::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (HasAuthority())
+	{
+		for (float& Cooldown : SkillCooldowns)
+		{
+			if (Cooldown > 0.0f)
+			{
+				Cooldown = FMath::Max(0.0f, Cooldown - DeltaSeconds);
+			}
+		}
+		if (SkillMaxCooldowns.Num() < 7)
+		{
+			SkillMaxCooldowns.SetNumZeroed(7);
+		}
+		SkillMaxCooldowns[1] = FMath::Max(SkillMaxCooldowns[1], LobbyFireballCooldown);
+	}
+
+	if (LobbyAttackAnimationTimeRemaining > 0.0f)
+	{
+		LobbyAttackAnimationTimeRemaining = FMath::Max(0.0f, LobbyAttackAnimationTimeRemaining - DeltaSeconds);
+	}
+
+	UpdateLobbyLocomotionAnimation();
 }
 
 void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
@@ -128,6 +161,13 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 		if (ResolvedMesh)
 		{
 			ResolvedMeshPath = MeshPath;
+			if (ResolvedMeshPath.Contains(TEXT("/Game/DBA/Characters/Rosales/")))
+			{
+				if (USkeleton* RosalesSkeleton = LoadObject<USkeleton>(nullptr, TEXT("/Game/DBA/Characters/Rosales/Meshes/SKEL_Rosales.SKEL_Rosales")))
+				{
+					ResolvedMesh->SetSkeleton(RosalesSkeleton);
+				}
+			}
 			break;
 		}
 	}
@@ -143,9 +183,19 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 		MeshComponent->SetRelativeRotation(ADBACharacterPresentationActor::GetPreviewMeshPlayerFacingRotation());
 		MeshComponent->SetRelativeScale3D(FVector(MeshScale));
 
+		const bool bUseRosalesSingleNodeAnimation = ResolvedMeshPath.Contains(TEXT("/Game/DBA/Characters/Rosales/"));
 		if (ResolvedMesh->GetSkeleton())
 		{
-			if (!ADBACharacterPresentationActor::ApplyLobbyDisplayAnimationToMesh(MeshComponent, ResolvedMeshPath, CommonZodiac))
+			if (bUseRosalesSingleNodeAnimation)
+			{
+				LobbyIdleAnimation = LoadLobbyAnimation(TEXT("/Game/DBA/Characters/Rosales/Animations/AN_Standing_Idle.AN_Standing_Idle"));
+				LobbyRunAnimation = LoadLobbyAnimation(TEXT("/Game/DBA/Characters/Rosales/Animations/AN_Run_Forward.AN_Run_Forward"));
+				LobbyAttackAnimation = LoadLobbyAnimation(TEXT("/Game/DBA/Characters/Rosales/Animations/AN_Standing_2H_Magic_Attack_02.AN_Standing_2H_Magic_Attack_02"));
+				bUseLobbySingleNodeLocomotion = LobbyIdleAnimation || LobbyRunAnimation;
+				CurrentLobbyAnimation = nullptr;
+				UpdateLobbyLocomotionAnimation();
+			}
+			else if (!ADBACharacterPresentationActor::ApplyLobbyDisplayAnimationToMesh(MeshComponent, ResolvedMeshPath, CommonZodiac))
 			{
 				MeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 				MeshComponent->SetAnimInstanceClass(UDBAZodiacAnimInstance::StaticClass());
@@ -171,7 +221,7 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 		static_cast<int32>(CommonZodiac),
 		ResolvedMeshPath.IsEmpty() ? TEXT("<unchanged>") : *ResolvedMeshPath,
 		ResolvedMesh && ResolvedMesh->GetSkeleton() ? TEXT("true") : TEXT("false"),
-		MeshComponent->GetAnimInstance() ? *MeshComponent->GetAnimInstance()->GetClass()->GetName() : TEXT("<none>"),
+		MeshComponent->GetAnimInstance() ? *MeshComponent->GetAnimInstance()->GetClass()->GetName() : *GetNameSafe(CurrentLobbyAnimation),
 		*MeshComponent->GetRelativeLocation().ToString(),
 		*MeshComponent->GetRelativeRotation().ToString());
 }
@@ -204,21 +254,78 @@ void ADBAZodiacCharacterBase::CastLobbyFireball()
 	CastLobbyFireballInternal(AimDirection);
 }
 
+void ADBAZodiacCharacterBase::CastLobbyFireballAtTarget(AActor* TargetActor)
+{
+	FVector AimDirection = GetActorForwardVector();
+	if (TargetActor)
+	{
+		AimDirection = (TargetActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+	}
+	else if (const AController* OwningController = GetController())
+	{
+		AimDirection = OwningController->GetControlRotation().Vector();
+	}
+
+	if (AimDirection.IsNearlyZero())
+	{
+		AimDirection = GetActorForwardVector();
+	}
+
+	if (!HasAuthority())
+	{
+		ServerCastLobbyFireballAtTarget(TargetActor, AimDirection);
+		return;
+	}
+
+	CastLobbyFireballInternal(AimDirection, TargetActor);
+}
+
 void ADBAZodiacCharacterBase::ServerCastLobbyFireball_Implementation(FVector_NetQuantizeNormal AimDirection)
 {
 	CastLobbyFireballInternal(FVector(AimDirection));
 }
 
-void ADBAZodiacCharacterBase::CastLobbyFireballInternal(const FVector& AimDirection)
+void ADBAZodiacCharacterBase::ServerCastLobbyFireballAtTarget_Implementation(AActor* TargetActor, FVector_NetQuantizeNormal FallbackAimDirection)
+{
+	CastLobbyFireballInternal(FVector(FallbackAimDirection), TargetActor);
+}
+
+void ADBAZodiacCharacterBase::CastLobbyFireballInternal(const FVector& AimDirection, AActor* TargetActor)
 {
 	if (!GetWorld())
 	{
 		return;
 	}
 
-	const FVector SafeAimDirection = AimDirection.GetSafeNormal().IsNearlyZero()
+	if (SkillCooldowns.Num() < 7)
+	{
+		SkillCooldowns.SetNumZeroed(7);
+	}
+	if (SkillMaxCooldowns.Num() < 7)
+	{
+		SkillMaxCooldowns.SetNumZeroed(7);
+	}
+	SkillMaxCooldowns[1] = FMath::Max(SkillMaxCooldowns[1], LobbyFireballCooldown);
+	if (SkillCooldowns.IsValidIndex(1) && SkillCooldowns[1] > 0.0f)
+	{
+		UE_LOG(LogDBACombat, Verbose, TEXT("[DBAZodiacCharacterBase] Lobby fireball blocked by cooldown: caster=%s remaining=%.2f"),
+			*GetName(),
+			SkillCooldowns[1]);
+		return;
+	}
+
+	FVector SafeAimDirection = AimDirection.GetSafeNormal().IsNearlyZero()
 		? GetActorForwardVector()
 		: AimDirection.GetSafeNormal();
+	if (IsValid(TargetActor) && TargetActor != this)
+	{
+		const FVector TargetLocation = TargetActor->GetActorLocation() + FVector(0.0f, 0.0f, 55.0f);
+		SafeAimDirection = (TargetLocation - (GetActorLocation() + FVector(0.0f, 0.0f, 74.0f))).GetSafeNormal();
+		if (SafeAimDirection.IsNearlyZero())
+		{
+			SafeAimDirection = GetActorForwardVector();
+		}
+	}
 
 	TSubclassOf<ADBASkillProjectileBase> ProjectileClass = LoadClass<ADBASkillProjectileBase>(
 		nullptr,
@@ -250,14 +357,26 @@ void ADBAZodiacCharacterBase::CastLobbyFireballInternal(const FVector& AimDirect
 		return;
 	}
 
-	Fireball->InitializeProjectile(TEXT("Lobby.Fireball"), this, nullptr, LobbyFireballDamage, LobbyFireballSpeed, LobbyFireballRadius);
+	Fireball->InitializeProjectile(TEXT("Lobby.Fireball"), this, TargetActor, LobbyFireballDamage, LobbyFireballSpeed, LobbyFireballRadius);
 	Fireball->LaunchProjectile(SafeAimDirection);
-	PlayAttackAnimation();
+	SkillCooldowns[1] = LobbyFireballCooldown;
+	SkillMaxCooldowns[1] = LobbyFireballCooldown;
+	if (bUseLobbySingleNodeLocomotion && LobbyAttackAnimation)
+	{
+		LobbyAttackAnimationTimeRemaining = LobbyAttackAnimationDuration;
+		CurrentLobbyAnimation = nullptr;
+		UpdateLobbyLocomotionAnimation();
+	}
+	else
+	{
+		PlayAttackAnimation();
+	}
 
-	UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] Cast lobby fireball: caster=%s projectile=%s class=%s direction=%s"),
+	UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] Cast lobby fireball: caster=%s projectile=%s class=%s target=%s direction=%s"),
 		*GetName(),
 		*Fireball->GetName(),
 		*GetNameSafe(ProjectileClass),
+		*GetNameSafe(TargetActor),
 		*SafeAimDirection.ToString());
 }
 
@@ -268,6 +387,65 @@ UDBAZodiacAnimInstance* ADBAZodiacCharacterBase::GetZodiacAnimInstance() const
 		return Cast<UDBAZodiacAnimInstance>(MeshComp->GetAnimInstance());
 	}
 	return nullptr;
+}
+
+UAnimationAsset* ADBAZodiacCharacterBase::LoadLobbyAnimation(const FString& AnimationPath)
+{
+	if (AnimationPath.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	UAnimationAsset* Animation = LoadObject<UAnimationAsset>(nullptr, *AnimationPath);
+	if (!Animation)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DBAZodiacCharacterBase] Failed to load lobby animation: %s"), *AnimationPath);
+	}
+	return Animation;
+}
+
+void ADBAZodiacCharacterBase::UpdateLobbyLocomotionAnimation()
+{
+	if (!bUseLobbySingleNodeLocomotion)
+	{
+		return;
+	}
+
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+	if (!MeshComponent)
+	{
+		return;
+	}
+
+	const bool bPlayingAttack = LobbyAttackAnimationTimeRemaining > 0.0f && LobbyAttackAnimation;
+	UAnimationAsset* DesiredAnimation = nullptr;
+	if (bPlayingAttack)
+	{
+		DesiredAnimation = LobbyAttackAnimation;
+	}
+	else
+	{
+		const float Speed2D = GetVelocity().Size2D();
+		DesiredAnimation = (Speed2D > LobbyRunAnimationThreshold && LobbyRunAnimation)
+			? LobbyRunAnimation
+			: LobbyIdleAnimation;
+	}
+
+	if (!DesiredAnimation || DesiredAnimation == CurrentLobbyAnimation)
+	{
+		return;
+	}
+
+	MeshComponent->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+	MeshComponent->SetAnimation(DesiredAnimation);
+	MeshComponent->Play(!bPlayingAttack);
+	CurrentLobbyAnimation = DesiredAnimation;
+
+	UE_LOG(LogTemp, Log, TEXT("[DBAZodiacCharacterBase] Applied lobby single-node animation: actor=%s animation=%s looping=%s velocity=%s"),
+		*GetName(),
+		*DesiredAnimation->GetPathName(),
+		bPlayingAttack ? TEXT("false") : TEXT("true"),
+		*GetVelocity().ToString());
 }
 
 UDBAAbilitySystemComponent* ADBAZodiacCharacterBase::GetDBAAbilitySystemComponent() const

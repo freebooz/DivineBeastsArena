@@ -7,6 +7,7 @@
 
 class UNiagaraComponent;
 class UNiagaraSystem;
+class UTextRenderComponent;
 
 /**
  * FDBAFloatingDamageEntry
@@ -26,6 +27,7 @@ struct FDBAFloatingDamageEntry
 		, Color(FLinearColor::White)
 		, bIsCritical(false)
 		, NiagaraComponent(nullptr)
+		, TextComponent(nullptr)
 	{}
 
 	FDBAFloatingDamageEntry(FVector InLocation, float InDamage, FLinearColor InColor, bool bInCritical)
@@ -37,6 +39,7 @@ struct FDBAFloatingDamageEntry
 		, Color(InColor)
 		, bIsCritical(bInCritical)
 		, NiagaraComponent(nullptr)
+		, TextComponent(nullptr)
 	{}
 
 	/** 世界位置 */
@@ -62,6 +65,7 @@ struct FDBAFloatingDamageEntry
 
 	/** Niagara组件 */
 	TWeakObjectPtr<UNiagaraComponent> NiagaraComponent;
+	TWeakObjectPtr<UTextRenderComponent> TextComponent;
 };
 
 /**
@@ -99,7 +103,7 @@ public:
 
 protected:
 	/** 创建伤害数字条目 */
-	void SpawnDamageNumberEntry(const FDBAFloatingDamageEntry& Entry);
+	void SpawnDamageNumberEntry(FDBAFloatingDamageEntry& Entry);
 
 	/** 更新伤害数字条目 */
 	void UpdateDamageEntry(FDBAFloatingDamageEntry& Entry, float DeltaTime);

@@ -14,6 +14,7 @@
 class UDBAArenaHUDRootWidgetBase;
 class UDBAMainLobbyWidgetBase;
 class UDBALobbyPlayerHUDWidgetBase;
+class UDBALoadingScreenWidgetBase;
 class UAudioComponent;
 class USoundBase;
 
@@ -97,6 +98,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	void ClearAllUI();
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	void ShowLobbyLoadingScreen();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	void HideLobbyLoadingScreen();
+
 	/** 外部请求显示登录流程界面 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	void RequestShowLoginFlowWidget();
@@ -147,6 +154,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
 	TObjectPtr<UDBACharacterCreateFlowWidgetBase> CharacterCreateWidget;
 
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
+	TObjectPtr<UDBALoadingScreenWidgetBase> LobbyLoadingWidget;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
 	TSubclassOf<UDBAMainLobbyWidgetBase> MainLobbyWidgetClass;
 
@@ -164,6 +174,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
 	TSubclassOf<UDBACharacterCreateFlowWidgetBase> CharacterCreateWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|Manager")
+	TSubclassOf<UDBALoadingScreenWidgetBase> LobbyLoadingWidgetClass;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
 	TObjectPtr<class UDBASplashVideoWidget> SplashVideoWidget;
@@ -209,6 +222,7 @@ private:
 	bool bLobbyPlayerHUDVisible = false;
 	bool bArenaHUDVisible = false;
 	bool bFlowWidgetVisible = false;
+	bool bLobbyLoadingVisible = false;
 	bool bLoginFlowStartRequested = false;
 	int32 FlowWidgetRefreshRetryCount = 0;
 	int32 LobbyHUDRefreshRetryCount = 0;

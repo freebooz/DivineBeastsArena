@@ -19,9 +19,14 @@ class DIVINEBEASTSARENA_API ADBAMonsterBase : public ACharacter
 
 public:
 	ADBAMonsterBase();
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 	virtual void BeginPlay() override;
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+
+	UFUNCTION()
+	virtual void OnRep_CurrentHealth();
 
 public:
 	/** 播放受击特效 */
@@ -32,6 +37,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Monster")
 	void PlayDeathVFX();
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|Monster")
+	float GetHealthPercent() const;
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastShowDamageNumber(float DamageAmount, FVector_NetQuantize ImpactPoint, bool bIsCritical);
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Config")
 	FName MonsterType = FName(TEXT("None"));
@@ -41,4 +52,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Config")
 	float MaxHealth = 100.0f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentHealth, VisibleAnywhere, BlueprintReadOnly, Category = "DBA|State")
+	float CurrentHealth = 100.0f;
 };

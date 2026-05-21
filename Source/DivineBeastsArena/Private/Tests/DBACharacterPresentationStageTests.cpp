@@ -5,6 +5,7 @@
 #include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPreviewActor.h"
 #include "GameDBA/Framework/DBAGameModeBase.h"
+#include "Animation/AnimSingleNodeInstance.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "GameCore/Types/DBACommonEnums.h"
@@ -24,6 +25,7 @@ namespace
 
 		const FString ParentPath = Material->Parent->GetPathName();
 		return ParentPath.Contains(TEXT("/Engine/BasicShapes/BasicShapeMaterial"))
+			|| ParentPath.Contains(TEXT("/Game/DBA/Materials/M_DBA_RuntimeTint"))
 			|| ParentPath.Contains(TEXT("/Game/DBA/Zodiacs/Chinese/Visuals/Materials/Instances/MI_DBA_Zodiac_"));
 	}
 }
@@ -286,12 +288,12 @@ bool FDBACharacterPresentationUsesLobbyModelTest::RunTest(const FString& Paramet
 				TEXT("Character select/create presentation should use the same Rosales model preferred by the lobby"),
 				PresentationMesh->GetSkeletalMeshAsset()->GetPathName().Contains(TEXT("/Game/DBA/Characters/Rosales/Meshes/SK_Rosales")));
 			TestEqual(
-				TEXT("Character select/create presentation should use animation blueprint mode"),
+				TEXT("Character select/create presentation should use single-node animation mode"),
 				PresentationMesh->GetAnimationMode(),
-				EAnimationMode::AnimationBlueprint);
+				EAnimationMode::AnimationSingleNode);
 			TestTrue(
-				TEXT("Character select/create presentation should use the Rosales animation blueprint"),
-				PresentationMesh->GetAnimClass() && PresentationMesh->GetAnimClass()->GetPathName().Contains(TEXT("/Game/DBA/Characters/Rosales/AnimationBP/ABP_Rosales")));
+				TEXT("Character select/create presentation should use the Rosales idle animation"),
+				PresentationMesh->GetSingleNodeInstance() && PresentationMesh->GetSingleNodeInstance()->GetAnimationAsset() && PresentationMesh->GetSingleNodeInstance()->GetAnimationAsset()->GetPathName().Contains(TEXT("/Game/DBA/Characters/Rosales/Animations/AN_Standing_Idle")));
 		}
 	}
 
@@ -308,12 +310,12 @@ bool FDBACharacterPresentationUsesLobbyModelTest::RunTest(const FString& Paramet
 				TEXT("Standalone preview should use the same Rosales model preferred by the lobby"),
 				PreviewMesh->GetSkeletalMeshAsset()->GetPathName().Contains(TEXT("/Game/DBA/Characters/Rosales/Meshes/SK_Rosales")));
 			TestEqual(
-				TEXT("Standalone preview should use animation blueprint mode"),
+				TEXT("Standalone preview should use single-node animation mode"),
 				PreviewMesh->GetAnimationMode(),
-				EAnimationMode::AnimationBlueprint);
+				EAnimationMode::AnimationSingleNode);
 			TestTrue(
-				TEXT("Standalone preview should use the Rosales animation blueprint"),
-				PreviewMesh->GetAnimClass() && PreviewMesh->GetAnimClass()->GetPathName().Contains(TEXT("/Game/DBA/Characters/Rosales/AnimationBP/ABP_Rosales")));
+				TEXT("Standalone preview should use the Rosales idle animation"),
+				PreviewMesh->GetSingleNodeInstance() && PreviewMesh->GetSingleNodeInstance()->GetAnimationAsset() && PreviewMesh->GetSingleNodeInstance()->GetAnimationAsset()->GetPathName().Contains(TEXT("/Game/DBA/Characters/Rosales/Animations/AN_Standing_Idle")));
 		}
 	}
 

@@ -41,8 +41,10 @@ protected:
 	void BuildBottomSkillBar(UCanvasPanel* RootCanvas);
 	void BuildTopRightMinimap(UCanvasPanel* RootCanvas);
 	void ApplyResponsiveLayout(const FVector2D& ViewportSize);
+	void EnforceLobbyHudLayoutLimits();
 
 	void UpdateMinimap();
+	void UpdateSkillCooldownDisplay(float DeltaTime);
 	void ApplySkillLabels(const TArray<FText>& SkillLabels);
 	void ApplySkillHotkeys(const TArray<FText>& SkillHotkeys);
 	void ResolveSkillLabelsForSummary(const FDBACharacterSummary& Summary, TArray<FText>& OutSkillLabels) const;
@@ -55,10 +57,10 @@ protected:
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|HUD|Layout")
-	FVector2D AvatarPanelSize = FVector2D(300.0f, 108.0f);
+	FVector2D AvatarPanelSize = FVector2D(238.0f, 76.0f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|HUD|Layout")
-	FVector2D SkillSlotSize = FVector2D(124.0f, 70.0f);
+	FVector2D SkillSlotSize = FVector2D(42.0f, 42.0f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|HUD|Layout")
 	FVector2D MinimapSize = FVector2D(220.0f, 220.0f);
@@ -88,6 +90,12 @@ protected:
 	TObjectPtr<UImage> AvatarImage;
 
 	UPROPERTY(Transient)
+	TObjectPtr<UImage> AvatarBackdropImage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> AvatarFrameImage;
+
+	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> AvatarNameText;
 
 	UPROPERTY(Transient)
@@ -95,6 +103,21 @@ protected:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UBorder>> SkillSlotBorders;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBorder> SkillBarRootBorder;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> SkillBarBackdropImage;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UImage>> SkillSlotBackdropImages;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UImage>> SkillCooldownOverlayImages;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UImage>> SkillReadyGlowImages;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UTextBlock>> SkillNameTexts;
@@ -122,4 +145,10 @@ protected:
 
 	UPROPERTY(Transient)
 	FVector2D LastResponsiveViewport = FVector2D::ZeroVector;
+
+	UPROPERTY(Transient)
+	TArray<float> LastObservedSkillCooldowns;
+
+	UPROPERTY(Transient)
+	TArray<float> SkillReadyPulseTimes;
 };
