@@ -28,6 +28,8 @@ using Game.Api.Endpoints.Feedback;
 using Game.Api.Endpoints.Operations;
 using Game.Shared.Options;
 using Game.Infrastructure.Database.Seed;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using OpenTelemetry.Metrics;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -64,12 +66,15 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
-    app.MapHealthChecks("/health/live");
-    app.MapHealthChecks("/health/ready");
-    app.Map("/metrics", async context =>
+    app.MapHealthChecks("/health/live", new HealthCheckOptions
     {
-        await context.Response.WriteAsync("# Prometheus metrics endpoint");
+        Predicate = check => check.Tags.Contains("live")
     });
+    app.MapHealthChecks("/health/ready", new HealthCheckOptions
+    {
+        Predicate = check => check.Tags.Contains("ready")
+    });
+    app.MapPrometheusScrapingEndpoint("/metrics");
 
     app.MapGet("/api/version", () => new { Version = "1.0.0", BuildTime = DateTimeOffset.UtcNow });
 

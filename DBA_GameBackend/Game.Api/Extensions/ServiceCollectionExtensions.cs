@@ -30,6 +30,7 @@ using Game.Api.Services.Inventory;
 using Game.Api.Validators;
 using FluentValidation;
 using Game.Worker.ServerManager;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Game.Api.Extensions;
 
@@ -40,6 +41,8 @@ public static class ServiceCollectionExtensions
         var databaseOptions = configuration.GetSection(DatabaseOptions.Section).Get<DatabaseOptions>() ?? new();
         var redisOptions = configuration.GetSection(RedisOptions.Section).Get<RedisOptions>() ?? new();
         var jwtOptions = configuration.GetSection(JwtOptions.Section).Get<JwtOptions>() ?? new();
+
+        ValidateRequiredInfrastructureOptions(databaseOptions, redisOptions, jwtOptions);
 
         services.AddDbContext<GameDbContext>(options =>
             options
@@ -169,9 +172,31 @@ public static class ServiceCollectionExtensions
         var redisOptions = configuration.GetSection(RedisOptions.Section).Get<RedisOptions>() ?? new();
 
         services.AddHealthChecks()
-            .AddNpgSql(databaseOptions.ConnectionString, name: "postgresql")
-            .AddRedis(redisOptions.ConnectionString, name: "redis");
+            .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "live" })
+            .AddNpgSql(databaseOptions.ConnectionString, name: "postgresql", tags: new[] { "ready" })
+            .AddRedis(redisOptions.ConnectionString, name: "redis", tags: new[] { "ready" });
 
         return services;
+    }
+
+    private static void ValidateRequiredInfrastructureOptions(
+        DatabaseOptions databaseOptions,
+        RedisOptions redisOptions,
+        JwtOptions jwtOptions)
+    {
+        if (string.IsNullOrWhiteSpace(databaseOptions.ConnectionString))
+        {
+            throw new InvalidOperationException("Database:ConnectionString must be configured.");
+        }
+
+        if (string.IsNullOrWhiteSpace(redisOptions.ConnectionString))
+        {
+            throw new InvalidOperationException("Redis:ConnectionString must be configured.");
+        }
+
+        if (string.IsNullOrWhiteSpace(jwtOptions.Secret) || jwtOptions.Secret.Length < 32)
+        {
+            throw new InvalidOperationException("Jwt:Secret must be configured with at least 32 characters.");
+        }
     }
 }
