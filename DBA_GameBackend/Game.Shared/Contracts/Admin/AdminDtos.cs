@@ -142,6 +142,39 @@ public record AdminMatchPlayerItem(
     int Score,
     long ExpDelta);
 
+public record AdminClientVersionListResponse(
+    IReadOnlyList<AdminClientVersionItem> Items,
+    int TotalCount,
+    int Page,
+    int PageSize);
+
+public record AdminClientVersionItem(
+    Guid Id,
+    string Version,
+    string Channel,
+    string Platform,
+    string DownloadUrl,
+    string Checksum,
+    long SizeBytes,
+    bool IsMandatory,
+    bool IsActive,
+    string? MinOsVersion,
+    string? ReleaseNotes,
+    DateTimeOffset CreatedAt);
+
+public record UpsertClientVersionRequest(
+    string Version,
+    string Channel,
+    string Platform,
+    string DownloadUrl,
+    string Checksum,
+    long SizeBytes,
+    bool IsMandatory,
+    bool IsActive,
+    string? MinOsVersion,
+    string? ReleaseNotes,
+    string Reason);
+
 public record PlayerDetailResponse(
     Guid PlayerId,
     string Nickname,

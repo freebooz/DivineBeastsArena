@@ -51,7 +51,7 @@
 
 - [x] 启动器项目名称和窗口标题改为 Divine Beasts Arena Launcher。
 - [x] 替换默认 Tauri 图标，生成 DBA 专用 PNG / ICO / ICNS 图标资产。
-- [ ] 接入真实 CDN manifest 和补丁包。
+- [x] 接入真实 CDN manifest 元数据发布接口；补丁包上传由发布流水线写入 CDN 后通过 Admin API 发布。
 - [x] 官网下载页接入 Game.Api 版本清单，显示版本、下载地址、文件大小和 SHA256。
 
 ## 阶段 7：Ops 与部署生产化
@@ -67,7 +67,7 @@
 - [x] 后端、后台、官网、启动器 CI 文件已存在。
 - [x] 部署工作流改为当前 `DBA_GameBackend` 路径。
 - [x] 增加 `solution-ci` 统一验收工作流。
-- [ ] 在 GitHub 仓库设置中将 `solution-ci` 纳入主分支保护。
+- [ ] 在 GitHub 仓库设置中将 `solution-ci` 纳入主分支保护；已提供 `scripts/configure-branch-protection.sh`，需要仓库管理员令牌执行。
 - [x] 部署工作流增加数据库迁移入口。
 - [x] 部署工作流增加失败自动回滚，健康检查失败时回滚到上一版镜像 tag。
 

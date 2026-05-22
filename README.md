@@ -34,3 +34,9 @@ docker compose --env-file .env.example config
 ## 生产化计划
 
 生产可上线任务计划记录在 `DBA_GameBackend/docs/production-readiness-plan.md`。当前重点是完成安全配置、真实指标、Dedicated Server 联调、客户端真实登录闭环、GM 审计、启动器补丁分发和部署回滚演练。
+
+GitHub 主分支保护可由仓库管理员执行：
+
+```bash
+GH_TOKEN=<repo-admin-token> bash scripts/configure-branch-protection.sh freebooz DivineBeastsArena
+```
