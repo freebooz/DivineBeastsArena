@@ -57,7 +57,7 @@
 ## 阶段 7：Ops 与部署生产化
 
 - [x] `DBA_GameBackend/docker-compose.yml` 使用环境变量注入敏感配置。
-- [ ] 接入 HTTPS 证书自动续期。
+- [x] 接入 HTTPS 证书自动续期，使用 Caddy edge profile 作为生产反向代理。
 - [x] 提供 PostgreSQL 备份和恢复脚本入口。
 - [ ] 演练 PostgreSQL 备份和恢复。
 - [ ] Grafana 看板接入真实 API 指标和服务器指标。

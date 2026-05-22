@@ -53,6 +53,12 @@ docker compose --env-file .env config
 docker compose --env-file .env up -d
 ```
 
+To enable the production HTTPS edge gateway, set `PUBLIC_DOMAIN` and `ACME_EMAIL` in `.env`, make sure DNS points to the server public IP, then start the `edge` profile:
+
+```bash
+docker compose --env-file .env --profile edge up -d
+```
+
 Operational scripts:
 
 - `scripts/migrate-db.sh`: run EF Core migrations and exit.

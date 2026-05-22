@@ -21,7 +21,7 @@ services:
     expose:
       - "8080"
     ports:
-      - "8080:8080"
+      - "${API_HTTP_BIND:-127.0.0.1}:8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -65,6 +65,28 @@ services:
     networks:
       - game-internal
 
+  caddy:
+    image: caddy:2-alpine
+    profiles:
+      - edge
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      game-api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - game-public
+      - game-internal
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -101,6 +123,8 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  caddy-data:
+  caddy-config:
 
 networks:
   game-public:

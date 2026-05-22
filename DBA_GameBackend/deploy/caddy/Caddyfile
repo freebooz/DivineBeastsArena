@@ -1,0 +1,20 @@
+# DivineBeastsArena production edge gateway.
+# PUBLIC_DOMAIN and ACME_EMAIL are read from DBA_GameBackend/.env.
+# Caddy automatically obtains and renews HTTPS certificates after DNS points to the server.
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$PUBLIC_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+	}
+
+	reverse_proxy game-api:8080
+}
