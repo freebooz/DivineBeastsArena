@@ -4,10 +4,10 @@ set -e
 echo "Bootstrapping MyGamePlatform repository..."
 
 # Create directories
-mkdir -p GamePlatformOps/docker GamePlatformOps/nginx GamePlatformOps/prometheus GamePlatformOps/grafana GamePlatformOps/loki GamePlatformOps/scripts
-mkdir -p GamePlatformConfigs/character GamePlatformConfigs/skill GamePlatformConfigs/match GamePlatformConfigs/reward GamePlatformConfigs/map
-mkdir -p GamePlatformDocs
-mkdir -p GamePlatformScripts
+mkdir -p ops/docker ops/nginx ops/prometheus ops/grafana ops/loki ops/scripts
+mkdir -p configs/character configs/skill configs/match configs/reward configs/map
+mkdir -p docs
+mkdir -p scripts
 
 echo "Repository bootstrapped successfully!"
 echo ""

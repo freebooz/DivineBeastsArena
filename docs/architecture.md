@@ -11,10 +11,10 @@
 - `DBA_GameAdmin`: Blazor Server admin dashboard.
 - `DBA_GameWebsite`: Next.js public website.
 - `DBA_GameLauncher`: Tauri desktop launcher.
-- `GamePlatformOps`: Docker Compose, Nginx, Prometheus, Grafana, Loki, migration, backup, and restore assets.
-- `GamePlatformConfigs`: Source-controlled gameplay configuration examples.
-- `GamePlatformDocs`: Architecture, deployment, operations, review, and release documentation.
-- `GamePlatformScripts`: Build, test, audit, and maintenance scripts.
+- `ops`: Docker Compose, Nginx, Prometheus, Grafana, Loki, migration, backup, and restore assets.
+- `configs`: Source-controlled gameplay configuration examples.
+- `docs`: Architecture, deployment, operations, review, and release documentation.
+- `scripts`: Build, test, audit, and maintenance scripts.
 
 ## Platform Catalog
 

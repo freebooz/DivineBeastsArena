@@ -15,10 +15,10 @@
 | DBA_GameAdmin | `DBA_GameAdmin` | 运营管理后台。 |
 | DBA_GameWebsite | `DBA_GameWebsite` | 官网、下载、新闻、FAQ 和反馈入口。 |
 | DBA_GameLauncher | `DBA_GameLauncher` | 桌面启动器和客户端校验启动流程。 |
-| GamePlatformOps | `GamePlatformOps` | 容器、反向代理、监控、日志、备份和迁移脚本。 |
-| GamePlatformConfigs | `GamePlatformConfigs` | 游戏配置样例和后续配置发布来源。 |
-| GamePlatformDocs | `GamePlatformDocs` | 架构、部署、运维、审查和发布检查文档。 |
-| GamePlatformScripts | `GamePlatformScripts` | 构建、测试、安全扫描和维护脚本。 |
+| ops | `ops` | 容器、反向代理、监控、日志、备份和迁移脚本。 |
+| configs | `configs` | 游戏配置样例和后续配置发布来源。 |
+| docs | `docs` | 架构、部署、运维、审查和发布检查文档。 |
+| scripts | `scripts` | 构建、测试、安全扫描和维护脚本。 |
 
 ## 已完成调整
 

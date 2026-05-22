@@ -192,13 +192,13 @@ public static class PlatformEndpoints
                 }),
             new(
                 "game-platform-ops",
-                "GamePlatformOps",
+                "ops",
                 "Operations",
-                "GamePlatformOps",
+                "ops",
                 "Docker Compose + Nginx + Prometheus + Grafana + Loki",
                 "Provide local and deployment operations assets for database, cache, observability, reverse proxy, backup, restore, migration, and monitoring.",
                 "Implemented",
-                "docker compose -f GamePlatformOps/docker/docker-compose.yml up",
+                "docker compose -f ops/docker/docker-compose.yml up",
                 "Prometheus, Grafana, Loki, service health probes",
                 new[]
                 {
@@ -219,9 +219,9 @@ public static class PlatformEndpoints
                 }),
             new(
                 "game-platform-configs",
-                "GamePlatformConfigs",
+                "configs",
                 "Game Configuration",
-                "GamePlatformConfigs",
+                "configs",
                 "YAML",
                 "Store source-controlled gameplay configuration examples for characters, maps, matchmaking, rewards, and skills.",
                 "Implemented",

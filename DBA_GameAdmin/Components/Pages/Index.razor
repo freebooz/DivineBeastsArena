@@ -1,13 +1,13 @@
 ﻿@*
 中文阅读说明：
-- 所属应用：DBA_GameAdmin GM 管理后台。
+- 所属应用：GameAdmin GM 管理后台。
 - 文件职责：Blazor 页面组件，负责 GM 后台具体页面的交互、表单提交和接口调用展示。
 - 阅读重点：先看公开类型、路由/组件入口和构造函数，再看私有辅助方法，理解数据如何从输入流向状态变更或界面输出。
 - 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
 *@
 
 @using MudBlazor
-@using DBA_GameAdmin.Services
+@using GameAdmin.Services
 @inject ApiClient Api
 @inject NavigationManager Nav
 @page "/"

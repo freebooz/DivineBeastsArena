@@ -1,6 +1,6 @@
 ﻿# 生产可用检查清单
 
-此清单用于把平台从开发环境推进到可运营环境。每次发布前至少执行 `GamePlatformScripts/check-platform.ps1`，生产或预发环境再追加 `-LiveApi`。
+此清单用于把平台从开发环境推进到可运营环境。每次发布前至少执行 `scripts/check-platform.ps1`，生产或预发环境再追加 `-LiveApi`。
 
 ## 后端与数据
 
@@ -31,11 +31,11 @@
 - `DBA_GameClient/Content/Splash/Splash.bmp` 和 `EdSplash.bmp` 存在并进入打包。
 - 登录、游客登录、创建角色和选择角色均通过真实 API。
 - 角色数据可写入数据库并在下次登录读取。
-- 发布前使用 `GamePlatformScripts/check-platform.ps1 -IncludeGameClient` 验证编辑器目标编译。
+- 发布前使用 `scripts/check-platform.ps1 -IncludeGameClient` 验证编辑器目标编译。
 
 ## 运维
 
-- `GamePlatformOps/docker/docker-compose.yml` 可以启动本地依赖和观测栈。
+- `ops/docker/docker-compose.yml` 可以启动本地依赖和观测栈。
 - Nginx、Prometheus、Grafana、Loki 配置与目标环境域名匹配。
 - 备份和恢复脚本在预发库演练通过。
 - 发布流程产生可追踪版本号、校验值和变更记录。

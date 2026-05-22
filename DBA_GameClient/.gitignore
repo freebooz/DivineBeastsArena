@@ -43,6 +43,10 @@ Source/DivineBeastsArena/Generated/
 
 # ========== Android ==========
 [Aa]ndroid/
+!Content/UI/Arena/Android/
+!Content/UI/Arena/Android/**
+!Tools/Android/
+!Tools/Android/**
 .gradle/
 local.properties
 
@@ -87,6 +91,8 @@ __pycache__/
 # ========== 发布版本 ==========
 Dist/
 Releases/
+!Content/UI/Arena/Target/
+!Content/UI/Arena/Target/**
 
 # ========== 操作系统 ==========
 .DS_Store

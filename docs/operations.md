@@ -1,4 +1,4 @@
-# 运维说明
+﻿# 运维说明
 
 ## 健康检查
 
@@ -11,12 +11,12 @@ Invoke-RestMethod http://localhost:8080/api/platform/applications
 ## 常用维护命令
 
 ```powershell
-.\GamePlatformScripts\check-platform.ps1
-.\GamePlatformScripts\check-platform.ps1 -LiveApi -ApiBaseUrl http://localhost:8080
+.\scripts\check-platform.ps1
+.\scripts\check-platform.ps1 -LiveApi -ApiBaseUrl http://localhost:8080
 ```
 
 ```powershell
-cd GamePlatformOps\docker
+cd ops\docker
 docker compose up --build
 docker compose down
 ```
@@ -24,19 +24,19 @@ docker compose down
 ## 数据库备份
 
 ```bash
-./GamePlatformOps/scripts/backup-db.sh
+./ops/scripts/backup-postgres.sh
 ```
 
 ## 数据库恢复
 
 ```bash
-./GamePlatformOps/scripts/restore-db.sh backups/latest.sql
+./ops/scripts/restore-postgres.sh backups/latest.sql.gz
 ```
 
 ## 迁移
 
 ```bash
-./GamePlatformOps/scripts/migrate-db.sh
+./ops/scripts/migrate-db.sh
 ```
 
 ## 日志与监控

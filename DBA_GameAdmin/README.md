@@ -1,4 +1,4 @@
-﻿# DBA_GameAdmin
+﻿# GameAdmin
 
 Blazor Server 管理后台，使用 MudBlazor UI 组件库。
 

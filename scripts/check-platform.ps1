@@ -88,6 +88,6 @@ if ($LiveApi) {
 }
 
 Write-Host ""
-Write-Host "Optional live API checks: .\GamePlatformScripts\check-platform.ps1 -LiveApi -ApiBaseUrl $ApiBaseUrl"
-Write-Host "Optional Unreal check: .\GamePlatformScripts\check-platform.ps1 -IncludeGameClient"
+Write-Host "Optional live API checks: .\scripts\check-platform.ps1 -LiveApi -ApiBaseUrl $ApiBaseUrl"
+Write-Host "Optional Unreal check: .\scripts\check-platform.ps1 -IncludeGameClient"
 

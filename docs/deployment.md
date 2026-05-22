@@ -4,13 +4,13 @@
 
 ```powershell
 cd D:\DivineBeastsArenaPlatform
-.\GamePlatformScripts\check-platform.ps1
+.\scripts\check-platform.ps1
 ```
 
 如需验证 Unreal 编辑器目标：
 
 ```powershell
-.\GamePlatformScripts\check-platform.ps1 -IncludeGameClient
+.\scripts\check-platform.ps1 -IncludeGameClient
 ```
 
 `-IncludeGameClient` 需要本机安装 Unreal Engine，并且 `-UnrealBuildBat` 指向正确的 `Build.bat`。
@@ -18,7 +18,7 @@ cd D:\DivineBeastsArenaPlatform
 ## 容器启动
 
 ```powershell
-cd D:\DivineBeastsArenaPlatform\GamePlatformOps\docker
+cd D:\DivineBeastsArenaPlatform\ops\docker
 docker compose up --build
 ```
 
@@ -41,7 +41,7 @@ dotnet ef database update --project Game.Infrastructure\Game.Infrastructure.cspr
 Linux 容器中可以使用：
 
 ```bash
-./GamePlatformOps/scripts/migrate-db.sh
+./ops/scripts/migrate-db.sh
 ```
 
 ## 单应用启动

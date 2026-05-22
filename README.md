@@ -18,7 +18,7 @@ ai                 AI task workspace
 tools              Repository maintenance tools
 ```
 
-All application directories are flattened at repository root and use the `DBA_` prefix.
+All application directories are flattened at repository root and use the `DBA_` prefix. Legacy wrapper directories such as `backend/`, `admin/`, `website/`, and `launcher/` have been removed.
 
 ## Verification
 
