@@ -22,7 +22,7 @@ jobs:
             set -euo pipefail
             cd "${{ secrets.DEPLOY_PATH }}"
             export IMAGE_TAG="${{ github.event.inputs.image_tag }}"
-            docker compose -f ops/docker/docker-compose.yml pull
-            docker compose -f ops/docker/docker-compose.yml up -d
+            docker compose --env-file DBA_GameBackend/.env -f DBA_GameBackend/docker-compose.yml pull
+            docker compose --env-file DBA_GameBackend/.env -f DBA_GameBackend/docker-compose.yml up -d
             sleep 20
             curl -f http://localhost:8080/health/live

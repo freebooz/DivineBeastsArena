@@ -16,8 +16,8 @@ jobs:
           script: |
             set -euo pipefail
             cd "${{ secrets.DEPLOY_PATH }}"
-            ./ops/scripts/backup-postgres.sh || true
-            docker compose -f ops/docker/docker-compose.yml pull
-            docker compose -f ops/docker/docker-compose.yml up -d
+            bash DBA_GameBackend/scripts/backup-postgres.sh || true
+            docker compose --env-file DBA_GameBackend/.env -f DBA_GameBackend/docker-compose.yml pull
+            docker compose --env-file DBA_GameBackend/.env -f DBA_GameBackend/docker-compose.yml up -d
             sleep 20
             curl -f http://localhost:8080/health/live

@@ -1,8 +1,8 @@
 [package]
 name = "game-launcher"
 version = "0.1.0"
-description = "MyGamePlatform Game Launcher"
-authors = ["MyGamePlatform"]
+description = "Divine Beasts Arena game launcher and updater"
+authors = ["Divine Beasts Arena"]
 edition = "2021"
 
 [lib]
