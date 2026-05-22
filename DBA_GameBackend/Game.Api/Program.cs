@@ -26,6 +26,7 @@ using Game.Api.Endpoints.Platform;
 using Game.Api.Endpoints.Launcher;
 using Game.Api.Endpoints.Feedback;
 using Game.Api.Endpoints.Operations;
+using Game.Infrastructure.Configuration;
 using Game.Shared.Options;
 using Game.Infrastructure.Database.Seed;
 using Game.Infrastructure.Database;
@@ -41,6 +42,7 @@ Log.Logger = new LoggerConfiguration()
 try
 {
     var builder = WebApplication.CreateBuilder(args);
+    builder.Configuration.AddSecretFilesFromEnvironment();
 
     builder.Host.UseSerilog();
 

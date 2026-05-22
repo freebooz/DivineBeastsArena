@@ -16,7 +16,7 @@
 - [x] 根目录移除旧 UE 工程残留文件和目录。
 - [x] 生产默认配置不再写入真实密码或默认 JWT 密钥。
 - [x] 开发 seed 默认只在非 Production 环境运行。
-- [ ] 为生产部署接入集中 secret 管理。
+- [x] 为生产部署接入集中 secret 管理，支持 Docker/Kubernetes/Vault Agent 等 secret 文件投影。
 - [x] 为登录和高危管理接口增加限流策略。
 
 ## 阶段 2：后端 API 可运营闭环

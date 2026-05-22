@@ -7,6 +7,7 @@
 */
 
 using Game.Worker;
+using Game.Infrastructure.Configuration;
 using Game.Infrastructure.Database;
 using Game.Shared.Options;
 using Game.Worker.ServerManager;
@@ -15,6 +16,7 @@ using Serilog;
 using Serilog.Formatting.Compact;
 
 var builder = Host.CreateApplicationBuilder(args);
+builder.Configuration.AddSecretFilesFromEnvironment();
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
