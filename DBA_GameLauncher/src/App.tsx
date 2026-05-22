@@ -38,7 +38,7 @@ type LauncherStatus = {
 const defaultInstallPath = "D:\\DivineBeastsArenaPlatform\\DBA_GameClient";
 const defaultExecutablePath =
   "D:\\DivineBeastsArenaPlatform\\DBA_GameClient\\Binaries\\Win64\\DivineBeastsArena.exe";
-const defaultManifestUrl = "http://localhost:8080/launcher/manifest.json";
+const defaultManifestUrl = "http://localhost:8080/launcher/manifest.json?channel=stable&platform=Windows";
 const defaultBackendArg = "-BackendBaseUrl=http://localhost:8080";
 
 function getBackendBaseUrl(manifestUrl: string) {

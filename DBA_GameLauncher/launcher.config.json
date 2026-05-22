@@ -1,5 +1,5 @@
 {
-  "updateUrl": "https://updates.mygameplatform.com/manifest.json",
+  "updateUrl": "http://localhost:8080/launcher/manifest.json?channel=stable&platform=Windows",
   "gameExecutable": "Game.exe",
   "gameArguments": [],
   "logPath": "logs",

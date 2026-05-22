@@ -1,0 +1,20 @@
+groups:
+  - name: divine-beasts-arena
+    rules:
+      - alert: GameApiDown
+        expr: up{job="game-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Game API metrics endpoint is down
+          description: Prometheus cannot scrape /metrics from game-api.
+
+      - alert: HighHttp5xxRate
+        expr: sum(rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Game API 5xx responses detected
+          description: The backend is returning server errors during the last five minutes.

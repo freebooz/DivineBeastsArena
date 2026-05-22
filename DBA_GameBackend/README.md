@@ -59,6 +59,15 @@ To enable the production HTTPS edge gateway, set `PUBLIC_DOMAIN` and `ACME_EMAIL
 docker compose --env-file .env --profile edge up -d
 ```
 
+Observability stack:
+
+```bash
+docker compose --env-file .env -f docker-compose.observability.yml config
+docker compose --env-file .env -f docker-compose.observability.yml up -d
+```
+
+Grafana is bound to `127.0.0.1:3001` by default. Prometheus scrapes the real `game-api:8080/metrics` endpoint and loads the `DBA Game API` dashboard automatically.
+
 Operational scripts:
 
 - `scripts/migrate-db.sh`: run EF Core migrations and exit.

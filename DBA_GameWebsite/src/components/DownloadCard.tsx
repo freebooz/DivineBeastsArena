@@ -16,6 +16,10 @@ export interface Platform {
   downloadUrl: string;
   version: string;
   status: string;
+  size?: number;
+  sha256?: string;
+  releaseNotes?: string;
+  mandatory?: boolean;
 }
 
 interface DownloadCardProps {
@@ -23,6 +27,9 @@ interface DownloadCardProps {
 }
 
 const DownloadCard: FC<DownloadCardProps> = ({ platform }) => {
+  const canDownload = platform.downloadUrl && platform.downloadUrl !== '#';
+  const sizeText = platform.size && platform.size > 0 ? formatBytes(platform.size) : '等待发布';
+
   return (
     <div className="rounded-lg border border-slate-700 bg-slate-900 p-6 transition hover:border-teal-300/70">
       <div className="mb-5 flex items-center gap-4">
@@ -34,14 +41,33 @@ const DownloadCard: FC<DownloadCardProps> = ({ platform }) => {
           <p className="text-sm text-slate-400">版本 {platform.version}</p>
         </div>
       </div>
-      <a
-        href={platform.downloadUrl}
-        className="inline-flex w-full items-center justify-center rounded-lg bg-teal-400 px-6 py-3 font-semibold text-slate-950 transition hover:bg-teal-300"
-      >
-        {platform.status}
-      </a>
+      <div className="mb-5 space-y-2 text-sm text-slate-300">
+        <p>文件大小：{sizeText}</p>
+        <p className="break-all">SHA256：{platform.sha256 || '等待发布'}</p>
+        {platform.mandatory && <p className="font-semibold text-amber-200">强制更新版本</p>}
+        {platform.releaseNotes && <p className="leading-6 text-slate-400">{platform.releaseNotes}</p>}
+      </div>
+      {canDownload ? (
+        <a
+          href={platform.downloadUrl}
+          className="inline-flex w-full items-center justify-center rounded-lg bg-teal-400 px-6 py-3 font-semibold text-slate-950 transition hover:bg-teal-300"
+        >
+          {platform.status}
+        </a>
+      ) : (
+        <span className="inline-flex w-full cursor-not-allowed items-center justify-center rounded-lg bg-slate-700 px-6 py-3 font-semibold text-slate-300">
+          {platform.status}
+        </span>
+      )}
     </div>
   );
 };
+
+function formatBytes(value: number) {
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  if (value < 1024 * 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`;
+  return `${(value / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}
 
 export default DownloadCard;

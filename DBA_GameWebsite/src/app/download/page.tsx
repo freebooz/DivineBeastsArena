@@ -15,31 +15,86 @@ export const metadata: Metadata = {
   description: '下载五灵争霸 Windows 客户端和启动器。',
 };
 
-const platforms: Platform[] = [
-  {
-    name: 'Windows 启动器',
-    label: 'WIN',
-    downloadUrl: '#',
-    version: '0.1.0',
-    status: '等待发布包',
-  },
-  {
-    name: 'macOS 客户端',
-    label: 'MAC',
-    downloadUrl: '#',
-    version: '规划中',
-    status: '暂未开放',
-  },
-  {
-    name: 'Linux 客户端',
-    label: 'LIN',
-    downloadUrl: '#',
-    version: '规划中',
-    status: '暂未开放',
-  },
-];
+type LauncherManifestFile = {
+  name: string;
+  sha256: string;
+  size: number;
+};
 
-export default function DownloadPage() {
+type LauncherManifest = {
+  version: string;
+  channel: string;
+  platform: string;
+  downloadUrl: string;
+  mandatory: boolean;
+  releaseNotes?: string | null;
+  files: LauncherManifestFile[];
+};
+
+type ApiEnvelope<T> = {
+  success?: boolean;
+  data?: T;
+};
+
+async function getWindowsPlatform(): Promise<Platform> {
+  const apiBaseUrl =
+    process.env.GAME_API_BASE_URL ?? process.env.NEXT_PUBLIC_GAME_API_BASE_URL ?? 'http://localhost:8080';
+
+  try {
+    const response = await fetch(
+      `${apiBaseUrl}/api/launcher/manifest?channel=stable&platform=Windows`,
+      { next: { revalidate: 60 } },
+    );
+    if (!response.ok) {
+      throw new Error(`manifest request failed: ${response.status}`);
+    }
+
+    const envelope = (await response.json()) as ApiEnvelope<LauncherManifest> | LauncherManifest;
+    const manifest = 'data' in envelope && envelope.data ? envelope.data : (envelope as LauncherManifest);
+    const file = manifest.files[0];
+
+    return {
+      name: 'Windows 启动器',
+      label: 'WIN',
+      downloadUrl: manifest.downloadUrl || '#',
+      version: manifest.version,
+      status: manifest.downloadUrl ? '下载安装器' : '等待发布包',
+      size: file?.size,
+      sha256: file?.sha256,
+      releaseNotes: manifest.releaseNotes ?? undefined,
+      mandatory: manifest.mandatory,
+    };
+  } catch {
+    return {
+      name: 'Windows 启动器',
+      label: 'WIN',
+      downloadUrl: '#',
+      version: '0.1.0',
+      status: '等待发布包',
+      releaseNotes: '暂时无法连接版本发布接口，请稍后重试。',
+    };
+  }
+}
+
+export default async function DownloadPage() {
+  const platforms: Platform[] = [
+    await getWindowsPlatform(),
+    {
+      name: 'macOS 客户端',
+      label: 'MAC',
+      downloadUrl: '#',
+      version: '规划中',
+      status: '暂未开放',
+    },
+    {
+      name: 'Linux 客户端',
+      label: 'LIN',
+      downloadUrl: '#',
+      version: '规划中',
+      status: '暂未开放',
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-slate-950 px-4 py-24">
       <div className="mx-auto max-w-6xl">
@@ -59,7 +114,7 @@ export default function DownloadPage() {
         <div className="mx-auto mt-12 max-w-3xl rounded-lg border border-slate-700 bg-slate-900 p-6 text-slate-300">
           <h2 className="mb-3 text-xl font-semibold text-white">运营发布说明</h2>
           <p className="leading-7">
-            正式上线前，下载地址应由后端版本发布接口生成，并同步给官网和启动器。当前页面保留入口结构，避免玩家误下载未发布构建。
+            Windows 下载信息已接入 Game.Api 版本清单接口。正式发布时，运营流水线需要写入真实下载地址、文件大小和 SHA256，官网与启动器会自动读取同一份清单。
           </p>
         </div>
       </div>

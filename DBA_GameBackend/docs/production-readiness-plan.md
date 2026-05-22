@@ -29,9 +29,9 @@
 
 ## 阶段 3：Dedicated Server 接入生产化
 
-- [ ] 明确首发使用 LocalProcess 或 Docker 模式。
+- [x] 明确首发使用 LocalProcess 模式，详见 `docs/dedicated-server-production.md`。
 - [ ] 用真实 UE Dedicated Server 包验证分配、启动、心跳和回收。
-- [ ] 补充崩溃、启动超时、空闲超时的自动化测试。
+- [x] 补充 Game Server Manager 启动超时、心跳超时、端口释放和分配幂等自动化测试。
 
 ## 阶段 4：客户端联调上线闭环
 
@@ -52,7 +52,7 @@
 - [x] 启动器项目名称和窗口标题改为 Divine Beasts Arena Launcher。
 - [ ] 替换默认 Tauri 图标。
 - [ ] 接入真实 CDN manifest 和补丁包。
-- [ ] 官网下载页接入真实版本和校验信息。
+- [x] 官网下载页接入 Game.Api 版本清单，显示版本、下载地址、文件大小和 SHA256。
 
 ## 阶段 7：Ops 与部署生产化
 
@@ -60,7 +60,7 @@
 - [x] 接入 HTTPS 证书自动续期，使用 Caddy edge profile 作为生产反向代理。
 - [x] 提供 PostgreSQL 备份和恢复脚本入口。
 - [ ] 演练 PostgreSQL 备份和恢复。
-- [ ] Grafana 看板接入真实 API 指标和服务器指标。
+- [x] Grafana 看板接入真实 API `/metrics` 指标，并提供 Prometheus/Loki/Promtail/Node Exporter 部署配置。
 
 ## 阶段 8：CI/CD 强化
 
