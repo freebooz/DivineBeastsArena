@@ -18,6 +18,18 @@ dotnet run
 
 `appsettings.json` 中配置 `Backend.BaseUrl` 指向 Game.Api 服务。
 
+## 认证模型
+
+GameAdmin 使用明确的 Admin Token 流程：
+
+1. 登录页调用 Game.Api 的 `POST /api/admin/auth/login`。
+2. 后端返回只包含后台身份和角色的 Admin JWT。
+3. `ApiClient` 对所有后台 API 请求附加 `Authorization: Bearer <token>`。
+4. 后端按 `SUPER_ADMIN / OPS / SUPPORT / VIEWER` 做角色授权和审计。
+5. 前端读取 JWT 过期时间，过期或未登录时自动回到 `/login`。
+
+当前没有把普通玩家 Token 用作后台身份，普通玩家 Token 不能访问 `/api/admin/*`。
+
 ## 功能页面
 
 - Dashboard - 系统概览

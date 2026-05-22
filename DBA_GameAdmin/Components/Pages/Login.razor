@@ -38,6 +38,14 @@
     private bool _loading = false;
     private string? _error;
 
+    protected override void OnInitialized()
+    {
+        if (AuthState.IsAuthenticated)
+        {
+            Nav.NavigateTo("/dashboard", replace: true);
+        }
+    }
+
     private async Task DoLoginAsync()
     {
         if (string.IsNullOrEmpty(_username) || string.IsNullOrEmpty(_password))

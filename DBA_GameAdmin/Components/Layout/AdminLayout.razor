@@ -9,6 +9,7 @@
 @using MudBlazor
 @using GameAdmin.Services
 @inject AdminAuthState AuthState
+@inject NavigationManager Nav
 
 @inherits LayoutComponentBase
 
@@ -42,6 +43,16 @@
 @code {
     private bool _drawerOpen = true;
     private string DisplayName => AuthState.IsAuthenticated ? $"{AuthState.Username} / {AuthState.Role}" : "未登录";
+
+    protected override void OnParametersSet()
+    {
+        var path = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/').ToLowerInvariant();
+        var isAuthPage = path is "/login" or "/logout";
+        if (!isAuthPage && !AuthState.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", replace: true);
+        }
+    }
 
     private void ToggleDrawer()
     {

@@ -188,7 +188,7 @@ public class ApiClient
 
     private void ApplyAuthorizationHeader()
     {
-        _http.DefaultRequestHeaders.Authorization = string.IsNullOrWhiteSpace(_authState.AccessToken)
+        _http.DefaultRequestHeaders.Authorization = !_authState.IsAuthenticated || string.IsNullOrWhiteSpace(_authState.AccessToken)
             ? null
             : new AuthenticationHeaderValue("Bearer", _authState.AccessToken);
     }

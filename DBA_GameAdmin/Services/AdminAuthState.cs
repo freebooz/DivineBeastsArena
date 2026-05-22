@@ -8,14 +8,19 @@
 
 namespace GameAdmin.Services;
 
+using System.IdentityModel.Tokens.Jwt;
+
 public sealed class AdminAuthState
 {
     public string? AccessToken { get; private set; }
     public Guid? AdminId { get; private set; }
     public string? Username { get; private set; }
     public string? Role { get; private set; }
+    public DateTimeOffset? ExpiresAt { get; private set; }
 
-    public bool IsAuthenticated => !string.IsNullOrWhiteSpace(AccessToken);
+    public bool IsAuthenticated => !string.IsNullOrWhiteSpace(AccessToken) && !IsExpired;
+
+    public bool IsExpired => ExpiresAt.HasValue && ExpiresAt.Value <= DateTimeOffset.UtcNow;
 
     public void SignIn(AdminLoginDto login)
     {
@@ -23,6 +28,7 @@ public sealed class AdminAuthState
         AdminId = login.AdminId;
         Username = login.Username;
         Role = login.Role;
+        ExpiresAt = ReadTokenExpiry(login.AccessToken);
     }
 
     public void SignOut()
@@ -31,5 +37,21 @@ public sealed class AdminAuthState
         AdminId = null;
         Username = null;
         Role = null;
+        ExpiresAt = null;
+    }
+
+    private static DateTimeOffset? ReadTokenExpiry(string accessToken)
+    {
+        try
+        {
+            var token = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
+            return token.ValidTo == DateTime.MinValue
+                ? null
+                : new DateTimeOffset(DateTime.SpecifyKind(token.ValidTo, DateTimeKind.Utc));
+        }
+        catch
+        {
+            return null;
+        }
     }
 }
