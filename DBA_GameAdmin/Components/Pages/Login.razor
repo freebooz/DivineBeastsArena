@@ -1,0 +1,63 @@
+﻿@*
+中文阅读说明：
+- 所属应用：DBA_GameAdmin GM 管理后台。
+- 文件职责：Blazor 页面组件，负责 GM 后台具体页面的交互、表单提交和接口调用展示。
+- 阅读重点：先看公开类型、路由/组件入口和构造函数，再看私有辅助方法，理解数据如何从输入流向状态变更或界面输出。
+- 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
+*@
+
+@using MudBlazor
+@using DBA_GameAdmin.Services
+@inject ApiClient Api
+@inject AdminAuthState AuthState
+@inject NavigationManager Nav
+@page "/login"
+
+<MudText Typo="Typo.h4" Class="mb-4">运营后台登录</MudText>
+
+<MudCard>
+    <MudCardContent>
+        <MudTextField @bind-Value="_username" Label="管理员账号" Variant="Variant.Outlined" Class="mb-3" Immediate="true" />
+        <MudTextField @bind-Value="_password" Label="密码" Variant="Variant.Outlined" InputType="InputType.Password" Immediate="true" />
+    </MudCardContent>
+    <MudCardActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="DoLoginAsync" Disabled="_loading">
+            @(_loading ? "正在登录..." : "登录")
+        </MudButton>
+    </MudCardActions>
+</MudCard>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <MudAlert Class="mt-3" Severity="Severity.Error">@_error</MudAlert>
+}
+
+@code {
+    private string _username = "";
+    private string _password = "";
+    private bool _loading = false;
+    private string? _error;
+
+    private async Task DoLoginAsync()
+    {
+        if (string.IsNullOrEmpty(_username) || string.IsNullOrEmpty(_password))
+        {
+            _error = "请输入管理员账号和密码";
+            return;
+        }
+
+        _loading = true;
+        _error = null;
+        var login = await Api.LoginAdminAsync(_username, _password);
+        _loading = false;
+
+        if (login is null)
+        {
+            _error = "登录失败，请检查账号、密码或服务端状态";
+            return;
+        }
+
+        AuthState.SignIn(login);
+        Nav.NavigateTo("/dashboard");
+    }
+}

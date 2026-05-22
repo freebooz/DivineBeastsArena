@@ -1,0 +1,24 @@
+﻿@*
+中文阅读说明：
+- 所属应用：DBA_GameAdmin GM 管理后台。
+- 文件职责：Blazor 布局组件，负责后台导航、页面骨架和全局交互容器。
+- 阅读重点：先看公开类型、路由/组件入口和构造函数，再看私有辅助方法，理解数据如何从输入流向状态变更或界面输出。
+- 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
+*@
+
+@using MudBlazor
+
+<MudNavMenu>
+    <MudText Typo="Typo.h6" Class="px-4 py-3">运营后台</MudText>
+    <MudDivider />
+    <MudNavLink Href="/dashboard" Icon="@Icons.Material.Filled.Dashboard">运营概览</MudNavLink>
+    <MudNavLink Href="/players" Icon="@Icons.Material.Filled.People">玩家管理</MudNavLink>
+    <MudNavLink Href="/matches" Icon="@Icons.Material.Filled.SportsEsports">对局记录</MudNavLink>
+    <MudNavLink Href="/servers" Icon="@Icons.Material.Filled.Dns">游戏服务器</MudNavLink>
+    <MudNavLink Href="/platform" Icon="@Icons.Material.Filled.AccountTree">平台应用</MudNavLink>
+    <MudNavLink Href="/configs" Icon="@Icons.Material.Filled.Settings">配置管理</MudNavLink>
+    <MudNavLink Href="/inventory" Icon="@Icons.Material.Filled.Inventory">背包流水</MudNavLink>
+    <MudNavLink Href="/feedback" Icon="@Icons.Material.Filled.Feedback">玩家反馈</MudNavLink>
+    <MudNavLink Href="/support" Icon="@Icons.Material.Filled.SupportAgent">客服工单</MudNavLink>
+    <MudNavLink Href="/audit" Icon="@Icons.Material.Filled.History">审计日志</MudNavLink>
+</MudNavMenu>

@@ -1,0 +1,40 @@
+groups:
+  - name: game-platform-availability
+    rules:
+      - alert: GameApiDown
+        expr: up{job="game-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Game API 不可用
+          description: game-api 指标抓取失败超过 1 分钟，请检查容器、数据库和应用日志。
+
+      - alert: NodeExporterDown
+        expr: up{job="node-exporter"} == 0
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: 主机指标采集不可用
+          description: node-exporter 指标抓取失败，服务器 CPU/内存/磁盘监控可能缺失。
+
+  - name: game-platform-latency
+    rules:
+      - alert: GameApiHighLatency
+        expr: histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds_bucket{job="game-api"}[5m])) by (le)) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Game API P95 延迟过高
+          description: 最近 5 分钟 API P95 延迟超过 1 秒，请检查数据库、Redis 或下游调用。
+
+      - alert: GameApiHighErrorRate
+        expr: sum(rate(http_server_requests_seconds_count{job="game-api",http_response_status_code=~"5.."}[5m])) > 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Game API 5xx 错误率过高
+          description: 最近 5 分钟服务端错误持续出现，请查看 Loki 中的 game-api 日志。

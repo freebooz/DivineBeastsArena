@@ -1,0 +1,6 @@
+maps:
+  desert_arenas:
+    id: desert_arenas
+    name: Desert Arenas
+    mode: conquest
+    max_players: 8

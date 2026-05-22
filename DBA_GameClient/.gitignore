@@ -1,0 +1,96 @@
+# Divine Beasts Arena - .gitignore
+# 神兽竞技场 Git 忽略配置
+
+# ========== Visual Studio ==========
+.vs/
+*.suo
+*.user
+*.sln.docstates
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# ========== VS Code ==========
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+
+# ========== Unreal Engine ==========
+Binaries/
+Build/
+Intermediate/
+Saved/
+DerivedDataCache/
+*.VC.db
+*.opensdf
+*.opendb
+*.sdf
+*.sln
+*.suo
+*.xcodeproj
+*.xcworkspace
+
+# ========== Generated 代码 ==========
+Source/DivineBeastsArena/Generated/
+
+# ========== IDE ==========
+.idea/
+*.sln.iml
+*.swp
+*~
+.*.swp
+
+# ========== Android ==========
+[Aa]ndroid/
+.gradle/
+local.properties
+
+# ========== iOS ==========
+[Ii]os/
+DerivedData/
+
+# ========== 编译产物 ==========
+*.slo
+*.lo
+*.o
+*.obj
+*.gch
+*.pch
+*.so
+*.dylib
+*.dll
+*.lai
+*.la
+*.a
+*.lib
+
+# ========== 可执行文件 ==========
+*.exe
+*.out
+*.app
+*.ipa
+
+# ========== 开发者设置 ==========
+Developer/
+
+# ========== 崩溃报告 ==========
+*.dmp
+CrashReportClient/
+
+# ========== 缓存文件 ==========
+*.uasset.tmp
+*.umap.tmp
+__pycache__/
+*.py[cod]
+
+# ========== 发布版本 ==========
+Dist/
+Releases/
+
+# ========== 操作系统 ==========
+.DS_Store
+Thumbs.db
+
+# ========== 日志 ==========
+*.log

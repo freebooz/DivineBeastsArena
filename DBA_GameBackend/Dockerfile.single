@@ -1,0 +1,86 @@
+# GameBackend - 统一Docker镜像 (单容器运行API和Worker)
+# 修复多项目构建时的文件冲突问题
+
+# ========== 阶段1: 构建API ==========
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build-api
+WORKDIR /src
+
+COPY GameBackend.slnx ./
+COPY Game.Api/Game.Api.csproj Game.Api/
+COPY Game.Shared/Game.Shared.csproj Game.Shared/
+COPY Game.Infrastructure/Game.Infrastructure.csproj Game.Infrastructure/
+
+RUN dotnet restore Game.Api/Game.Api.csproj
+
+COPY Game.Api/ Game.Api/
+COPY Game.Shared/ Game.Shared/
+COPY Game.Infrastructure/ Game.Infrastructure/
+
+RUN dotnet build Game.Api/Game.Api.csproj -c Release
+
+# ========== 阶段2: 发布API ==========
+FROM build-api AS publish-api
+RUN dotnet publish Game.Api/Game.Api.csproj -c Release -o /app/publish/api
+
+# ========== 阶段3: 构建Worker ==========
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build-worker
+WORKDIR /src
+
+COPY GameBackend.slnx ./
+COPY Game.Worker/Game.Worker.csproj Game.Worker/
+COPY Game.Shared/Game.Shared.csproj Game.Shared/
+COPY Game.Infrastructure/Game.Infrastructure.csproj Game.Infrastructure/
+
+RUN dotnet restore Game.Worker/Game.Worker.csproj
+
+COPY Game.Worker/ Game.Worker/
+COPY Game.Shared/ Game.Shared/
+COPY Game.Infrastructure/ Game.Infrastructure/
+
+RUN dotnet build Game.Worker/Game.Worker.csproj -c Release
+
+# ========== 阶段4: 发布Worker ==========
+FROM build-worker AS publish-worker
+RUN dotnet publish Game.Worker/Game.Worker.csproj -c Release -o /app/publish/worker
+
+# ========== 阶段5: 运行镜像 ==========
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+# 安装curl用于健康检查
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# 创建非root用户
+RUN useradd -m appuser && chown -R appuser:appuser /app
+USER appuser
+
+# 从各自的发布阶段复制应用
+COPY --from=publish-api /app/publish/api ./api/
+COPY --from=publish-worker /app/publish/worker ./worker/
+
+# 创建启动脚本
+RUN echo '#!/bin/bash' > /app/start.sh && \
+    echo 'echo "Starting GameBackend API and Worker..."' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# 启动 Worker（后台运行）' >> /app/start.sh && \
+    echo 'dotnet /app/worker/Game.Worker.dll > /tmp/worker.log 2>&1 &' >> /app/start.sh && \
+    echo 'WORKER_PID=$!' >> /app/start.sh && \
+    echo 'echo "Worker started with PID: $WORKER_PID"' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# 等待Worker初始化' >> /app/start.sh && \
+    echo 'sleep 5' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# 启动 API' >> /app/start.sh && \
+    echo 'echo "Starting Game.Api on port 8080..."' >> /app/start.sh && \
+    echo 'exec dotnet /app/api/Game.Api.dll' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
+# 暴露端口
+EXPOSE 8080
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:8080/health/live || exit 1
+
+# 启动脚本
+ENTRYPOINT ["/app/start.sh"]

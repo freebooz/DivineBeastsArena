@@ -1,0 +1,26 @@
+﻿name: admin-ci
+
+on:
+  push:
+    paths:
+      - "DBA_GameAdmin/**"
+      - ".github/workflows/admin-ci.yml"
+  pull_request:
+    paths:
+      - "DBA_GameAdmin/**"
+
+jobs:
+  admin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: DBA_GameAdmin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - run: dotnet build --configuration Release
+      - name: Docker build
+        working-directory: .
+        run: docker build -f DBA_GameAdmin/Dockerfile -t ghcr.io/${{ github.repository }}/game-admin:${{ github.sha }} .

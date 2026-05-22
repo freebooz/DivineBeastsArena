@@ -1,56 +1,73 @@
-# Divine Beasts Arena - .gitignore
-# 神兽竞技场 Git 忽略配置
+# Build results
+bin/
+obj/
+out/
 
-# ========== Visual Studio ==========
-.vs/
-*.suo
+# .NET
 *.user
+*.userosscache
 *.sln.docstates
-*.vcxproj
-*.vcxproj.filters
-*.vcxproj.user
+*.suo
+*.cache
 
-# ========== VS Code ==========
+# IDE
+.idea/
+.vs/
 .vscode/
-!.vscode/extensions.json
-!.vscode/settings.json
-!.vscode/tasks.json
+*.swp
+*.swo
+*.sln.iml
 
-# ========== Unreal Engine ==========
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Node
+node_modules/
+.next/
+dist/
+*.tsbuildinfo
+
+# Unreal Engine
 Binaries/
 Build/
+DerivedDataCache/
 Intermediate/
 Saved/
-DerivedDataCache/
+Temp/
 *.VC.db
 *.opensdf
 *.opendb
 *.sdf
-*.sln
-*.suo
 *.xcodeproj
 *.xcworkspace
 
-# ========== Generated 代码 ==========
+# Unreal generated and cache files
 Source/DivineBeastsArena/Generated/
+*.uasset.tmp
+*.umap.tmp
+CrashReportClient/
 
-# ========== IDE ==========
-.idea/
-*.sln.iml
-*.swp
-*~
-.*.swp
+# Rust / Cargo
+target/
+cargo/
 
-# ========== Android ==========
+# Tauri
+src-tauri/target/
+src-tauri/bundle/
+
+# Mobile generated folders
 [Aa]ndroid/
+[Ii]os/
 .gradle/
 local.properties
-
-# ========== iOS ==========
-[Ii]os/
 DerivedData/
 
-# ========== 编译产物 ==========
+# Native build outputs
 *.slo
 *.lo
 *.o
@@ -64,31 +81,25 @@ DerivedData/
 *.la
 *.a
 *.lib
-
-# ========== 可执行文件 ==========
 *.exe
 *.out
 *.app
 *.ipa
 
-# ========== 开发者设置 ==========
-Developer/
+# Config local overrides
+*.local.yaml
+*.local.yml
+*.local.json
 
-# ========== 崩溃报告 ==========
-*.dmp
-CrashReportClient/
+# Environment
+.env
+.env.*
+!.env.example
 
-# ========== 缓存文件 ==========
-*.uasset.tmp
-*.umap.tmp
-
-# ========== 发布版本 ==========
+# Misc
+*.bak
+*.tmp
+__pycache__/
+*.py[cod]
 Dist/
 Releases/
-
-# ========== 操作系统 ==========
-.DS_Store
-Thumbs.db
-
-# ========== 日志 ==========
-*.log

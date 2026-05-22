@@ -1,0 +1,56 @@
+﻿@*
+中文阅读说明：
+- 所属应用：DBA_GameAdmin GM 管理后台。
+- 文件职责：Blazor 布局组件，负责后台导航、页面骨架和全局交互容器。
+- 阅读重点：先看公开类型、路由/组件入口和构造函数，再看私有辅助方法，理解数据如何从输入流向状态变更或界面输出。
+- 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
+*@
+
+@using MudBlazor
+@using DBA_GameAdmin.Services
+@inject AdminAuthState AuthState
+
+@inherits LayoutComponentBase
+
+<MudThemeProvider IsDarkMode="true" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<div class="page-container">
+    <MudLayout>
+        <MudAppBar Elevation="1">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
+            <MudText Typo="Typo.h5" Class="ml-3">DBA_GameAdmin</MudText>
+            <MudSpacer />
+            <MudText Typo="Typo.body2" Class="mr-2">@DisplayName</MudText>
+            <MudMenu Icon="@Icons.Material.Filled.Person" Color="Color.Inherit">
+                <MudMenuItem Href="/logout">退出登录</MudMenuItem>
+            </MudMenu>
+        </MudAppBar>
+        <MudDrawer Open="_drawerOpen" Elevation="2">
+            <NavMenu />
+        </MudDrawer>
+        <MudMainContent>
+            <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4">
+                @Body
+            </MudContainer>
+        </MudMainContent>
+    </MudLayout>
+</div>
+
+@code {
+    private bool _drawerOpen = true;
+    private string DisplayName => AuthState.IsAuthenticated ? $"{AuthState.Username} / {AuthState.Role}" : "未登录";
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+}
+
+<style>
+    .page-container {
+        min-height: 100vh;
+    }
+</style>

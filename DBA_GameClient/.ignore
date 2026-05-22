@@ -1,0 +1,79 @@
+# 神兽竞技场 - .ignore 文件
+# 此文件用于项目配置，不提交到版本控制
+
+# ========== VS Code ==========
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ========== Visual Studio ==========
+.vs/
+*.sln
+*.sln.docstates
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.suo
+*.user
+
+# ========== Unreal Engine ==========
+Binaries/
+Build/
+Intermediate/
+Saved/
+DerivedDataCache/
+*.VC.db
+*.opensdf
+*.opendb
+*.sdf
+*.sln
+*.suo
+*.xcodeproj
+*.xcworkspace
+
+# ========== Generated 代码 ==========
+/Source/DivineBeastsArena/Generated/
+
+# ========== Android ==========
+[Aa]ndroid/
+.gradle/
+local.properties/
+
+# ========== iOS ==========
+[Ii]os/
+DerivedData/
+
+# ========== macOS ==========
+.DS_Store
+
+# ========== 编译产物 ==========
+*.o
+*.obj
+*.pch
+*.gch
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+*.exe
+
+# ========== 崩溃报告 ==========
+*.dmp
+CrashReportClient/
+
+# ========== 缓存文件 ==========
+*.uasset.tmp
+*.umap.tmp
+
+# ========== 发布版本 ==========
+Dist/
+Releases/
+
+# ========== 日志 ==========
+*.log
+
+# ========== 临时文件 ==========
+*~
+*.tmp
+*.bak

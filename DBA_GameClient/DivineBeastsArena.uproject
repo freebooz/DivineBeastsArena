@@ -1,0 +1,73 @@
+﻿{
+	"FileVersion": 3,
+	"EngineAssociation": "{A4B1C663-4958-2CE1-5B59-F88C35B80EEC}",
+	"Category": "Samples",
+	"Description": "Divine Beasts Arena - MOBA Game",
+	"Modules": [
+		{
+			"Name": "GameCore",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
+			"AdditionalDependencies": [
+				"Engine",
+				"CoreUObject"
+			]
+		},
+		{
+			"Name": "GameMoba",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
+			"AdditionalDependencies": [
+				"Engine",
+				"CoreUObject",
+				"GameplayAbilities",
+				"GameplayTags",
+				"GameplayTasks",
+				"GameCore"
+			]
+		},
+		{
+			"Name": "DivineBeastsArena",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"CoreUObject",
+				"InputCore",
+				"EnhancedInput",
+				"GameplayAbilities",
+				"GameplayTags",
+				"GameplayTasks",
+				"UMG",
+				"Slate",
+				"SlateCore",
+				"GameCore",
+				"GameMoba"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "DBA_GameBackendClient",
+			"Enabled": true
+		},
+		{
+			"Name": "OnlineSubsystem",
+			"Enabled": true
+		},
+		{
+			"Name": "OnlineSubsystemUtils",
+			"Enabled": true
+		},
+		{
+			"Name": "Niagara",
+			"Enabled": true
+		}
+	],
+	"TargetPlatforms": [
+		"Windows",
+		"WindowsEditor",
+		"WindowsServer"
+	],
+	"EpicSampleNameHash": "1234567890"
+}

@@ -1,0 +1,69 @@
+﻿@*
+中文阅读说明：
+- 所属应用：DBA_GameAdmin GM 管理后台。
+- 文件职责：Blazor 页面组件，负责 GM 后台具体页面的交互、表单提交和接口调用展示。
+- 阅读重点：先看公开类型、路由/组件入口和构造函数，再看私有辅助方法，理解数据如何从输入流向状态变更或界面输出。
+- 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
+*@
+
+@using MudBlazor
+@using DBA_GameAdmin.Services
+@inject ApiClient Api
+@page "/configs"
+
+<MudText Typo="Typo.h4" Class="mb-4">配置管理</MudText>
+
+<MudTable Items="_configs" Hover="true" Striped="true">
+    <HeaderContent>
+        <MudTh>配置键</MudTh>
+        <MudTh>版本</MudTh>
+        <MudTh>状态</MudTh>
+        <MudTh>渠道</MudTh>
+        <MudTh>地区</MudTh>
+        <MudTh>发布时间</MudTh>
+        <MudTh>内容摘要</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context.ConfigKey</MudTd>
+        <MudTd>@context.Version</MudTd>
+        <MudTd><MudChip T="string" Color="@GetStatusColor(context.Status)" Size="Size.Small">@context.Status</MudChip></MudTd>
+        <MudTd>@context.Channel</MudTd>
+        <MudTd>@context.Region</MudTd>
+        <MudTd>@FormatDate(context.PublishedAt)</MudTd>
+        <MudTd>@TrimJson(context.ContentJson)</MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText Color="Color.Secondary">暂无配置数据。</MudText>
+    </NoRecordsContent>
+</MudTable>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <MudAlert Severity="Severity.Warning" Class="mt-3">@_error</MudAlert>
+}
+
+@code {
+    private List<ConfigDto> _configs = new();
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var data = await Api.GetConfigsAsync();
+        if (data is null)
+        {
+            _error = "无法读取配置列表，请确认已经登录后台且 API 服务可用。";
+            return;
+        }
+
+        _configs = data;
+    }
+
+    private static Color GetStatusColor(string status)
+    {
+        return string.Equals(status, "PUBLISHED", StringComparison.OrdinalIgnoreCase) ? Color.Success : Color.Warning;
+    }
+
+    private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "-";
+
+    private static string TrimJson(string value) => value.Length <= 80 ? value : value[..80] + "...";
+}

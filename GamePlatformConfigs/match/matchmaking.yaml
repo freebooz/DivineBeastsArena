@@ -1,0 +1,3 @@
+matchmaking:
+  ticket_timeout_seconds: 300
+  queue_update_interval_ms: 1000

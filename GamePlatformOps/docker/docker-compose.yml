@@ -1,0 +1,105 @@
+﻿version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: game-postgres
+    environment:
+      POSTGRES_DB: gameplatform
+      POSTGRES_USER: gameuser
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gameuser -d gameplatform"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: game-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  game-api:
+    build:
+      context: ../../DBA_GameBackend
+      dockerfile: Game.Api/Dockerfile
+    container_name: game-api
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+      Database__ConnectionString: Host=postgres;Database=gameplatform;Username=gameuser;Password=${POSTGRES_PASSWORD:-changeme};Port=5432
+      Redis__ConnectionString: redis:6379
+      Jwt__Secret: ${JWT_SECRET:-your-super-secret-key-change-in-production}
+      Jwt__Issuer: game-api
+      Jwt__Audience: game-clients
+      Serilog__WriteTo__0__Args__connectionString: Host=localhost;Port=9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  game-worker:
+    build:
+      context: ../../DBA_GameBackend
+      dockerfile: Game.Worker/Dockerfile
+    container_name: game-worker
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      Database__ConnectionString: Host=postgres;Database=gameplatform;Username=gameuser;Password=${POSTGRES_PASSWORD:-changeme};Port=5432
+      Redis__ConnectionString: redis:6379
+      WorkerJobs__IntervalSeconds: 30
+      WorkerJobs__ServerHeartbeatTimeoutSeconds: 90
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  game-admin:
+    build:
+      context: ../..
+      dockerfile: DBA_GameAdmin/Dockerfile
+    container_name: game-admin
+    ports:
+      - "8081:8080"
+    environment:
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+    depends_on:
+      - game-api
+
+  game-website:
+    image: node:20-alpine
+    container_name: game-website
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../DBA_GameWebsite:/app
+    command: sh -c "npm install && npm run start"
+    depends_on:
+      - game-api
+
+volumes:
+  postgres_data:
+  redis_data:
+

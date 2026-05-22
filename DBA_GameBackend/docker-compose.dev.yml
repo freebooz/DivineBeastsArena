@@ -1,0 +1,129 @@
+﻿# DBA_GameBackend Docker Compose - 开发环境
+# 统一打包：Game.Api + Game.Worker + PostgreSQL + Redis
+
+services:
+  # ========== 统一容器方案（API + Worker） ==========
+  game-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.single
+    container_name: game-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      # 数据库 - 连接到docker-compose内的postgres
+      - Database__ConnectionString=Host=postgres;Database=gamedb;Username=postgres;Password=postgres
+      # Redis - 连接到docker-compose内的redis
+      - Redis__ConnectionString=redis:6379
+      # JWT配置
+      - Jwt__Secret=your-secret-key-min-32-chars-long!!
+      - Jwt__Issuer=GameApi
+      - Jwt__Audience=GameClients
+      - Jwt__AccessTokenExpiryMinutes=15
+      - Jwt__RefreshTokenExpiryDays=30
+      # 数据种子（开发环境启用）
+      - SeedData__Enabled=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - game-network
+
+  # ========== 分离容器方案（可选） ==========
+  # 游戏API服务
+  game-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: game-api
+    profiles:
+      - separate
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Database__ConnectionString=Host=postgres;Database=gamedb;Username=postgres;Password=postgres
+      - Redis__ConnectionString=redis:6379
+      - Jwt__Secret=your-secret-key-min-32-chars-long!!
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - game-network
+
+  # 游戏Worker服务
+  game-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: game-worker
+    profiles:
+      - separate
+    environment:
+      - Database__ConnectionString=Host=postgres;Database=gamedb;Username=postgres;Password=postgres
+      - Redis__ConnectionString=redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - game-network
+
+  # ========== 数据库服务 ==========
+  postgres:
+    image: postgres:16-alpine
+    container_name: game-postgres
+    environment:
+      - POSTGRES_DB=gamedb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - game-network
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: game-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - game-network
+
+# ========== 网络和卷 ==========
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  game-network:
+    driver: bridge

@@ -1,0 +1,9 @@
+{
+  "updateUrl": "https://updates.mygameplatform.com/manifest.json",
+  "gameExecutable": "Game.exe",
+  "gameArguments": [],
+  "logPath": "logs",
+  "downloadTimeout": 300,
+  "verifyTimeout": 60,
+  "maxRetries": 3
+}

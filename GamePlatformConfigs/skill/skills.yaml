@@ -1,0 +1,6 @@
+skills:
+  passive_damage_boost:
+    id: passive_damage_boost
+    name: Damage Boost
+    description: Increases damage by 10%
+    icon: skill_damage_boost
