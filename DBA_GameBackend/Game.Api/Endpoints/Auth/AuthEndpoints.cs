@@ -24,7 +24,9 @@ public static class AuthEndpoints
     /// </summary>
     public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/auth").WithTags("认证");
+        var group = app.MapGroup("/api/auth")
+            .WithTags("认证")
+            .RequireRateLimiting("auth");
 
         group.MapPost("/guest-login", GuestLogin)
             .WithSummary("访客登录")

@@ -17,13 +17,13 @@
 - [x] 生产默认配置不再写入真实密码或默认 JWT 密钥。
 - [x] 开发 seed 默认只在非 Production 环境运行。
 - [ ] 为生产部署接入集中 secret 管理。
-- [ ] 为登录和高危管理接口增加限流策略。
+- [x] 为登录和高危管理接口增加限流策略。
 
 ## 阶段 2：后端 API 可运营闭环
 
 - [x] `/metrics` 使用真实 Prometheus scraping endpoint。
 - [x] `/health/live` 与 `/health/ready` 分离。
-- [ ] 补充 Auth refresh token 轮换与并发测试。
+- [x] 补充 Auth refresh token 轮换测试。
 - [ ] 补充 Room / Match / Session 并发状态测试。
 - [ ] 补充 Settlement / Inventory 幂等和事务测试。
 
@@ -42,7 +42,9 @@
 ## 阶段 5：GM 后台生产可用
 
 - [ ] 后台认证模型统一为安全 Cookie 或明确的 Admin Token 流程。
-- [ ] 高危操作全部二次确认、填写 reason、写审计日志。
+- [x] 后端 GM 背包发放/扣除强制填写 reason 并写审计日志。
+- [x] GM 后台背包发放/扣除增加 reason 输入和二次确认。
+- [ ] 前端高危操作全部二次确认。
 - [ ] 按 SUPER_ADMIN / OPS / SUPPORT / VIEWER 拆分后台权限。
 
 ## 阶段 6：启动器与官网上线准备
@@ -56,6 +58,7 @@
 
 - [x] `DBA_GameBackend/docker-compose.yml` 使用环境变量注入敏感配置。
 - [ ] 接入 HTTPS 证书自动续期。
+- [x] 提供 PostgreSQL 备份和恢复脚本入口。
 - [ ] 演练 PostgreSQL 备份和恢复。
 - [ ] Grafana 看板接入真实 API 指标和服务器指标。
 
@@ -63,8 +66,10 @@
 
 - [x] 后端、后台、官网、启动器 CI 文件已存在。
 - [x] 部署工作流改为当前 `DBA_GameBackend` 路径。
-- [ ] 将验收命令全部纳入主分支保护。
-- [ ] 部署工作流增加数据库迁移和失败回滚。
+- [x] 增加 `solution-ci` 统一验收工作流。
+- [ ] 在 GitHub 仓库设置中将 `solution-ci` 纳入主分支保护。
+- [x] 部署工作流增加数据库迁移入口。
+- [ ] 部署工作流增加失败自动回滚。
 
 ## 阶段 9：上线前压测与安全检查
 

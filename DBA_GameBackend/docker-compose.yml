@@ -17,6 +17,7 @@ services:
       InternalApi__Key: ${INTERNAL_API_KEY}
       SeedData__Enabled: ${SEED_DATA_ENABLED:-false}
       Swagger__Enabled: ${SWAGGER_ENABLED:-false}
+      Database__RunMigrationsAndExit: ${DATABASE_RUN_MIGRATIONS_AND_EXIT:-false}
     expose:
       - "8080"
     ports:

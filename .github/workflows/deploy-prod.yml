@@ -18,6 +18,7 @@ jobs:
             cd "${{ secrets.DEPLOY_PATH }}"
             bash DBA_GameBackend/scripts/backup-postgres.sh || true
             docker compose --env-file DBA_GameBackend/.env -f DBA_GameBackend/docker-compose.yml pull
+            bash DBA_GameBackend/scripts/migrate-db.sh
             docker compose --env-file DBA_GameBackend/.env -f DBA_GameBackend/docker-compose.yml up -d
             sleep 20
             curl -f http://localhost:8080/health/live

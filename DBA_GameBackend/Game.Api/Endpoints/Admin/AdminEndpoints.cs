@@ -25,9 +25,13 @@ public static class AdminEndpoints
     {
         var auth = app.MapGroup("/api/admin/auth").WithTags("Admin Auth");
         auth.MapPost("/login", Login)
-            .WithSummary("Admin login");
+            .WithSummary("Admin login")
+            .RequireRateLimiting("admin-auth");
 
-        var admin = app.MapGroup("/api/admin").WithTags("Admin").RequireAuthorization();
+        var admin = app.MapGroup("/api/admin")
+            .WithTags("Admin")
+            .RequireAuthorization()
+            .RequireRateLimiting("admin");
         admin.MapGet("/me", GetMe)
             .WithSummary("Get current admin profile");
         admin.MapGet("/players", ListPlayers)

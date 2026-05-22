@@ -31,6 +31,7 @@ using Game.Api.Validators;
 using FluentValidation;
 using Game.Worker.ServerManager;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using System.Threading.RateLimiting;
 
 namespace Game.Api.Extensions;
 
@@ -117,10 +118,62 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    public static IServiceCollection AddGameRateLimiting(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+            options.AddPolicy("auth", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: BuildClientPartition(httpContext, "auth"),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = configuration.GetValue("RateLimiting:Auth:PermitLimit", 20),
+                        Window = TimeSpan.FromMinutes(configuration.GetValue("RateLimiting:Auth:WindowMinutes", 1)),
+                        QueueLimit = 0,
+                        AutoReplenishment = true
+                    }));
+
+            options.AddPolicy("admin-auth", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: BuildClientPartition(httpContext, "admin-auth"),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = configuration.GetValue("RateLimiting:AdminAuth:PermitLimit", 5),
+                        Window = TimeSpan.FromMinutes(configuration.GetValue("RateLimiting:AdminAuth:WindowMinutes", 15)),
+                        QueueLimit = 0,
+                        AutoReplenishment = true
+                    }));
+
+            options.AddPolicy("admin", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: BuildClientPartition(httpContext, "admin"),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = configuration.GetValue("RateLimiting:Admin:PermitLimit", 120),
+                        Window = TimeSpan.FromMinutes(configuration.GetValue("RateLimiting:Admin:WindowMinutes", 1)),
+                        QueueLimit = 0,
+                        AutoReplenishment = true
+                    }));
+
+            options.OnRejected = async (context, cancellationToken) =>
+            {
+                context.HttpContext.Response.ContentType = "application/json";
+                await context.HttpContext.Response.WriteAsJsonAsync(
+                    new { success = false, error = "RATE_LIMITED", message = "Too many requests. Please retry later." },
+                    cancellationToken);
+            };
+        });
+
+        return services;
+    }
+
     public static IServiceCollection AddGameSwagger(this IServiceCollection services, IConfiguration configuration)
     {
         var env = configuration["ASPNETCORE_ENVIRONMENT"];
-        if (env != "Production")
+        var swaggerEnabled = configuration.GetValue<bool?>("Swagger:Enabled") ?? env != "Production";
+        if (swaggerEnabled)
         {
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen(c =>
@@ -198,5 +251,15 @@ public static class ServiceCollectionExtensions
         {
             throw new InvalidOperationException("Jwt:Secret must be configured with at least 32 characters.");
         }
+    }
+
+    private static string BuildClientPartition(HttpContext httpContext, string policy)
+    {
+        var forwardedFor = httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        var ip = string.IsNullOrWhiteSpace(forwardedFor)
+            ? httpContext.Connection.RemoteIpAddress?.ToString()
+            : forwardedFor.Split(',')[0].Trim();
+
+        return $"{policy}:{ip ?? "unknown"}";
     }
 }

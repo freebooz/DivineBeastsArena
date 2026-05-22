@@ -28,7 +28,9 @@ using Game.Api.Endpoints.Feedback;
 using Game.Api.Endpoints.Operations;
 using Game.Shared.Options;
 using Game.Infrastructure.Database.Seed;
+using Game.Infrastructure.Database;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 
 Log.Logger = new LoggerConfiguration()
@@ -46,23 +48,36 @@ try
     builder.Services.AddGameOpenTelemetry(builder.Configuration);
     builder.Services.AddGameSwagger(builder.Configuration);
     builder.Services.AddGameHealthChecks(builder.Configuration);
+    builder.Services.AddGameRateLimiting(builder.Configuration);
     builder.Services.AddSeedDataServices(builder.Configuration);
 
     builder.Services.AddSignalR();
 
     var app = builder.Build();
 
+    if (app.Configuration.GetValue<bool>("Database:RunMigrationsAndExit"))
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
+        Log.Information("Running database migrations and exiting");
+        await db.Database.MigrateAsync();
+        Log.Information("Database migrations completed");
+        return;
+    }
+
     app.UseMiddleware<TraceIdMiddleware>();
     app.UseMiddleware<ExceptionHandlingMiddleware>();
 
     var env = app.Environment;
-    if (env.IsDevelopment())
+    var swaggerEnabled = builder.Configuration.GetValue<bool?>("Swagger:Enabled") ?? env.IsDevelopment();
+    if (swaggerEnabled)
     {
         app.UseSwagger();
         app.UseSwaggerUI();
     }
 
     app.UseCors();
+    app.UseRateLimiter();
     app.UseAuthentication();
     app.UseAuthorization();
 

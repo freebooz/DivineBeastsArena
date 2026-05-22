@@ -39,7 +39,9 @@ public static class OperationEndpoints
             .RequireAuthorization();
 
         // 管理员背包接口
-        var adminInventory = app.MapGroup("/api/admin/inventory").WithTags("背包(管理员)");
+        var adminInventory = app.MapGroup("/api/admin/inventory")
+            .WithTags("背包(管理员)")
+            .RequireRateLimiting("admin");
         adminInventory.MapPost("/grant", GrantItem)
             .WithSummary("发放物品")
             .WithDescription("管理员发放物品给玩家")
@@ -221,6 +223,10 @@ public static class OperationEndpoints
     {
         var adminId = GetAdminId(ctx);
         if (!adminId.HasValue) return ErrorResponse.Unauthorized().ToProblem();
+        if (string.IsNullOrWhiteSpace(request.Reason))
+            return ErrorResponse.BadRequest("高危操作必须填写 reason").ToProblem();
+        if (request.Quantity <= 0)
+            return ErrorResponse.BadRequest("发放数量必须大于 0").ToProblem();
 
         var item = await db.InventoryItems
             .FirstOrDefaultAsync(x => x.PlayerId == request.PlayerId && x.ItemId == request.ItemId);
@@ -247,6 +253,7 @@ public static class OperationEndpoints
             BizType = "GM_GRANT",
             OperatorId = adminId.Value
         });
+        AddAdminAuditLog(db, adminId.Value, "ADMIN_INVENTORY_GRANT", "InventoryItem", $"{request.PlayerId}:{request.ItemId}", request.Reason, ctx);
 
         await db.SaveChangesAsync();
         return Results.Ok(ApiResponse.Ok());
@@ -256,6 +263,10 @@ public static class OperationEndpoints
     {
         var adminId = GetAdminId(ctx);
         if (!adminId.HasValue) return ErrorResponse.Unauthorized().ToProblem();
+        if (string.IsNullOrWhiteSpace(request.Reason))
+            return ErrorResponse.BadRequest("高危操作必须填写 reason").ToProblem();
+        if (request.Quantity <= 0)
+            return ErrorResponse.BadRequest("扣除数量必须大于 0").ToProblem();
 
         var item = await db.InventoryItems
             .FirstOrDefaultAsync(x => x.PlayerId == request.PlayerId && x.ItemId == request.ItemId);
@@ -277,6 +288,7 @@ public static class OperationEndpoints
             BizType = "GM_DEDUCT",
             OperatorId = adminId.Value
         });
+        AddAdminAuditLog(db, adminId.Value, "ADMIN_INVENTORY_DEDUCT", "InventoryItem", $"{request.PlayerId}:{request.ItemId}", request.Reason, ctx);
 
         await db.SaveChangesAsync();
         return Results.Ok(ApiResponse.Ok());
@@ -774,5 +786,26 @@ public static class OperationEndpoints
     {
         var claim = ctx.User.FindFirst("admin_id");
         return claim != null && Guid.TryParse(claim.Value, out var id) ? id : null;
+    }
+
+    private static void AddAdminAuditLog(
+        GameDbContext db,
+        Guid adminId,
+        string action,
+        string targetType,
+        string targetId,
+        string reason,
+        HttpContext ctx)
+    {
+        db.AdminAuditLogs.Add(new AdminAuditLog
+        {
+            AdminUserId = adminId,
+            Action = action,
+            TargetType = targetType,
+            TargetId = targetId,
+            Reason = reason.Trim(),
+            IpAddress = ctx.Connection.RemoteIpAddress?.ToString(),
+            UserAgent = ctx.Request.Headers.UserAgent.ToString()
+        });
     }
 }

@@ -161,6 +161,16 @@ public class ApiClient
         return await GetAsync<List<AdminInventoryLogDto>>($"/api/admin/inventory/logs?page={page}&pageSize={pageSize}");
     }
 
+    public async Task<bool> GrantInventoryItemAsync(Guid playerId, string itemId, long quantity, string reason)
+    {
+        return await PostVoidAsync("/api/admin/inventory/grant", new AdminInventoryMutationRequest(playerId, itemId, quantity, reason));
+    }
+
+    public async Task<bool> DeductInventoryItemAsync(Guid playerId, string itemId, long quantity, string reason)
+    {
+        return await PostVoidAsync("/api/admin/inventory/deduct", new AdminInventoryMutationRequest(playerId, itemId, quantity, reason));
+    }
+
     public async Task<AdminFeedbackListDto?> GetFeedbackAsync(int page = 1, int pageSize = 50)
     {
         return await GetAsync<AdminFeedbackListDto>($"/api/admin/feedback?page={page}&pageSize={pageSize}");
@@ -318,6 +328,7 @@ public record AdminInventoryLogDto(
     long QuantityDelta,
     string Reason,
     DateTimeOffset CreatedAt);
+public record AdminInventoryMutationRequest(Guid PlayerId, string ItemId, long Quantity, string Reason);
 public record AdminFeedbackListDto(IReadOnlyList<AdminFeedbackDto> Items, int TotalCount, int Page, int PageSize);
 public record AdminFeedbackDto(
     Guid Id,

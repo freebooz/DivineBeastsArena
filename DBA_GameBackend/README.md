@@ -45,4 +45,16 @@ Important configuration keys:
 
 ## Docker
 
-The backend Dockerfiles are kept in this directory; platform-level compose files live under `ops/docker` in the monorepo layout.
+The backend Dockerfiles and production compose file are kept in this directory.
+
+```bash
+cp .env.example .env
+docker compose --env-file .env config
+docker compose --env-file .env up -d
+```
+
+Operational scripts:
+
+- `scripts/migrate-db.sh`: run EF Core migrations and exit.
+- `scripts/backup-postgres.sh`: create a compressed PostgreSQL backup.
+- `scripts/restore-postgres.sh <backup.sql.gz>`: restore a compressed PostgreSQL backup.
