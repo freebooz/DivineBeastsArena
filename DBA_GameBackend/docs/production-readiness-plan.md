@@ -50,7 +50,7 @@
 ## 阶段 6：启动器与官网上线准备
 
 - [x] 启动器项目名称和窗口标题改为 Divine Beasts Arena Launcher。
-- [ ] 替换默认 Tauri 图标。
+- [x] 替换默认 Tauri 图标，生成 DBA 专用 PNG / ICO / ICNS 图标资产。
 - [ ] 接入真实 CDN manifest 和补丁包。
 - [x] 官网下载页接入 Game.Api 版本清单，显示版本、下载地址、文件大小和 SHA256。
 
