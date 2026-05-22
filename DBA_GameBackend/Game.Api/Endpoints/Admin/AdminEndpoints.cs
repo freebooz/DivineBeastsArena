@@ -9,6 +9,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Game.Api.Extensions;
 using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Entities;
 using Game.Shared.Common;
@@ -36,23 +37,32 @@ public static class AdminEndpoints
         admin.MapGet("/me", GetMe)
             .WithSummary("Get current admin profile");
         admin.MapGet("/players", ListPlayers)
-            .WithSummary("List player accounts");
+            .WithSummary("List player accounts")
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Viewer, AdminRoleEndpointExtensions.Support, AdminRoleEndpointExtensions.Ops);
         admin.MapGet("/players/{playerId:guid}", GetPlayer)
-            .WithSummary("Get player detail");
+            .WithSummary("Get player detail")
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Viewer, AdminRoleEndpointExtensions.Support, AdminRoleEndpointExtensions.Ops);
         admin.MapGet("/audit-logs", ListAuditLogs)
-            .WithSummary("List admin audit logs");
+            .WithSummary("List admin audit logs")
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Ops);
         admin.MapGet("/feedback", ListFeedback)
-            .WithSummary("List player feedback");
+            .WithSummary("List player feedback")
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Support, AdminRoleEndpointExtensions.Ops);
         admin.MapGet("/support/tickets", ListSupportTickets)
-            .WithSummary("List support tickets");
+            .WithSummary("List support tickets")
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Support, AdminRoleEndpointExtensions.Ops);
         admin.MapGet("/servers", ListServers)
-            .WithSummary("List game servers");
+            .WithSummary("List game servers")
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Viewer, AdminRoleEndpointExtensions.Ops);
         admin.MapPost("/servers/{serverId:guid}/kill", KillServer)
-            .WithSummary("Kill game server");
+            .WithSummary("Kill game server")
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Ops);
         admin.MapGet("/matches", ListMatches)
-            .WithSummary("List match results");
+            .WithSummary("List match results")
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Viewer, AdminRoleEndpointExtensions.Support, AdminRoleEndpointExtensions.Ops);
         admin.MapGet("/matches/{matchId:guid}", GetMatch)
-            .WithSummary("Get match result detail");
+            .WithSummary("Get match result detail")
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Viewer, AdminRoleEndpointExtensions.Support, AdminRoleEndpointExtensions.Ops);
     }
 
     private static async Task<IResult> Login(

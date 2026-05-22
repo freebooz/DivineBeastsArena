@@ -23,7 +23,9 @@ public static class ConfigEndpoints
     public static void MapConfigEndpoints(this IEndpointRouteBuilder app)
     {
         var client = app.MapGroup("/api/config").WithTags("配置");
-        var admin = app.MapGroup("/api/admin/configs").WithTags("配置管理");
+        var admin = app.MapGroup("/api/admin/configs")
+            .WithTags("配置管理")
+            .RequireAuthorization();
 
         // 客户端接口
         client.MapGet("/manifest", GetManifest)
@@ -52,7 +54,8 @@ GET /api/config/{configKey}
             .WithDescription(@"
 管理员接口，获取系统中所有配置项的列表。
 需要管理员权限。
-");
+")
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Viewer, AdminRoleEndpointExtensions.Ops);
 
         admin.MapPost("/", CreateConfig)
             .WithSummary("创建新配置（管理员）")
@@ -71,7 +74,7 @@ GET /api/config/{configKey}
 }
 ```
 ")
-            .RequireAuthorization();
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Ops);
 
         admin.MapPut("/{id}", UpdateConfig)
             .WithSummary("更新配置（管理员）")
@@ -87,13 +90,14 @@ GET /api/config/{configKey}
 }
 ```
 ")
-            .RequireAuthorization();
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Ops);
 
         admin.MapPost("/{id}/validate", ValidateConfig)
             .WithSummary("验证配置（管理员）")
             .WithDescription(@"
 管理员接口，验证配置项的格式和内容是否正确。
-");
+")
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Ops);
 
         admin.MapPost("/{id}/publish", PublishConfig)
             .WithSummary("发布配置（管理员）")
@@ -101,7 +105,7 @@ GET /api/config/{configKey}
 管理员接口，发布配置使其对客户端可见。
 发布前需要先验证配置。
 ")
-            .RequireAuthorization();
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Ops);
 
         admin.MapPost("/{id}/rollback", RollbackConfig)
             .WithSummary("回滚配置（管理员）")
@@ -109,7 +113,7 @@ GET /api/config/{configKey}
 管理员接口，将配置回滚到上一个版本。
 会创建一个新的版本来覆盖当前版本。
 ")
-            .RequireAuthorization();
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Ops);
     }
 
     private static async Task<IResult> GetManifest(string channel, string region, Services.Config.IConfigService svc) =>

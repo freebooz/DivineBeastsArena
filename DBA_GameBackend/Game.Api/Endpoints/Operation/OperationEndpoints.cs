@@ -41,19 +41,20 @@ public static class OperationEndpoints
         // 管理员背包接口
         var adminInventory = app.MapGroup("/api/admin/inventory")
             .WithTags("背包(管理员)")
-            .RequireRateLimiting("admin");
+            .RequireRateLimiting("admin")
+            .RequireAuthorization();
         adminInventory.MapPost("/grant", GrantItem)
             .WithSummary("发放物品")
             .WithDescription("管理员发放物品给玩家")
-            .RequireAuthorization();
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Ops);
         adminInventory.MapPost("/deduct", DeductItem)
             .WithSummary("扣除物品")
             .WithDescription("管理员扣除玩家物品")
-            .RequireAuthorization();
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Ops);
         adminInventory.MapGet("/logs", GetInventoryLogs)
             .WithSummary("获取物品日志")
             .WithDescription("查看物品发放/扣除记录")
-            .RequireAuthorization();
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Viewer, AdminRoleEndpointExtensions.Support, AdminRoleEndpointExtensions.Ops);
 
         // 排行榜
         var ranking = app.MapGroup("/api/rankings").WithTags("排行榜");
@@ -179,15 +180,17 @@ public static class OperationEndpoints
             .WithDescription("检查客户端版本是否有更新");
 
         // 运营统计
-        var analytics = app.MapGroup("/api/admin/analytics").WithTags("运营统计(管理员)");
+        var analytics = app.MapGroup("/api/admin/analytics")
+            .WithTags("运营统计(管理员)")
+            .RequireAuthorization();
         analytics.MapGet("/overview", GetOverviewStats)
             .WithSummary("数据概览")
             .WithDescription("获取运营数据概览")
-            .RequireAuthorization();
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Viewer, AdminRoleEndpointExtensions.Ops);
         analytics.MapGet("/retention", GetRetentionStats)
             .WithSummary("留存分析")
             .WithDescription("获取用户留存数据分析")
-            .RequireAuthorization();
+            .RequireAdminRoles(AdminRoleEndpointExtensions.Viewer, AdminRoleEndpointExtensions.Ops);
 
         // 断线重连
         var reconnect = app.MapGroup("/api/sessions").WithTags("断线重连");

@@ -45,7 +45,7 @@
 - [x] 后端 GM 背包发放/扣除强制填写 reason 并写审计日志。
 - [x] GM 后台背包发放/扣除增加 reason 输入和二次确认。
 - [x] 前端高危操作补充 reason 和二次确认，已覆盖背包发放/扣除与游戏服务器 Kill。
-- [ ] 按 SUPER_ADMIN / OPS / SUPPORT / VIEWER 拆分后台权限。
+- [x] 按 SUPER_ADMIN / OPS / SUPPORT / VIEWER 拆分后台 API 权限，SUPER_ADMIN 保持全权限。
 
 ## 阶段 6：启动器与官网上线准备
 
