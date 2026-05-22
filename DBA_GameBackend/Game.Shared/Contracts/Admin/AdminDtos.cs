@@ -164,6 +164,7 @@ public record PlayerUnlockDto(string UnlockType, string UnlockId, string Source,
 
 public record GrantItemRequest(Guid PlayerId, string ItemId, long Quantity, string Reason);
 public record DeductItemRequest(Guid PlayerId, string ItemId, long Quantity, string Reason);
+public record KillGameServerRequest(string Reason);
 
 public record BanPlayerRequest(Guid AccountId, Guid? PlayerId, string Reason, int DurationDays);
 public record UnbanPlayerRequest(Guid AccountId, string Reason);

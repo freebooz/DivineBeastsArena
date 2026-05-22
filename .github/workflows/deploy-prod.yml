@@ -2,6 +2,11 @@ name: deploy-prod
 
 on:
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Docker image tag to deploy
+        required: true
+        type: string
 
 jobs:
   deploy:
@@ -16,9 +21,32 @@ jobs:
           script: |
             set -euo pipefail
             cd "${{ secrets.DEPLOY_PATH }}"
+            ENV_FILE="DBA_GameBackend/.env"
+            COMPOSE="docker compose --env-file ${ENV_FILE} -f DBA_GameBackend/docker-compose.yml"
+            NEW_IMAGE_TAG="${{ github.event.inputs.image_tag }}"
+            PREVIOUS_IMAGE_TAG="$(grep -E '^IMAGE_TAG=' "${ENV_FILE}" | tail -n 1 | cut -d= -f2- || true)"
+            PREVIOUS_IMAGE_TAG="${PREVIOUS_IMAGE_TAG:-latest}"
+
+            rollback() {
+              echo "Deploy failed, rolling back to image tag ${PREVIOUS_IMAGE_TAG}."
+              export IMAGE_TAG="${PREVIOUS_IMAGE_TAG}"
+              ${COMPOSE} up -d || true
+              sleep 20 || true
+              curl -f http://localhost:8080/health/live || true
+            }
+            trap rollback ERR
+
             bash DBA_GameBackend/scripts/backup-postgres.sh || true
-            docker compose --env-file DBA_GameBackend/.env -f DBA_GameBackend/docker-compose.yml pull
+            export IMAGE_TAG="${NEW_IMAGE_TAG}"
+            ${COMPOSE} pull
             bash DBA_GameBackend/scripts/migrate-db.sh
-            docker compose --env-file DBA_GameBackend/.env -f DBA_GameBackend/docker-compose.yml up -d
+            ${COMPOSE} up -d
             sleep 20
             curl -f http://localhost:8080/health/live
+
+            if grep -qE '^IMAGE_TAG=' "${ENV_FILE}"; then
+              sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${NEW_IMAGE_TAG}/" "${ENV_FILE}"
+            else
+              printf '\nIMAGE_TAG=%s\n' "${NEW_IMAGE_TAG}" >> "${ENV_FILE}"
+            fi
+            trap - ERR

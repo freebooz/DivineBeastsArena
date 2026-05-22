@@ -14,6 +14,7 @@ using Game.Infrastructure.Database.Entities;
 using Game.Shared.Common;
 using Game.Shared.Contracts.Admin;
 using Game.Shared.Options;
+using Game.Worker.ServerManager;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -46,6 +47,8 @@ public static class AdminEndpoints
             .WithSummary("List support tickets");
         admin.MapGet("/servers", ListServers)
             .WithSummary("List game servers");
+        admin.MapPost("/servers/{serverId:guid}/kill", KillServer)
+            .WithSummary("Kill game server");
         admin.MapGet("/matches", ListMatches)
             .WithSummary("List match results");
         admin.MapGet("/matches/{matchId:guid}", GetMatch)
@@ -344,6 +347,39 @@ public static class AdminEndpoints
 
         return Results.Ok(ApiResponse<AdminGameServerListResponse>.Ok(
             new AdminGameServerListResponse(items, total, page, pageSize)));
+    }
+
+    private static async Task<IResult> KillServer(
+        Guid serverId,
+        KillGameServerRequest request,
+        IServerManagerService manager,
+        GameDbContext db,
+        HttpContext ctx,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Reason))
+        {
+            return Results.BadRequest(ApiResponse.Fail("高危操作必须填写 reason。"));
+        }
+
+        var adminId = GetAdminId(ctx);
+        var killed = await manager.KillAsync(serverId, request.Reason.Trim(), cancellationToken);
+        if (!killed)
+        {
+            return Results.NotFound(ApiResponse.Fail("Game server not found."));
+        }
+
+        await AddAuditLogAsync(
+            db,
+            adminId,
+            "ADMIN_GAME_SERVER_KILL",
+            "GameServerInstance",
+            serverId.ToString(),
+            request.Reason.Trim(),
+            ctx);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Results.Ok(ApiResponse.Ok());
     }
 
     private static async Task<IResult> ListMatches(int page, int pageSize, GameDbContext db)

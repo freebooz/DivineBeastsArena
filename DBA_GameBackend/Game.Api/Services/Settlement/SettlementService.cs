@@ -39,7 +39,7 @@ public sealed class SettlementService : ISettlementService
         await using var tx = await _db.Database.BeginTransactionAsync();
 
         var existing = await _db.MatchResults
-            .FirstOrDefaultAsync(x => x.SessionId == request.SessionId && x.IdempotencyKey == request.IdempotencyKey);
+            .FirstOrDefaultAsync(x => x.SessionId == request.SessionId || x.IdempotencyKey == request.IdempotencyKey);
         if (existing != null) return existing;
 
         var session = await _db.GameSessions

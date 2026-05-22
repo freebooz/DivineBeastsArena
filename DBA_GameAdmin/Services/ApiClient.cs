@@ -119,6 +119,11 @@ public class ApiClient
         return await GetAsync<AdminGameServerListDto>($"/api/admin/servers?page={page}&pageSize={pageSize}");
     }
 
+    public async Task<bool> KillGameServerAsync(Guid serverId, string reason)
+    {
+        return await PostVoidAsync($"/api/admin/servers/{serverId}/kill", new AdminReasonRequest(reason));
+    }
+
     // Configs
     public async Task<List<ConfigDto>?> GetConfigsAsync()
     {
@@ -329,6 +334,7 @@ public record AdminInventoryLogDto(
     string Reason,
     DateTimeOffset CreatedAt);
 public record AdminInventoryMutationRequest(Guid PlayerId, string ItemId, long Quantity, string Reason);
+public record AdminReasonRequest(string Reason);
 public record AdminFeedbackListDto(IReadOnlyList<AdminFeedbackDto> Items, int TotalCount, int Page, int PageSize);
 public record AdminFeedbackDto(
     Guid Id,

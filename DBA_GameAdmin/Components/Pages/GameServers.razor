@@ -9,6 +9,7 @@
 @using MudBlazor
 @using GameAdmin.Services
 @inject ApiClient Api
+@inject IJSRuntime JS
 @page "/servers"
 @page "/gameservers"
 
@@ -25,6 +26,7 @@
         <MudTh>状态</MudTh>
         <MudTh>启动时间</MudTh>
         <MudTh>最后心跳</MudTh>
+        <MudTh>操作</MudTh>
     </HeaderContent>
     <RowTemplate>
         <MudTd>@context.Id</MudTd>
@@ -36,6 +38,15 @@
         </MudTd>
         <MudTd>@context.StartedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
         <MudTd>@FormatDate(context.LastHeartbeatAt)</MudTd>
+        <MudTd>
+            <MudButton Color="Color.Error"
+                       Variant="Variant.Outlined"
+                       Size="Size.Small"
+                       Disabled="_busy || IsTerminal(context.Status)"
+                       OnClick="@(() => PrepareKill(context))">
+                Kill
+            </MudButton>
+        </MudTd>
     </RowTemplate>
     <NoRecordsContent>
         <MudText Color="Color.Secondary">暂无服务器实例。</MudText>
@@ -47,12 +58,42 @@
     <MudAlert Severity="Severity.Warning" Class="mt-3">@_error</MudAlert>
 }
 
+@if (!string.IsNullOrEmpty(_success))
+{
+    <MudAlert Severity="Severity.Success" Class="mt-3">@_success</MudAlert>
+}
+
+@if (_selectedServer is not null)
+{
+    <MudPaper Class="pa-4 mt-4" Elevation="1">
+        <MudText Typo="Typo.h6">Kill Server 确认</MudText>
+        <MudText Class="mt-2">服务器：@_selectedServer.Id (@_selectedServer.Ip:@_selectedServer.Port)</MudText>
+        <MudTextField @bind-Value="_killReason"
+                      Label="原因 reason"
+                      Variant="Variant.Outlined"
+                      Class="mt-3"
+                      Immediate="true"
+                      Required="true" />
+        <MudButton Color="Color.Error" Variant="Variant.Filled" Class="mt-3 mr-2" Disabled="_busy" OnClick="KillSelectedAsync">确认 Kill</MudButton>
+        <MudButton Color="Color.Default" Variant="Variant.Text" Class="mt-3" Disabled="_busy" OnClick="CancelKill">取消</MudButton>
+    </MudPaper>
+}
+
 @code {
     private List<GameServerDto> _servers = new();
     private int _totalCount;
     private string? _error;
+    private string? _success;
+    private bool _busy;
+    private GameServerDto? _selectedServer;
+    private string _killReason = string.Empty;
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
     {
         var data = await Api.GetGameServersAsync();
         if (data is null)
@@ -65,9 +106,65 @@
         _totalCount = data.TotalCount;
     }
 
+    private void PrepareKill(GameServerDto server)
+    {
+        _error = null;
+        _success = null;
+        _selectedServer = server;
+        _killReason = string.Empty;
+    }
+
+    private void CancelKill()
+    {
+        _selectedServer = null;
+        _killReason = string.Empty;
+    }
+
+    private async Task KillSelectedAsync()
+    {
+        if (_selectedServer is null) return;
+        if (string.IsNullOrWhiteSpace(_killReason))
+        {
+            _error = "Kill Server 必须填写 reason。";
+            return;
+        }
+
+        var confirmed = await JS.InvokeAsync<bool>(
+            "confirm",
+            $"确认 Kill 游戏服务器 {_selectedServer.Id}？原因：{_killReason}");
+        if (!confirmed) return;
+
+        _busy = true;
+        _error = null;
+        _success = null;
+        try
+        {
+            var ok = await Api.KillGameServerAsync(_selectedServer.Id, _killReason.Trim());
+            if (!ok)
+            {
+                _error = "Kill Server 失败，请确认权限、服务器状态和 API 服务。";
+                return;
+            }
+
+            _success = "Kill Server 操作已提交。";
+            _selectedServer = null;
+            _killReason = string.Empty;
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
     private static Color GetStatusColor(string status)
     {
         return status is "READY" or "IDLE" or "RUNNING" ? Color.Success : Color.Warning;
+    }
+
+    private static bool IsTerminal(string status)
+    {
+        return status is "STOPPED" or "CRASHED" or "TIMEOUT";
     }
 
     private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "-";

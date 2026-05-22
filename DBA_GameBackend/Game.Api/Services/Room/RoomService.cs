@@ -140,17 +140,22 @@ public sealed class RoomService : IRoomService
 
         player.LeftAt = DateTimeOffset.UtcNow;
 
-        var room = await _db.GameRooms.FindAsync(roomId);
+        var room = await _db.GameRooms.FirstOrDefaultAsync(x => x.Id == roomId);
         if (room != null)
         {
-            if (room.OwnerPlayerId == playerId && room.Players.Count(p => p.LeftAt == null) > 1)
+            var activePlayers = await _db.GameRoomPlayers
+                .Where(p => p.RoomId == roomId && p.LeftAt == null)
+                .OrderBy(p => p.JoinedAt)
+                .ToListAsync();
+
+            if (room.OwnerPlayerId == playerId && activePlayers.Count > 0)
             {
-                var newOwner = room.Players.FirstOrDefault(p => p.LeftAt == null && p.PlayerId != playerId);
+                var newOwner = activePlayers.FirstOrDefault(p => p.PlayerId != playerId);
                 if (newOwner != null)
                     room.OwnerPlayerId = newOwner.PlayerId;
             }
 
-            if (!room.Players.Any(p => p.LeftAt == null))
+            if (!activePlayers.Any(p => p.PlayerId != playerId))
                 room.Status = "CLOSED";
         }
 
@@ -195,7 +200,9 @@ public sealed class RoomService : IRoomService
 
     public async Task<bool> KickPlayerAsync(Guid roomId, Guid playerId, Guid targetPlayerId)
     {
-        var room = await _db.GameRooms.FindAsync(roomId);
+        var room = await _db.GameRooms
+            .Include(x => x.Players)
+            .FirstOrDefaultAsync(x => x.Id == roomId);
         if (room == null || room.OwnerPlayerId != playerId) return false;
 
         var target = await _db.GameRoomPlayers
@@ -210,10 +217,11 @@ public sealed class RoomService : IRoomService
 
     public async Task<RoomResponse?> TransferOwnerAsync(Guid roomId, Guid playerId, Guid newOwnerId)
     {
-        var room = await _db.GameRooms.FindAsync(roomId);
+        var room = await _db.GameRooms.FirstOrDefaultAsync(x => x.Id == roomId);
         if (room == null || room.OwnerPlayerId != playerId) return null;
 
-        var newOwner = room.Players.FirstOrDefault(p => p.LeftAt == null && p.PlayerId == newOwnerId);
+        var newOwner = await _db.GameRoomPlayers
+            .FirstOrDefaultAsync(p => p.RoomId == roomId && p.LeftAt == null && p.PlayerId == newOwnerId);
         if (newOwner == null) return null;
 
         room.OwnerPlayerId = newOwnerId;

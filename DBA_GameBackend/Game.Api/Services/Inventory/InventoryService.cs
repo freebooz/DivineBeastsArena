@@ -47,8 +47,27 @@ public sealed class InventoryService : IInventoryService
 
     public async Task<InventoryItem> AddItemAsync(Guid playerId, string itemId, long quantity, DateTimeOffset? expiresAt, string reason, string? bizType = null, string? bizId = null)
     {
+        if (!string.IsNullOrWhiteSpace(bizType) && !string.IsNullOrWhiteSpace(bizId))
+        {
+            var duplicateLog = await _db.InventoryLogs
+                .FirstOrDefaultAsync(x =>
+                    x.PlayerId == playerId &&
+                    x.ItemId == itemId &&
+                    x.BizType == bizType &&
+                    x.BizId == bizId &&
+                    x.QuantityDelta > 0);
+            if (duplicateLog != null)
+            {
+                var current = await GetItemAsync(playerId, itemId);
+                if (current != null) return current;
+            }
+        }
+
         var existing = await _db.InventoryItems
-            .FirstOrDefaultAsync(x => x.PlayerId == playerId && x.ItemId == itemId && x.ExpiresAt == null || x.ExpiresAt > DateTimeOffset.UtcNow);
+            .FirstOrDefaultAsync(x =>
+                x.PlayerId == playerId &&
+                x.ItemId == itemId &&
+                (x.ExpiresAt == null || x.ExpiresAt > DateTimeOffset.UtcNow));
 
         if (existing != null)
         {

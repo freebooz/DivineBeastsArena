@@ -62,6 +62,10 @@ public sealed class SessionService : ISessionService
 
     public async Task<SessionResponse?> CreateFromRoomAsync(Guid roomId)
     {
+        var existing = await _db.GameSessions
+            .FirstOrDefaultAsync(x => x.SourceType == "ROOM" && x.SourceId == roomId);
+        if (existing != null) return ToResponse(existing);
+
         var room = await _db.GameRooms.FindAsync(roomId);
         if (room == null) return null;
 
@@ -112,6 +116,10 @@ public sealed class SessionService : ISessionService
 
     public async Task<SessionResponse?> CreateFromMatchAsync(Guid ticketId)
     {
+        var existing = await _db.GameSessions
+            .FirstOrDefaultAsync(x => x.SourceType == "MATCH" && x.SourceId == ticketId);
+        if (existing != null) return ToResponse(existing);
+
         var ticket = await _db.MatchmakingTickets.FindAsync(ticketId);
         if (ticket == null || ticket.Status != "QUEUED") return null;
 

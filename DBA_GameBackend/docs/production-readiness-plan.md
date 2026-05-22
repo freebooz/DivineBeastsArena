@@ -24,8 +24,8 @@
 - [x] `/metrics` 使用真实 Prometheus scraping endpoint。
 - [x] `/health/live` 与 `/health/ready` 分离。
 - [x] 补充 Auth refresh token 轮换测试。
-- [ ] 补充 Room / Match / Session 并发状态测试。
-- [ ] 补充 Settlement / Inventory 幂等和事务测试。
+- [x] 补充 Room / Match / Session 状态测试，覆盖房主转移与房间会话幂等创建。
+- [x] 补充 Settlement / Inventory 幂等和事务测试，覆盖战报重复提交与奖励重复发放保护。
 
 ## 阶段 3：Dedicated Server 接入生产化
 
@@ -44,7 +44,7 @@
 - [ ] 后台认证模型统一为安全 Cookie 或明确的 Admin Token 流程。
 - [x] 后端 GM 背包发放/扣除强制填写 reason 并写审计日志。
 - [x] GM 后台背包发放/扣除增加 reason 输入和二次确认。
-- [ ] 前端高危操作全部二次确认。
+- [x] 前端高危操作补充 reason 和二次确认，已覆盖背包发放/扣除与游戏服务器 Kill。
 - [ ] 按 SUPER_ADMIN / OPS / SUPPORT / VIEWER 拆分后台权限。
 
 ## 阶段 6：启动器与官网上线准备
@@ -69,7 +69,7 @@
 - [x] 增加 `solution-ci` 统一验收工作流。
 - [ ] 在 GitHub 仓库设置中将 `solution-ci` 纳入主分支保护。
 - [x] 部署工作流增加数据库迁移入口。
-- [ ] 部署工作流增加失败自动回滚。
+- [x] 部署工作流增加失败自动回滚，健康检查失败时回滚到上一版镜像 tag。
 
 ## 阶段 9：上线前压测与安全检查
 
