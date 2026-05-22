@@ -73,3 +73,6 @@ Operational scripts:
 - `scripts/migrate-db.sh`: run EF Core migrations and exit.
 - `scripts/backup-postgres.sh`: create a compressed PostgreSQL backup.
 - `scripts/restore-postgres.sh <backup.sql.gz>`: restore a compressed PostgreSQL backup.
+- `scripts/rehearse-backup-restore.sh`: create a backup, restore it into a temporary database, run a sanity query, then drop the temporary database.
+- `scripts/run-load-tests.sh`: run k6 login, matchmaking and server allocation load tests.
+- `scripts/check-admin-rbac.sh`: verify admin RBAC behavior through real HTTP requests.

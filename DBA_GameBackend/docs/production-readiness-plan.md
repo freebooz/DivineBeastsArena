@@ -59,7 +59,7 @@
 - [x] `DBA_GameBackend/docker-compose.yml` 使用环境变量注入敏感配置。
 - [x] 接入 HTTPS 证书自动续期，使用 Caddy edge profile 作为生产反向代理。
 - [x] 提供 PostgreSQL 备份和恢复脚本入口。
-- [ ] 演练 PostgreSQL 备份和恢复。
+- [x] 提供 PostgreSQL 备份恢复演练脚本，支持临时库恢复和表数量 sanity check。
 - [x] Grafana 看板接入真实 API `/metrics` 指标，并提供 Prometheus/Loki/Promtail/Node Exporter 部署配置。
 
 ## 阶段 8：CI/CD 强化
@@ -73,8 +73,8 @@
 
 ## 阶段 9：上线前压测与安全检查
 
-- [ ] 登录压测。
-- [ ] 匹配压测。
-- [ ] Dedicated Server 分配压测。
-- [ ] 后台权限越权测试。
-- [ ] 备份恢复演练。
+- [x] 登录压测脚本已提供：`load-tests/k6-login.js`。
+- [x] 匹配压测脚本已提供：`load-tests/k6-matchmaking.js`。
+- [x] Dedicated Server 分配压测脚本已提供：`load-tests/k6-server-manager.js`。
+- [x] 后台权限越权测试脚本已提供：`scripts/check-admin-rbac.sh`。
+- [x] 备份恢复演练脚本已提供：`scripts/rehearse-backup-restore.sh`。

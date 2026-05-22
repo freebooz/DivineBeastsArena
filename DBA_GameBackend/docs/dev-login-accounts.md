@@ -8,6 +8,8 @@
 | --- | --- | --- | --- |
 | 超级管理员 | `admin` | `Admin@123456` | `POST /api/admin/auth/login` |
 | 运营管理员 | `ops_admin` | `Ops@123456` | `POST /api/admin/auth/login` |
+| 客服管理员 | `support_admin` | `Support@123456` | `POST /api/admin/auth/login` |
+| 只读观察员 | `viewer_admin` | `Viewer@123456` | `POST /api/admin/auth/login` |
 
 ## 游戏客户端开发账号
 

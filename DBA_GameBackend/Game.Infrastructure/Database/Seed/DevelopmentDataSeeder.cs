@@ -425,6 +425,24 @@ public class DevelopmentDataSeeder
                 Role = "OPS",
                 Status = "ACTIVE",
                 CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+            },
+            new AdminUser
+            {
+                Id = Guid.Parse("adad0000-0000-0000-0000-000000000003"),
+                Username = "support_admin",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Support@123456"),
+                Role = "SUPPORT",
+                Status = "ACTIVE",
+                CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+            },
+            new AdminUser
+            {
+                Id = Guid.Parse("adad0000-0000-0000-0000-000000000004"),
+                Username = "viewer_admin",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Viewer@123456"),
+                Role = "VIEWER",
+                Status = "ACTIVE",
+                CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
             }
         };
     }
