@@ -54,7 +54,7 @@ public static class FeedbackEndpoints
     private static async Task<IResult> GetRecentFeedback(int page, int pageSize, GameDbContext db)
     {
         page = Math.Max(page, 1);
-        pageSize = Math.Clamp(pageSize, 1, 50);
+        pageSize = pageSize <= 0 ? 50 : Math.Clamp(pageSize, 1, 50);
 
         var feedback = await db.PlayerFeedbacks
             .AsNoTracking()

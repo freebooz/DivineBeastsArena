@@ -44,6 +44,7 @@ public class DevelopmentDataSeeder
             await SeedOperationDataAsync(cancellationToken);
             await SeedPlayerFeedbackAsync(cancellationToken);
             await SeedCrashReportsAsync(cancellationToken);
+            await SeedCompleteApiMockDataAsync(cancellationToken);
         }
 
         _logger.LogInformation("Development data seeding completed");
@@ -239,6 +240,126 @@ public class DevelopmentDataSeeder
         {
             await UpsertAsync(_context.CrashReports, c => c.Id == report.Id, report, cancellationToken);
         }
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedCompleteApiMockDataAsync(CancellationToken cancellationToken)
+    {
+        foreach (var server in GetGameServerInstanceSeeds())
+        {
+            await UpsertAsync(_context.GameServerInstances, x => x.Id == server.Id, server, cancellationToken);
+        }
+
+        foreach (var serverEvent in GetGameServerEventSeeds())
+        {
+            await UpsertAsync(_context.GameServerEvents, x => x.Id == serverEvent.Id, serverEvent, cancellationToken);
+        }
+
+        foreach (var roomPlayer in GetGameRoomPlayerSeeds())
+        {
+            await UpsertAsync(_context.GameRoomPlayers, x => x.Id == roomPlayer.Id, roomPlayer, cancellationToken);
+        }
+
+        foreach (var ticket in GetMatchmakingTicketSeeds())
+        {
+            await UpsertAsync(_context.MatchmakingTickets, x => x.Id == ticket.Id, ticket, cancellationToken);
+        }
+
+        foreach (var playerSession in GetPlayerSessionSeeds())
+        {
+            await UpsertAsync(_context.PlayerSessions, x => x.Id == playerSession.Id, playerSession, cancellationToken);
+        }
+
+        foreach (var sessionEvent in GetSessionEventSeeds())
+        {
+            await UpsertAsync(_context.SessionEvents, x => x.Id == sessionEvent.Id, sessionEvent, cancellationToken);
+        }
+
+        foreach (var item in GetInventoryItemSeeds())
+        {
+            await UpsertAsync(_context.InventoryItems, x => x.Id == item.Id, item, cancellationToken);
+        }
+
+        foreach (var log in GetInventoryLogSeeds())
+        {
+            await UpsertAsync(_context.InventoryLogs, x => x.Id == log.Id, log, cancellationToken);
+        }
+
+        foreach (var balance in GetWalletBalanceSeeds())
+        {
+            await UpsertAsync(_context.WalletBalances, x => x.Id == balance.Id, balance, cancellationToken);
+        }
+
+        foreach (var ledger in GetWalletLedgerSeeds())
+        {
+            await UpsertAsync(_context.WalletLedgers, x => x.Id == ledger.Id, ledger, cancellationToken);
+        }
+
+        foreach (var order in GetOrderRecordSeeds())
+        {
+            await UpsertAsync(_context.OrderRecords, x => x.Id == order.Id, order, cancellationToken);
+        }
+
+        foreach (var ranking in GetPlayerRankingSeeds())
+        {
+            await UpsertAsync(_context.PlayerRankings, x => x.Id == ranking.Id, ranking, cancellationToken);
+        }
+
+        foreach (var request in GetFriendRequestSeeds())
+        {
+            await UpsertAsync(_context.FriendRequests, x => x.Id == request.Id, request, cancellationToken);
+        }
+
+        foreach (var relation in GetFriendRelationSeeds())
+        {
+            await UpsertAsync(_context.FriendRelations, x => x.Id == relation.Id, relation, cancellationToken);
+        }
+
+        foreach (var mail in GetMailSeeds())
+        {
+            await UpsertAsync(_context.Mails, x => x.Id == mail.Id, mail, cancellationToken);
+        }
+
+        foreach (var attachment in GetMailAttachmentSeeds())
+        {
+            await UpsertAsync(_context.MailAttachments, x => x.Id == attachment.Id, attachment, cancellationToken);
+        }
+
+        foreach (var progress in GetPlayerEventProgressSeeds())
+        {
+            await UpsertAsync(_context.PlayerEventProgresses, x => x.Id == progress.Id, progress, cancellationToken);
+        }
+
+        foreach (var achievement in GetAchievementSeeds())
+        {
+            await UpsertAsync(_context.Achievements, x => x.Id == achievement.Id, achievement, cancellationToken);
+        }
+
+        foreach (var playerAchievement in GetPlayerAchievementSeeds())
+        {
+            await UpsertAsync(_context.PlayerAchievements, x => x.Id == playerAchievement.Id, playerAchievement, cancellationToken);
+        }
+
+        foreach (var history in GetPlayerMatchHistorySeeds())
+        {
+            await UpsertAsync(_context.PlayerMatchHistories, x => x.Id == history.Id, history, cancellationToken);
+        }
+
+        foreach (var reply in GetTicketReplySeeds())
+        {
+            await UpsertAsync(_context.TicketReplies, x => x.Id == reply.Id, reply, cancellationToken);
+        }
+
+        foreach (var cohort in GetRetentionCohortSeeds())
+        {
+            await UpsertAsync(_context.RetentionCohorts, x => x.Id == cohort.Id, cohort, cancellationToken);
+        }
+
+        foreach (var log in GetGameConfigPublishLogSeeds())
+        {
+            await UpsertAsync(_context.GameConfigPublishLogs, x => x.Id == log.Id, log, cancellationToken);
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
     }
 
@@ -1764,6 +1885,514 @@ public class DevelopmentDataSeeder
                 MetadataJson = JsonSerializer.Serialize(new { gpu = "NVIDIA RTX 3060", network_adapter = "Intel AX211" }),
                 CreatedAt = DateTimeOffset.UtcNow.AddDays(-1)
             }
+        };
+    }
+
+    #endregion
+
+    #region Complete API Mock Seeds
+
+    private List<GameServerInstance> GetGameServerInstanceSeeds()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var servers = new List<GameServerInstance>();
+
+        for (int i = 0; i < 8; i++)
+        {
+            var startedAt = now.AddMinutes(-120 + i * 12);
+            var isEnded = i < 3;
+            servers.Add(new GameServerInstance
+            {
+                Id = Guid.Parse($"44440000-0000-0000-0000-{i + 1:000000000000}"),
+                SessionId = i < GameSessionIds.Length ? GameSessionIds[i] : null,
+                Mode = i % 2 == 0 ? "ranked" : "casual",
+                MapId = i % 3 == 0 ? "arena_01" : "arena_02",
+                Region = i % 2 == 0 ? "us-west" : "us-east",
+                BuildVersion = "1.2.5.0",
+                Ip = $"192.168.1.{101 + i}",
+                Port = 7777 + i,
+                ProcessId = 4100 + i,
+                ContainerId = $"dba-server-{i + 1:00}",
+                RuntimeTokenHash = $"mock-runtime-token-hash-{i + 1:00}",
+                RuntimeTokenExpiresAt = now.AddHours(6),
+                Status = isEnded ? "STOPPED" : i == 3 ? "IN_GAME" : "READY",
+                StartedAt = startedAt,
+                ReadyAt = startedAt.AddSeconds(25),
+                AllocatedAt = startedAt.AddMinutes(1),
+                EndedAt = isEnded ? startedAt.AddMinutes(45) : null,
+                LastHeartbeatAt = isEnded ? startedAt.AddMinutes(45) : now.AddSeconds(-15),
+                ExitCode = isEnded ? 0 : null,
+                LogPath = $"/var/log/dba/server-{i + 1:00}.log",
+                CreatedAt = startedAt,
+                UpdatedAt = now
+            });
+        }
+
+        return servers;
+    }
+
+    private List<GameServerEvent> GetGameServerEventSeeds()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return new List<GameServerEvent>
+        {
+            new()
+            {
+                Id = Guid.Parse("4e400000-0000-0000-0000-000000000001"),
+                ServerId = Guid.Parse("44440000-0000-0000-0000-000000000001"),
+                EventType = "REGISTERED",
+                PayloadJson = JsonSerializer.Serialize(new { buildVersion = "1.2.5.0", port = 7777 }),
+                CreatedAt = now.AddHours(-3)
+            },
+            new()
+            {
+                Id = Guid.Parse("4e400000-0000-0000-0000-000000000002"),
+                ServerId = Guid.Parse("44440000-0000-0000-0000-000000000004"),
+                EventType = "HEARTBEAT",
+                PayloadJson = JsonSerializer.Serialize(new { players = 6, cpu = 42, memoryMb = 1536 }),
+                CreatedAt = now.AddSeconds(-30)
+            },
+            new()
+            {
+                Id = Guid.Parse("4e400000-0000-0000-0000-000000000003"),
+                ServerId = Guid.Parse("44440000-0000-0000-0000-000000000005"),
+                EventType = "READY",
+                PayloadJson = JsonSerializer.Serialize(new { readyInSeconds = 24 }),
+                CreatedAt = now.AddMinutes(-5)
+            }
+        };
+    }
+
+    private List<GameRoomPlayer> GetGameRoomPlayerSeeds()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var roomPlayers = new List<GameRoomPlayer>();
+        for (int roomIndex = 0; roomIndex < GameRoomIds.Length; roomIndex++)
+        {
+            var playersInRoom = roomIndex == 3 ? 6 : 3;
+            for (int slot = 0; slot < playersInRoom; slot++)
+            {
+                var playerIndex = (roomIndex * 3 + slot) % PlayerPlayerIds.Length;
+                roomPlayers.Add(new GameRoomPlayer
+                {
+                    Id = Guid.Parse($"2222{roomIndex + 1:0000}-0000-0000-0000-{slot + 1:000000000000}"),
+                    RoomId = GameRoomIds[roomIndex],
+                    PlayerId = PlayerPlayerIds[playerIndex],
+                    SlotIndex = slot,
+                    Team = slot % 2 == 0 ? "blue" : "red",
+                    IsReady = slot == 0 || slot % 2 == 1,
+                    JoinedAt = now.AddMinutes(-40 + slot * 3)
+                });
+            }
+        }
+
+        return roomPlayers;
+    }
+
+    private List<MatchmakingTicket> GetMatchmakingTicketSeeds()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return new List<MatchmakingTicket>
+        {
+            new()
+            {
+                Id = Guid.Parse("abc10000-0000-0000-0000-000000000001"),
+                PlayerId = PlayerPlayerIds[0],
+                Mode = "ranked",
+                Region = "us-west",
+                Mmr = 1420,
+                Status = "MATCHED",
+                MatchedSessionId = GameSessionIds[0],
+                CreatedAt = now.AddHours(-3),
+                UpdatedAt = now.AddHours(-3).AddMinutes(1),
+                TimeoutAt = now.AddHours(-3).AddMinutes(5)
+            },
+            new()
+            {
+                Id = Guid.Parse("abc10000-0000-0000-0000-000000000002"),
+                PlayerId = PlayerPlayerIds[5],
+                Mode = "casual",
+                Region = "us-west",
+                Mmr = 980,
+                Status = "QUEUED",
+                CreatedAt = now.AddSeconds(-80),
+                UpdatedAt = now.AddSeconds(-80),
+                TimeoutAt = now.AddMinutes(4)
+            },
+            new()
+            {
+                Id = Guid.Parse("abc10000-0000-0000-0000-000000000003"),
+                PlayerId = PlayerPlayerIds[6],
+                Mode = "ranked",
+                Region = "eu-west",
+                Mmr = 1510,
+                Status = "CANCELLED",
+                CreatedAt = now.AddMinutes(-20),
+                UpdatedAt = now.AddMinutes(-18),
+                CancelledAt = now.AddMinutes(-18),
+                TimeoutAt = now.AddMinutes(-15)
+            }
+        };
+    }
+
+    private List<PlayerSession> GetPlayerSessionSeeds()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var sessions = new List<PlayerSession>();
+        for (int sessionIndex = 0; sessionIndex < GameSessionIds.Length; sessionIndex++)
+        {
+            var playerCount = sessionIndex == 4 ? 2 : 4;
+            for (int slot = 0; slot < playerCount; slot++)
+            {
+                var playerIndex = (sessionIndex * 2 + slot) % PlayerPlayerIds.Length;
+                var gameSessionId = GameSessionIds[sessionIndex];
+                sessions.Add(new PlayerSession
+                {
+                    Id = Guid.Parse($"3333{sessionIndex + 1:0000}-0000-0000-0000-{slot + 1:000000000000}"),
+                    GameSessionId = gameSessionId,
+                    PlayerId = PlayerPlayerIds[playerIndex],
+                    Team = slot % 2 == 0 ? "blue" : "red",
+                    SlotIndex = slot,
+                    Status = sessionIndex < 3 || sessionIndex > 5 ? "LEFT" : "CONNECTED",
+                    SessionTokenHash = $"mock-session-token-{sessionIndex + 1:00}-{slot + 1:00}",
+                    SessionTokenExpiresAt = now.AddHours(2),
+                    ReconnectTokenHash = $"mock-reconnect-token-{sessionIndex + 1:00}-{slot + 1:00}",
+                    ReconnectTokenExpiresAt = now.AddMinutes(30),
+                    JoinedAt = now.AddMinutes(-90 + sessionIndex * 8 + slot),
+                    LeftAt = sessionIndex < 3 || sessionIndex > 5 ? now.AddMinutes(-40 + sessionIndex * 8 + slot) : null,
+                    CreatedAt = now.AddMinutes(-95 + sessionIndex * 8 + slot)
+                });
+            }
+        }
+
+        return sessions;
+    }
+
+    private List<SessionEvent> GetSessionEventSeeds()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return new List<SessionEvent>
+        {
+            new()
+            {
+                Id = Guid.Parse("5e500000-0000-0000-0000-000000000001"),
+                GameSessionId = GameSessionIds[0],
+                EventType = "SESSION_CREATED",
+                PayloadJson = JsonSerializer.Serialize(new { source = "MATCHMAKING", mode = "ranked" }),
+                CreatedAt = now.AddHours(-3)
+            },
+            new()
+            {
+                Id = Guid.Parse("5e500000-0000-0000-0000-000000000002"),
+                GameSessionId = GameSessionIds[3],
+                EventType = "PLAYER_RECONNECTED",
+                PayloadJson = JsonSerializer.Serialize(new { playerId = PlayerPlayerIds[7], latencyMs = 42 }),
+                CreatedAt = now.AddMinutes(-12)
+            },
+            new()
+            {
+                Id = Guid.Parse("5e500000-0000-0000-0000-000000000003"),
+                GameSessionId = GameSessionIds[5],
+                EventType = "SERVER_ALLOCATED",
+                PayloadJson = JsonSerializer.Serialize(new { serverId = "44440000-0000-0000-0000-000000000006" }),
+                CreatedAt = now.AddMinutes(-2)
+            }
+        };
+    }
+
+    private List<InventoryItem> GetInventoryItemSeeds()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return new List<InventoryItem>
+        {
+            new() { Id = Guid.Parse("1a110000-0000-0000-0000-000000000001"), PlayerId = FrontendDebugPlayerId, ItemId = "coin", Quantity = 2500, CreatedAt = now.AddDays(-20), UpdatedAt = now },
+            new() { Id = Guid.Parse("1a110000-0000-0000-0000-000000000002"), PlayerId = FrontendDebugPlayerId, ItemId = "skin_001", Quantity = 1, CreatedAt = now.AddDays(-10), UpdatedAt = now },
+            new() { Id = Guid.Parse("1a110000-0000-0000-0000-000000000003"), PlayerId = FrontendDebugPlayerId, ItemId = "weapon_001", Quantity = 1, CreatedAt = now.AddDays(-8), UpdatedAt = now },
+            new() { Id = Guid.Parse("1a110000-0000-0000-0000-000000000004"), PlayerId = PlayerPlayerIds[0], ItemId = "coin", Quantity = 1800, CreatedAt = now.AddDays(-12), UpdatedAt = now },
+            new() { Id = Guid.Parse("1a110000-0000-0000-0000-000000000005"), PlayerId = PlayerPlayerIds[0], ItemId = "health_potion", Quantity = 12, CreatedAt = now.AddDays(-5), UpdatedAt = now },
+            new() { Id = Guid.Parse("1a110000-0000-0000-0000-000000000006"), PlayerId = PlayerPlayerIds[1], ItemId = "mana_potion", Quantity = 8, CreatedAt = now.AddDays(-4), UpdatedAt = now },
+            new() { Id = Guid.Parse("1a110000-0000-0000-0000-000000000007"), PlayerId = PlayerPlayerIds[2], ItemId = "event_ticket", Quantity = 3, ExpiresAt = now.AddDays(14), CreatedAt = now.AddDays(-2), UpdatedAt = now }
+        };
+    }
+
+    private List<InventoryLog> GetInventoryLogSeeds()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return new List<InventoryLog>
+        {
+            new() { Id = Guid.Parse("1a120000-0000-0000-0000-000000000001"), PlayerId = FrontendDebugPlayerId, ItemId = "coin", QuantityDelta = 2500, QuantityBefore = 0, QuantityAfter = 2500, Reason = "development grant", BizType = "SEED", BizId = "seed-coin-frontend", CreatedAt = now.AddDays(-20) },
+            new() { Id = Guid.Parse("1a120000-0000-0000-0000-000000000002"), PlayerId = FrontendDebugPlayerId, ItemId = "skin_001", QuantityDelta = 1, QuantityBefore = 0, QuantityAfter = 1, Reason = "mock purchase", BizType = "ORDER", BizId = "order-seed-001", CreatedAt = now.AddDays(-10) },
+            new() { Id = Guid.Parse("1a120000-0000-0000-0000-000000000003"), PlayerId = PlayerPlayerIds[0], ItemId = "health_potion", QuantityDelta = 12, QuantityBefore = 0, QuantityAfter = 12, Reason = "mail attachment", BizType = "MAIL", BizId = "mail-seed-001", CreatedAt = now.AddDays(-5) },
+            new() { Id = Guid.Parse("1a120000-0000-0000-0000-000000000004"), PlayerId = PlayerPlayerIds[2], ItemId = "event_ticket", QuantityDelta = 3, QuantityBefore = 0, QuantityAfter = 3, Reason = "event reward", BizType = "EVENT", BizId = "dev_login_reward", CreatedAt = now.AddDays(-2) }
+        };
+    }
+
+    private List<WalletBalance> GetWalletBalanceSeeds()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return new List<WalletBalance>
+        {
+            new() { Id = Guid.Parse("cc010000-0000-0000-0000-000000000001"), PlayerId = FrontendDebugPlayerId, CurrencyType = "COIN", Balance = 10000, UpdatedAt = now },
+            new() { Id = Guid.Parse("cc010000-0000-0000-0000-000000000002"), PlayerId = FrontendDebugPlayerId, CurrencyType = "GEM", Balance = 500, UpdatedAt = now },
+            new() { Id = Guid.Parse("cc010000-0000-0000-0000-000000000003"), PlayerId = PlayerPlayerIds[0], CurrencyType = "COIN", Balance = 6800, UpdatedAt = now },
+            new() { Id = Guid.Parse("cc010000-0000-0000-0000-000000000004"), PlayerId = PlayerPlayerIds[1], CurrencyType = "COIN", Balance = 3200, UpdatedAt = now },
+            new() { Id = Guid.Parse("cc010000-0000-0000-0000-000000000005"), PlayerId = PlayerPlayerIds[2], CurrencyType = "GEM", Balance = 120, UpdatedAt = now }
+        };
+    }
+
+    private List<WalletLedger> GetWalletLedgerSeeds()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return new List<WalletLedger>
+        {
+            new() { Id = Guid.Parse("cc020000-0000-0000-0000-000000000001"), PlayerId = FrontendDebugPlayerId, CurrencyType = "COIN", Amount = 10000, BalanceBefore = 0, BalanceAfter = 10000, BizType = "SEED", BizId = "wallet-seed-frontend-coin", IdempotencyKey = "wallet-seed-frontend-coin", CreatedAt = now.AddDays(-20) },
+            new() { Id = Guid.Parse("cc020000-0000-0000-0000-000000000002"), PlayerId = FrontendDebugPlayerId, CurrencyType = "GEM", Amount = 500, BalanceBefore = 0, BalanceAfter = 500, BizType = "SEED", BizId = "wallet-seed-frontend-gem", IdempotencyKey = "wallet-seed-frontend-gem", CreatedAt = now.AddDays(-20) },
+            new() { Id = Guid.Parse("cc020000-0000-0000-0000-000000000003"), PlayerId = PlayerPlayerIds[0], CurrencyType = "COIN", Amount = -100, BalanceBefore = 6900, BalanceAfter = 6800, BizType = "ORDER", BizId = "order-seed-001", IdempotencyKey = "wallet-order-seed-001", CreatedAt = now.AddDays(-10) }
+        };
+    }
+
+    private List<OrderRecord> GetOrderRecordSeeds()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return new List<OrderRecord>
+        {
+            new()
+            {
+                Id = Guid.Parse("0d0e0000-0000-0000-0000-000000000001"),
+                PlayerId = FrontendDebugPlayerId,
+                Platform = "MOCK",
+                PlatformOrderId = "mock-order-frontend-001",
+                Status = "COMPLETED",
+                Amount = 100,
+                Currency = "COIN",
+                ItemJson = JsonSerializer.Serialize(new { itemId = "skin_001", quantity = 1 }),
+                CreatedAt = now.AddDays(-10),
+                PaidAt = now.AddDays(-10).AddSeconds(2),
+                CompletedAt = now.AddDays(-10).AddSeconds(3),
+                UpdatedAt = now.AddDays(-10).AddSeconds(3)
+            },
+            new()
+            {
+                Id = Guid.Parse("0d0e0000-0000-0000-0000-000000000002"),
+                PlayerId = PlayerPlayerIds[1],
+                Platform = "MOCK",
+                PlatformOrderId = "mock-order-player-002",
+                Status = "PAID",
+                Amount = 300,
+                Currency = "USD",
+                ItemJson = JsonSerializer.Serialize(new { itemId = "gem_001", quantity = 1 }),
+                CreatedAt = now.AddDays(-2),
+                PaidAt = now.AddDays(-2).AddSeconds(5),
+                UpdatedAt = now.AddDays(-2).AddSeconds(5)
+            }
+        };
+    }
+
+    private List<PlayerRanking> GetPlayerRankingSeeds()
+    {
+        var rankings = new List<PlayerRanking>();
+        for (int i = 0; i < 20; i++)
+        {
+            rankings.Add(new PlayerRanking
+            {
+                Id = Guid.Parse($"ba110000-0000-0000-0000-{i + 1:000000000000}"),
+                PlayerId = PlayerPlayerIds[i],
+                Mode = "ranked",
+                Rank = i + 1,
+                Rating = 1800 - i * 32,
+                TotalMatches = 80 + i * 3,
+                Wins = 50 + i,
+                Losses = 25 + i,
+                Draws = 5,
+                WinStreak = Math.Max(0, 8 - i % 9),
+                MaxWinStreak = 10 + i % 5,
+                UpdatedAt = DateTimeOffset.UtcNow.AddMinutes(-i)
+            });
+        }
+
+        for (int i = 0; i < 8; i++)
+        {
+            rankings.Add(new PlayerRanking
+            {
+                Id = Guid.Parse($"ba120000-0000-0000-0000-{i + 1:000000000000}"),
+                PlayerId = PlayerPlayerIds[i],
+                Mode = "casual",
+                Rank = i + 1,
+                Rating = 1300 - i * 18,
+                TotalMatches = 30 + i * 4,
+                Wins = 18 + i,
+                Losses = 10 + i,
+                Draws = 2,
+                UpdatedAt = DateTimeOffset.UtcNow.AddMinutes(-20 - i)
+            });
+        }
+
+        return rankings;
+    }
+
+    private List<FriendRequest> GetFriendRequestSeeds()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return new List<FriendRequest>
+        {
+            new() { Id = Guid.Parse("f1000000-0000-0000-0000-000000000001"), SenderId = PlayerPlayerIds[2], ReceiverId = FrontendDebugPlayerId, Status = "PENDING", CreatedAt = now.AddHours(-3) },
+            new() { Id = Guid.Parse("f1000000-0000-0000-0000-000000000002"), SenderId = PlayerPlayerIds[3], ReceiverId = FrontendDebugPlayerId, Status = "ACCEPTED", CreatedAt = now.AddDays(-3), RespondedAt = now.AddDays(-2) },
+            new() { Id = Guid.Parse("f1000000-0000-0000-0000-000000000003"), SenderId = FrontendDebugPlayerId, ReceiverId = PlayerPlayerIds[4], Status = "PENDING", CreatedAt = now.AddHours(-6) }
+        };
+    }
+
+    private List<FriendRelation> GetFriendRelationSeeds()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return new List<FriendRelation>
+        {
+            new() { Id = Guid.Parse("f2000000-0000-0000-0000-000000000001"), PlayerId = FrontendDebugPlayerId, FriendId = PlayerPlayerIds[0], Alias = "rank partner", CreatedAt = now.AddDays(-6) },
+            new() { Id = Guid.Parse("f2000000-0000-0000-0000-000000000002"), PlayerId = PlayerPlayerIds[0], FriendId = FrontendDebugPlayerId, Alias = "frontend", CreatedAt = now.AddDays(-6) },
+            new() { Id = Guid.Parse("f2000000-0000-0000-0000-000000000003"), PlayerId = FrontendDebugPlayerId, FriendId = PlayerPlayerIds[1], Alias = "arena mate", CreatedAt = now.AddDays(-5) },
+            new() { Id = Guid.Parse("f2000000-0000-0000-0000-000000000004"), PlayerId = PlayerPlayerIds[1], FriendId = FrontendDebugPlayerId, Alias = "debug player", CreatedAt = now.AddDays(-5) }
+        };
+    }
+
+    private List<Mail> GetMailSeeds()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return new List<Mail>
+        {
+            new()
+            {
+                Id = Guid.Parse("aa1a0000-0000-0000-0000-000000000001"),
+                ReceiverId = FrontendDebugPlayerId,
+                MailType = "SYSTEM",
+                Title = "Welcome reward",
+                Content = "Development environment starter pack.",
+                AttachmentJson = JsonSerializer.Serialize(new[] { new { itemId = "coin", quantity = 500 }, new { itemId = "health_potion", quantity = 5 } }),
+                IsRead = false,
+                IsDeleted = false,
+                ExpiresAt = now.AddDays(30),
+                CreatedAt = now.AddDays(-1)
+            },
+            new()
+            {
+                Id = Guid.Parse("aa1a0000-0000-0000-0000-000000000002"),
+                ReceiverId = FrontendDebugPlayerId,
+                MailType = "EVENT",
+                Title = "Event compensation",
+                Content = "Mock compensation mail for attachment claim API.",
+                AttachmentJson = JsonSerializer.Serialize(new[] { new { itemId = "event_ticket", quantity = 2 } }),
+                IsRead = true,
+                IsDeleted = false,
+                ExpiresAt = now.AddDays(14),
+                CreatedAt = now.AddDays(-3),
+                ReadAt = now.AddDays(-2)
+            },
+            new()
+            {
+                Id = Guid.Parse("aa1a0000-0000-0000-0000-000000000003"),
+                ReceiverId = PlayerPlayerIds[0],
+                MailType = "PERSONAL",
+                Title = "Ranked season reminder",
+                Content = "Your weekly ranked reward is ready.",
+                AttachmentJson = "[]",
+                IsRead = false,
+                IsDeleted = false,
+                CreatedAt = now.AddHours(-8)
+            }
+        };
+    }
+
+    private List<MailAttachment> GetMailAttachmentSeeds()
+    {
+        return new List<MailAttachment>
+        {
+            new() { Id = Guid.Parse("aa2a0000-0000-0000-0000-000000000001"), MailId = Guid.Parse("aa1a0000-0000-0000-0000-000000000001"), ItemId = "coin", Quantity = 500, IsClaimed = false },
+            new() { Id = Guid.Parse("aa2a0000-0000-0000-0000-000000000002"), MailId = Guid.Parse("aa1a0000-0000-0000-0000-000000000001"), ItemId = "health_potion", Quantity = 5, IsClaimed = false },
+            new() { Id = Guid.Parse("aa2a0000-0000-0000-0000-000000000003"), MailId = Guid.Parse("aa1a0000-0000-0000-0000-000000000002"), ItemId = "event_ticket", Quantity = 2, IsClaimed = true, ClaimedAt = DateTimeOffset.UtcNow.AddDays(-1) }
+        };
+    }
+
+    private List<PlayerEventProgress> GetPlayerEventProgressSeeds()
+    {
+        return new List<PlayerEventProgress>
+        {
+            new() { Id = Guid.Parse("e7f00000-0000-0000-0000-000000000001"), PlayerId = FrontendDebugPlayerId, EventId = Guid.Parse("e7e00000-0000-0000-0000-000000000001"), Progress = 3, Target = 7, IsCompleted = false, IsRewarded = false, UpdatedAt = DateTimeOffset.UtcNow },
+            new() { Id = Guid.Parse("e7f00000-0000-0000-0000-000000000002"), PlayerId = PlayerPlayerIds[0], EventId = Guid.Parse("e7e00000-0000-0000-0000-000000000001"), Progress = 7, Target = 7, IsCompleted = true, IsRewarded = true, UpdatedAt = DateTimeOffset.UtcNow.AddDays(-1) }
+        };
+    }
+
+    private List<Achievement> GetAchievementSeeds()
+    {
+        return new List<Achievement>
+        {
+            new() { Id = Guid.Parse("ac100000-0000-0000-0000-000000000001"), AchievementKey = "first_match", Title = "First Match", Description = "Complete the first arena match.", Category = "MATCH", Icon = "trophy", MaxProgress = 1, RewardsJson = JsonSerializer.Serialize(new[] { new { itemId = "coin", quantity = 100 } }), Order = 1 },
+            new() { Id = Guid.Parse("ac100000-0000-0000-0000-000000000002"), AchievementKey = "ten_wins", Title = "Ten Wins", Description = "Win ten matches.", Category = "MATCH", Icon = "medal", MaxProgress = 10, RewardsJson = JsonSerializer.Serialize(new[] { new { itemId = "gem", quantity = 20 } }), Order = 2 },
+            new() { Id = Guid.Parse("ac100000-0000-0000-0000-000000000003"), AchievementKey = "collector", Title = "Collector", Description = "Own five unlockable items.", Category = "COLLECTION", Icon = "box", MaxProgress = 5, RewardsJson = JsonSerializer.Serialize(new[] { new { itemId = "skin_001", quantity = 1 } }), Order = 3 }
+        };
+    }
+
+    private List<PlayerAchievement> GetPlayerAchievementSeeds()
+    {
+        return new List<PlayerAchievement>
+        {
+            new() { Id = Guid.Parse("ac200000-0000-0000-0000-000000000001"), PlayerId = FrontendDebugPlayerId, AchievementId = Guid.Parse("ac100000-0000-0000-0000-000000000001"), Progress = 1, IsUnlocked = true, UnlockedAt = DateTimeOffset.UtcNow.AddDays(-9) },
+            new() { Id = Guid.Parse("ac200000-0000-0000-0000-000000000002"), PlayerId = FrontendDebugPlayerId, AchievementId = Guid.Parse("ac100000-0000-0000-0000-000000000002"), Progress = 6, IsUnlocked = false },
+            new() { Id = Guid.Parse("ac200000-0000-0000-0000-000000000003"), PlayerId = PlayerPlayerIds[0], AchievementId = Guid.Parse("ac100000-0000-0000-0000-000000000002"), Progress = 10, IsUnlocked = true, UnlockedAt = DateTimeOffset.UtcNow.AddDays(-2) }
+        };
+    }
+
+    private List<PlayerMatchHistory> GetPlayerMatchHistorySeeds()
+    {
+        var histories = new List<PlayerMatchHistory>();
+        for (int i = 0; i < 12; i++)
+        {
+            histories.Add(new PlayerMatchHistory
+            {
+                Id = Guid.Parse($"b8170000-0000-0000-0000-{i + 1:000000000000}"),
+                PlayerId = i < 6 ? FrontendDebugPlayerId : PlayerPlayerIds[0],
+                SessionId = GameSessionIds[i % GameSessionIds.Length],
+                Mode = i % 2 == 0 ? "ranked" : "casual",
+                MapId = i % 3 == 0 ? "arena_01" : "arena_02",
+                Team = i % 2 == 0 ? "blue" : "red",
+                Result = i % 4 == 0 ? "LOSS" : "WIN",
+                Kills = 3 + i,
+                Deaths = 1 + i % 5,
+                Assists = 2 + i % 6,
+                Score = 1200 + i * 180,
+                DurationSeconds = 1500 + i * 90,
+                PlayedAt = DateTimeOffset.UtcNow.AddDays(-i)
+            });
+        }
+
+        return histories;
+    }
+
+    private List<TicketReply> GetTicketReplySeeds()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return new List<TicketReply>
+        {
+            new() { Id = Guid.Parse("71d00000-0000-0000-0000-000000000001"), TicketId = Guid.Parse("71c00000-0000-0000-0000-000000000001"), PlayerId = PlayerPlayerIds[2], Content = "I still see the issue after restarting the client.", IsInternal = false, CreatedAt = now.AddHours(-7) },
+            new() { Id = Guid.Parse("71d00000-0000-0000-0000-000000000002"), TicketId = Guid.Parse("71c00000-0000-0000-0000-000000000001"), AdminId = Guid.Parse("adad0000-0000-0000-0000-000000000003"), Content = "Support is checking the session logs.", IsInternal = false, CreatedAt = now.AddHours(-6) },
+            new() { Id = Guid.Parse("71d00000-0000-0000-0000-000000000003"), TicketId = Guid.Parse("71c00000-0000-0000-0000-000000000002"), AdminId = Guid.Parse("adad0000-0000-0000-0000-000000000002"), Content = "Internal note: verify particle quality level on low presets.", IsInternal = true, CreatedAt = now.AddDays(-1) }
+        };
+    }
+
+    private List<RetentionCohort> GetRetentionCohortSeeds()
+    {
+        var today = DateTimeOffset.UtcNow.Date;
+        return new List<RetentionCohort>
+        {
+            new() { Id = Guid.Parse("2e700000-0000-0000-0000-000000000001"), CohortDate = today.AddDays(-30), D0 = 100, D1 = 72, D3 = 54, D7 = 41, D14 = 32, D30 = 24, Region = "global" },
+            new() { Id = Guid.Parse("2e700000-0000-0000-0000-000000000002"), CohortDate = today.AddDays(-14), D0 = 84, D1 = 60, D3 = 46, D7 = 35, D14 = 27, D30 = 0, Region = "us-west" },
+            new() { Id = Guid.Parse("2e700000-0000-0000-0000-000000000003"), CohortDate = today.AddDays(-7), D0 = 91, D1 = 66, D3 = 50, D7 = 38, D14 = 0, D30 = 0, Region = "eu-west" }
+        };
+    }
+
+    private List<GameConfigPublishLog> GetGameConfigPublishLogSeeds()
+    {
+        return new List<GameConfigPublishLog>
+        {
+            new() { Id = Guid.Parse("cf910000-0000-0000-0000-000000000001"), ConfigKey = "zodiac_character", FromVersion = null, ToVersion = "1.0.0", OperatorId = AdminAccountId, Reason = "initial development mock config", CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) },
+            new() { Id = Guid.Parse("cf910000-0000-0000-0000-000000000002"), ConfigKey = "match_mode", FromVersion = null, ToVersion = "1.0.0", OperatorId = OpsAccountId, Reason = "ranked and custom room mock setup", CreatedAt = new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero) }
         };
     }
 

@@ -32,6 +32,13 @@ public static partial class GameFeatureEndpoints
         return claim != null && Guid.TryParse(claim.Value, out var id) ? id : null;
     }
 
+    private static (int Page, int PageSize) NormalizePaging(int page, int pageSize, int defaultPageSize = 50, int maxPageSize = 200)
+    {
+        page = Math.Max(page, 1);
+        pageSize = pageSize <= 0 ? defaultPageSize : Math.Clamp(pageSize, 1, maxPageSize);
+        return (page, pageSize);
+    }
+
     private static void AddAdminAuditLog(
         GameDbContext db,
         Guid adminId,

@@ -149,6 +149,8 @@ public static partial class GameFeatureEndpoints
 
     private static async Task<IResult> GetInventoryLogs(int page, int pageSize, GameDbContext db)
     {
+        (page, pageSize) = NormalizePaging(page, pageSize);
+
         var logs = await db.InventoryLogs
             .OrderByDescending(x => x.CreatedAt)
             .Skip((page - 1) * pageSize)

@@ -69,8 +69,8 @@ public static partial class GameFeatureEndpoints
     {
         var friends = await db.FriendRelations
             .Where(x => x.PlayerId == playerId)
-            .Include(x => x.Player)
-            .Select(x => new FriendInfo(x.FriendId, x.Player!.Nickname, x.Player.Avatar, x.Player.Level))
+            .Join(db.PlayerProfiles, relation => relation.FriendId, profile => profile.PlayerId, (relation, profile) => profile)
+            .Select(x => new FriendInfo(x.PlayerId, x.Nickname, x.Avatar, x.Level))
             .ToListAsync();
 
         return Results.Ok(ApiResponse<FriendsResponse>.Ok(new FriendsResponse(friends)));

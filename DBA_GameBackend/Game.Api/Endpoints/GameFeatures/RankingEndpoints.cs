@@ -34,6 +34,8 @@ public static partial class GameFeatureEndpoints
 
     private static async Task<IResult> GetRanking(string mode, int page, int pageSize, GameDbContext db)
     {
+        (page, pageSize) = NormalizePaging(page, pageSize);
+
         var rankings = await db.PlayerRankings
             .Where(x => x.Mode == mode)
             .OrderBy(x => x.Rank)

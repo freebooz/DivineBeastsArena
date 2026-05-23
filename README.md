@@ -74,6 +74,7 @@ docker compose --env-file .env.example config
 生产可上线计划记录在：
 
 - `docs/solution-audit-and-production-plan.md`
+- `docs/app-structure-code-audit.md`
 - `DBA_GameBackend/docs/production-readiness-plan.md`
 
 当前自动化层面已经具备后端测试、Compose 配置校验、观测配置、备份恢复脚本、部署回滚工作流、GM RBAC 和启动器版本清单能力。剩余上线阻塞主要是需要真实 UE Dedicated Server 包和真实客户端包进行端到端联调。

@@ -58,6 +58,8 @@ public static partial class GameFeatureEndpoints
 
     private static async Task<IResult> GetMatchHistory(Guid playerId, int page, int pageSize, GameDbContext db)
     {
+        (page, pageSize) = NormalizePaging(page, pageSize);
+
         var totalCount = await db.PlayerMatchHistories.CountAsync(x => x.PlayerId == playerId);
 
         var matches = await db.PlayerMatchHistories
@@ -96,6 +98,8 @@ public static partial class GameFeatureEndpoints
 
     private static async Task<IResult> GetMyTickets(Guid playerId, int page, int pageSize, GameDbContext db)
     {
+        (page, pageSize) = NormalizePaging(page, pageSize);
+
         var totalCount = await db.SupportTickets.CountAsync(x => x.PlayerId == playerId);
 
         var tickets = await db.SupportTickets
@@ -134,13 +138,34 @@ public static partial class GameFeatureEndpoints
 
         if (ticket == null) return ErrorResponse.NotFound("工单不存在").ToProblem();
 
-        var replies = await db.TicketReplies
+        var rawReplies = await db.TicketReplies
             .Where(x => x.TicketId == ticketId && !x.IsInternal)
-            .Join(db.PlayerProfiles, tr => tr.PlayerId, pp => pp.PlayerId, (tr, pp) => new { tr, pp })
-            .OrderBy(x => x.tr.CreatedAt)
-            .Select(x => new TicketReplyDto(x.tr.Id, x.tr.Content, x.tr.IsInternal, x.tr.PlayerId, x.tr.AdminId,
-                x.pp.Nickname, x.tr.CreatedAt))
+            .OrderBy(x => x.CreatedAt)
             .ToListAsync();
+
+        var playerIds = rawReplies.Where(x => x.PlayerId.HasValue).Select(x => x.PlayerId!.Value).Distinct().ToList();
+        var adminIds = rawReplies.Where(x => x.AdminId.HasValue).Select(x => x.AdminId!.Value).Distinct().ToList();
+        var playerNames = await db.PlayerProfiles
+            .Where(x => playerIds.Contains(x.PlayerId))
+            .ToDictionaryAsync(x => x.PlayerId, x => x.Nickname);
+        var adminNames = await db.AdminUsers
+            .Where(x => adminIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.Username);
+
+        var replies = rawReplies
+            .Select(x => new TicketReplyDto(
+                x.Id,
+                x.Content,
+                x.IsInternal,
+                x.PlayerId,
+                x.AdminId,
+                x.PlayerId.HasValue && playerNames.TryGetValue(x.PlayerId.Value, out var playerName)
+                    ? playerName
+                    : x.AdminId.HasValue && adminNames.TryGetValue(x.AdminId.Value, out var adminName)
+                        ? adminName
+                        : null,
+                x.CreatedAt))
+            .ToList();
 
         var detail = new TicketDetailDto(
             ticket.Id, ticket.TicketType, ticket.Subject, ticket.Content, ticket.Status,

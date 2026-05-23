@@ -21,7 +21,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Game.Api.Endpoints.Admin;
 
-public static class AdminEndpoints
+public static partial class AdminEndpoints
 {
     public static void MapAdminEndpoints(this IEndpointRouteBuilder app)
     {
@@ -331,74 +331,7 @@ public static class AdminEndpoints
             new AdminSupportTicketListResponse(items, total, page, pageSize)));
     }
 
-    private static async Task<IResult> ListServers(int page, int pageSize, string? status, GameDbContext db)
-    {
-        (page, pageSize) = NormalizePaging(page, pageSize);
-
-        var query = db.GameServerInstances.AsNoTracking().AsQueryable();
-        if (!string.IsNullOrWhiteSpace(status))
-        {
-            query = query.Where(x => x.Status == status);
-        }
-
-        var total = await query.CountAsync();
-        var items = await query
-            .OrderByDescending(x => x.StartedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(x => new AdminGameServerItem(
-                x.Id,
-                x.SessionId,
-                x.Mode,
-                x.MapId,
-                x.Region,
-                x.BuildVersion,
-                x.Ip,
-                x.Port,
-                x.Status,
-                x.StartedAt,
-                x.LastHeartbeatAt,
-                x.EndedAt))
-            .ToListAsync();
-
-        return Results.Ok(ApiResponse<AdminGameServerListResponse>.Ok(
-            new AdminGameServerListResponse(items, total, page, pageSize)));
-    }
-
-    private static async Task<IResult> KillServer(
-        Guid serverId,
-        KillGameServerRequest request,
-        IDedicatedServerOrchestrator manager,
-        GameDbContext db,
-        HttpContext ctx,
-        CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(request.Reason))
-        {
-            return Results.BadRequest(ApiResponse.Fail("高危操作必须填写 reason。"));
-        }
-
-        var adminId = GetAdminId(ctx);
-        var killed = await manager.KillAsync(serverId, request.Reason.Trim(), cancellationToken);
-        if (!killed)
-        {
-            return Results.NotFound(ApiResponse.Fail("Game server not found."));
-        }
-
-        await AddAuditLogAsync(
-            db,
-            adminId,
-            "ADMIN_GAME_SERVER_KILL",
-            "GameServerInstance",
-            serverId.ToString(),
-            request.Reason.Trim(),
-            ctx);
-        await db.SaveChangesAsync(cancellationToken);
-
-        return Results.Ok(ApiResponse.Ok());
-    }
-
-    private static async Task<IResult> ListMatches(int page, int pageSize, GameDbContext db)
+private static async Task<IResult> ListMatches(int page, int pageSize, GameDbContext db)
     {
         (page, pageSize) = NormalizePaging(page, pageSize);
 
@@ -457,127 +390,7 @@ public static class AdminEndpoints
             : Results.Ok(ApiResponse<AdminMatchDetailResponse>.Ok(match));
     }
 
-    private static async Task<IResult> ListClientVersions(int page, int pageSize, GameDbContext db)
-    {
-        (page, pageSize) = NormalizePaging(page, pageSize);
-
-        var query = db.ClientVersions.AsNoTracking()
-            .OrderByDescending(x => x.CreatedAt);
-        var total = await query.CountAsync();
-        var items = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(x => new AdminClientVersionItem(
-                x.Id,
-                x.Version,
-                x.Channel,
-                x.Platform,
-                x.DownloadUrl,
-                x.Checksum,
-                x.SizeBytes,
-                x.IsMandatory,
-                x.IsActive,
-                x.MinOsVersion,
-                x.ReleaseNotes,
-                x.CreatedAt))
-            .ToListAsync();
-
-        return Results.Ok(ApiResponse<AdminClientVersionListResponse>.Ok(
-            new AdminClientVersionListResponse(items, total, page, pageSize)));
-    }
-
-    private static async Task<IResult> UpsertClientVersion(
-        UpsertClientVersionRequest request,
-        GameDbContext db,
-        HttpContext ctx,
-        CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(request.Version) ||
-            string.IsNullOrWhiteSpace(request.Channel) ||
-            string.IsNullOrWhiteSpace(request.Platform) ||
-            string.IsNullOrWhiteSpace(request.DownloadUrl) ||
-            string.IsNullOrWhiteSpace(request.Checksum) ||
-            string.IsNullOrWhiteSpace(request.Reason))
-        {
-            return Results.BadRequest(ApiResponse.Fail("Version, channel, platform, downloadUrl, checksum and reason are required."));
-        }
-
-        if (!Uri.TryCreate(request.DownloadUrl, UriKind.Absolute, out var downloadUri) ||
-            downloadUri.Scheme is not ("https" or "http"))
-        {
-            return Results.BadRequest(ApiResponse.Fail("downloadUrl must be an absolute HTTP/HTTPS URL."));
-        }
-
-        if (request.SizeBytes <= 0)
-        {
-            return Results.BadRequest(ApiResponse.Fail("sizeBytes must be greater than 0."));
-        }
-
-        var adminId = GetAdminId(ctx);
-        var channel = request.Channel.Trim();
-        var platform = request.Platform.Trim();
-        var version = request.Version.Trim();
-        await using var tx = await db.Database.BeginTransactionAsync(cancellationToken);
-
-        if (request.IsActive)
-        {
-            await db.ClientVersions
-                .Where(x => x.Channel == channel && x.Platform == platform && x.IsActive)
-                .ExecuteUpdateAsync(x => x.SetProperty(v => v.IsActive, false), cancellationToken);
-        }
-
-        var existing = await db.ClientVersions
-            .FirstOrDefaultAsync(x => x.Channel == channel && x.Platform == platform && x.Version == version, cancellationToken);
-
-        if (existing is null)
-        {
-            existing = new ClientVersion
-            {
-                Id = Guid.NewGuid(),
-                CreatedAt = DateTimeOffset.UtcNow
-            };
-            db.ClientVersions.Add(existing);
-        }
-
-        existing.Version = version;
-        existing.Channel = channel;
-        existing.Platform = platform;
-        existing.DownloadUrl = request.DownloadUrl.Trim();
-        existing.Checksum = request.Checksum.Trim();
-        existing.SizeBytes = request.SizeBytes;
-        existing.IsMandatory = request.IsMandatory;
-        existing.IsActive = request.IsActive;
-        existing.MinOsVersion = string.IsNullOrWhiteSpace(request.MinOsVersion) ? null : request.MinOsVersion.Trim();
-        existing.ReleaseNotes = string.IsNullOrWhiteSpace(request.ReleaseNotes) ? null : request.ReleaseNotes.Trim();
-
-        await AddAuditLogAsync(
-            db,
-            adminId,
-            "ADMIN_CLIENT_VERSION_UPSERT",
-            "ClientVersion",
-            existing.Id.ToString(),
-            request.Reason.Trim(),
-            ctx);
-
-        await db.SaveChangesAsync(cancellationToken);
-        await tx.CommitAsync(cancellationToken);
-
-        return Results.Ok(ApiResponse<AdminClientVersionItem>.Ok(new AdminClientVersionItem(
-            existing.Id,
-            existing.Version,
-            existing.Channel,
-            existing.Platform,
-            existing.DownloadUrl,
-            existing.Checksum,
-            existing.SizeBytes,
-            existing.IsMandatory,
-            existing.IsActive,
-            existing.MinOsVersion,
-            existing.ReleaseNotes,
-            existing.CreatedAt)));
-    }
-
-    private static string CreateToken(AdminUser admin, JwtOptions options)
+private static string CreateToken(AdminUser admin, JwtOptions options)
     {
         var claims = new List<Claim>
         {
@@ -639,3 +452,4 @@ public static class AdminEndpoints
         return (page, pageSize);
     }
 }
+
