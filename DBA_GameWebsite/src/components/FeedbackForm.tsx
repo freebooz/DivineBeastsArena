@@ -26,7 +26,10 @@ interface FormErrors {
   content?: string;
 }
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
+const apiBaseUrl =
+  process.env.NEXT_PUBLIC_GAME_API_BASE_URL ??
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  'http://localhost:8080';
 
 const validateEmail = (email: string): boolean => {
   if (!email.trim()) return true;

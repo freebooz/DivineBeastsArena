@@ -59,15 +59,21 @@ namespace
 		return !OutAccessToken.IsEmpty();
 	}
 
-	FString ReadCommandLineOverride(const TCHAR* PrimaryKey, const TCHAR* FallbackKey)
+	FString ReadCommandLineOverride(const TArray<const TCHAR*>& Keys)
 	{
-		FString Value;
-		if (!FParse::Value(FCommandLine::Get(), PrimaryKey, Value))
+		for (const TCHAR* Key : Keys)
 		{
-			FParse::Value(FCommandLine::Get(), FallbackKey, Value);
+			FString Value;
+			if (FParse::Value(FCommandLine::Get(), Key, Value))
+			{
+				Value.TrimStartAndEndInline();
+				if (!Value.IsEmpty())
+				{
+					return Value;
+				}
+			}
 		}
-		Value.TrimStartAndEndInline();
-		return Value;
+		return FString();
 	}
 }
 
@@ -77,7 +83,7 @@ void UDBA_GameBackendClientSubsystem::Initialize(FSubsystemCollectionBase& Colle
 
 	const UDBA_GameBackendClientSettings* Settings = GetDefault<UDBA_GameBackendClientSettings>();
 	BackendBaseUrl = Settings->BackendBaseUrl;
-	const FString BackendUrlOverride = ReadCommandLineOverride(TEXT("backendUrl="), TEXT("DBABackendUrl="));
+	const FString BackendUrlOverride = ReadCommandLineOverride({ TEXT("backendUrl="), TEXT("BackendBaseUrl="), TEXT("DBABackendUrl=") });
 	if (!BackendUrlOverride.IsEmpty())
 	{
 		BackendBaseUrl = BackendUrlOverride;
