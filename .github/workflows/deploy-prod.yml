@@ -26,6 +26,7 @@ jobs:
             NEW_IMAGE_TAG="${{ github.event.inputs.image_tag }}"
             PREVIOUS_IMAGE_TAG="$(grep -E '^IMAGE_TAG=' "${ENV_FILE}" | tail -n 1 | cut -d= -f2- || true)"
             PREVIOUS_IMAGE_TAG="${PREVIOUS_IMAGE_TAG:-latest}"
+            bash scripts/validate-production-env.sh "${ENV_FILE}"
 
             rollback() {
               echo "Deploy failed, rolling back to image tag ${PREVIOUS_IMAGE_TAG}."
