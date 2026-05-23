@@ -76,8 +76,14 @@ if (Backend && Backend->GetAuthService())
 ## 8. 连接 Dedicated Server 流程
 1. `GetConnection(SessionId)` 获取 `ip/port/playerSessionToken`
 2. 生成 Travel URL：
-   - `{ip}:{port}?SessionId={sessionId}?PlayerSessionToken={token}`
+   - `{ip}:{port}?SessionId={sessionId}&PlayerSessionToken={token}&PlayerId={playerId}`
 3. 调用 `PlayerController->ClientTravel(...)`
+4. Dedicated Server 读取启动参数 `-sessionId -serverId -backendUrl -runtimeToken` 后会自动调用 Runtime API：
+   - `/runtime/servers/register`
+   - `/runtime/servers/ready`
+   - `/runtime/servers/heartbeat`
+   - `/runtime/servers/player-joined`
+   - `/runtime/servers/player-left`
 
 ## 9. 崩溃上传流程
 1. 启动扫描 `Saved/Crashes`

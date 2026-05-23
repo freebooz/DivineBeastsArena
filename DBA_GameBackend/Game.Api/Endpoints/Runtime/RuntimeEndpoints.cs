@@ -111,7 +111,10 @@ GET /internal/runtime/servers/{serverId}
         var server = await ValidateRuntimeAsync(db, request.ServerId, request.SessionId, request.RuntimeToken);
         if (server is null) return ErrorResponse.Unauthorized("Invalid runtime token").ToProblem();
 
-        server.Status = "STARTING";
+        if (server.Status is not ("READY" or "ALLOCATED" or "IN_PROGRESS" or "ENDING"))
+        {
+            server.Status = "STARTING";
+        }
         server.LastHeartbeatAt = DateTimeOffset.UtcNow;
         AddServerEvent(db, request.ServerId, "RUNTIME_REGISTER", "{}");
         AddSessionEvent(db, request.SessionId, "SERVER_REGISTERED", $$"""{"serverId":"{{request.ServerId}}"}""");

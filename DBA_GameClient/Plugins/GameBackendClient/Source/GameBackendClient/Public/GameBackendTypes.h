@@ -149,6 +149,9 @@ struct GAMEBACKENDCLIENT_API FDBA_GameBackendSessionConnection
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
 	FString PlayerSessionToken;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString PlayerId;
 };
 
 USTRUCT(BlueprintType)

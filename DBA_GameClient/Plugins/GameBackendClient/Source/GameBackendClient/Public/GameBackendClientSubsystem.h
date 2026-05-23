@@ -26,6 +26,7 @@ class UDBA_GameBackendMailService;
 class UDBA_GameBackendSupportService;
 class UDBA_GameBackendTelemetryService;
 class UDBA_GameBackendCrashService;
+class UDBA_GameBackendRuntimeService;
 
 UCLASS(BlueprintType)
 class GAMEBACKENDCLIENT_API UDBA_GameBackendClientSubsystem : public UGameInstanceSubsystem
@@ -96,6 +97,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "DBA_GameBackend|Service")
 	UDBA_GameBackendCrashService* GetCrashService() const { return CrashService; }
 
+	UFUNCTION(BlueprintPure, Category = "DBA_GameBackend|Service")
+	UDBA_GameBackendRuntimeService* GetRuntimeService() const { return RuntimeService; }
+
 	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Debug")
 	void TestVersionCheck(const FDBA_GameBackendResponseDelegate& Callback);
 
@@ -159,6 +163,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UDBA_GameBackendCrashService> CrashService;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDBA_GameBackendRuntimeService> RuntimeService;
 
 	TSharedPtr<FDBA_GameBackendHttpClient> HttpClient;
 

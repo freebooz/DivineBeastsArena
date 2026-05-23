@@ -46,11 +46,19 @@ private:
 	void SpawnOrUpdateLobbyDisplayForPlayer(APlayerController* PlayerController);
 	void SpawnLobbyTrainingMonsters();
 	UClass* ResolveLobbyPawnClass(EDBAZodiac Zodiac) const;
+	void TryInitializeBackendRuntime();
+	void SendBackendHeartbeat();
+	void ReportBackendPlayerJoined(APlayerController* PlayerController, const FString& Options);
+	void ReportBackendPlayerLeft(APlayerController* PlayerController);
 
 private:
 	int32 NextLobbyJoinIndex = 0;
 	TMap<TObjectKey<APlayerController>, int32> LobbyJoinIndices;
 	TMap<TObjectKey<APlayerController>, EDBAZodiac> LobbyJoinZodiacs;
+	TMap<TObjectKey<APlayerController>, FString> BackendRuntimePlayerIds;
+	TMap<TObjectKey<APlayerController>, FString> BackendRuntimePlayerOptions;
 	TMap<TObjectKey<APlayerController>, TWeakObjectPtr<ADBACharacterPreviewActor>> LobbyDisplayActors;
 	TArray<TWeakObjectPtr<ADBALobbyTrainingMonster>> LobbyTrainingMonsters;
+	FTimerHandle BackendRuntimeHeartbeatTimerHandle;
+	bool bBackendRuntimeReadySent = false;
 };

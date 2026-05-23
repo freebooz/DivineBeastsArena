@@ -15,11 +15,23 @@
 #include "DBA_GameBackendClientSubsystem.h"
 #include "DBA_GameBackendHttpClient.h"
 #include "GameFramework/PlayerController.h"
+#include "GenericPlatform/GenericPlatformHttp.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 
 namespace
 {
+	void AppendTravelOption(FString& Url, const FString& Key, const FString& Value)
+	{
+		if (Value.IsEmpty())
+		{
+			return;
+		}
+
+		Url += Url.Contains(TEXT("?")) ? TEXT("&") : TEXT("?");
+		Url += FString::Printf(TEXT("%s=%s"), *Key, *FGenericPlatformHttp::UrlEncode(Value));
+	}
+
 	void ExecuteResponse(const FDBA_GameBackendResponseDelegate& Callback, const FDBA_GameBackendHttpResult& Result)
 	{
 		const bool bSuccess = Result.IsSuccessful();
@@ -97,7 +109,11 @@ void UDBA_GameBackendSessionService::ConnectToDedicatedServer(const FString& Ses
 		return;
 	}
 
-	const FString TravelUrl = BuildTravelUrl(Connection.Ip, Connection.Port, SessionId.IsEmpty() ? Connection.SessionId : SessionId, Connection.PlayerSessionToken);
+	FString TravelUrl = BuildTravelUrl(Connection.Ip, Connection.Port, SessionId.IsEmpty() ? Connection.SessionId : SessionId, Connection.PlayerSessionToken);
+	if (Subsystem.IsValid())
+	{
+		AppendTravelOption(TravelUrl, TEXT("PlayerId"), Connection.PlayerId.IsEmpty() ? Subsystem->GetPlayerId() : Connection.PlayerId);
+	}
 	if (TravelUrl.IsEmpty())
 	{
 		Callback.ExecuteIfBound(false, TEXT("Failed to build travel url."), TEXT("{}"));
@@ -131,14 +147,8 @@ FString UDBA_GameBackendSessionService::BuildTravelUrl(const FString& Ip, int32 
 	}
 
 	FString Url = FString::Printf(TEXT("%s:%d"), *TrimmedIp, Port);
-	if (!SessionId.IsEmpty())
-	{
-		Url += FString::Printf(TEXT("?SessionId=%s"), *SessionId);
-	}
-	if (!PlayerSessionToken.IsEmpty())
-	{
-		Url += FString::Printf(TEXT("?PlayerSessionToken=%s"), *PlayerSessionToken);
-	}
+	AppendTravelOption(Url, TEXT("SessionId"), SessionId);
+	AppendTravelOption(Url, TEXT("PlayerSessionToken"), PlayerSessionToken);
 	return Url;
 }
 
@@ -155,6 +165,20 @@ bool UDBA_GameBackendSessionService::ParseConnectionData(const FString& DataJson
 	Root->TryGetNumberField(TEXT("port"), OutConnection.Port);
 	Root->TryGetStringField(TEXT("sessionId"), OutConnection.SessionId);
 	Root->TryGetStringField(TEXT("playerSessionToken"), OutConnection.PlayerSessionToken);
+	Root->TryGetStringField(TEXT("playerId"), OutConnection.PlayerId);
+
+	if (OutConnection.Ip.IsEmpty())
+	{
+		Root->TryGetStringField(TEXT("serverIp"), OutConnection.Ip);
+	}
+	if (OutConnection.Port <= 0)
+	{
+		Root->TryGetNumberField(TEXT("serverPort"), OutConnection.Port);
+	}
+	if (OutConnection.PlayerSessionToken.IsEmpty())
+	{
+		Root->TryGetStringField(TEXT("sessionToken"), OutConnection.PlayerSessionToken);
+	}
 
 	if (OutConnection.Ip.IsEmpty() && Root->HasTypedField<EJson::Object>(TEXT("connection")))
 	{
@@ -165,6 +189,7 @@ bool UDBA_GameBackendSessionService::ParseConnectionData(const FString& DataJson
 			ConnectionObj->TryGetNumberField(TEXT("port"), OutConnection.Port);
 			ConnectionObj->TryGetStringField(TEXT("sessionId"), OutConnection.SessionId);
 			ConnectionObj->TryGetStringField(TEXT("playerSessionToken"), OutConnection.PlayerSessionToken);
+			ConnectionObj->TryGetStringField(TEXT("playerId"), OutConnection.PlayerId);
 		}
 	}
 

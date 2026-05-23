@@ -28,7 +28,9 @@ public record SessionConnectionResponse(
     string ServerIp,
     int ServerPort,
     string SessionToken,
-    DateTimeOffset TokenExpiresAt);
+    DateTimeOffset TokenExpiresAt,
+    string PlayerSessionToken,
+    Guid PlayerId);
 
 public record ReconnectTokenResponse(string ReconnectToken, DateTimeOffset ExpiresAt);
 

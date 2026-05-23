@@ -27,6 +27,8 @@
 #include "GameDBA/Player/DBALobbyPlayerController.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPreviewActor.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
+#include "DBA_GameBackendClientSubsystem.h"
+#include "GameBackendRuntimeService.h"
 #include "Animation/AnimationAsset.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
@@ -37,6 +39,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
+#include "TimerManager.h"
 
 namespace
 {
@@ -199,6 +202,7 @@ void ADBAGameModeBase::BeginPlay()
 	if (GetNetMode() == NM_DedicatedServer)
 	{
 		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] 当前运行模式：独立服务器。"));
+		TryInitializeBackendRuntime();
 	}
 
 	if (IsLobbyMapWorld(GetWorld()))
@@ -265,6 +269,11 @@ void ADBAGameModeBase::SpawnLobbyTrainingMonsters()
 FString ADBAGameModeBase::InitNewPlayer(APlayerController* NewPlayerController, const FUniqueNetIdRepl& UniqueId, const FString& Options, const FString& Portal)
 {
 	const FString ErrorMessage = Super::InitNewPlayer(NewPlayerController, UniqueId, Options, Portal);
+	if (NewPlayerController && GetNetMode() == NM_DedicatedServer)
+	{
+		BackendRuntimePlayerOptions.Add(TObjectKey<APlayerController>(NewPlayerController), Options);
+	}
+
 	if (NewPlayerController && IsLobbyMapWorld(GetWorld()) && !IsListenServerLocalControllerOptions(Options))
 	{
 		const TObjectKey<APlayerController> PlayerKey(NewPlayerController);
@@ -284,12 +293,23 @@ FString ADBAGameModeBase::InitNewPlayer(APlayerController* NewPlayerController, 
 void ADBAGameModeBase::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
+	FString Options;
+	if (NewPlayer)
+	{
+		if (const FString* StoredOptions = BackendRuntimePlayerOptions.Find(TObjectKey<APlayerController>(NewPlayer)))
+		{
+			Options = *StoredOptions;
+		}
+	}
+	ReportBackendPlayerJoined(NewPlayer, Options);
 }
 
 void ADBAGameModeBase::Logout(AController* Exiting)
 {
 	if (APlayerController* PlayerController = Cast<APlayerController>(Exiting))
 	{
+		ReportBackendPlayerLeft(PlayerController);
+
 		const TObjectKey<APlayerController> PlayerKey(PlayerController);
 		if (TWeakObjectPtr<ADBACharacterPreviewActor>* DisplayActorPtr = LobbyDisplayActors.Find(PlayerKey))
 		{
@@ -302,9 +322,104 @@ void ADBAGameModeBase::Logout(AController* Exiting)
 		LobbyDisplayActors.Remove(PlayerKey);
 		LobbyJoinIndices.Remove(PlayerKey);
 		LobbyJoinZodiacs.Remove(PlayerKey);
+		BackendRuntimePlayerIds.Remove(PlayerKey);
+		BackendRuntimePlayerOptions.Remove(PlayerKey);
 	}
 
 	Super::Logout(Exiting);
+}
+
+void ADBAGameModeBase::TryInitializeBackendRuntime()
+{
+	UDBA_GameBackendClientSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBA_GameBackendClientSubsystem>() : nullptr;
+	UDBA_GameBackendRuntimeService* RuntimeService = Backend ? Backend->GetRuntimeService() : nullptr;
+	if (!RuntimeService || !RuntimeService->ConfigureFromCommandLine())
+	{
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameModeBase] Dedicated Server 未配置 Runtime 参数，跳过后端 Runtime 注册。"));
+		return;
+	}
+
+	FDBA_GameBackendResponseDelegate EmptyCallback;
+	RuntimeService->RegisterServer(EmptyCallback);
+	RuntimeService->MarkReady(EmptyCallback);
+	bBackendRuntimeReadySent = true;
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Runtime 注册和 Ready 请求已发送。"));
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(
+			BackendRuntimeHeartbeatTimerHandle,
+			this,
+			&ADBAGameModeBase::SendBackendHeartbeat,
+			20.0f,
+			true);
+	}
+}
+
+void ADBAGameModeBase::SendBackendHeartbeat()
+{
+	UDBA_GameBackendClientSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBA_GameBackendClientSubsystem>() : nullptr;
+	UDBA_GameBackendRuntimeService* RuntimeService = Backend ? Backend->GetRuntimeService() : nullptr;
+	if (!RuntimeService || !RuntimeService->IsConfigured())
+	{
+		return;
+	}
+
+	FDBA_GameBackendResponseDelegate EmptyCallback;
+	RuntimeService->SendHeartbeat(EmptyCallback);
+}
+
+void ADBAGameModeBase::ReportBackendPlayerJoined(APlayerController* PlayerController, const FString& Options)
+{
+	if (!PlayerController || GetNetMode() != NM_DedicatedServer || !bBackendRuntimeReadySent)
+	{
+		return;
+	}
+
+	const FString PlayerId = ExtractUrlOption(Options, TEXT("PlayerId"));
+	const FString PlayerSessionToken = ExtractUrlOption(Options, TEXT("PlayerSessionToken"));
+	if (PlayerId.IsEmpty() || PlayerSessionToken.IsEmpty())
+	{
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameModeBase] 玩家缺少后端连接参数，无法上报 Runtime player-joined：Options=%s"), *Options);
+		return;
+	}
+
+	if (UDBA_GameBackendClientSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBA_GameBackendClientSubsystem>() : nullptr)
+	{
+		if (UDBA_GameBackendRuntimeService* RuntimeService = Backend->GetRuntimeService())
+		{
+			const TObjectKey<APlayerController> PlayerKey(PlayerController);
+			BackendRuntimePlayerIds.Add(PlayerKey, PlayerId);
+
+			FDBA_GameBackendResponseDelegate EmptyCallback;
+			RuntimeService->NotifyPlayerJoined(PlayerId, PlayerSessionToken, TEXT(""), 0, EmptyCallback);
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Runtime player-joined 请求已发送：PlayerId=%s"), *PlayerId);
+		}
+	}
+}
+
+void ADBAGameModeBase::ReportBackendPlayerLeft(APlayerController* PlayerController)
+{
+	if (!PlayerController || GetNetMode() != NM_DedicatedServer)
+	{
+		return;
+	}
+
+	const TObjectKey<APlayerController> PlayerKey(PlayerController);
+	const FString* PlayerId = BackendRuntimePlayerIds.Find(PlayerKey);
+	if (!PlayerId || PlayerId->IsEmpty())
+	{
+		return;
+	}
+
+	if (UDBA_GameBackendClientSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBA_GameBackendClientSubsystem>() : nullptr)
+	{
+		if (UDBA_GameBackendRuntimeService* RuntimeService = Backend->GetRuntimeService())
+		{
+			FDBA_GameBackendResponseDelegate EmptyCallback;
+			RuntimeService->NotifyPlayerLeft(*PlayerId, EmptyCallback);
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Runtime player-left 请求已发送：PlayerId=%s"), **PlayerId);
+		}
+	}
 }
 
 void ADBAGameModeBase::SpawnOrUpdateLobbyDisplayForPlayer(APlayerController* PlayerController)

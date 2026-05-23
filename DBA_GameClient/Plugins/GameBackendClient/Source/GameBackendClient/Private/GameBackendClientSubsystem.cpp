@@ -20,9 +20,12 @@
 #include "DBA_GameBackendSupportService.h"
 #include "DBA_GameBackendTelemetryService.h"
 #include "DBA_GameBackendCrashService.h"
+#include "GameBackendRuntimeService.h"
 #include "DBA_GameBackendHttpClient.h"
 #include "DBA_GameBackendClientSettings.h"
 #include "Dom/JsonObject.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 
@@ -55,6 +58,17 @@ namespace
 		OutPlayerId = ReadFirst({ TEXT("playerId"), TEXT("player_id"), TEXT("uid") });
 		return !OutAccessToken.IsEmpty();
 	}
+
+	FString ReadCommandLineOverride(const TCHAR* PrimaryKey, const TCHAR* FallbackKey)
+	{
+		FString Value;
+		if (!FParse::Value(FCommandLine::Get(), PrimaryKey, Value))
+		{
+			FParse::Value(FCommandLine::Get(), FallbackKey, Value);
+		}
+		Value.TrimStartAndEndInline();
+		return Value;
+	}
 }
 
 void UDBA_GameBackendClientSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -63,6 +77,11 @@ void UDBA_GameBackendClientSubsystem::Initialize(FSubsystemCollectionBase& Colle
 
 	const UDBA_GameBackendClientSettings* Settings = GetDefault<UDBA_GameBackendClientSettings>();
 	BackendBaseUrl = Settings->BackendBaseUrl;
+	const FString BackendUrlOverride = ReadCommandLineOverride(TEXT("backendUrl="), TEXT("DBABackendUrl="));
+	if (!BackendUrlOverride.IsEmpty())
+	{
+		BackendBaseUrl = BackendUrlOverride;
+	}
 	ClientVersion = Settings->ClientVersion;
 	BuildNumber = Settings->BuildNumber;
 	Channel = Settings->Channel;
@@ -290,6 +309,7 @@ void UDBA_GameBackendClientSubsystem::InitializeServices()
 	SupportService = NewObject<UDBA_GameBackendSupportService>(this);
 	TelemetryService = NewObject<UDBA_GameBackendTelemetryService>(this);
 	CrashService = NewObject<UDBA_GameBackendCrashService>(this);
+	RuntimeService = NewObject<UDBA_GameBackendRuntimeService>(this);
 
 	if (AuthService) AuthService->Initialize(this, HttpClient.Get());
 	if (PlayerService) PlayerService->Initialize(this, HttpClient.Get());
@@ -301,6 +321,7 @@ void UDBA_GameBackendClientSubsystem::InitializeServices()
 	if (SupportService) SupportService->Initialize(this, HttpClient.Get());
 	if (TelemetryService) TelemetryService->Initialize(this, HttpClient.Get());
 	if (CrashService) CrashService->Initialize(this, HttpClient.Get());
+	if (RuntimeService) RuntimeService->Initialize(this, HttpClient.Get());
 }
 
 void UDBA_GameBackendClientSubsystem::ReleaseServices()
@@ -315,6 +336,7 @@ void UDBA_GameBackendClientSubsystem::ReleaseServices()
 	SupportService = nullptr;
 	TelemetryService = nullptr;
 	CrashService = nullptr;
+	RuntimeService = nullptr;
 }
 
 void UDBA_GameBackendClientSubsystem::NotifyRefreshCompleted(bool bSuccess)

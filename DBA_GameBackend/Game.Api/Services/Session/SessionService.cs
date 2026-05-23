@@ -11,6 +11,8 @@ using Game.Shared.Errors;
 using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Game.Api.Services.Session;
 
@@ -54,10 +56,19 @@ public sealed class SessionService : ISessionService
         if (session == null || session.ServerIp == null || session.ServerPort == null)
             return null;
 
+        // 连接令牌是进入 UE Dedicated Server 的短期凭证，只在本次连接请求中返回明文。
+        // 数据库仍然只保存 Hash，避免长期保存可直接进服的敏感 token。
+        var playerSessionToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        playerSession.SessionTokenHash = HashToken(playerSessionToken);
+        playerSession.SessionTokenExpiresAt = DateTimeOffset.UtcNow.AddMinutes(10);
+        await _db.SaveChangesAsync();
+
         return new SessionConnectionResponse(
             sessionId, session.ServerIp, session.ServerPort!.Value,
-            "", // sessionToken hidden for security
-            playerSession.SessionTokenExpiresAt);
+            playerSessionToken,
+            playerSession.SessionTokenExpiresAt,
+            playerSessionToken,
+            playerId);
     }
 
     public async Task<SessionResponse?> CreateFromRoomAsync(Guid roomId)
@@ -93,8 +104,7 @@ public sealed class SessionService : ISessionService
         foreach (var rp in players)
         {
             var token = Guid.NewGuid().ToString();
-            var tokenHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
-                System.Text.Encoding.UTF8.GetBytes(token))).ToLowerInvariant();
+            var tokenHash = HashToken(token);
 
             _db.PlayerSessions.Add(new PlayerSession
             {
@@ -142,8 +152,7 @@ public sealed class SessionService : ISessionService
         _db.GameSessions.Add(session);
 
         var token = Guid.NewGuid().ToString();
-        var tokenHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
-            System.Text.Encoding.UTF8.GetBytes(token))).ToLowerInvariant();
+        var tokenHash = HashToken(token);
 
         _db.PlayerSessions.Add(new PlayerSession
         {
@@ -241,4 +250,10 @@ public sealed class SessionService : ISessionService
     private static SessionResponse ToResponse(GameSession s) => new(
         s.Id, s.SourceType, s.Mode, s.MapId, s.Region, s.Status,
         s.ServerIp, s.ServerPort, s.MaxPlayers, s.CreatedAt, s.StartedAt);
+
+    private static string HashToken(string token)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
 }

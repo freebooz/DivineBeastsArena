@@ -12,6 +12,8 @@ using Game.Infrastructure.Database;
 using Game.Shared.Contracts.Room;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Game.Api.Tests;
 
@@ -60,6 +62,38 @@ public class RoomSessionServiceTests
         Assert.Equal(2, await db.PlayerSessions.CountAsync(x => x.GameSessionId == firstSession.Id));
     }
 
+    [Fact]
+    public async Task GetConnectionInfoAsync_ReissuesShortLivedPlayerSessionToken()
+    {
+        await using var db = CreateDbContext();
+        var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
+        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var ownerId = Guid.NewGuid();
+        var secondPlayerId = Guid.NewGuid();
+
+        var room = await roomService.CreateRoomAsync(CreateRoom(), ownerId);
+        await roomService.JoinRoomAsync(room.Id, secondPlayerId, null);
+        await roomService.SetReadyAsync(room.Id, secondPlayerId, true);
+        await roomService.StartGameAsync(room.Id, ownerId);
+        var session = await sessionService.CreateFromRoomAsync(room.Id);
+
+        var storedSession = await db.GameSessions.SingleAsync(x => x.Id == session!.Id);
+        storedSession.ServerIp = "127.0.0.1";
+        storedSession.ServerPort = 7777;
+        await db.SaveChangesAsync();
+
+        var connection = await sessionService.GetConnectionInfoAsync(session!.Id, ownerId);
+        var playerSession = await db.PlayerSessions.SingleAsync(x => x.GameSessionId == session.Id && x.PlayerId == ownerId);
+
+        Assert.NotNull(connection);
+        Assert.Equal(ownerId, connection!.PlayerId);
+        Assert.Equal("127.0.0.1", connection.ServerIp);
+        Assert.Equal(7777, connection.ServerPort);
+        Assert.False(string.IsNullOrWhiteSpace(connection.PlayerSessionToken));
+        Assert.Equal(HashToken(connection.PlayerSessionToken), playerSession.SessionTokenHash);
+        Assert.True(connection.TokenExpiresAt <= DateTimeOffset.UtcNow.AddMinutes(11));
+    }
+
     private static GameDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<GameDbContext>()
@@ -75,4 +109,10 @@ public class RoomSessionServiceTests
         2,
         "PUBLIC",
         null);
+
+    private static string HashToken(string token)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
 }
