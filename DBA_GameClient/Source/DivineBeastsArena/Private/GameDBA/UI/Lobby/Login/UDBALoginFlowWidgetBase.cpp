@@ -20,6 +20,7 @@
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
+#include "Components/OverlaySlot.h"
 #include "Components/PanelWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
@@ -121,6 +122,70 @@ namespace
 			Slot->SetOffsets(Offsets);
 			Slot->SetAlignment(Alignment);
 		}
+	}
+
+	FSlateBrush MakeFullBleedTextureBrush(UTexture2D* Texture)
+	{
+		FSlateBrush Brush;
+		Brush.SetResourceObject(Texture);
+		Brush.ImageSize = FVector2D(1.0f, 1.0f);
+		Brush.DrawAs = ESlateBrushDrawType::Image;
+		Brush.Margin = FMargin(0.0f);
+		Brush.TintColor = FSlateColor(FLinearColor::White);
+		return Brush;
+	}
+
+	void StretchWidgetToParentEdges(UWidget* Widget, const int32 CanvasZOrder = -2000)
+	{
+		if (!Widget)
+		{
+			return;
+		}
+
+		if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(Widget->Slot))
+		{
+			CanvasSlot->SetAutoSize(false);
+			CanvasSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
+			CanvasSlot->SetOffsets(FMargin(0.0f));
+			CanvasSlot->SetAlignment(FVector2D::ZeroVector);
+			CanvasSlot->SetZOrder(CanvasZOrder);
+			return;
+		}
+
+		if (UOverlaySlot* OverlaySlot = Cast<UOverlaySlot>(Widget->Slot))
+		{
+			OverlaySlot->SetPadding(FMargin(0.0f));
+			OverlaySlot->SetHorizontalAlignment(HAlign_Fill);
+			OverlaySlot->SetVerticalAlignment(VAlign_Fill);
+		}
+	}
+
+	void ApplyFullBleedTextureToImage(UImage* Image, UTexture2D* Texture)
+	{
+		if (!Image || !Texture)
+		{
+			return;
+		}
+
+		Image->SetBrush(MakeFullBleedTextureBrush(Texture));
+		Image->SetDesiredSizeOverride(FVector2D::ZeroVector);
+		Image->SetColorAndOpacity(FLinearColor::White);
+		Image->SetVisibility(ESlateVisibility::Visible);
+		StretchWidgetToParentEdges(Image);
+	}
+
+	void ApplyFullBleedTextureToBorder(UBorder* Border, UTexture2D* Texture)
+	{
+		if (!Border || !Texture)
+		{
+			return;
+		}
+
+		Border->SetBrush(MakeFullBleedTextureBrush(Texture));
+		Border->SetBrushColor(FLinearColor::White);
+		Border->SetPadding(FMargin(0.0f));
+		Border->SetVisibility(ESlateVisibility::Visible);
+		StretchWidgetToParentEdges(Border);
 	}
 
 	UWidget* FindWidgetByNames(UWidgetTree* WidgetTree, const TArray<FName>& Names)
@@ -699,7 +764,7 @@ UDBALoginFlowSubsystem* UDBALoginFlowWidgetBase::GetLoginFlow() const
 
 void UDBALoginFlowWidgetBase::HandleBackgroundMusicFinished()
 {
-	StartBackgroundMusic();
+	BackgroundMusicComponent = nullptr;
 }
 
 void UDBALoginFlowWidgetBase::InitializeAudioAssets()
@@ -713,39 +778,12 @@ void UDBALoginFlowWidgetBase::InitializeAudioAssets()
 		}
 	}
 
-	if (!BackgroundMusicSound)
-	{
-		BackgroundMusicSound = LoadAssetIfCookedAvailable<USoundBase>(TEXT("/Game/DBA/Audio/UI/BGM/BGM_LoginFlow_Loop.BGM_LoginFlow_Loop"));
-		if (!BackgroundMusicSound)
-		{
-			BackgroundMusicSound = LoadAssetIfCookedAvailable<USoundBase>(TEXT("/Game/DBA/Audio/UI/BGM/BGM_Login_Loop.BGM_Login_Loop"));
-		}
-		if (!BackgroundMusicSound)
-		{
-			UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] 未找到背景音乐资源。"));
-		}
-	}
+	BackgroundMusicSound = nullptr;
 }
 
 void UDBALoginFlowWidgetBase::StartBackgroundMusic()
 {
-	if (BackgroundMusicComponent || !BackgroundMusicSound || !GetWorld())
-	{
-		return;
-	}
-
-	BackgroundMusicComponent = UGameplayStatics::SpawnSound2D(GetWorld(), BackgroundMusicSound, 0.45f, 1.0f, 0.0f, nullptr, false, false);
-	if (BackgroundMusicComponent)
-	{
-		BackgroundMusicComponent->bIsUISound = true;
-		BackgroundMusicComponent->SetVolumeMultiplier(0.8f);
-		BackgroundMusicComponent->OnAudioFinished.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleBackgroundMusicFinished);
-		BackgroundMusicComponent->OnAudioFinished.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleBackgroundMusicFinished);
-	}
-	else
-	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] 背景音乐组件创建失败。"));
-	}
+	StopBackgroundMusic();
 }
 
 void UDBALoginFlowWidgetBase::StopBackgroundMusic()
@@ -805,8 +843,7 @@ void UDBALoginFlowWidgetBase::BuildReferenceNativeLayout()
 	UImage* BackgroundImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("ReferenceForestBackground"));
 	if (LoginBackgroundTexture)
 	{
-		BackgroundImage->SetBrushFromTexture(LoginBackgroundTexture, true);
-		BackgroundImage->SetColorAndOpacity(FLinearColor::White);
+		ApplyFullBleedTextureToImage(BackgroundImage, LoginBackgroundTexture);
 	}
 	else
 	{
@@ -964,14 +1001,7 @@ void UDBALoginFlowWidgetBase::ApplyLoginBackgroundTexture()
 
 	const auto ApplyTextureToImage = [this](UImage* Image)
 	{
-		if (!Image)
-		{
-			return;
-		}
-
-		Image->SetBrushFromTexture(LoginBackgroundTexture, true);
-		Image->SetColorAndOpacity(FLinearColor::White);
-		Image->SetVisibility(ESlateVisibility::Visible);
+		ApplyFullBleedTextureToImage(Image, LoginBackgroundTexture);
 	};
 
 	if (UWidget* BackgroundWidget = FindWidgetByNames(WidgetTree, {
@@ -989,9 +1019,7 @@ void UDBALoginFlowWidgetBase::ApplyLoginBackgroundTexture()
 
 		if (UBorder* BackgroundBorder = Cast<UBorder>(BackgroundWidget))
 		{
-			BackgroundBorder->SetBrushFromTexture(LoginBackgroundTexture);
-			BackgroundBorder->SetBrushColor(FLinearColor::White);
-			BackgroundBorder->SetVisibility(ESlateVisibility::Visible);
+			ApplyFullBleedTextureToBorder(BackgroundBorder, LoginBackgroundTexture);
 			return;
 		}
 	}

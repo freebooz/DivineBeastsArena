@@ -20,6 +20,7 @@
 - `CommerceEndpoints` 从“开发中”改为可执行 mock 购买流程，写入订单、钱包流水、背包和背包日志。
 - `SocialEndpoints` 修复好友列表返回关系拥有者信息的问题，改为返回好友玩家资料。
 - `PlayerHistoryEndpoints` 修复工单详情漏掉管理员回复的问题。
+- `GameFeatureEndpointHelpers` 增加统一分页规范化，排行榜、背包日志、战绩、我的工单和反馈接口在未传 `page/pageSize` 时稳定返回默认第一页。
 - `AdminEndpoints` 已拆出服务器和客户端版本管理 partial 文件，降低单文件膨胀。
 
 后续建议：
@@ -62,6 +63,9 @@
 
 本轮判断：
 - 启动器职责聚焦，当前单页结构可接受。
+
+本轮修复：
+- `App.tsx` 的后端状态 DTO 与 `LauncherStatusResponse` 对齐，避免 `/api/launcher/status` 返回后在界面显示 `undefined` 字段。
 
 后续建议：
 - 当下载、修复、日志、设置继续增长时，将 `App.tsx` 拆为 `components`、`hooks` 和 `services`。

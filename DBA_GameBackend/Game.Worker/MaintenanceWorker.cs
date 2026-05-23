@@ -54,7 +54,7 @@ public class MaintenanceWorker(
 
     private static async Task EnsureDailyStatsRowAsync(GameDbContext db, CancellationToken cancellationToken)
     {
-        var today = DateTimeOffset.UtcNow.Date;
+        var today = new DateTimeOffset(DateTimeOffset.UtcNow.UtcDateTime.Date, TimeSpan.Zero);
         var hasToday = await db.DailyStats.AnyAsync(x => x.Date == today && x.Region == "global", cancellationToken);
         if (hasToday)
         {

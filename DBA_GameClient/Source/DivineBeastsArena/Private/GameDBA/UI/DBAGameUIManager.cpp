@@ -1630,7 +1630,7 @@ void UDBAGameUIManager::RefreshLoginFlowWidgetVisibility()
 	case EDBALoginFlowState::LoginScreen:
 	case EDBALoginFlowState::TryAutoLogin:
 	{
-		EnsureLoginFlowBackgroundMusic();
+		StopLoginFlowBackgroundMusic();
 		HideMainLobby();
 		if (UUserWidget* Widget = EnsureFlowWidgetCreated(LoginWidgetClass, LoginWidget))
 		{

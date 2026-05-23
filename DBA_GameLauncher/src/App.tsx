@@ -29,11 +29,9 @@ type UpdateManifest = {
 
 type LauncherStatus = {
   status: string;
-  latestVersion: string;
-  downloadUrl: string;
-  mandatory: boolean;
-  activeGameServers: number;
-  generatedAt: string;
+  apiBaseUrl: string;
+  serverTime: string;
+  notices: string[];
 };
 
 const defaultInstallPath = "D:\\DivineBeastsArenaPlatform\\DBA_GameClient";
@@ -330,7 +328,7 @@ function App() {
           <p>{launcherStatus?.status ?? "未连接"}</p>
           <small>
             {launcherStatus
-              ? `版本 ${launcherStatus.latestVersion}，活跃服务器 ${launcherStatus.activeGameServers}`
+              ? `${launcherStatus.apiBaseUrl}，服务时间 ${new Date(launcherStatus.serverTime).toLocaleString()}`
               : backendBaseUrl}
           </small>
         </article>

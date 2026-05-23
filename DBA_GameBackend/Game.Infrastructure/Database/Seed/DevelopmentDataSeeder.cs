@@ -697,6 +697,22 @@ public class DevelopmentDataSeeder
         {
             new PlayerProfile
             {
+                PlayerId = Guid.Parse("dddd0000-0000-0000-0000-000000000001"),
+                Nickname = "admin",
+                Level = 1,
+                Exp = 0,
+                CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+            },
+            new PlayerProfile
+            {
+                PlayerId = Guid.Parse("dddd0000-0000-0000-0000-000000000002"),
+                Nickname = "ops",
+                Level = 1,
+                Exp = 0,
+                CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+            },
+            new PlayerProfile
+            {
                 PlayerId = FrontendDebugPlayerId,
                 Nickname = "frontend_debug",
                 Level = 10,
@@ -1799,7 +1815,7 @@ public class DevelopmentDataSeeder
 
     private List<DailyStats> GetDailyStatsSeeds()
     {
-        var today = DateTimeOffset.UtcNow.Date;
+        var today = new DateTimeOffset(DateTimeOffset.UtcNow.UtcDateTime.Date, TimeSpan.Zero);
         return new List<DailyStats>
         {
             new DailyStats
@@ -2378,7 +2394,7 @@ public class DevelopmentDataSeeder
 
     private List<RetentionCohort> GetRetentionCohortSeeds()
     {
-        var today = DateTimeOffset.UtcNow.Date;
+        var today = new DateTimeOffset(DateTimeOffset.UtcNow.UtcDateTime.Date, TimeSpan.Zero);
         return new List<RetentionCohort>
         {
             new() { Id = Guid.Parse("2e700000-0000-0000-0000-000000000001"), CohortDate = today.AddDays(-30), D0 = 100, D1 = 72, D3 = 54, D7 = 41, D14 = 32, D30 = 24, Region = "global" },

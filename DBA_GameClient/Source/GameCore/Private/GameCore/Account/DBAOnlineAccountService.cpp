@@ -20,6 +20,7 @@
 #include "HAL/PlatformProcess.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Misc/CommandLine.h"
 #include "Policies/CondensedJsonPrintPolicy.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
@@ -52,6 +53,24 @@ FString BuildRefreshTokenRequestBody(const FString& RefreshToken)
 		TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&Output);
 	FJsonSerializer::Serialize(Object, Writer);
 	return Output;
+}
+
+FString ReadBackendUrlCommandLineOverride()
+{
+	for (const TCHAR* Key : { TEXT("backendUrl="), TEXT("BackendBaseUrl="), TEXT("DBABackendUrl=") })
+	{
+		FString Value;
+		if (FParse::Value(FCommandLine::Get(), Key, Value))
+		{
+			Value.TrimStartAndEndInline();
+			if (!Value.IsEmpty())
+			{
+				return Value;
+			}
+		}
+	}
+
+	return FString();
 }
 }
 
@@ -90,6 +109,21 @@ bool UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError Error)
 
 FString UDBAOnlineAccountService::BuildUrl(const FString& Path) const
 {
+	const FString CommandLineBackendUrl = NormalizeBaseUrl(ReadBackendUrlCommandLineOverride());
+	if (!CommandLineBackendUrl.IsEmpty())
+	{
+		return CommandLineBackendUrl + Path;
+	}
+
+	if (const UDBA_GameBackendClientSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBA_GameBackendClientSubsystem>() : nullptr)
+	{
+		const FString BackendBaseUrl = NormalizeBaseUrl(Backend->GetBackendBaseUrl());
+		if (!BackendBaseUrl.IsEmpty())
+		{
+			return BackendBaseUrl + Path;
+		}
+	}
+
 	if (const UDBA_GameBackendClientSettings* BackendSettings = GetDefault<UDBA_GameBackendClientSettings>())
 	{
 		const FString BackendBaseUrl = NormalizeBaseUrl(BackendSettings->BackendBaseUrl);
@@ -242,6 +276,13 @@ void UDBAOnlineAccountService::Login(const FDBALoginRequest& RequestData, FDBAOn
 
 		if (!bSucceeded || !HttpResponse.IsValid() || !EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
 		{
+			const int32 ResponseCode = HttpResponse.IsValid() ? HttpResponse->GetResponseCode() : 0;
+			LogSubsystemWarning(FString::Printf(
+				TEXT("GuestLogin request failed: URL=%s HTTP=%d Succeeded=%s"),
+				*HttpRequest->GetURL(),
+				ResponseCode,
+				bSucceeded ? TEXT("true") : TEXT("false")));
+
 			const EDBAOnlineAccountError Error = ClassifyHttpFailure(bSucceeded, HttpResponse);
 			if (ShouldFallback(Error))
 			{

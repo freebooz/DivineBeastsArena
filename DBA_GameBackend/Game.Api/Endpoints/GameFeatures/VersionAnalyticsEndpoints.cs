@@ -62,7 +62,7 @@ public static partial class GameFeatureEndpoints
 
     private static async Task<IResult> GetOverviewStats(GameDbContext db)
     {
-        var today = DateTimeOffset.UtcNow.Date;
+        var today = new DateTimeOffset(DateTimeOffset.UtcNow.UtcDateTime.Date, TimeSpan.Zero);
         var stats = await db.DailyStats.FirstOrDefaultAsync(x => x.Date == today);
 
         if (stats == null)
