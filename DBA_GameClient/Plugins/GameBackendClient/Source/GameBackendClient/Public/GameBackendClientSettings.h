@@ -12,7 +12,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
-#include "DBA_GameBackendClientSettings.generated.h"
+#include "GameBackendClientSettings.generated.h"
 
 UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "Game Backend Client"))
 class GAMEBACKENDCLIENT_API UDBA_GameBackendClientSettings : public UDeveloperSettings

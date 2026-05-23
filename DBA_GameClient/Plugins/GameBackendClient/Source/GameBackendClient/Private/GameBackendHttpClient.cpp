@@ -8,9 +8,9 @@
 */
 
 
-#include "DBA_GameBackendHttpClient.h"
+#include "GameBackendHttpClient.h"
 
-#include "DBA_GameBackendClientSubsystem.h"
+#include "GameBackendClientSubsystem.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"

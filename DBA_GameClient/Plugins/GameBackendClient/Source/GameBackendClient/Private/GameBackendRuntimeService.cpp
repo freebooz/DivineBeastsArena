@@ -1,16 +1,11 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 /*
-中文阅读说明：
-- 所属应用：DBA_GameClient Unreal Engine 客户端 / Dedicated Server。
-- 文件职责：实现 UE Dedicated Server 到 DBA_GameBackend Runtime API 的 HTTP 上报。
-- 阅读重点：所有 Runtime 请求都带 serverId、sessionId、runtimeToken，后端只保存 token hash 并校验绑定关系。
-- 修改提示：保持接口无客户端 JWT 依赖，Runtime Token 是服务器专用凭证，不能暴露给普通客户端。
-*/
+涓枃闃呰璇存槑锛?- 鎵€灞炲簲鐢細DBA_GameClient Unreal Engine 瀹㈡埛绔?/ Dedicated Server銆?- 鏂囦欢鑱岃矗锛氬疄鐜?UE Dedicated Server 鍒?DBA_GameBackend Runtime API 鐨?HTTP 涓婃姤銆?- 闃呰閲嶇偣锛氭墍鏈?Runtime 璇锋眰閮藉甫 serverId銆乻essionId銆乺untimeToken锛屽悗绔彧淇濆瓨 token hash 骞舵牎楠岀粦瀹氬叧绯汇€?- 淇敼鎻愮ず锛氫繚鎸佹帴鍙ｆ棤瀹㈡埛绔?JWT 渚濊禆锛孯untime Token 鏄湇鍔″櫒涓撶敤鍑瘉锛屼笉鑳芥毚闇茬粰鏅€氬鎴风銆?*/
 
 #include "GameBackendRuntimeService.h"
 
-#include "DBA_GameBackendClientSubsystem.h"
-#include "DBA_GameBackendHttpClient.h"
+#include "GameBackendClientSubsystem.h"
+#include "GameBackendHttpClient.h"
 #include "Dom/JsonObject.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
@@ -56,7 +51,7 @@ bool UDBA_GameBackendRuntimeService::ConfigureFromCommandLine()
 		RuntimeToken = ReadCommandLineValue(TEXT("RuntimeToken="));
 	}
 
-	UE_LOG(LogDBA_GameBackendClient, Log, TEXT("Runtime 参数读取完成。SessionId=%s ServerId=%s 已配置Token=%s"),
+	UE_LOG(LogDBA_GameBackendClient, Log, TEXT("Runtime 鍙傛暟璇诲彇瀹屾垚銆係essionId=%s ServerId=%s 宸查厤缃甌oken=%s"),
 		*SessionId,
 		*ServerId,
 		RuntimeToken.IsEmpty() ? TEXT("false") : TEXT("true"));

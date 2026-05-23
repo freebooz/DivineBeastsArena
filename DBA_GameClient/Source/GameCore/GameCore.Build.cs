@@ -33,7 +33,7 @@ public class GameCore : ModuleRules
 			"HTTP",
 			"Json",
 			"JsonUtilities",
-			"DBA_GameBackendClient",
+			"GameBackendClient",
 		});
 
 		PublicIncludePaths.Add("GameCore/Public");

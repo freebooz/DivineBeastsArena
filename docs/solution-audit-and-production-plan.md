@@ -123,3 +123,125 @@
 - 当前机器可执行的任务：后端测试、Node 构建、Docker Compose config、文档、脚本、接口补强。
 - 当前机器不可完全执行的任务：UE 编译、真实客户端包和 Dedicated Server 包验证、GitHub 分支保护启用、真实预生产部署。
 - 不可执行项已经沉淀为脚本和文档，等拿到对应环境后按顺序运行。
+
+## 当前分阶段修改计划
+
+### P0：仓库基线修复与验证
+
+目标：让仓库说明、解决方案边界和本机可执行验证都清晰可信。
+
+待办：
+
+1. 修正根 README 的仓库级应用矩阵和解决方案边界说明。
+2. 说明中文文档 UTF-8 读取方式，避免 Windows PowerShell 默认编码导致误判为乱码。
+3. 执行后端、GM 后台、官网、启动器和 Docker Compose 基础验证。
+
+验收标准：
+
+- README 能清楚说明 `.sln` 只覆盖后端，其他应用独立构建。
+- `dotnet build/test`、`npm run build`、`cargo check`、`docker compose config` 的结果被记录。
+
+执行记录：
+
+- 已更新根 README，补充仓库级应用矩阵、解决方案边界、阶段计划和 UTF-8 读取说明。
+- 已执行 `.\scripts\production-preflight.ps1 -SkipUnreal`，后端测试、Admin 构建、官网构建、启动器前端构建、启动器 `cargo check`、后端 Compose config、观测 Compose config 均通过。
+- 已修复启动器 Rust 层编译问题：版本解析失败时回退到 `0.0.0`，下载流改用 `std::io::copy`，并修正 Tauri 入口 crate 名称。
+- 已确认 UE 工具路径：`E:\UnrealEngine-5.7.1-release\Engine\Binaries\DotNET\AutomationTool\UnrealBuildTool.exe`。
+- 已更新预检脚本，使其支持 `$env:UNREAL_ENGINE_ROOT` 或本机默认 UE 路径。
+
+### P1：后端边界与生产配置
+
+目标：降低后端 API、Worker 和共享业务之间的耦合风险，补齐生产配置失败前置校验。
+
+待办：
+
+1. 梳理 `Game.Api` 引用 `Game.Worker` 的真实原因。
+2. 如果只是复用 Game Server Manager 契约或配置，优先抽到共享层。
+3. 为 `Jwt:Secret`、`InternalApi:Key`、数据库、Redis、`GameServerManager` 增加启动期配置校验。
+4. 补充登录、角色、匹配、房间、Runtime 上报、结算、背包奖励主链路测试。
+
+验收标准：
+
+- API 与 Worker 的依赖关系有明确结论或已完成拆分。
+- 生产关键配置缺失时启动失败且错误信息可读。
+- 后端测试覆盖关键主流程。
+
+执行记录：
+
+- 已新增 `Game.ServerManagement` 共享项目，将 `IServerManagerService`、`ServerManagerService`、分配命令和管理 DTO 从 `Game.Worker` 中拆出。
+- `Game.Api` 已改为依赖 `Game.ServerManagement`，不再直接引用 `Game.Worker`。
+- `Game.Worker` 保留后台循环 `ServerManagerWorker`，并依赖共享的服务器管理服务。
+- 已新增 `RequiredOptionsValidator`，集中校验 `Database`、`Redis`、`Jwt`、`InternalApi:Key` 和 `GameServerManager`。
+- 已补充配置校验单元测试，后端测试从 15 个增加到 19 个：`Game.Api.Tests` 18 个、`Game.IntegrationTests` 1 个，全部通过。
+- 已更新 API/Worker Dockerfile 的项目复制清单，包含新增的 `Game.ServerManagement` 项目。
+- 本机 Docker daemon 当前未运行，`docker build` 无法连接 `dockerDesktopLinuxEngine`，镜像构建仍需在 Docker 可用环境或 CI 中验证。
+
+### P2：UE 端到端联调
+
+目标：从后端模拟能力进入真实客户端和真实 Dedicated Server 验证。
+
+待办：
+
+1. 构建真实 UE Dedicated Server 包。
+2. 配置 `UE_SERVER_EXECUTABLE_PATH` 并通过 Worker 启动。
+3. 验证 Runtime register、ready、heartbeat、player-joined、player-left、match results。
+4. 构建真实客户端包并验证登录、角色、匹配、连接信息、进服。
+5. 补充 `DBA_GameClient` 构建环境、命令和联调说明。
+
+验收标准：
+
+- Dedicated Server 可被 Worker 分配、启动、回收。
+- 客户端可完成登录到进服主链路。
+
+执行记录：
+
+- 已使用 `E:\UnrealEngine-5.7.1-release\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe` 完成 `DivineBeastsArenaEditor Win64 Development` 编译验证。
+- 已完成 `DivineBeastsArenaServer Win64 Development` 编译验证，首次构建约 8 分钟。
+- 已修复 UE 插件命名不一致问题：插件名、模块名、Build.cs、模块依赖统一为 `GameBackendClient`。
+- 已修复 GameBackendClient 插件头文件生成 include 命名，`.generated.h` 与实际头文件名保持一致。
+- 已修复项目中旧的 `DBA_GameBackend*.h` include 文件名。
+- 已修复 Unity Build 下 `DBASkillProjectileBase.cpp` 的匿名命名空间 helper 函数重名冲突。
+- 已补充 `DBAZodiacSkillVFXComponent_Generic.cpp` 对 `Engine/OverlapResult.h` 的 include。
+- 当前剩余 P2 工作已从“C++ 无法编译”推进为“需要真实 Server 包路径、Worker 启动和客户端进服联调”。
+
+### P3：启动器、官网和 GM 运营闭环
+
+目标：让外围应用接入真实发布和运营数据。
+
+待办：
+
+1. 启动器接入真实 CDN manifest、真实 SHA256 和发布文件。
+2. 官网下载页读取真实发布 manifest。
+3. 官网反馈接入后端持久化或 GM 工单。
+4. Admin 使用预生产账号完成玩家、对局、服务器、配置、背包、反馈、审计验收。
+
+验收标准：
+
+- 启动器可下载、校验、修复并启动真实客户端包。
+- 官网反馈能进入可追踪处理流程。
+- GM 后台可以完成核心运营操作。
+
+当前状态：
+
+- 官网反馈表单已提交到 `Game.Api` 的 `/api/feedback/`，后端会持久化为 `PlayerFeedback`，GM 后台已有反馈列表入口。
+- 官网下载页已读取 `Game.Api` 的 `/api/launcher/manifest?channel=stable&platform=Windows`，并展示版本、下载地址、大小、SHA256、强更和 release notes。
+- 启动器 Rust 层已通过 `cargo check`，具备 manifest 拉取、文件下载、SHA256 校验和启动命令基础能力。
+- 剩余工作依赖真实 CDN 文件、真实客户端安装包、真实 SHA256 和预生产 GM 账号验收。
+
+### P4：生产化与发布治理
+
+目标：形成可重复执行的上线、回滚、观测和安全闭环。
+
+待办：
+
+1. 执行 PostgreSQL 备份恢复演练。
+2. 执行 k6 登录、匹配、服务器分配压测。
+3. 启用 Grafana、Prometheus 告警和 Loki 日志查询。
+4. 将依赖扫描和容器镜像扫描纳入 CI。
+5. 设置 `main` 分支保护并要求 `solution-ci`。
+6. 固化上线 Runbook 和回滚 Runbook。
+
+验收标准：
+
+- 生产预检脚本、备份恢复、压测、观测和回滚流程均有记录。
+- 生产环境禁用 dev-login 和 mock fallback。

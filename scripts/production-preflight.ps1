@@ -9,7 +9,8 @@ param(
     [switch]$SkipNode,
     [switch]$SkipDocker,
     [switch]$SkipCargo,
-    [switch]$SkipUnreal
+    [switch]$SkipUnreal,
+    [string]$UnrealRoot = $env:UNREAL_ENGINE_ROOT
 )
 
 $ErrorActionPreference = "Stop"
@@ -110,10 +111,34 @@ if (-not $SkipDocker) {
 if (-not $SkipUnreal) {
     Invoke-Check "UnrealBuildTool availability" {
         $ubt = Get-Command UnrealBuildTool -ErrorAction SilentlyContinue
+        if ($ubt) {
+            Write-Host "UnrealBuildTool: $($ubt.Source)"
+            return
+        }
+
+        $candidateRoots = @()
+        if (-not [string]::IsNullOrWhiteSpace($UnrealRoot)) {
+            $candidateRoots += $UnrealRoot
+        }
+        $candidateRoots += "E:\UnrealEngine-5.7.1-release"
+
+        foreach ($root in $candidateRoots) {
+            $candidatePaths = @(
+                (Join-Path $root "Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe"),
+                (Join-Path $root "Engine\Binaries\DotNET\AutomationTool\UnrealBuildTool.exe")
+            )
+
+            foreach ($candidate in $candidatePaths) {
+                if (Test-Path $candidate) {
+                    Write-Host "UnrealBuildTool: $candidate"
+                    return
+                }
+            }
+        }
+
         if (-not $ubt) {
             throw "UnrealBuildTool not found. This machine cannot verify UE C++ compilation."
         }
-        Write-Host "UnrealBuildTool: $($ubt.Source)"
     }
 }
 

@@ -8,14 +8,14 @@
 */
 
 
-#include "DBA_GameBackendTelemetryService.h"
+#include "GameBackendTelemetryService.h"
 
 #include "Async/Async.h"
 #include "Dom/JsonObject.h"
 #include "Engine/World.h"
-#include "DBA_GameBackendClientSettings.h"
-#include "DBA_GameBackendClientSubsystem.h"
-#include "DBA_GameBackendHttpClient.h"
+#include "GameBackendClientSettings.h"
+#include "GameBackendClientSubsystem.h"
+#include "GameBackendHttpClient.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 #include "TimerManager.h"

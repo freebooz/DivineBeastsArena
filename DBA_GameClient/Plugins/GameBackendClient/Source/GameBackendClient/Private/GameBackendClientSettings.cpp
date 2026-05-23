@@ -8,7 +8,7 @@
 */
 
 
-#include "DBA_GameBackendClientSettings.h"
+#include "GameBackendClientSettings.h"
 
 UDBA_GameBackendClientSettings::UDBA_GameBackendClientSettings()
 {

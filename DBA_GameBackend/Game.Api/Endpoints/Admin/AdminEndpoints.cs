@@ -15,7 +15,7 @@ using Game.Infrastructure.Database.Entities;
 using Game.Shared.Common;
 using Game.Shared.Contracts.Admin;
 using Game.Shared.Options;
-using Game.Worker.ServerManager;
+using Game.ServerManagement.ServerManager;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 

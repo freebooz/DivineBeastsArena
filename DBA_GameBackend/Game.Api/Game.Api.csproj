@@ -33,7 +33,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Game.Shared\Game.Shared.csproj" />
     <ProjectReference Include="..\Game.Infrastructure\Game.Infrastructure.csproj" />
-    <ProjectReference Include="..\Game.Worker\Game.Worker.csproj" />
+    <ProjectReference Include="..\Game.ServerManagement\Game.ServerManagement.csproj" />
   </ItemGroup>
 
 </Project>

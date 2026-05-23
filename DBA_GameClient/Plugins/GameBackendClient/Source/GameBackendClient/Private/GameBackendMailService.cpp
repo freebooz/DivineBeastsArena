@@ -8,10 +8,10 @@
 */
 
 
-#include "DBA_GameBackendMailService.h"
+#include "GameBackendMailService.h"
 
-#include "DBA_GameBackendClientSubsystem.h"
-#include "DBA_GameBackendHttpClient.h"
+#include "GameBackendClientSubsystem.h"
+#include "GameBackendHttpClient.h"
 
 namespace
 {

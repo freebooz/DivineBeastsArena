@@ -48,7 +48,7 @@
 	],
 	"Plugins": [
 		{
-			"Name": "DBA_GameBackendClient",
+			"Name": "GameBackendClient",
 			"Enabled": true
 		},
 		{

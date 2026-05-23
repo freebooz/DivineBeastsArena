@@ -43,7 +43,7 @@ public class DivineBeastsArena : ModuleRules
             "NavigationSystem",
             "Json",
             "JsonUtilities",
-            "DBA_GameBackendClient",
+            "GameBackendClient",
         });
 
         if (Target.Type != TargetType.Server)

@@ -8,9 +8,9 @@
 
 using UnrealBuildTool;
 
-public class DBA_GameBackendClient : ModuleRules
+public class GameBackendClient : ModuleRules
 {
-	public DBA_GameBackendClient(ReadOnlyTargetRules Target) : base(Target)
+	public GameBackendClient(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 

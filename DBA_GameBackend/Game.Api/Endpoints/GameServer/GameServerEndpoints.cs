@@ -11,7 +11,7 @@ using Game.Shared.Common;
 using Game.Shared.Errors;
 using Game.Api.Extensions;
 using Game.Api.Services.GameServer;
-using Game.Worker.ServerManager;
+using Game.ServerManagement.ServerManager;
 
 namespace Game.Api.Endpoints.GameServer;
 

@@ -29,7 +29,7 @@ using Game.Api.Services.GameServer;
 using Game.Api.Services.Inventory;
 using Game.Api.Validators;
 using FluentValidation;
-using Game.Worker.ServerManager;
+using Game.ServerManagement.ServerManager;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Threading.RateLimiting;
 
@@ -42,8 +42,13 @@ public static class ServiceCollectionExtensions
         var databaseOptions = configuration.GetSection(DatabaseOptions.Section).Get<DatabaseOptions>() ?? new();
         var redisOptions = configuration.GetSection(RedisOptions.Section).Get<RedisOptions>() ?? new();
         var jwtOptions = configuration.GetSection(JwtOptions.Section).Get<JwtOptions>() ?? new();
+        var gameServerManagerOptions = configuration.GetSection(GameServerManagerOptions.Section).Get<GameServerManagerOptions>() ?? new();
 
-        ValidateRequiredInfrastructureOptions(databaseOptions, redisOptions, jwtOptions);
+        RequiredOptionsValidator.ValidateDatabase(databaseOptions);
+        RequiredOptionsValidator.ValidateRedis(redisOptions);
+        RequiredOptionsValidator.ValidateJwt(jwtOptions);
+        RequiredOptionsValidator.ValidateInternalApiKey(configuration["InternalApi:Key"]);
+        RequiredOptionsValidator.ValidateGameServerManager(gameServerManagerOptions);
 
         services.AddDbContext<GameDbContext>(options =>
             options
@@ -230,27 +235,6 @@ public static class ServiceCollectionExtensions
             .AddRedis(redisOptions.ConnectionString, name: "redis", tags: new[] { "ready" });
 
         return services;
-    }
-
-    private static void ValidateRequiredInfrastructureOptions(
-        DatabaseOptions databaseOptions,
-        RedisOptions redisOptions,
-        JwtOptions jwtOptions)
-    {
-        if (string.IsNullOrWhiteSpace(databaseOptions.ConnectionString))
-        {
-            throw new InvalidOperationException("Database:ConnectionString must be configured.");
-        }
-
-        if (string.IsNullOrWhiteSpace(redisOptions.ConnectionString))
-        {
-            throw new InvalidOperationException("Redis:ConnectionString must be configured.");
-        }
-
-        if (string.IsNullOrWhiteSpace(jwtOptions.Secret) || jwtOptions.Secret.Length < 32)
-        {
-            throw new InvalidOperationException("Jwt:Secret must be configured with at least 32 characters.");
-        }
     }
 
     private static string BuildClientPartition(HttpContext httpContext, string policy)

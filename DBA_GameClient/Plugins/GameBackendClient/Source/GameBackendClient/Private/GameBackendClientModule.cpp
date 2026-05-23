@@ -9,7 +9,7 @@
 
 
 #include "Modules/ModuleManager.h"
-#include "DBA_GameBackendTypes.h"
+#include "GameBackendTypes.h"
 
 DEFINE_LOG_CATEGORY(LogDBA_GameBackendClient);
 
@@ -18,13 +18,13 @@ class FDBA_GameBackendClientModule : public IModuleInterface
 public:
 	virtual void StartupModule() override
 	{
-		UE_LOG(LogDBA_GameBackendClient, Log, TEXT("DBA_GameBackendClient 模块已启动。"));
+		UE_LOG(LogDBA_GameBackendClient, Log, TEXT("GameBackendClient 模块已启动。"));
 	}
 
 	virtual void ShutdownModule() override
 	{
-		UE_LOG(LogDBA_GameBackendClient, Log, TEXT("DBA_GameBackendClient 模块已关闭。"));
+		UE_LOG(LogDBA_GameBackendClient, Log, TEXT("GameBackendClient 模块已关闭。"));
 	}
 };
 
-IMPLEMENT_MODULE(FDBA_GameBackendClientModule, DBA_GameBackendClient)
+IMPLEMENT_MODULE(FDBA_GameBackendClientModule, GameBackendClient)

@@ -12,8 +12,8 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "DBA_GameBackendTypes.h"
-#include "DBA_GameBackendMatchService.generated.h"
+#include "GameBackendTypes.h"
+#include "GameBackendMatchService.generated.h"
 
 class UDBA_GameBackendClientSubsystem;
 class FDBA_GameBackendHttpClient;

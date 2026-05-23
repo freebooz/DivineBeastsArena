@@ -11,7 +11,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBA_GameBackendTypes.h"
+#include "GameBackendTypes.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 

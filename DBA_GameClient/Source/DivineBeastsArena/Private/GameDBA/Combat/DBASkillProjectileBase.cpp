@@ -33,7 +33,7 @@ namespace
 		return Path.IsValid() ? Path.ToString() : FString();
 	}
 
-	UAbilitySystemComponent* ResolveAbilitySystemComponent(AActor* Actor)
+	UAbilitySystemComponent* ResolveProjectileAbilitySystemComponent(AActor* Actor)
 	{
 		if (!Actor)
 		{
@@ -49,7 +49,7 @@ namespace
 		return Owner ? Owner->FindComponentByClass<UAbilitySystemComponent>() : nullptr;
 	}
 
-	EDBAElement ToCommonElement(EDBAElementType ElementType)
+	EDBAElement ToProjectileCommonElement(EDBAElementType ElementType)
 	{
 		switch (ElementType)
 		{
@@ -66,7 +66,7 @@ namespace
 	{
 		if (const ADBAZodiacCharacterBase* ZodiacCharacter = Cast<ADBAZodiacCharacterBase>(Actor))
 		{
-			const EDBAElement ResolvedElement = ToCommonElement(ZodiacCharacter->GetElementType());
+			const EDBAElement ResolvedElement = ToProjectileCommonElement(ZodiacCharacter->GetElementType());
 			return ResolvedElement == EDBAElement::None ? FallbackElement : ResolvedElement;
 		}
 		return FallbackElement;
@@ -74,7 +74,7 @@ namespace
 
 	float ResolveDefense(AActor* Actor)
 	{
-		if (UAbilitySystemComponent* ASC = ResolveAbilitySystemComponent(Actor))
+		if (UAbilitySystemComponent* ASC = ResolveProjectileAbilitySystemComponent(Actor))
 		{
 			if (const UDBABattleAttributeSet* BattleAttributes = ASC->GetSet<UDBABattleAttributeSet>())
 			{
@@ -90,7 +90,7 @@ namespace
 		{
 			return ZodiacCharacter->GetResonanceLevel();
 		}
-		if (const UDBAAbilitySystemComponent* ASC = Cast<UDBAAbilitySystemComponent>(ResolveAbilitySystemComponent(Actor)))
+		if (const UDBAAbilitySystemComponent* ASC = Cast<UDBAAbilitySystemComponent>(ResolveProjectileAbilitySystemComponent(Actor)))
 		{
 			return ASC->GetResonanceLevel();
 		}
@@ -103,7 +103,7 @@ namespace
 		{
 			return ZodiacCharacter->GetChainLevel();
 		}
-		if (const UDBAAbilitySystemComponent* ASC = Cast<UDBAAbilitySystemComponent>(ResolveAbilitySystemComponent(Actor)))
+		if (const UDBAAbilitySystemComponent* ASC = Cast<UDBAAbilitySystemComponent>(ResolveProjectileAbilitySystemComponent(Actor)))
 		{
 			return ASC->GetChainLevel();
 		}
@@ -112,7 +112,7 @@ namespace
 
 	float ResolveCriticalRate(AActor* Actor, float FallbackCriticalRate)
 	{
-		if (UAbilitySystemComponent* ASC = ResolveAbilitySystemComponent(Actor))
+		if (UAbilitySystemComponent* ASC = ResolveProjectileAbilitySystemComponent(Actor))
 		{
 			if (const UDBABattleAttributeSet* BattleAttributes = ASC->GetSet<UDBABattleAttributeSet>())
 			{
@@ -144,10 +144,10 @@ namespace
 			return;
 		}
 
-		UAbilitySystemComponent* CueASC = ResolveAbilitySystemComponent(CueTarget);
+		UAbilitySystemComponent* CueASC = ResolveProjectileAbilitySystemComponent(CueTarget);
 		if (!CueASC)
 		{
-			CueASC = ResolveAbilitySystemComponent(ProjectileOwner);
+			CueASC = ResolveProjectileAbilitySystemComponent(ProjectileOwner);
 		}
 		if (!CueASC)
 		{

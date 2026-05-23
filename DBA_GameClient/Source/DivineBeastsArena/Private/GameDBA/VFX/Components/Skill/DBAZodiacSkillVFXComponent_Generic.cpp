@@ -20,6 +20,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/OverlapResult.h"
 #include "Engine/World.h"
 
 namespace

@@ -3,6 +3,7 @@
   <Project Path="Game.Api/Game.Api.csproj" />
   <Project Path="Game.Infrastructure/Game.Infrastructure.csproj" />
   <Project Path="Game.IntegrationTests/Game.IntegrationTests.csproj" />
+  <Project Path="Game.ServerManagement/Game.ServerManagement.csproj" />
   <Project Path="Game.Shared/Game.Shared.csproj" />
   <Project Path="Game.Worker/Game.Worker.csproj" />
 </Solution>

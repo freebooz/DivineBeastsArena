@@ -9,6 +9,7 @@
 using Game.Worker;
 using Game.Infrastructure.Configuration;
 using Game.Infrastructure.Database;
+using Game.ServerManagement.ServerManager;
 using Game.Shared.Options;
 using Game.Worker.ServerManager;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,10 @@ Log.Logger = new LoggerConfiguration()
 builder.Services.AddSerilog();
 
 var databaseOptions = builder.Configuration.GetSection(DatabaseOptions.Section).Get<DatabaseOptions>() ?? new();
+var gameServerManagerOptions = builder.Configuration.GetSection(GameServerManagerOptions.Section).Get<GameServerManagerOptions>() ?? new();
+RequiredOptionsValidator.ValidateDatabase(databaseOptions);
+RequiredOptionsValidator.ValidateGameServerManager(gameServerManagerOptions);
+
 builder.Services.AddDbContext<GameDbContext>(options => options.UseNpgsql(databaseOptions.ConnectionString));
 builder.Services.Configure<WorkerJobOptions>(builder.Configuration.GetSection(WorkerJobOptions.Section));
 builder.Services.Configure<GameServerManagerOptions>(builder.Configuration.GetSection(GameServerManagerOptions.Section));

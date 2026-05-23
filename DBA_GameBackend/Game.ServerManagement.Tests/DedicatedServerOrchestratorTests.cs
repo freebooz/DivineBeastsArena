@@ -8,8 +8,8 @@
 
 using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Entities;
+using Game.ServerManagement.ServerManager;
 using Game.Shared.Options;
-using Game.Worker.ServerManager;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;

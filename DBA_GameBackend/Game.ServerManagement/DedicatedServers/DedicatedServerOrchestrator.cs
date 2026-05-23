@@ -1,9 +1,9 @@
-﻿/*
+/*
 中文阅读说明：
-- 所属应用：DBA_GameBackend 后端 API / Worker。
-- 文件职责：应用源码文件，承担该模块的一部分业务、界面、配置或启动逻辑。
-- 阅读重点：先看公开类型、路由/组件入口和构造函数，再看私有辅助方法，理解数据如何从输入流向状态变更或界面输出。
-- 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
+- 所属应用：DBA_GameBackend 后端 API / Worker 共享的服务器管理层。
+- 文件职责：分配、启动、维护和释放 UE Dedicated Server 实例。
+- 阅读重点：先看 IServerManagerService 的公开方法，再看 AllocateAsync、LaunchAsync 和 RunMaintenanceAsync。
+- 修改提示：保持该项目为 API 与 Worker 的共享业务服务，不引入后台宿主循环或 HTTP 端点。
 */
 
 using System.Diagnostics;
@@ -13,9 +13,10 @@ using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Entities;
 using Game.Shared.Options;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Game.Worker.ServerManager;
+namespace Game.ServerManagement.ServerManager;
 
 public record AllocateGameServerCommand(Guid SessionId, string Mode, string MapId, string Region, string? BuildVersion);
 

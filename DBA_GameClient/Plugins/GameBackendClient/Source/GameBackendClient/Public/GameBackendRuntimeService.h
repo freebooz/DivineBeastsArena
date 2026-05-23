@@ -1,17 +1,12 @@
-// Copyright Freebooz Games, Inc. All Rights Reserved.
+﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
 /*
-中文阅读说明：
-- 所属应用：DBA_GameClient Unreal Engine 客户端 / Dedicated Server。
-- 文件职责：声明 UE Dedicated Server 调用 DBA_GameBackend Runtime API 的服务。
-- 阅读重点：Dedicated Server 启动参数会注入 SessionId、ServerId、RuntimeToken，本服务负责注册、就绪、心跳和玩家进出上报。
-- 修改提示：这里只处理 HTTP 协议封装，权威战报和结算数据仍应由对局规则层生成后再提交。
-*/
+涓枃闃呰璇存槑锛?- 鎵€灞炲簲鐢細DBA_GameClient Unreal Engine 瀹㈡埛绔?/ Dedicated Server銆?- 鏂囦欢鑱岃矗锛氬０鏄?UE Dedicated Server 璋冪敤 DBA_GameBackend Runtime API 鐨勬湇鍔°€?- 闃呰閲嶇偣锛欴edicated Server 鍚姩鍙傛暟浼氭敞鍏?SessionId銆丼erverId銆丷untimeToken锛屾湰鏈嶅姟璐熻矗娉ㄥ唽銆佸氨缁€佸績璺冲拰鐜╁杩涘嚭涓婃姤銆?- 淇敼鎻愮ず锛氳繖閲屽彧澶勭悊 HTTP 鍗忚灏佽锛屾潈濞佹垬鎶ュ拰缁撶畻鏁版嵁浠嶅簲鐢卞灞€瑙勫垯灞傜敓鎴愬悗鍐嶆彁浜ゃ€?*/
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "DBA_GameBackendTypes.h"
+#include "GameBackendTypes.h"
 #include "GameBackendRuntimeService.generated.h"
 
 class UDBA_GameBackendClientSubsystem;

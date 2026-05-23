@@ -7,8 +7,8 @@
 */
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fs;
+use std::io;
 use std::path::PathBuf;
 use sha2::{Sha256, Digest};
 
@@ -61,8 +61,10 @@ fn fetch_manifest(url: String) -> Result<UpdateManifest, String> {
 
 #[tauri::command]
 fn check_update(current_version: String, manifest: UpdateManifest) -> bool {
-    let current = semver::Version::parse(&current_version).unwrap_or_default();
-    let latest = semver::Version::parse(&manifest.version).unwrap_or_default();
+    let current = semver::Version::parse(&current_version)
+        .unwrap_or_else(|_| semver::Version::new(0, 0, 0));
+    let latest = semver::Version::parse(&manifest.version)
+        .unwrap_or_else(|_| semver::Version::new(0, 0, 0));
     latest > current
 }
 
@@ -72,12 +74,16 @@ fn download_file(url: String, destination: String) -> Result<(), String> {
         .call()
         .map_err(|e| e.to_string())?;
 
-    let mut file = fs::File::create(&destination)
+    let destination_path = PathBuf::from(&destination);
+    if let Some(parent) = destination_path.parent() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+
+    let mut file = fs::File::create(&destination_path)
         .map_err(|e| e.to_string())?;
 
-    response.into_reader()
-        .copy_to(&mut file)
-        .map_err(|e| e.to_string())?;
+    let mut reader = response.into_reader();
+    io::copy(&mut reader, &mut file).map_err(|e| e.to_string())?;
 
     Ok(())
 }

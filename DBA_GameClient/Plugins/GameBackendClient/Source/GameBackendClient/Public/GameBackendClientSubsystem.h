@@ -12,8 +12,8 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
-#include "DBA_GameBackendTypes.h"
-#include "DBA_GameBackendClientSubsystem.generated.h"
+#include "GameBackendTypes.h"
+#include "GameBackendClientSubsystem.generated.h"
 
 class FDBA_GameBackendHttpClient;
 class UDBA_GameBackendAuthService;

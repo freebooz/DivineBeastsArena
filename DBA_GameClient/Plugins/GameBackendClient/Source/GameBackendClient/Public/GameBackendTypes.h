@@ -11,7 +11,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DBA_GameBackendTypes.generated.h"
+#include "GameBackendTypes.generated.h"
 
 GAMEBACKENDCLIENT_API DECLARE_LOG_CATEGORY_EXTERN(LogDBA_GameBackendClient, Log, All);
 
