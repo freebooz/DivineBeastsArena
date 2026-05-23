@@ -1,4 +1,4 @@
-/*
+﻿/*
 中文阅读说明：
 - 所属应用：DBA_GameBackend 共享配置层。
 - 文件职责：集中校验生产/运行必需配置，避免 API 与 Worker 启动后才暴露缺失配置。
@@ -52,7 +52,7 @@ public static class RequiredOptionsValidator
         }
     }
 
-    public static void ValidateGameServerManager(GameServerManagerOptions options)
+    public static void ValidateDedicatedServerOrchestration(DedicatedServerOrchestrationOptions options)
     {
         if (string.IsNullOrWhiteSpace(options.ServerMode))
         {
@@ -94,3 +94,4 @@ public static class RequiredOptionsValidator
         }
     }
 }
+

@@ -1,4 +1,4 @@
-﻿/*
+/*
 中文阅读说明：
 - 所属应用：DBA_GameWebsite 游戏官网。
 - 文件职责：Next.js App Router 页面，负责官网路由、内容组织和响应式展示。
@@ -9,8 +9,8 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service - MyGamePlatform',
-  description: 'Terms of Service for MyGamePlatform.',
+  title: 'Terms of Service - 五灵争霸：神兽觉醒',
+  description: 'Terms of Service for 五灵争霸：神兽觉醒.',
 };
 
 export default function TermsPage() {
@@ -24,21 +24,21 @@ export default function TermsPage() {
 
         <div className="prose prose-invert prose-lg max-w-none space-y-6">
           <p className="text-gray-300">
-            Welcome to MyGamePlatform. By playing our game or using our services, you agree to these Terms of Service. Please read them carefully.
+            Welcome to 五灵争霸：神兽觉醒. By playing our game or using our services, you agree to these Terms of Service. Please read them carefully.
           </p>
 
           <h2 className="text-2xl font-bold text-white mt-8 mb-4">
             Acceptance of Terms
           </h2>
           <p className="text-gray-300">
-            By accessing or using MyGamePlatform, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any part of these terms, you may not use our services.
+            By accessing or using 五灵争霸：神兽觉醒, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any part of these terms, you may not use our services.
           </p>
 
           <h2 className="text-2xl font-bold text-white mt-8 mb-4">
             Game License
           </h2>
           <p className="text-gray-300">
-            We grant you a limited, non-exclusive, non-transferable license to play MyGamePlatform for your personal, non-commercial entertainment purposes. You may not reverse engineer, decompile, or disassemble the game.
+            We grant you a limited, non-exclusive, non-transferable license to play 五灵争霸：神兽觉醒 for your personal, non-commercial entertainment purposes. You may not reverse engineer, decompile, or disassemble the game.
           </p>
 
           <h2 className="text-2xl font-bold text-white mt-8 mb-4">
@@ -60,7 +60,7 @@ export default function TermsPage() {
             Intellectual Property
           </h2>
           <p className="text-gray-300">
-            MyGamePlatform and all related content, including but not limited to text, graphics, logos, and software, are the property of MyGamePlatform and are protected by intellectual property laws.
+            五灵争霸：神兽觉醒 and all related content, including but not limited to text, graphics, logos, and software, are the property of 五灵争霸：神兽觉醒 and are protected by intellectual property laws.
           </p>
 
           <h2 className="text-2xl font-bold text-white mt-8 mb-4">
@@ -81,7 +81,7 @@ export default function TermsPage() {
             Limitation of Liability
           </h2>
           <p className="text-gray-300">
-            To the fullest extent permitted by law, MyGamePlatform shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use our services.
+            To the fullest extent permitted by law, 五灵争霸：神兽觉醒 shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use our services.
           </p>
 
           <h2 className="text-2xl font-bold text-white mt-8 mb-4">

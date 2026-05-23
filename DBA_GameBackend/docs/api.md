@@ -72,7 +72,7 @@
 | `GET` | `/api/launcher/status` | 启动器后端状态。 | 无 |
 | `POST` | `/api/feedback/` | 官网或客户端提交反馈。 | 无 |
 | `GET` | `/api/platform/applications` | 平台应用结构清单。 | 无 |
-| `GET` | `/api/operations/status` | 运营概览。 | 无 |
+| `GET` | `/api/live-ops/status` | LiveOps 运营概览。`/api/operations/status` 保留为兼容路由。 | 无 |
 
 ## 内部接口
 

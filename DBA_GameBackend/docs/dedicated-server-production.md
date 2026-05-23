@@ -16,7 +16,7 @@
 - 配置 `GAME_SERVER_PUBLIC_IP` 为客户端可连接的公网 IP 或内网穿透地址。
 - 开放 `GAME_SERVER_PORT_START` 到 `GAME_SERVER_PORT_END` 的 UDP 端口。
 
-Game Server Manager 启动参数：
+Dedicated Server Orchestration 启动参数：
 
 ```text
 -sessionId=<sessionId>

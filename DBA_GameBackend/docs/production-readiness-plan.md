@@ -1,4 +1,4 @@
-# 生产可上线任务计划
+﻿# 生产可上线任务计划
 
 本文档记录 DivineBeastsArena 从当前基线推进到最小生产可上线版本的执行计划。每个阶段完成后都需要保留验证结果，避免生产化改造只停留在口头清单。
 
@@ -31,7 +31,7 @@
 ## 阶段 3：Dedicated Server 接入生产化
 
 - [x] 首发使用 LocalProcess 模式，详见 `docs/dedicated-server-production.md`。
-- [x] Game Server Manager 覆盖分配幂等、启动超时、心跳超时和端口释放测试。
+- [x] Dedicated Server Orchestration 覆盖分配幂等、启动超时、心跳超时和端口释放测试。
 - [x] UE Dedicated Server 启动参数接入 `sessionId/serverId/backendUrl/runtimeToken`。
 - [x] UE Dedicated Server 支持 Runtime register、ready、heartbeat、player-joined、player-left。
 - [ ] 使用真实 UE Dedicated Server 包验证分配、启动、心跳、玩家加入、战报和回收。
@@ -87,7 +87,7 @@
 
 - [x] 登录压测脚本：`load-tests/k6-login.js`。
 - [x] 匹配压测脚本：`load-tests/k6-matchmaking.js`。
-- [x] Dedicated Server 分配压测脚本：`load-tests/k6-server-manager.js`。
+- [x] Dedicated Server 分配压测脚本：`load-tests/k6-dedicated-server-orchestration.js`。
 - [x] 后台权限越权测试脚本：`scripts/check-admin-rbac.sh`。
 - [x] 备份恢复演练脚本：`scripts/rehearse-backup-restore.sh`。
 - [ ] 使用预生产环境执行 k6 压测并记录基线。
@@ -108,3 +108,4 @@
 4. 用启动器和真实客户端包执行登录、角色、匹配、进服。
 5. 执行 k6 压测、备份恢复演练、GM 后台验收。
 6. 配置 GitHub 分支保护和生产域名 HTTPS。
+

@@ -652,9 +652,15 @@ void UDBALoginFlowWidgetBase::BindControls()
 	}
 	if (DebugLoginButton)
 	{
+#if UE_BUILD_SHIPPING
+		DebugLoginButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleDebugLoginClicked);
+		DebugLoginButton->SetIsEnabled(false);
+		DebugLoginButton->SetVisibility(ESlateVisibility::Collapsed);
+#else
 		DebugLoginButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleDebugLoginClicked);
 		DebugLoginButton->OnClicked.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleDebugLoginClicked);
 		DebugLoginButton->SetIsEnabled(true);
+#endif
 	}
 	else
 	{
@@ -1102,7 +1108,12 @@ void UDBALoginFlowWidgetBase::UpdateLoadingStateByFlow(EDBALoginFlowState NewSta
 	}
 	if (DebugLoginButton)
 	{
+#if UE_BUILD_SHIPPING
+		DebugLoginButton->SetIsEnabled(false);
+		DebugLoginButton->SetVisibility(ESlateVisibility::Collapsed);
+#else
 		DebugLoginButton->SetIsEnabled(!bIsLoading);
+#endif
 	}
 }
 
@@ -1135,4 +1146,3 @@ void UDBALoginFlowWidgetBase::ApplyGuestButtonStyle(UButton* Button) const
 	Style.SetPressedPadding(FMargin(3.0f, 4.0f, 1.0f, 0.0f));
 	Button->SetStyle(Style);
 }
-

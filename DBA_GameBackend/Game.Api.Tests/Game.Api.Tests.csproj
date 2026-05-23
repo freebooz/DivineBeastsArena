@@ -20,7 +20,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Game.Api\Game.Api.csproj" />
     <ProjectReference Include="..\Game.Infrastructure\Game.Infrastructure.csproj" />
-    <ProjectReference Include="..\Game.ServerManagement\Game.ServerManagement.csproj" />
     <ProjectReference Include="..\Game.Shared\Game.Shared.csproj" />
   </ItemGroup>
 

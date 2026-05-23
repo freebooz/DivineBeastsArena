@@ -8,10 +8,9 @@
 
 namespace Game.Worker;
 
-public sealed class WorkerJobOptions
+public sealed class MaintenanceWorkerOptions
 {
     public const string Section = "WorkerJobs";
 
     public int IntervalSeconds { get; init; } = 30;
-    public int ServerHeartbeatTimeoutSeconds { get; init; } = 90;
 }

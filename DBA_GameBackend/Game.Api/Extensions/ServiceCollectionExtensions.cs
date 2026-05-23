@@ -29,7 +29,7 @@ using Game.Api.Services.GameServer;
 using Game.Api.Services.Inventory;
 using Game.Api.Validators;
 using FluentValidation;
-using Game.ServerManagement.ServerManager;
+using Game.ServerManagement.DedicatedServers;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Threading.RateLimiting;
 
@@ -42,13 +42,13 @@ public static class ServiceCollectionExtensions
         var databaseOptions = configuration.GetSection(DatabaseOptions.Section).Get<DatabaseOptions>() ?? new();
         var redisOptions = configuration.GetSection(RedisOptions.Section).Get<RedisOptions>() ?? new();
         var jwtOptions = configuration.GetSection(JwtOptions.Section).Get<JwtOptions>() ?? new();
-        var gameServerManagerOptions = configuration.GetSection(GameServerManagerOptions.Section).Get<GameServerManagerOptions>() ?? new();
+        var dedicatedServerOptions = configuration.GetSection(DedicatedServerOrchestrationOptions.Section).Get<DedicatedServerOrchestrationOptions>() ?? new();
 
         RequiredOptionsValidator.ValidateDatabase(databaseOptions);
         RequiredOptionsValidator.ValidateRedis(redisOptions);
         RequiredOptionsValidator.ValidateJwt(jwtOptions);
         RequiredOptionsValidator.ValidateInternalApiKey(configuration["InternalApi:Key"]);
-        RequiredOptionsValidator.ValidateGameServerManager(gameServerManagerOptions);
+        RequiredOptionsValidator.ValidateDedicatedServerOrchestration(dedicatedServerOptions);
 
         services.AddDbContext<GameDbContext>(options =>
             options
@@ -59,7 +59,7 @@ public static class ServiceCollectionExtensions
             new RedisConnectionFactory(redisOptions.ConnectionString));
 
         services.AddSingleton(jwtOptions);
-        services.Configure<GameServerManagerOptions>(configuration.GetSection(GameServerManagerOptions.Section));
+        services.Configure<DedicatedServerOrchestrationOptions>(configuration.GetSection(DedicatedServerOrchestrationOptions.Section));
         services.AddScoped<IJwtTokenService, JwtTokenService>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -101,9 +101,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Services.Session.ISessionService, SessionService>();
         services.AddScoped<Services.Runtime.IGameServerService, GameServerService>();
         services.AddScoped<Services.Settlement.ISettlementService, SettlementService>();
-        services.AddScoped<IGameServerManagerService, GameServerManagerService>();
+        services.AddScoped<IGameServerRegistryService, GameServerRegistryService>();
         services.AddScoped<Services.Inventory.IInventoryService, InventoryService>();
-        services.AddScoped<IServerManagerService, ServerManagerService>();
+        services.AddScoped<IDedicatedServerOrchestrator, DedicatedServerOrchestrator>();
 
         return services;
     }
@@ -194,7 +194,7 @@ public static class ServiceCollectionExtensions
                 {
                     Title = "游戏平台后端API",
                     Version = "v1",
-                    Description = "MyGamePlatform 游戏后端接口文档 - 包含认证、玩家、房间、匹配、会话、结算等模块"
+                    Description = "五灵争霸：神兽觉醒 游戏后端接口文档 - 包含认证、玩家、房间、匹配、会话、结算等模块"
                 });
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
@@ -247,3 +247,4 @@ public static class ServiceCollectionExtensions
         return $"{policy}:{ip ?? "unknown"}";
     }
 }
+

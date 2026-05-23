@@ -214,7 +214,11 @@ void UDBAOnlineAccountService::SaveOnlineAccountState(const TArray<FDBACharacter
 
 bool UDBAOnlineAccountService::ShouldFallback(EDBAOnlineAccountError Error) const
 {
+#if UE_BUILD_SHIPPING
+	return false;
+#else
 	return OnlineConfig.bAllowMockFallback && CanFallbackToMock(Error) && MockService;
+#endif
 }
 
 void UDBAOnlineAccountService::Login(const FDBALoginRequest& RequestData, FDBAOnLoginComplete OnComplete)

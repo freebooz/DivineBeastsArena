@@ -1,8 +1,8 @@
-/*
+﻿/*
 中文阅读说明：
 - 所属应用：DBA_GameBackend 上线前压测。
-- 文件职责：用 k6 压测内部 Game Server Manager 分配接口，验证 Dedicated Server 分配层吞吐。
-- 使用方式：BASE_URL=http://localhost:8080 INTERNAL_API_KEY=xxx k6 run load-tests/k6-server-manager.js
+- 文件职责：用 k6 压测内部 Dedicated Server 编排接口，验证 Dedicated Server 分配层吞吐。
+- 使用方式：BASE_URL=http://localhost:8080 INTERNAL_API_KEY=xxx k6 run load-tests/k6-dedicated-server-orchestration.js
 - 修改提示：此脚本会创建真实 server allocation 记录，只能在压测环境运行。
 */
 
@@ -60,3 +60,4 @@ function randomUuid() {
     return nibble.toString(16);
   });
 }
+

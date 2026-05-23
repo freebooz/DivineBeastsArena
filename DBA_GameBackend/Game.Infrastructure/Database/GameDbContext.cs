@@ -1,4 +1,4 @@
-﻿/*
+/*
 中文阅读说明：
 - 所属应用：DBA_GameBackend 后端 API / Worker。
 - 文件职责：应用源码文件，承担该模块的一部分业务、界面、配置或启动逻辑。
@@ -49,7 +49,7 @@ public class GameDbContext : DbContext
     public DbSet<WalletBalance> WalletBalances => Set<WalletBalance>();
     public DbSet<WalletLedger> WalletLedgers => Set<WalletLedger>();
 
-    // 运营相关 / Operation entities
+    // 游戏功能与运营支撑 / Game feature and live-ops entities
     public DbSet<PlayerRanking> PlayerRankings => Set<PlayerRanking>();
     public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
     public DbSet<FriendRelation> FriendRelations => Set<FriendRelation>();

@@ -1,4 +1,4 @@
-﻿/*
+/*
 中文阅读说明：
 - 所属应用：DBA_GameWebsite 游戏官网。
 - 文件职责：前端可复用 UI 组件，负责将页面拆成可维护的展示/交互单元。
@@ -18,9 +18,9 @@ interface HeroProps {
 }
 
 const Hero: FC<HeroProps> = ({
-  title = 'MyGamePlatform',
-  subtitle = 'Experience next-generation gaming with real-time combat, global leaderboards, and cross-platform play.',
-  ctaText = 'Download Now',
+  title = '五灵争霸：神兽觉醒',
+  subtitle = '五行神兽题材多人竞技游戏，连接账号、角色、启动器和运营平台。',
+  ctaText = '下载客户端',
   ctaLink = '/download',
 }) => {
   return (

@@ -6,9 +6,9 @@
 - 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
 */
 
-namespace Game.Shared.Contracts.Operations;
+namespace Game.Shared.Contracts.LiveOps;
 
-public record OperationsStatusResponse(
+public record LiveOpsStatusResponse(
     DateTimeOffset GeneratedAt,
     int TotalAccounts,
     int TotalPlayers,
@@ -20,9 +20,9 @@ public record OperationsStatusResponse(
     int ActiveAnnouncements,
     int ActiveEvents,
     string LatestClientVersion,
-    IReadOnlyList<OperationsHealthItemDto> HealthItems);
+    IReadOnlyList<LiveOpsHealthItemDto> HealthItems);
 
-public record OperationsHealthItemDto(
+public record LiveOpsHealthItemDto(
     string Name,
     string Status,
     string Detail);

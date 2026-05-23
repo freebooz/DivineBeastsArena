@@ -46,7 +46,7 @@ public class DivineBeastsArenaTarget : TargetRules
 		bCompileWithAccessibilitySupport = true;    // 启用无障碍支持
 		bCompileAgainstEngine = true;               // 编译引擎代码
 		bCompileAgainstCoreUObject = true;         // 编译 CoreUObject
-		bBuildDeveloperTools = true;                // 构建开发者工具
+		bBuildDeveloperTools = Target.Configuration != UnrealTargetConfiguration.Shipping; // Shipping 不打入开发者工具
 		bBuildWithEditorOnlyData = false;           // 不包含 Editor 专用数据
 
 		// 性能优化

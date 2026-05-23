@@ -268,6 +268,10 @@ void UDBALoginFlowSubsystem::SubmitGuestLogin()
 
 void UDBALoginFlowSubsystem::SubmitDebugLogin(const FString& Username)
 {
+#if UE_BUILD_SHIPPING
+	UE_LOG(LogDBACore, Warning, TEXT("[DBALoginFlowSubsystem] Shipping 构建禁用开发账号登录。"));
+	BroadcastErrorAndSetState(TEXT("当前版本不支持开发账号登录。"), EDBALoginFlowState::LoginScreen);
+#else
 	UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 发起开发账号登录：%s"), *Username);
 	SetFlowState(EDBALoginFlowState::TryAutoLogin);
 
@@ -293,6 +297,7 @@ void UDBALoginFlowSubsystem::SubmitDebugLogin(const FString& Username)
 
 		BroadcastErrorAndSetState(Response.ErrorMessage.IsEmpty() ? TEXT("开发账号登录失败。") : Response.ErrorMessage, EDBALoginFlowState::LoginScreen);
 	}));
+#endif
 }
 
 void UDBALoginFlowSubsystem::LoadCharactersAfterLogin()

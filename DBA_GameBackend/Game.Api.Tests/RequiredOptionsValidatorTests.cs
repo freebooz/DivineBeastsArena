@@ -1,4 +1,4 @@
-/*
+﻿/*
 中文阅读说明：
 - 所属应用：DBA_GameBackend 后端测试。
 - 文件职责：验证启动期必需配置校验规则，避免生产环境缺失关键配置。
@@ -22,9 +22,9 @@ public class RequiredOptionsValidatorTests
     }
 
     [Fact]
-    public void ValidateGameServerManager_WhenPortRangeInvalid_ThrowsReadableConfigKey()
+    public void ValidateDedicatedServerOrchestration_WhenPortRangeInvalid_ThrowsReadableConfigKey()
     {
-        var options = new GameServerManagerOptions
+        var options = new DedicatedServerOrchestrationOptions
         {
             ServerMode = "LocalProcess",
             PublicIp = "127.0.0.1",
@@ -37,15 +37,15 @@ public class RequiredOptionsValidatorTests
         };
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            RequiredOptionsValidator.ValidateGameServerManager(options));
+            RequiredOptionsValidator.ValidateDedicatedServerOrchestration(options));
 
         Assert.Contains("GameServerManager", ex.Message);
     }
 
     [Fact]
-    public void ValidateGameServerManager_WhenDockerModeWithoutImage_ThrowsReadableConfigKey()
+    public void ValidateDedicatedServerOrchestration_WhenDockerModeWithoutImage_ThrowsReadableConfigKey()
     {
-        var options = new GameServerManagerOptions
+        var options = new DedicatedServerOrchestrationOptions
         {
             ServerMode = "Docker",
             PublicIp = "127.0.0.1",
@@ -59,7 +59,7 @@ public class RequiredOptionsValidatorTests
         };
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            RequiredOptionsValidator.ValidateGameServerManager(options));
+            RequiredOptionsValidator.ValidateDedicatedServerOrchestration(options));
 
         Assert.Contains("GameServerManager:UeServerImage", ex.Message);
     }
@@ -79,7 +79,7 @@ public class RequiredOptionsValidatorTests
             Audience = "GameClients"
         });
         RequiredOptionsValidator.ValidateInternalApiKey("TEST-INTERNAL-API-KEY-MIN-32-CHARS");
-        RequiredOptionsValidator.ValidateGameServerManager(new GameServerManagerOptions
+        RequiredOptionsValidator.ValidateDedicatedServerOrchestration(new DedicatedServerOrchestrationOptions
         {
             ServerMode = "LocalProcess",
             PublicIp = "127.0.0.1",
@@ -92,3 +92,4 @@ public class RequiredOptionsValidatorTests
         });
     }
 }
+

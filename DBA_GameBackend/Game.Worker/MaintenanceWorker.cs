@@ -13,13 +13,11 @@ using Microsoft.Extensions.Options;
 
 namespace Game.Worker;
 
-public class Worker(
+public class MaintenanceWorker(
     IServiceScopeFactory scopeFactory,
-    IOptions<WorkerJobOptions> options,
-    ILogger<Worker> logger) : BackgroundService
+    IOptions<MaintenanceWorkerOptions> options,
+    ILogger<MaintenanceWorker> logger) : BackgroundService
 {
-    private static readonly string[] ActiveServerStatuses = { "STARTING", "READY", "IDLE", "ALLOCATED", "RUNNING" };
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var interval = TimeSpan.FromSeconds(Math.Max(5, options.Value.IntervalSeconds));
@@ -49,57 +47,9 @@ public class Worker(
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
 
-        var staleCount = await MarkStaleServersAsync(db, cancellationToken);
         await EnsureDailyStatsRowAsync(db, cancellationToken);
 
-        logger.LogInformation("后台维护任务完成：过期服务端 {StaleCount} 个", staleCount);
-    }
-
-    private async Task<int> MarkStaleServersAsync(GameDbContext db, CancellationToken cancellationToken)
-    {
-        var staleCutoff = DateTimeOffset.UtcNow.AddSeconds(-Math.Max(30, options.Value.ServerHeartbeatTimeoutSeconds));
-
-        var staleServers = await db.GameServerInstances
-            .Where(x =>
-                ActiveServerStatuses.Contains(x.Status) &&
-                x.LastHeartbeatAt != null &&
-                x.LastHeartbeatAt < staleCutoff)
-            .ToListAsync(cancellationToken);
-
-        foreach (var server in staleServers)
-        {
-            var previousStatus = server.Status;
-            server.Status = "STALE";
-            server.EndedAt ??= DateTimeOffset.UtcNow;
-            server.UpdatedAt = DateTimeOffset.UtcNow;
-            server.CrashReason ??= "后台任务检测到服务端心跳超时。";
-
-            db.GameServerEvents.Add(new GameServerEvent
-            {
-                ServerId = server.Id,
-                EventType = "STALE_DETECTED",
-                PayloadJson = $$"""{"previousStatus":"{{previousStatus}}","lastHeartbeatAt":"{{server.LastHeartbeatAt:O}}"}""",
-                CreatedAt = DateTimeOffset.UtcNow
-            });
-
-            if (server.Port > 0)
-            {
-                var allocation = await db.PortAllocations.FirstOrDefaultAsync(x => x.Port == server.Port, cancellationToken);
-                if (allocation is not null && allocation.ServerId == server.Id)
-                {
-                    allocation.Status = "FREE";
-                    allocation.ServerId = null;
-                    allocation.ReleasedAt = DateTimeOffset.UtcNow;
-                }
-            }
-        }
-
-        if (staleServers.Count > 0)
-        {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-
-        return staleServers.Count;
+        logger.LogInformation("后台维护任务完成：已确认今日统计行。");
     }
 
     private static async Task EnsureDailyStatsRowAsync(GameDbContext db, CancellationToken cancellationToken)

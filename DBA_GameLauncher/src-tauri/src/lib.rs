@@ -8,8 +8,8 @@
 
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::io;
-use std::path::PathBuf;
+use std::io::{self, Read};
+use std::path::{Component, Path, PathBuf};
 use sha2::{Sha256, Digest};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -28,6 +28,8 @@ pub struct ManifestFile {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpdateManifest {
     pub version: String,
+    #[serde(default, rename = "downloadUrl")]
+    pub download_url: String,
     pub files: Vec<ManifestFile>,
 }
 
@@ -90,11 +92,19 @@ fn download_file(url: String, destination: String) -> Result<(), String> {
 
 #[tauri::command]
 fn verify_file_sha256(file_path: String, expected_hash: String) -> Result<bool, String> {
-    let contents = fs::read(&file_path).map_err(|e| e.to_string())?;
+    let mut file = fs::File::open(&file_path).map_err(|e| e.to_string())?;
     let mut hasher = Sha256::new();
-    hasher.update(&contents);
-    let result = hasher.finalize();
-    let hash = hex::encode(result);
+    let mut buffer = [0_u8; 64 * 1024];
+
+    loop {
+        let read = file.read(&mut buffer).map_err(|e| e.to_string())?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+
+    let hash = hex::encode(hasher.finalize());
 
     Ok(hash.to_lowercase() == expected_hash.to_lowercase())
 }
@@ -103,16 +113,67 @@ fn verify_file_sha256(file_path: String, expected_hash: String) -> Result<bool, 
 fn repair_game(game_path: String, manifest: UpdateManifest) -> Result<Vec<String>, String> {
     let mut repaired = Vec::new();
     let base_path = PathBuf::from(&game_path);
+    fs::create_dir_all(&base_path).map_err(|e| e.to_string())?;
 
-    for file in manifest.files {
-        let file_path = base_path.join(&file.name);
-        if !file_path.exists() || !verify_file_sha256(file_path.to_string_lossy().to_string(), file.sha256.clone())? {
-            // In a real implementation, this would redownload the file
-            repaired.push(file.name);
+    for (index, file) in manifest.files.iter().enumerate() {
+        let file_path = safe_join(&base_path, &file.name)?;
+        if file_path.exists() && verify_file_sha256(file_path.to_string_lossy().to_string(), file.sha256.clone())? {
+            continue;
         }
+
+        let url = build_file_download_url(&manifest.download_url, &file.name, manifest.files.len(), index)?;
+        let temp_path = file_path.with_extension("download");
+        download_file(url, temp_path.to_string_lossy().to_string())?;
+
+        if !verify_file_sha256(temp_path.to_string_lossy().to_string(), file.sha256.clone())? {
+            let _ = fs::remove_file(&temp_path);
+            return Err(format!("Downloaded file failed SHA256 verification: {}", file.name));
+        }
+
+        if let Some(parent) = file_path.parent() {
+            fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+        fs::rename(&temp_path, &file_path).map_err(|e| e.to_string())?;
+        repaired.push(file.name.clone());
     }
 
     Ok(repaired)
+}
+
+fn safe_join(base_path: &Path, relative_name: &str) -> Result<PathBuf, String> {
+    let relative = Path::new(relative_name);
+    if relative.is_absolute() {
+        return Err(format!("Manifest file path must be relative: {}", relative_name));
+    }
+
+    if relative
+        .components()
+        .any(|component| matches!(component, Component::ParentDir | Component::Prefix(_) | Component::RootDir))
+    {
+        return Err(format!("Manifest file path is not allowed: {}", relative_name));
+    }
+
+    Ok(base_path.join(relative))
+}
+
+fn build_file_download_url(base_url: &str, file_name: &str, total_files: usize, index: usize) -> Result<String, String> {
+    if base_url.trim().is_empty() {
+        return Err(format!("Manifest has no downloadUrl for {}", file_name));
+    }
+
+    let trimmed = base_url.trim();
+    if total_files == 1 && index == 0 {
+        return Ok(trimmed.to_string());
+    }
+
+    if trimmed.ends_with('/') {
+        return Ok(format!("{}{}", trimmed, file_name));
+    }
+
+    Err(format!(
+        "Manifest downloadUrl must point to a file or end with '/' for multi-file repair: {}",
+        trimmed
+    ))
 }
 
 #[tauri::command]
@@ -127,6 +188,7 @@ fn launch_game(executable_path: String, args: Vec<String>) -> Result<(), String>
 #[tauri::command]
 fn open_log_folder(game_path: String) -> Result<(), String> {
     let log_path = PathBuf::from(&game_path).join("logs");
+    fs::create_dir_all(&log_path).map_err(|e| e.to_string())?;
     opener::open(&log_path).map_err(|e| e.to_string())
 }
 

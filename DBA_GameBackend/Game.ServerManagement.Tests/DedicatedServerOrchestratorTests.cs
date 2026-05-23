@@ -1,23 +1,23 @@
-/*
+﻿/*
 中文阅读说明：
-- 所属应用：DBA_GameBackend 后端 API / Worker。
-- 文件职责：测试 Game Server Manager 的生产关键状态机，覆盖端口分配、幂等、释放和超时维护。
-- 阅读重点：测试中的 LocalProcess 未配置可执行文件时会保持 mock STARTING 状态，便于在 CI 中验证分配流程。
-- 修改提示：接入真实 UE Dedicated Server 或 Agones 后，请保留这些基础幂等测试，再补充外部进程/容器集成测试。
+- 所属应用：DBA_GameBackend / Game.ServerManagement。
+- 文件职责：测试 Dedicated Server 编排的关键状态机，覆盖端口分配、幂等、释放和超时维护。
+- 阅读重点：LocalProcess 未配置可执行文件时会保持 mock STARTING 状态，便于在 CI 中验证分配流程。
+- 修改提示：接入真实 UE Dedicated Server 或 Agones 后，保留这些基础幂等测试，再补外部进程/容器集成测试。
 */
 
 using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Entities;
-using Game.ServerManagement.ServerManager;
+using Game.ServerManagement.DedicatedServers;
 using Game.Shared.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
-namespace Game.Api.Tests;
+namespace Game.ServerManagement.Tests;
 
-public class ServerManagerServiceTests
+public class DedicatedServerOrchestratorTests
 {
     [Fact]
     public async Task AllocateAsync_CalledTwiceForSameSession_ReturnsSameServerAndDoesNotAllocateSecondPort()
@@ -25,7 +25,7 @@ public class ServerManagerServiceTests
         await using var db = CreateDbContext();
         var service = CreateService(db);
         var sessionId = Guid.NewGuid();
-        var command = new AllocateGameServerCommand(sessionId, "classic", "arena_01", "cn", "test-build");
+        var command = new AllocateDedicatedServerCommand(sessionId, "classic", "arena_01", "cn", "test-build");
 
         var first = await service.AllocateAsync(command);
         var second = await service.AllocateAsync(command);
@@ -44,7 +44,7 @@ public class ServerManagerServiceTests
     {
         await using var db = CreateDbContext();
         var service = CreateService(db);
-        var server = await service.AllocateAsync(new AllocateGameServerCommand(Guid.NewGuid(), "classic", "arena_01", "cn", null));
+        var server = await service.AllocateAsync(new AllocateDedicatedServerCommand(Guid.NewGuid(), "classic", "arena_01", "cn", null));
 
         var released = await service.ReleaseAsync(server!.ServerId, "match completed");
 
@@ -61,7 +61,7 @@ public class ServerManagerServiceTests
     public async Task RunMaintenanceAsync_WhenStartingTimedOut_MarksTimeoutAndFreesPort()
     {
         await using var db = CreateDbContext();
-        var service = CreateService(db, new GameServerManagerOptions
+        var service = CreateService(db, new DedicatedServerOrchestrationOptions
         {
             ServerMode = "LocalProcess",
             PublicIp = "127.0.0.1",
@@ -97,7 +97,7 @@ public class ServerManagerServiceTests
     public async Task RunMaintenanceAsync_WhenHeartbeatTimedOut_StopsServerAndFreesPort()
     {
         await using var db = CreateDbContext();
-        var service = CreateService(db, new GameServerManagerOptions
+        var service = CreateService(db, new DedicatedServerOrchestrationOptions
         {
             ServerMode = "LocalProcess",
             PublicIp = "127.0.0.1",
@@ -142,9 +142,9 @@ public class ServerManagerServiceTests
         return new GameDbContext(options);
     }
 
-    private static ServerManagerService CreateService(GameDbContext db, GameServerManagerOptions? options = null)
+    private static DedicatedServerOrchestrator CreateService(GameDbContext db, DedicatedServerOrchestrationOptions? options = null)
     {
-        options ??= new GameServerManagerOptions
+        options ??= new DedicatedServerOrchestrationOptions
         {
             ServerMode = "LocalProcess",
             PublicIp = "127.0.0.1",
@@ -158,7 +158,7 @@ public class ServerManagerServiceTests
             MaxServersPerMachine = 4
         };
 
-        return new ServerManagerService(db, Options.Create(options), NullLogger<ServerManagerService>.Instance);
+        return new DedicatedServerOrchestrator(db, Options.Create(options), NullLogger<DedicatedServerOrchestrator>.Instance);
     }
 
     private static GameServerInstance NewServer(
@@ -185,3 +185,4 @@ public class ServerManagerServiceTests
         };
     }
 }
+

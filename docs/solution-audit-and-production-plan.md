@@ -8,13 +8,13 @@
 
 ### DBA_GameBackend
 
-定位：游戏核心后端、会话、匹配、配置、结算、背包、Runtime API、Game Server Manager。
+定位：游戏核心后端、会话、匹配、配置、结算、背包、Runtime API、Dedicated Server 编排。
 
 已具备：
 
 - JWT 登录、刷新、登出和开发账号。
 - 玩家资料、角色创建/选择、配置发布、房间、匹配、会话、结算、背包。
-- Game Server Manager LocalProcess 模式、端口分配、进程启动、维护超时。
+- Dedicated Server Orchestration LocalProcess 模式、端口分配、进程启动、维护超时。
 - Runtime API 支持 Dedicated Server register、ready、heartbeat、player-joined、player-left、match started/ended/results。
 - Prometheus metrics、health checks、Serilog/OpenTelemetry、Docker Compose。
 
@@ -37,7 +37,7 @@
 
 主要缺口：
 
-- 当前机器未发现 UnrealBuildTool，无法做 UE C++ 编译验证。
+- 已按本机 UE 路径完成 UE C++ Editor / Server 目标编译验证。
 - 需要真实客户端包验证登录、角色、匹配、进服。
 - 需要真实 Dedicated Server 包验证心跳、玩家进出和回收。
 
@@ -146,7 +146,7 @@
 - 已更新根 README，补充仓库级应用矩阵、解决方案边界、阶段计划和 UTF-8 读取说明。
 - 已执行 `.\scripts\production-preflight.ps1 -SkipUnreal`，后端测试、Admin 构建、官网构建、启动器前端构建、启动器 `cargo check`、后端 Compose config、观测 Compose config 均通过。
 - 已修复启动器 Rust 层编译问题：版本解析失败时回退到 `0.0.0`，下载流改用 `std::io::copy`，并修正 Tauri 入口 crate 名称。
-- 已确认 UE 工具路径：`E:\UnrealEngine-5.7.1-release\Engine\Binaries\DotNET\AutomationTool\UnrealBuildTool.exe`。
+- 已确认 UE 工具路径：`E:\UnrealEngine-5.7.1-release\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe`。
 - 已更新预检脚本，使其支持 `$env:UNREAL_ENGINE_ROOT` 或本机默认 UE 路径。
 
 ### P1：后端边界与生产配置
@@ -156,8 +156,8 @@
 待办：
 
 1. 梳理 `Game.Api` 引用 `Game.Worker` 的真实原因。
-2. 如果只是复用 Game Server Manager 契约或配置，优先抽到共享层。
-3. 为 `Jwt:Secret`、`InternalApi:Key`、数据库、Redis、`GameServerManager` 增加启动期配置校验。
+2. 如果只是复用 Dedicated Server 编排契约或配置，优先抽到共享层。
+3. 为 `Jwt:Secret`、`InternalApi:Key`、数据库、Redis、`GameServerManager` 兼容配置节增加启动期配置校验。
 4. 补充登录、角色、匹配、房间、Runtime 上报、结算、背包奖励主链路测试。
 
 验收标准：
@@ -168,10 +168,10 @@
 
 执行记录：
 
-- 已新增 `Game.ServerManagement` 共享项目，将 `IServerManagerService`、`ServerManagerService`、分配命令和管理 DTO 从 `Game.Worker` 中拆出。
+- 已新增 `Game.ServerManagement` 共享项目，将 Dedicated Server 编排服务、分配命令和管理 DTO 从 `Game.Worker` 中拆出。
 - `Game.Api` 已改为依赖 `Game.ServerManagement`，不再直接引用 `Game.Worker`。
-- `Game.Worker` 保留后台循环 `ServerManagerWorker`，并依赖共享的服务器管理服务。
-- 已新增 `RequiredOptionsValidator`，集中校验 `Database`、`Redis`、`Jwt`、`InternalApi:Key` 和 `GameServerManager`。
+- `Game.Worker` 保留 `DedicatedServerMaintenanceWorker` 后台循环，并依赖共享的服务器管理服务。
+- 已新增 `RequiredOptionsValidator`，集中校验 `Database`、`Redis`、`Jwt`、`InternalApi:Key` 和 Dedicated Server 编排配置。
 - 已补充配置校验单元测试，后端测试从 15 个增加到 19 个：`Game.Api.Tests` 18 个、`Game.IntegrationTests` 1 个，全部通过。
 - 已更新 API/Worker Dockerfile 的项目复制清单，包含新增的 `Game.ServerManagement` 项目。
 - 本机 Docker daemon 当前未运行，`docker build` 无法连接 `dockerDesktopLinuxEngine`，镜像构建仍需在 Docker 可用环境或 CI 中验证。

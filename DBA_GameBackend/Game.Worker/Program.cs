@@ -9,9 +9,9 @@
 using Game.Worker;
 using Game.Infrastructure.Configuration;
 using Game.Infrastructure.Database;
-using Game.ServerManagement.ServerManager;
+using Game.ServerManagement.DedicatedServers;
 using Game.Shared.Options;
-using Game.Worker.ServerManager;
+using Game.Worker.DedicatedServers;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Formatting.Compact;
@@ -27,17 +27,18 @@ Log.Logger = new LoggerConfiguration()
 builder.Services.AddSerilog();
 
 var databaseOptions = builder.Configuration.GetSection(DatabaseOptions.Section).Get<DatabaseOptions>() ?? new();
-var gameServerManagerOptions = builder.Configuration.GetSection(GameServerManagerOptions.Section).Get<GameServerManagerOptions>() ?? new();
+var dedicatedServerOptions = builder.Configuration.GetSection(DedicatedServerOrchestrationOptions.Section).Get<DedicatedServerOrchestrationOptions>() ?? new();
 RequiredOptionsValidator.ValidateDatabase(databaseOptions);
-RequiredOptionsValidator.ValidateGameServerManager(gameServerManagerOptions);
+RequiredOptionsValidator.ValidateDedicatedServerOrchestration(dedicatedServerOptions);
 
 builder.Services.AddDbContext<GameDbContext>(options => options.UseNpgsql(databaseOptions.ConnectionString));
-builder.Services.Configure<WorkerJobOptions>(builder.Configuration.GetSection(WorkerJobOptions.Section));
-builder.Services.Configure<GameServerManagerOptions>(builder.Configuration.GetSection(GameServerManagerOptions.Section));
-builder.Services.Configure<ServerManagerWorkerOptions>(builder.Configuration.GetSection(ServerManagerWorkerOptions.Section));
-builder.Services.AddScoped<IServerManagerService, ServerManagerService>();
-builder.Services.AddHostedService<Worker>();
-builder.Services.AddHostedService<ServerManagerWorker>();
+builder.Services.Configure<MaintenanceWorkerOptions>(builder.Configuration.GetSection(MaintenanceWorkerOptions.Section));
+builder.Services.Configure<DedicatedServerOrchestrationOptions>(builder.Configuration.GetSection(DedicatedServerOrchestrationOptions.Section));
+builder.Services.Configure<DedicatedServerMaintenanceOptions>(builder.Configuration.GetSection(DedicatedServerMaintenanceOptions.Section));
+builder.Services.AddScoped<IDedicatedServerOrchestrator, DedicatedServerOrchestrator>();
+builder.Services.AddHostedService<MaintenanceWorker>();
+builder.Services.AddHostedService<DedicatedServerMaintenanceWorker>();
 
 var host = builder.Build();
 host.Run();
+

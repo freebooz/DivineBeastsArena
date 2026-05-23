@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 set -euo pipefail
 
 # 中文阅读说明：
@@ -18,7 +18,8 @@ k6 run "${BACKEND_DIR}/load-tests/k6-login.js"
 k6 run "${BACKEND_DIR}/load-tests/k6-matchmaking.js"
 
 if [[ -n "${INTERNAL_API_KEY:-}" ]]; then
-  k6 run "${BACKEND_DIR}/load-tests/k6-server-manager.js"
+  k6 run "${BACKEND_DIR}/load-tests/k6-dedicated-server-orchestration.js"
 else
-  echo "Skipping server manager load test because INTERNAL_API_KEY is not set."
+  echo "Skipping dedicated server orchestration load test because INTERNAL_API_KEY is not set."
 fi
+

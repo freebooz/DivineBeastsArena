@@ -7,30 +7,30 @@
 */
 
 using Microsoft.Extensions.Options;
-using Game.ServerManagement.ServerManager;
+using Game.ServerManagement.DedicatedServers;
 
-namespace Game.Worker.ServerManager;
+namespace Game.Worker.DedicatedServers;
 
-public sealed class ServerManagerWorker(
+public sealed class DedicatedServerMaintenanceWorker(
     IServiceScopeFactory scopeFactory,
-    IOptions<ServerManagerWorkerOptions> options,
-    ILogger<ServerManagerWorker> logger) : BackgroundService
+    IOptions<DedicatedServerMaintenanceOptions> options,
+    ILogger<DedicatedServerMaintenanceWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var interval = TimeSpan.FromSeconds(Math.Max(5, options.Value.IntervalSeconds));
-        logger.LogInformation("Game Server Manager background loop started, interval {IntervalSeconds}s", interval.TotalSeconds);
+        logger.LogInformation("Dedicated server maintenance loop started, interval {IntervalSeconds}s", interval.TotalSeconds);
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
                 await using var scope = scopeFactory.CreateAsyncScope();
-                var manager = scope.ServiceProvider.GetRequiredService<IServerManagerService>();
+                var manager = scope.ServiceProvider.GetRequiredService<IDedicatedServerOrchestrator>();
                 var affected = await manager.RunMaintenanceAsync(stoppingToken);
                 if (affected > 0)
                 {
-                    logger.LogWarning("Game Server Manager maintenance changed {Count} server(s)", affected);
+                    logger.LogWarning("Dedicated server maintenance changed {Count} server(s)", affected);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -39,7 +39,7 @@ public sealed class ServerManagerWorker(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Game Server Manager maintenance failed");
+                logger.LogError(ex, "Dedicated server maintenance failed");
             }
 
             await Task.Delay(interval, stoppingToken);
@@ -47,8 +47,8 @@ public sealed class ServerManagerWorker(
     }
 }
 
-public sealed class ServerManagerWorkerOptions
+public sealed class DedicatedServerMaintenanceOptions
 {
-    public const string Section = "ServerManagerWorker";
+    public const string Section = "DedicatedServerMaintenanceWorker";
     public int IntervalSeconds { get; init; } = 15;
 }

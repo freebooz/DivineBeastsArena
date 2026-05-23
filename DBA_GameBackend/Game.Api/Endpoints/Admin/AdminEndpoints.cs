@@ -15,7 +15,7 @@ using Game.Infrastructure.Database.Entities;
 using Game.Shared.Common;
 using Game.Shared.Contracts.Admin;
 using Game.Shared.Options;
-using Game.ServerManagement.ServerManager;
+using Game.ServerManagement.DedicatedServers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -368,7 +368,7 @@ public static class AdminEndpoints
     private static async Task<IResult> KillServer(
         Guid serverId,
         KillGameServerRequest request,
-        IServerManagerService manager,
+        IDedicatedServerOrchestrator manager,
         GameDbContext db,
         HttpContext ctx,
         CancellationToken cancellationToken)

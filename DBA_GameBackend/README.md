@@ -3,7 +3,7 @@
 DBA_GameBackend is the .NET backend for the UE multiplayer game platform. It contains:
 
 - `Game.Api`: ASP.NET Core Minimal API, Auth, Player, Config, Room, Match, Session, Runtime, Settlement, Inventory and Admin APIs.
-- `Game.Worker`: background jobs and Game Server Manager.
+- `Game.Worker`: background jobs and dedicated server maintenance loops.
 - `Game.Shared`: DTOs, common responses and options.
 - `Game.Infrastructure`: EF Core DbContext, entities, Redis and auth infrastructure.
 - `Game.Api.Tests`: unit tests for validators and API-adjacent rules.
@@ -15,7 +15,7 @@ DBA_GameBackend is the .NET backend for the UE multiplayer game platform. It con
 - Player: profile, settings, statistics, public profile and unlocks. Nicknames are 2-16 chars and allow Chinese, English, digits and underscore.
 - Config: client manifest/config/bundle plus admin create, update, validate, publish and rollback. Published configs generate checksums.
 - Room / Match / Session: create/join/ready/start rooms, matchmaking tickets, session creation, connection info and reconnect token.
-- Game Server Manager: `Game.Worker/ServerManager` allocates UDP ports, creates server/runtime tokens, supports LocalProcess and Docker launch modes, handles timeout cleanup, release and kill.
+- Dedicated Server Orchestration: `Game.ServerManagement/DedicatedServers` allocates UDP ports, creates server/runtime tokens, supports LocalProcess and Docker launch modes, handles timeout cleanup, release and kill. `Game.Worker/DedicatedServers` runs the maintenance loop.
 - Runtime API: `/runtime/servers/*` and `/runtime/matches/results` validate runtime tokens, update server/session state and call settlement.
 - Settlement / Inventory: idempotent match results, raw JSON persistence, player statistics, exp/level update, match rewards, inventory logs and GM inventory operations.
 - UE client login bridge: `/api/account/characters` remains for existing DBA_GameClient builds, and `/api/players/me/characters` is available as the standard authenticated character API. Created characters and selected character state are persisted in PostgreSQL.

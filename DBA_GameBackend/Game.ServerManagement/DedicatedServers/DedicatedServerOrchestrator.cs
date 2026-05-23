@@ -1,8 +1,8 @@
-/*
+﻿/*
 中文阅读说明：
 - 所属应用：DBA_GameBackend 后端 API / Worker 共享的服务器管理层。
 - 文件职责：分配、启动、维护和释放 UE Dedicated Server 实例。
-- 阅读重点：先看 IServerManagerService 的公开方法，再看 AllocateAsync、LaunchAsync 和 RunMaintenanceAsync。
+- 阅读重点：先看 IDedicatedServerOrchestrator 的公开方法，再看 AllocateAsync、LaunchAsync 和 RunMaintenanceAsync。
 - 修改提示：保持该项目为 API 与 Worker 的共享业务服务，不引入后台宿主循环或 HTTP 端点。
 */
 
@@ -16,11 +16,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Game.ServerManagement.ServerManager;
+namespace Game.ServerManagement.DedicatedServers;
 
-public record AllocateGameServerCommand(Guid SessionId, string Mode, string MapId, string Region, string? BuildVersion);
+public record AllocateDedicatedServerCommand(Guid SessionId, string Mode, string MapId, string Region, string? BuildVersion);
 
-public record ManagedGameServerDto(
+public record DedicatedServerInstanceDto(
     Guid ServerId,
     Guid? SessionId,
     string PublicIp,
@@ -29,35 +29,35 @@ public record ManagedGameServerDto(
     string? RuntimeToken,
     DateTimeOffset? RuntimeTokenExpiresAt);
 
-public interface IServerManagerService
+public interface IDedicatedServerOrchestrator
 {
-    Task<ManagedGameServerDto?> AllocateAsync(AllocateGameServerCommand command, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<ManagedGameServerDto>> ListAsync(CancellationToken cancellationToken = default);
-    Task<ManagedGameServerDto?> GetAsync(Guid serverId, CancellationToken cancellationToken = default);
+    Task<DedicatedServerInstanceDto?> AllocateAsync(AllocateDedicatedServerCommand command, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<DedicatedServerInstanceDto>> ListAsync(CancellationToken cancellationToken = default);
+    Task<DedicatedServerInstanceDto?> GetAsync(Guid serverId, CancellationToken cancellationToken = default);
     Task<bool> ReleaseAsync(Guid serverId, string reason, CancellationToken cancellationToken = default);
     Task<bool> KillAsync(Guid serverId, string reason, CancellationToken cancellationToken = default);
     Task<int> RunMaintenanceAsync(CancellationToken cancellationToken = default);
 }
 
-public sealed class ServerManagerService : IServerManagerService
+public sealed class DedicatedServerOrchestrator : IDedicatedServerOrchestrator
 {
     private static readonly string[] ActiveStatuses = { "STARTING", "READY", "ALLOCATED", "IN_PROGRESS", "ENDING" };
 
     private readonly GameDbContext _db;
-    private readonly GameServerManagerOptions _options;
-    private readonly ILogger<ServerManagerService> _logger;
+    private readonly DedicatedServerOrchestrationOptions _options;
+    private readonly ILogger<DedicatedServerOrchestrator> _logger;
 
-    public ServerManagerService(
+    public DedicatedServerOrchestrator(
         GameDbContext db,
-        IOptions<GameServerManagerOptions> options,
-        ILogger<ServerManagerService> logger)
+        IOptions<DedicatedServerOrchestrationOptions> options,
+        ILogger<DedicatedServerOrchestrator> logger)
     {
         _db = db;
         _options = options.Value;
         _logger = logger;
     }
 
-    public async Task<ManagedGameServerDto?> AllocateAsync(AllocateGameServerCommand command, CancellationToken cancellationToken = default)
+    public async Task<DedicatedServerInstanceDto?> AllocateAsync(AllocateDedicatedServerCommand command, CancellationToken cancellationToken = default)
     {
         var existing = await _db.GameServerInstances
             .Where(x => x.SessionId == command.SessionId && ActiveStatuses.Contains(x.Status))
@@ -136,7 +136,7 @@ public sealed class ServerManagerService : IServerManagerService
         return ToDto(server, runtimeToken);
     }
 
-    public async Task<IReadOnlyList<ManagedGameServerDto>> ListAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<DedicatedServerInstanceDto>> ListAsync(CancellationToken cancellationToken = default)
     {
         var servers = await _db.GameServerInstances
             .OrderByDescending(x => x.CreatedAt)
@@ -146,7 +146,7 @@ public sealed class ServerManagerService : IServerManagerService
         return servers.Select(x => ToDto(x, runtimeToken: null)).ToList();
     }
 
-    public async Task<ManagedGameServerDto?> GetAsync(Guid serverId, CancellationToken cancellationToken = default)
+    public async Task<DedicatedServerInstanceDto?> GetAsync(Guid serverId, CancellationToken cancellationToken = default)
     {
         var server = await _db.GameServerInstances.FindAsync([serverId], cancellationToken);
         return server is null ? null : ToDto(server, runtimeToken: null);
@@ -318,7 +318,7 @@ public sealed class ServerManagerService : IServerManagerService
         CreatedAt = DateTimeOffset.UtcNow
     };
 
-    private static ManagedGameServerDto ToDto(GameServerInstance server, string? runtimeToken) =>
+    private static DedicatedServerInstanceDto ToDto(GameServerInstance server, string? runtimeToken) =>
         new(server.Id, server.SessionId, server.Ip, server.Port, server.Status, runtimeToken, server.RuntimeTokenExpiresAt);
 
     private static string HashToken(string token)
@@ -347,3 +347,4 @@ public sealed class ServerManagerService : IServerManagerService
         }
     }
 }
+

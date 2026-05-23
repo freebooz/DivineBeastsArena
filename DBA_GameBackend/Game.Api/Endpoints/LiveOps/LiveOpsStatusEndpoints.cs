@@ -8,20 +8,24 @@
 
 using Game.Infrastructure.Database;
 using Game.Shared.Common;
-using Game.Shared.Contracts.Operations;
+using Game.Shared.Contracts.LiveOps;
 using Microsoft.EntityFrameworkCore;
 
-namespace Game.Api.Endpoints.Operations;
+namespace Game.Api.Endpoints.LiveOps;
 
-public static class OperationsStatusEndpoints
+public static class LiveOpsStatusEndpoints
 {
     private static readonly string[] ActiveServerStatuses = { "STARTING", "READY", "IDLE", "ALLOCATED", "RUNNING" };
 
-    public static void MapOperationsStatusEndpoints(this IEndpointRouteBuilder app)
+    public static void MapLiveOpsStatusEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapGet("/api/live-ops/status", GetStatus)
+            .WithTags("LiveOps")
+            .WithSummary("Get live operations status summary");
+
         app.MapGet("/api/operations/status", GetStatus)
-            .WithTags("Operations")
-            .WithSummary("Get operational status summary for live operations dashboard");
+            .WithTags("LiveOps")
+            .WithSummary("Get live operations status summary");
     }
 
     private static async Task<IResult> GetStatus(GameDbContext db)
@@ -53,7 +57,7 @@ public static class OperationsStatusEndpoints
             .Select(x => x.Version)
             .FirstOrDefaultAsync() ?? "0.1.0";
 
-        var healthItems = new List<OperationsHealthItemDto>
+        var healthItems = new List<LiveOpsHealthItemDto>
         {
             new("账号系统", totalAccounts > 0 ? "OK" : "WARN", totalAccounts > 0 ? $"已存在 {totalAccounts} 个账号。" : "尚未发现账号数据。"),
             new("角色系统", totalCharacters > 0 ? "OK" : "WARN", totalCharacters > 0 ? $"已存在 {totalCharacters} 个角色。" : "尚未发现角色数据。"),
@@ -63,7 +67,7 @@ public static class OperationsStatusEndpoints
             new("版本发布", latestVersion != "0.1.0" ? "OK" : "WARN", $"当前最新客户端版本：{latestVersion}")
         };
 
-        return Results.Ok(ApiResponse<OperationsStatusResponse>.Ok(new OperationsStatusResponse(
+        return Results.Ok(ApiResponse<LiveOpsStatusResponse>.Ok(new LiveOpsStatusResponse(
             now,
             totalAccounts,
             totalPlayers,

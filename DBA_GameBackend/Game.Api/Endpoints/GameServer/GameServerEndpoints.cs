@@ -11,7 +11,7 @@ using Game.Shared.Common;
 using Game.Shared.Errors;
 using Game.Api.Extensions;
 using Game.Api.Services.GameServer;
-using Game.ServerManagement.ServerManager;
+using Game.ServerManagement.DedicatedServers;
 
 namespace Game.Api.Endpoints.GameServer;
 
@@ -25,7 +25,7 @@ public static class GameServerEndpoints
     /// </summary>
     public static void MapGameServerEndpoints(this IEndpointRouteBuilder app)
     {
-        var managerGroup = app.MapGroup("/internal/game-servers").WithTags("Game Server Manager");
+        var managerGroup = app.MapGroup("/internal/game-servers").WithTags("Dedicated Server Orchestration");
         managerGroup.AddEndpointFilter(RequireInternalApiKey);
         managerGroup.MapPost("/allocate", AllocateManagedServer);
         managerGroup.MapPost("/{serverId:guid}/release", ReleaseManagedServer);
@@ -105,10 +105,10 @@ GET /internal/servers/active
 
     private static async Task<IResult> AllocateManagedServer(
         AllocateManagedServerRequest request,
-        IServerManagerService manager,
+        IDedicatedServerOrchestrator manager,
         CancellationToken cancellationToken)
     {
-        var server = await manager.AllocateAsync(new AllocateGameServerCommand(
+        var server = await manager.AllocateAsync(new AllocateDedicatedServerCommand(
             request.SessionId,
             request.Mode,
             request.MapId,
@@ -117,44 +117,44 @@ GET /internal/servers/active
 
         return server is null
             ? ErrorResponse.Conflict("No available game server capacity or UDP port").ToProblem()
-            : Results.Ok(ApiResponse<ManagedGameServerDto>.Ok(server));
+            : Results.Ok(ApiResponse<DedicatedServerInstanceDto>.Ok(server));
     }
 
     private static async Task<IResult> ReleaseManagedServer(
         Guid serverId,
-        ServerManagerReasonRequest? request,
-        IServerManagerService manager,
+        DedicatedServerReasonRequest? request,
+        IDedicatedServerOrchestrator manager,
         CancellationToken cancellationToken)
     {
         var released = await manager.ReleaseAsync(serverId, request?.Reason ?? "internal release", cancellationToken);
         return released ? Results.Ok(ApiResponse.Ok()) : ErrorResponse.NotFound(ErrorCodes.GameServerNotFound).ToProblem();
     }
 
-    private static async Task<IResult> ListManagedServers(IServerManagerService manager, CancellationToken cancellationToken)
+    private static async Task<IResult> ListManagedServers(IDedicatedServerOrchestrator manager, CancellationToken cancellationToken)
     {
         var servers = await manager.ListAsync(cancellationToken);
-        return Results.Ok(ApiResponse<IReadOnlyList<ManagedGameServerDto>>.Ok(servers));
+        return Results.Ok(ApiResponse<IReadOnlyList<DedicatedServerInstanceDto>>.Ok(servers));
     }
 
-    private static async Task<IResult> GetManagedServer(Guid serverId, IServerManagerService manager, CancellationToken cancellationToken)
+    private static async Task<IResult> GetManagedServer(Guid serverId, IDedicatedServerOrchestrator manager, CancellationToken cancellationToken)
     {
         var server = await manager.GetAsync(serverId, cancellationToken);
         return server is null
             ? ErrorResponse.NotFound(ErrorCodes.GameServerNotFound).ToProblem()
-            : Results.Ok(ApiResponse<ManagedGameServerDto>.Ok(server));
+            : Results.Ok(ApiResponse<DedicatedServerInstanceDto>.Ok(server));
     }
 
     private static async Task<IResult> KillManagedServer(
         Guid serverId,
-        ServerManagerReasonRequest? request,
-        IServerManagerService manager,
+        DedicatedServerReasonRequest? request,
+        IDedicatedServerOrchestrator manager,
         CancellationToken cancellationToken)
     {
         var killed = await manager.KillAsync(serverId, request?.Reason ?? "internal kill", cancellationToken);
         return killed ? Results.Ok(ApiResponse.Ok()) : ErrorResponse.NotFound(ErrorCodes.GameServerNotFound).ToProblem();
     }
 
-    private static async Task<IResult> Register(RegisterGameServerRequest request, IGameServerManagerService svc)
+    private static async Task<IResult> Register(RegisterGameServerRequest request, IGameServerRegistryService svc)
     {
         var server = await svc.RegisterServerAsync(request);
         return server == null
@@ -164,7 +164,7 @@ GET /internal/servers/active
                 server.Status, server.StartedAt, server.LastHeartbeatAt)));
     }
 
-    private static async Task<IResult> GetServer(Guid serverId, IGameServerManagerService svc)
+    private static async Task<IResult> GetServer(Guid serverId, IGameServerRegistryService svc)
     {
         var server = await svc.GetServerAsync(serverId);
         return server == null
@@ -174,7 +174,7 @@ GET /internal/servers/active
                 server.Status, server.StartedAt, server.LastHeartbeatAt)));
     }
 
-    private static async Task<IResult> GetActiveServers(IGameServerManagerService svc)
+    private static async Task<IResult> GetActiveServers(IGameServerRegistryService svc)
     {
         var servers = await svc.GetActiveServersAsync();
         var responses = servers.Select(s => new InternalGameServerResponse(
@@ -186,4 +186,4 @@ GET /internal/servers/active
 
 public record AllocateManagedServerRequest(Guid SessionId, string Mode, string MapId, string Region, string? BuildVersion);
 
-public record ServerManagerReasonRequest(string? Reason);
+public record DedicatedServerReasonRequest(string? Reason);

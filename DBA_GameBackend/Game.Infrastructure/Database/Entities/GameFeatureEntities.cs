@@ -1,7 +1,7 @@
-﻿/*
+/*
 中文阅读说明：
 - 所属应用：DBA_GameBackend 后端 API / Worker。
-- 文件职责：定义 EF Core 实体模型，对应数据库表结构和领域对象的持久化形态。
+- 文件职责：定义排行、社交、邮件、公告、活动、客服、版本与 LiveOps 统计相关 EF Core 实体。
 - 阅读重点：先看公开类型、路由/组件入口和构造函数，再看私有辅助方法，理解数据如何从输入流向状态变更或界面输出。
 - 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
 */
@@ -252,7 +252,7 @@ public class ClientVersion
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
-// ==================== 运营统计 / Analytics ====================
+// ==================== LiveOps 统计 / Analytics ====================
 
 public class DailyStats
 {

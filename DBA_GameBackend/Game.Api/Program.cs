@@ -21,11 +21,11 @@ using Game.Api.Endpoints.Session;
 using Game.Api.Endpoints.Runtime;
 using Game.Api.Endpoints.Settlement;
 using Game.Api.Endpoints.GameServer;
-using Game.Api.Endpoints.Operation;
+using Game.Api.Endpoints.GameFeatures;
 using Game.Api.Endpoints.Platform;
 using Game.Api.Endpoints.Launcher;
 using Game.Api.Endpoints.Feedback;
-using Game.Api.Endpoints.Operations;
+using Game.Api.Endpoints.LiveOps;
 using Game.Infrastructure.Configuration;
 using Game.Shared.Options;
 using Game.Infrastructure.Database.Seed;
@@ -109,11 +109,11 @@ try
     app.MapRuntimeEndpoints();
     app.MapSettlementEndpoints();
     app.MapGameServerEndpoints();
-    app.MapOperationEndpoints();
+    app.MapGameFeatureEndpoints();
     app.MapPlatformEndpoints();
     app.MapLauncherEndpoints();
     app.MapFeedbackEndpoints();
-    app.MapOperationsStatusEndpoints();
+    app.MapLiveOpsStatusEndpoints();
 
     await app.ApplySeedDataAsync();
 

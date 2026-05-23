@@ -18,7 +18,8 @@ Game.Api/
 │   ├── Runtime/                  # 运行时端点
 │   ├── Settlement/               # 结算端点
 │   ├── GameServer/               # 游戏服务器端点
-│   └── Operation/                # 运营端点
+│   ├── GameFeatures/             # 背包、社交、活动、客服等游戏功能聚合端点
+│   └── LiveOps/                  # 运营状态端点
 ├── Extensions/                   # 扩展方法
 │   ├── EndpointRouteBuilderExtensions.cs  # 端点注册扩展
 │   └── EndpointResultsExtensions.cs       # 响应格式化扩展
@@ -84,7 +85,7 @@ Game.Api/
 - 心跳检测 `/api/sessions/{sessionId}/heartbeat`
 - 断线重连 `/api/sessions/{sessionId}/reconnect`
 
-### 7. 运营接口 (OperationEndpoints)
+### 7. 游戏功能聚合接口 (GameFeatureEndpoints)
 - 背包 `/api/players/me/inventory`
 - 排行榜 `/api/rankings/{mode}`
 - 好友系统 `/api/friends`

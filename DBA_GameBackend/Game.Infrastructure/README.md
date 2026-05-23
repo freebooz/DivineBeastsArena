@@ -16,7 +16,7 @@ Game.Infrastructure/
 │   │   ├── AuthEntities.cs    # 认证相关实体
 │   │   ├── PlayerEntities.cs  # 玩家相关实体
 │   │   ├── GameEntities.cs    # 游戏相关实体
-│   │   └── OperationEntities.cs # 运营相关实体
+│   │   └── GameFeatureEntities.cs # 游戏功能与运营支撑实体
 │   └── Configurations/ # EF Core配置
 │       ├── AuthConfigurations.cs
 │       ├── PlayerConfigurations.cs
@@ -61,7 +61,7 @@ Game.Infrastructure/
 - `MatchResult` - 比赛结果表
 - `MatchPlayerResult` - 玩家比赛结果表
 
-### 运营相关 (OperationEntities)
+### 运营相关 (GameFeatureEntities)
 - `PlayerRanking` - 玩家排行榜表
 - `FriendRequest` - 好友请求表
 - `FriendRelation` - 好友关系表

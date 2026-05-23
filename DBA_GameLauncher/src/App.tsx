@@ -23,6 +23,7 @@ type ManifestFile = {
 
 type UpdateManifest = {
   version: string;
+  downloadUrl?: string;
   files: ManifestFile[];
 };
 
@@ -40,6 +41,22 @@ const defaultExecutablePath =
   "D:\\DivineBeastsArenaPlatform\\DBA_GameClient\\Binaries\\Win64\\DivineBeastsArena.exe";
 const defaultManifestUrl = "http://localhost:8080/launcher/manifest.json?channel=stable&platform=Windows";
 const defaultBackendArg = "-BackendBaseUrl=http://localhost:8080";
+const launcherSettingsKey = "dba-game-launcher-settings";
+
+type LauncherSettings = {
+  installPath?: string;
+  executablePath?: string;
+  manifestUrl?: string;
+  extraArgs?: string;
+};
+
+function loadLauncherSettings(): LauncherSettings {
+  try {
+    return JSON.parse(window.localStorage.getItem(launcherSettingsKey) ?? "{}") as LauncherSettings;
+  } catch {
+    return {};
+  }
+}
 
 function getBackendBaseUrl(manifestUrl: string) {
   try {
@@ -50,11 +67,66 @@ function getBackendBaseUrl(manifestUrl: string) {
   }
 }
 
+function parseCommandLineArgs(input: string) {
+  const args: string[] = [];
+  let current = "";
+  let quote: '"' | "'" | null = null;
+  let escaping = false;
+
+  for (const char of input) {
+    if (escaping) {
+      current += char;
+      escaping = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escaping = true;
+      continue;
+    }
+
+    if ((char === '"' || char === "'") && quote === null) {
+      quote = char;
+      continue;
+    }
+
+    if (char === quote) {
+      quote = null;
+      continue;
+    }
+
+    if (!quote && /\s/.test(char)) {
+      if (current) {
+        args.push(current);
+        current = "";
+      }
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (escaping) {
+    current += "\\";
+  }
+
+  if (quote) {
+    throw new Error("启动参数引号未闭合");
+  }
+
+  if (current) {
+    args.push(current);
+  }
+
+  return args;
+}
+
 function App() {
-  const [installPath, setInstallPath] = useState(defaultInstallPath);
-  const [executablePath, setExecutablePath] = useState(defaultExecutablePath);
-  const [manifestUrl, setManifestUrl] = useState(defaultManifestUrl);
-  const [extraArgs, setExtraArgs] = useState(defaultBackendArg);
+  const [initialSettings] = useState(loadLauncherSettings);
+  const [installPath, setInstallPath] = useState(initialSettings.installPath ?? defaultInstallPath);
+  const [executablePath, setExecutablePath] = useState(initialSettings.executablePath ?? defaultExecutablePath);
+  const [manifestUrl, setManifestUrl] = useState(initialSettings.manifestUrl ?? defaultManifestUrl);
+  const [extraArgs, setExtraArgs] = useState(initialSettings.extraArgs ?? defaultBackendArg);
   const [localVersion, setLocalVersion] = useState<VersionInfo | null>(null);
   const [manifest, setManifest] = useState<UpdateManifest | null>(null);
   const [launcherStatus, setLauncherStatus] = useState<LauncherStatus | null>(null);
@@ -74,6 +146,13 @@ function App() {
   useEffect(() => {
     void refreshServiceStatus();
   }, [backendBaseUrl]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      launcherSettingsKey,
+      JSON.stringify({ installPath, executablePath, manifestUrl, extraArgs }),
+    );
+  }, [installPath, executablePath, manifestUrl, extraArgs]);
 
   async function runAction(action: () => Promise<string>) {
     setBusy(true);
@@ -143,25 +222,22 @@ function App() {
         return "请先拉取远端清单";
       }
 
-      const missingFiles = await invoke<string[]>("repair_game", {
+      const repairedFiles = await invoke<string[]>("repair_game", {
         gamePath: installPath,
         manifest,
       });
 
-      if (missingFiles.length === 0) {
+      if (repairedFiles.length === 0) {
         return "文件校验通过";
       }
 
-      return `需要修复 ${missingFiles.length} 个文件：${missingFiles.slice(0, 5).join(", ")}`;
+      return `已修复 ${repairedFiles.length} 个文件：${repairedFiles.slice(0, 5).join(", ")}`;
     });
   }
 
   async function launchGame() {
     await runAction(async () => {
-      const args = extraArgs
-        .split(" ")
-        .map((item) => item.trim())
-        .filter(Boolean);
+      const args = parseCommandLineArgs(extraArgs);
 
       await invoke("launch_game", {
         executablePath,
@@ -228,7 +304,7 @@ function App() {
           检查更新
         </button>
         <button onClick={verifyFiles} disabled={busy}>
-          校验文件
+          校验/修复文件
         </button>
         <button onClick={openLogs} disabled={busy}>
           打开日志

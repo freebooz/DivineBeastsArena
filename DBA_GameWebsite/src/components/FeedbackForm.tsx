@@ -26,11 +26,6 @@ interface FormErrors {
   content?: string;
 }
 
-const apiBaseUrl =
-  process.env.NEXT_PUBLIC_GAME_API_BASE_URL ??
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
-  'http://localhost:8080';
-
 const validateEmail = (email: string): boolean => {
   if (!email.trim()) return true;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -77,7 +72,7 @@ const FeedbackForm: FC = () => {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${apiBaseUrl}/api/feedback/`, {
+      const response = await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),

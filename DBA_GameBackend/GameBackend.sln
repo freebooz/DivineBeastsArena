@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Game.IntegrationTests", "Ga
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Game.ServerManagement", "Game.ServerManagement\Game.ServerManagement.csproj", "{98A8737E-686B-4271-A2B5-1B3D2E77BF7A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Game.ServerManagement.Tests", "Game.ServerManagement.Tests\Game.ServerManagement.Tests.csproj", "{624375FC-4610-4F2E-9DC7-B1C4126957A0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -111,6 +113,18 @@ Global
 		{98A8737E-686B-4271-A2B5-1B3D2E77BF7A}.Release|x64.Build.0 = Release|Any CPU
 		{98A8737E-686B-4271-A2B5-1B3D2E77BF7A}.Release|x86.ActiveCfg = Release|Any CPU
 		{98A8737E-686B-4271-A2B5-1B3D2E77BF7A}.Release|x86.Build.0 = Release|Any CPU
+		{624375FC-4610-4F2E-9DC7-B1C4126957A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{624375FC-4610-4F2E-9DC7-B1C4126957A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{624375FC-4610-4F2E-9DC7-B1C4126957A0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{624375FC-4610-4F2E-9DC7-B1C4126957A0}.Debug|x64.Build.0 = Debug|Any CPU
+		{624375FC-4610-4F2E-9DC7-B1C4126957A0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{624375FC-4610-4F2E-9DC7-B1C4126957A0}.Debug|x86.Build.0 = Debug|Any CPU
+		{624375FC-4610-4F2E-9DC7-B1C4126957A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{624375FC-4610-4F2E-9DC7-B1C4126957A0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{624375FC-4610-4F2E-9DC7-B1C4126957A0}.Release|x64.ActiveCfg = Release|Any CPU
+		{624375FC-4610-4F2E-9DC7-B1C4126957A0}.Release|x64.Build.0 = Release|Any CPU
+		{624375FC-4610-4F2E-9DC7-B1C4126957A0}.Release|x86.ActiveCfg = Release|Any CPU
+		{624375FC-4610-4F2E-9DC7-B1C4126957A0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -18,7 +18,7 @@ Game.Shared/
 │   ├── Room/           # 房间相关DTO
 │   ├── Match/          # 匹配相关DTO
 │   ├── Session/        # 会话相关DTO
-│   └── Operation/      # 运营相关DTO
+│   └── GameFeatures/      # 运营相关DTO
 ├── Errors/             # 错误码定义
 │   └── ErrorCodes.cs  # 错误码常量
 └── Options/            # 配置选项

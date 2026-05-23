@@ -1,9 +1,9 @@
-﻿/*
+/*
 中文阅读说明：
 - 所属应用：GameAdmin GM 管理后台。
-- 文件职责：承载业务编排逻辑，负责校验状态、调用数据库/缓存/外部服务并保持操作幂等。
-- 阅读重点：先看公开类型、路由/组件入口和构造函数，再看私有辅助方法，理解数据如何从输入流向状态变更或界面输出。
-- 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
+- 文件职责：ApiClient 核心 HTTP、认证头和 API envelope 解析逻辑。
+- 阅读重点：领域 API 方法位于 ApiClient.*.cs partial 文件。
+- 修改提示：保持这里聚焦通用通信能力，不直接堆叠业务页面方法。
 */
 
 using System.Net.Http.Headers;
@@ -12,8 +12,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
 namespace GameAdmin.Services;
-
-public class ApiClient
+public partial class ApiClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -68,6 +67,29 @@ public class ApiClient
         }
     }
 
+    public async Task<TResponse?> PostAsync<TResponse, TBody>(string url, TBody body)
+        where TResponse : class
+    {
+        try
+        {
+            ApplyAuthorizationHeader();
+            var response = await _http.PostAsJsonAsync(url, body);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("POST {Url} failed with {StatusCode}", url, response.StatusCode);
+                return null;
+            }
+
+            var payload = await response.Content.ReadAsStringAsync();
+            return DeserializeApiPayload<TResponse>(payload);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "POST {Url} failed", url);
+            return null;
+        }
+    }
+
     public async Task<AdminLoginDto?> LoginAdminAsync(string username, string password)
     {
         try
@@ -88,102 +110,6 @@ public class ApiClient
             _logger.LogError(ex, "Admin login failed");
             return null;
         }
-    }
-
-    // Health check
-    public async Task<bool> IsHealthyAsync()
-    {
-        try
-        {
-            ApplyAuthorizationHeader();
-            var response = await _http.GetAsync("/health/live");
-            return response.IsSuccessStatusCode;
-        }
-        catch { return false; }
-    }
-
-    // Players
-    public async Task<AdminPlayerListDto?> GetPlayersAsync(int page = 1, int pageSize = 50)
-    {
-        return await GetAsync<AdminPlayerListDto>($"/api/admin/players?page={page}&pageSize={pageSize}");
-    }
-
-    public async Task<PlayerDetailDto?> GetPlayerAsync(Guid playerId)
-    {
-        return await GetAsync<PlayerDetailDto>($"/api/admin/players/{playerId}");
-    }
-
-    // Game Servers
-    public async Task<AdminGameServerListDto?> GetGameServersAsync(int page = 1, int pageSize = 50)
-    {
-        return await GetAsync<AdminGameServerListDto>($"/api/admin/servers?page={page}&pageSize={pageSize}");
-    }
-
-    public async Task<bool> KillGameServerAsync(Guid serverId, string reason)
-    {
-        return await PostVoidAsync($"/api/admin/servers/{serverId}/kill", new AdminReasonRequest(reason));
-    }
-
-    // Configs
-    public async Task<List<ConfigDto>?> GetConfigsAsync()
-    {
-        return await GetAsync<List<ConfigDto>>("/api/admin/configs");
-    }
-
-    // Rooms
-    public async Task<List<RoomDto>?> GetRoomsAsync()
-    {
-        return await GetAsync<List<RoomDto>>("/api/rooms");
-    }
-
-    public async Task<AdminMatchListDto?> GetMatchesAsync(int page = 1, int pageSize = 50)
-    {
-        return await GetAsync<AdminMatchListDto>($"/api/admin/matches?page={page}&pageSize={pageSize}");
-    }
-
-    public async Task<AdminMatchDetailDto?> GetMatchAsync(Guid matchId)
-    {
-        return await GetAsync<AdminMatchDetailDto>($"/api/admin/matches/{matchId}");
-    }
-
-    public async Task<PlatformApplicationsDto?> GetPlatformApplicationsAsync()
-    {
-        return await GetAsync<PlatformApplicationsDto>("/api/platform/applications");
-    }
-
-    public async Task<OperationsStatusDto?> GetOperationsStatusAsync()
-    {
-        return await GetAsync<OperationsStatusDto>("/api/operations/status");
-    }
-
-    public async Task<AdminAuditLogListDto?> GetAuditLogsAsync(int page = 1, int pageSize = 50)
-    {
-        return await GetAsync<AdminAuditLogListDto>($"/api/admin/audit-logs?page={page}&pageSize={pageSize}");
-    }
-
-    public async Task<List<AdminInventoryLogDto>?> GetInventoryLogsAsync(int page = 1, int pageSize = 50)
-    {
-        return await GetAsync<List<AdminInventoryLogDto>>($"/api/admin/inventory/logs?page={page}&pageSize={pageSize}");
-    }
-
-    public async Task<bool> GrantInventoryItemAsync(Guid playerId, string itemId, long quantity, string reason)
-    {
-        return await PostVoidAsync("/api/admin/inventory/grant", new AdminInventoryMutationRequest(playerId, itemId, quantity, reason));
-    }
-
-    public async Task<bool> DeductInventoryItemAsync(Guid playerId, string itemId, long quantity, string reason)
-    {
-        return await PostVoidAsync("/api/admin/inventory/deduct", new AdminInventoryMutationRequest(playerId, itemId, quantity, reason));
-    }
-
-    public async Task<AdminFeedbackListDto?> GetFeedbackAsync(int page = 1, int pageSize = 50)
-    {
-        return await GetAsync<AdminFeedbackListDto>($"/api/admin/feedback?page={page}&pageSize={pageSize}");
-    }
-
-    public async Task<AdminSupportTicketListDto?> GetSupportTicketsAsync(int page = 1, int pageSize = 50)
-    {
-        return await GetAsync<AdminSupportTicketListDto>($"/api/admin/support/tickets?page={page}&pageSize={pageSize}");
     }
 
     private void ApplyAuthorizationHeader()
@@ -315,6 +241,32 @@ public record ConfigDto(
     DateTimeOffset CreatedAt,
     DateTimeOffset? PublishedAt);
 public record RoomDto(Guid Id, string Mode, string MapId, string Status, int PlayerCount);
+public record AdminClientVersionListDto(IReadOnlyList<AdminClientVersionDto> Items, int TotalCount, int Page, int PageSize);
+public record AdminClientVersionDto(
+    Guid Id,
+    string Version,
+    string Channel,
+    string Platform,
+    string DownloadUrl,
+    string Checksum,
+    long SizeBytes,
+    bool IsMandatory,
+    bool IsActive,
+    string? MinOsVersion,
+    string? ReleaseNotes,
+    DateTimeOffset CreatedAt);
+public record UpsertClientVersionDto(
+    string Version,
+    string Channel,
+    string Platform,
+    string DownloadUrl,
+    string Checksum,
+    long SizeBytes,
+    bool IsMandatory,
+    bool IsActive,
+    string? MinOsVersion,
+    string? ReleaseNotes,
+    string Reason);
 public record AdminAuditLogListDto(IReadOnlyList<AdminAuditLogDto> Items, int TotalCount, int Page, int PageSize);
 public record AdminAuditLogDto(
     Guid Id,
@@ -372,7 +324,7 @@ public record PlatformApplicationDto(
     IReadOnlyList<string> IntegrationPoints,
     IReadOnlyList<string> NextSteps);
 
-public record OperationsStatusDto(
+public record LiveOpsStatusDto(
     DateTimeOffset GeneratedAt,
     int TotalAccounts,
     int TotalPlayers,
@@ -384,6 +336,6 @@ public record OperationsStatusDto(
     int ActiveAnnouncements,
     int ActiveEvents,
     string LatestClientVersion,
-    IReadOnlyList<OperationsHealthItemDto> HealthItems);
+    IReadOnlyList<LiveOpsHealthItemDto> HealthItems);
 
-public record OperationsHealthItemDto(string Name, string Status, string Detail);
+public record LiveOpsHealthItemDto(string Name, string Status, string Detail);

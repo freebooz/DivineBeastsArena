@@ -9,7 +9,7 @@
 | `Source/GameCore` | 通用账号、会话、基础类型和跨玩法服务 | 不依赖 DBA 玩法模块 |
 | `Source/GameMoba` | MOBA 通用 UI、GAS、RPC、类型基础设施 | 公开依赖 `GameCore` |
 | `Source/DivineBeastsArena` | DBA 具体玩法、角色、技能、UI、地图逻辑 | 公开依赖 `GameCore`、`GameMoba`、`Niagara` |
-| `Plugins/DBA_GameBackendClient` | 后端客户端、遥测、崩溃上传封装 | 作为插件被游戏模块私有使用 |
+| `Plugins/GameBackendClient` | 后端客户端、遥测、崩溃上传封装 | 作为插件被游戏模块私有使用 |
 
 公开头文件里暴露的类型，其模块必须放在 `PublicDependencyModuleNames`。只在 `.cpp` 内使用的模块才放在 `PrivateDependencyModuleNames`。
 

@@ -1,15 +1,16 @@
 ﻿/*
 中文阅读说明：
 - 所属应用：DBA_GameBackend 后端 API / Worker。
-- 文件职责：应用源码文件，承担该模块的一部分业务、界面、配置或启动逻辑。
-- 阅读重点：先看公开类型、路由/组件入口和构造函数，再看私有辅助方法，理解数据如何从输入流向状态变更或界面输出。
-- 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
+- 文件职责：承载 Dedicated Server 编排层的启动、端口、镜像/可执行文件和超时配置。
+- 阅读重点：Section 仍指向历史配置节 GameServerManager，用于兼容现有环境变量和 docker-compose。
+- 修改提示：如需改配置节名，先提供迁移期双读逻辑，避免破坏线上环境变量。
 */
 
 namespace Game.Shared.Options;
 
-public sealed class GameServerManagerOptions
+public sealed class DedicatedServerOrchestrationOptions
 {
+    // Keep the legacy section name for environment-variable and compose compatibility.
     public const string Section = "GameServerManager";
 
     public string ServerMode { get; init; } = "LocalProcess";
@@ -24,3 +25,4 @@ public sealed class GameServerManagerOptions
     public int IdleTimeoutSeconds { get; init; } = 300;
     public int MaxServersPerMachine { get; init; } = 8;
 }
+

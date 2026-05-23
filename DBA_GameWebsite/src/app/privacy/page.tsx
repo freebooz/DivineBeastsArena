@@ -1,4 +1,4 @@
-﻿/*
+/*
 中文阅读说明：
 - 所属应用：DBA_GameWebsite 游戏官网。
 - 文件职责：Next.js App Router 页面，负责官网路由、内容组织和响应式展示。
@@ -9,8 +9,8 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy - MyGamePlatform',
-  description: 'Privacy Policy for MyGamePlatform.',
+  title: 'Privacy Policy - 五灵争霸：神兽觉醒',
+  description: 'Privacy Policy for 五灵争霸：神兽觉醒.',
 };
 
 export default function PrivacyPage() {
@@ -24,7 +24,7 @@ export default function PrivacyPage() {
 
         <div className="prose prose-invert prose-lg max-w-none space-y-6">
           <p className="text-gray-300">
-            MyGamePlatform (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you play our game or use our services.
+            五灵争霸：神兽觉醒 (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you play our game or use our services.
           </p>
 
           <h2 className="text-2xl font-bold text-white mt-8 mb-4">

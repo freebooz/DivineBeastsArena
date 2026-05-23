@@ -6,7 +6,7 @@
 - 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
 */
 
-namespace Game.Shared.Contracts.Operation;
+namespace Game.Shared.Contracts.GameFeatures;
 
 // ==================== 背包/物品 / Inventory ====================
 

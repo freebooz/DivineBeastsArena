@@ -15,7 +15,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Game.Api.Services.GameServer;
 
-public interface IGameServerManagerService
+public interface IGameServerRegistryService
 {
     Task<GameServerInstance?> RegisterServerAsync(RegisterGameServerRequest request);
     Task<GameServerInstance?> GetServerAsync(Guid serverId);
@@ -24,12 +24,12 @@ public interface IGameServerManagerService
     Task<bool> UpdateServerStatusAsync(Guid serverId, string status);
 }
 
-public sealed class GameServerManagerService : IGameServerManagerService
+public sealed class GameServerRegistryService : IGameServerRegistryService
 {
     private readonly GameDbContext _db;
-    private readonly ILogger<GameServerManagerService> _logger;
+    private readonly ILogger<GameServerRegistryService> _logger;
 
-    public GameServerManagerService(GameDbContext db, ILogger<GameServerManagerService> logger)
+    public GameServerRegistryService(GameDbContext db, ILogger<GameServerRegistryService> logger)
     {
         _db = db;
         _logger = logger;

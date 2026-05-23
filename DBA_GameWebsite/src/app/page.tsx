@@ -8,35 +8,12 @@
 
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import { footerLinks, homeFeatures } from '@/data/siteContent';
 
 export const metadata: Metadata = {
   title: '五灵争霸：神兽觉醒',
   description: '五行神兽题材的多人竞技游戏，提供客户端下载、新闻、FAQ 与反馈入口。',
 };
-
-const features = [
-  {
-    title: '真实账号与角色',
-    body: '账号登录、游客登录、创建角色和选择角色均通过后端 API 验证，并由数据库持久化。',
-  },
-  {
-    title: '专用游戏服务端',
-    body: '对局服务端通过内部接口注册、心跳和上报状态，方便大厅、匹配和运维后台统一管理。',
-  },
-  {
-    title: '可扩展运营系统',
-    body: '公告、活动、背包、邮件、工单、版本检查和数据分析接口已经纳入平台后端规划。',
-  },
-];
-
-const links = [
-  { href: '/news', label: '新闻' },
-  { href: '/changelog', label: '更新日志' },
-  { href: '/faq', label: '常见问题' },
-  { href: '/feedback', label: '反馈' },
-  { href: '/privacy', label: '隐私政策' },
-  { href: '/terms', label: '服务条款' },
-];
 
 export default function HomePage() {
   return (
@@ -80,7 +57,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl">
           <h2 className="text-3xl font-bold">平台能力</h2>
           <div className="mt-8 grid gap-5 md:grid-cols-3">
-            {features.map((feature) => (
+            {homeFeatures.map((feature) => (
               <article key={feature.title} className="rounded-lg border border-slate-700 bg-slate-900 p-6">
                 <h3 className="text-xl font-semibold text-amber-200">{feature.title}</h3>
                 <p className="mt-4 leading-7 text-slate-300">{feature.body}</p>
@@ -114,7 +91,7 @@ export default function HomePage() {
       <footer className="px-6 py-10">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <nav className="flex flex-wrap gap-4 text-sm text-slate-400">
-            {links.map((link) => (
+            {footerLinks.map((link) => (
               <a key={link.href} href={link.href} className="hover:text-white">
                 {link.label}
               </a>

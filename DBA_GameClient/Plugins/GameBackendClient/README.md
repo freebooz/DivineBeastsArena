@@ -1,7 +1,7 @@
-﻿# DBA_GameBackendClient
+# GameBackendClient
 
 ## 1. 插件用途
-`DBA_GameBackendClient` 为 Unreal 客户端提供统一后端通信能力，覆盖：
+`GameBackendClient` 为 Unreal 客户端提供统一后端通信能力，覆盖：
 
 - 登录与令牌刷新
 - 版本检查、维护状态、公告与配置拉取
@@ -22,7 +22,7 @@
 支持在 Project Settings 或 `DefaultGame.ini` 配置：
 
 ```ini
-[/Script/DBA_GameBackendClient.DBA_GameBackendClientSettings]
+[/Script/GameBackendClient.DBA_GameBackendClientSettings]
 BackendBaseUrl=http://localhost:5000
 ClientVersion=0.1.0
 BuildNumber=100
@@ -135,7 +135,7 @@ if (Backend && Backend->GetAuthService())
 - 上传日志前会进行敏感行脱敏处理（例如包含上述 Token 的日志行）。
 
 ## 12. 最小接入优先级
-1. DBA_GameBackendClient 插件基础 HTTP 能力  
+1. GameBackendClient 插件基础 HTTP 能力  
 2. DevLogin(`frontend_debug`)  
 3. VersionCheck + MaintenanceStatus  
 4. ConfigBundle 拉取  
