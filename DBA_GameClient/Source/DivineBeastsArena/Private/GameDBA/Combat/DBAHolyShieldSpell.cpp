@@ -23,7 +23,7 @@ namespace
 		return Actor ? Actor->GetActorLocation() + FVector(0.0f, 0.0f, 74.0f) : FVector::ZeroVector;
 	}
 
-	UAbilitySystemComponent* ResolveASC(AActor* Actor)
+	UAbilitySystemComponent* ResolveHolyShieldASC(AActor* Actor)
 	{
 		if (!Actor)
 		{
@@ -82,7 +82,7 @@ void ADBAHolyShieldSpell::ApplyShield(AActor* Target)
 		return;
 	}
 
-	if (UAbilitySystemComponent* ASC = ResolveASC(Target))
+	if (UAbilitySystemComponent* ASC = ResolveHolyShieldASC(Target))
 	{
 		if (UDBABattleAttributeSet* AttrSet = const_cast<UDBABattleAttributeSet*>(ASC->GetSet<UDBABattleAttributeSet>()))
 		{
@@ -104,7 +104,7 @@ void ADBAHolyShieldSpell::ReleaseShield()
 		return;
 	}
 
-	if (UAbilitySystemComponent* ASC = ResolveASC(Target))
+	if (UAbilitySystemComponent* ASC = ResolveHolyShieldASC(Target))
 	{
 		if (UDBABattleAttributeSet* AttrSet = const_cast<UDBABattleAttributeSet*>(ASC->GetSet<UDBABattleAttributeSet>()))
 		{

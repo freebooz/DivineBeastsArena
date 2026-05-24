@@ -15,6 +15,7 @@
 #include "GameDBA/Combat/DBAFireballProjectile.h"
 #include "GameDBA/Combat/DBAFrostShardProjectile.h"
 #include "GameDBA/Combat/DBAHolyShieldSpell.h"
+#include "GameDBA/Combat/DBAPlayableSkillComponent.h"
 #include "GameDBA/Combat/DBAProjectile_Generic.h"
 #include "GameDBA/Combat/DBAShadowBoltProjectile.h"
 #include "GameDBA/Combat/DBASkillProjectileBase.h"
@@ -297,20 +298,29 @@ namespace
 		return FGameplayTag::RequestGameplayTag(FName(TagName), false);
 	}
 
-	void ApplyLobbySkillProjectileAssets(ADBASkillProjectileBase* Projectile, const FLobbyEquippedSkillCastSpec& Spec)
+	bool ResolvePlayableSkillSpec(const ADBAZodiacCharacterBase* Character, int32 SkillSlot, FDBAPlayableSkillRuntimeSpec& OutSpec)
+	{
+		if (const UDBAPlayableSkillComponent* SkillComponent = Character ? Character->GetPlayableSkillComponent() : nullptr)
+		{
+			return SkillComponent->GetSkillSpec(SkillSlot, OutSpec);
+		}
+		return false;
+	}
+
+	void ApplyLobbySkillProjectileAssets(ADBASkillProjectileBase* Projectile, const FDBAPlayableSkillRuntimeSpec& Spec)
 	{
 		if (!Projectile)
 		{
 			return;
 		}
 
-		Projectile->DamageElement = Spec.DamageElement;
-		Projectile->ProjectileCueTag = ResolveOptionalGameplayCueTag(Spec.ProjectileCueTagName);
-		Projectile->ImpactCueTag = ResolveOptionalGameplayCueTag(Spec.ImpactCueTagName);
-		SetSoftNiagaraAsset(Projectile->ProjectileNiagaraVFXAsset, Spec.ProjectileNiagaraPath);
-		SetSoftNiagaraAsset(Projectile->ImpactNiagaraVFXAsset, Spec.ImpactNiagaraPath);
-		SetSoftSoundAsset(Projectile->FlySFXAsset, Spec.FlySFXPath);
-		SetSoftSoundAsset(Projectile->ImpactSFXAsset, Spec.ImpactSFXPath);
+		Projectile->DamageElement = Spec.Element;
+		Projectile->ProjectileCueTag = Spec.ProjectileCueTag;
+		Projectile->ImpactCueTag = Spec.ImpactCueTag;
+		Projectile->ProjectileNiagaraVFXAsset = Spec.ProjectileNiagaraVFXAsset;
+		Projectile->ImpactNiagaraVFXAsset = Spec.ImpactNiagaraVFXAsset;
+		Projectile->FlySFXAsset = Spec.FlySFXAsset;
+		Projectile->ImpactSFXAsset = Spec.ImpactSFXAsset;
 	}
 }
 
@@ -341,6 +351,8 @@ ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
 	LobbyFollowCamera->SetupAttachment(LobbyCameraBoom, USpringArmComponent::SocketName);
 	LobbyFollowCamera->bUsePawnControlRotation = false;
 
+	PlayableSkillComponent = CreateDefaultSubobject<UDBAPlayableSkillComponent>(TEXT("PlayableSkillComponent"));
+
 	// 閰嶇疆绉诲姩閫熷害
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
@@ -365,7 +377,10 @@ ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
 	SkillMaxCooldowns.Init(0.0f, 7);
 	for (int32 SkillSlot = 1; SkillSlot <= 5; ++SkillSlot)
 	{
-		SkillMaxCooldowns[SkillSlot] = GetDefaultLobbySkillSpec(SkillSlot).Cooldown;
+		FDBAPlayableSkillRuntimeSpec SkillSpec;
+		SkillMaxCooldowns[SkillSlot] = ResolvePlayableSkillSpec(this, SkillSlot, SkillSpec)
+			? SkillSpec.Cooldown
+			: GetDefaultLobbySkillSpec(SkillSlot).Cooldown;
 	}
 }
 
@@ -407,7 +422,10 @@ void ADBAZodiacCharacterBase::Tick(float DeltaSeconds)
 		}
 		for (int32 SkillSlot = 1; SkillSlot <= 5; ++SkillSlot)
 		{
-			const float DefaultCooldown = SkillSlot == 1 ? LobbyFireballCooldown : GetDefaultLobbySkillSpec(SkillSlot).Cooldown;
+			FDBAPlayableSkillRuntimeSpec SkillSpec;
+			const float DefaultCooldown = ResolvePlayableSkillSpec(this, SkillSlot, SkillSpec)
+				? SkillSpec.Cooldown
+				: (SkillSlot == 1 ? LobbyFireballCooldown : GetDefaultLobbySkillSpec(SkillSlot).Cooldown);
 			SkillMaxCooldowns[SkillSlot] = FMath::Max(SkillMaxCooldowns[SkillSlot], DefaultCooldown);
 		}
 	}
@@ -609,12 +627,20 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		return;
 	}
 
-	FLobbyEquippedSkillCastSpec Spec = GetDefaultLobbySkillSpec(SkillSlot);
+	FDBAPlayableSkillRuntimeSpec Spec;
+	if (!ResolvePlayableSkillSpec(this, SkillSlot, Spec))
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 未找到装配技能规格：施法者=%s 槽位=%d"),
+			*GetName(),
+			SkillSlot);
+		return;
+	}
+
 	if (SkillSlot == 1)
 	{
-		Spec.Damage = LobbyFireballDamage;
-		Spec.Speed = LobbyFireballSpeed;
-		Spec.Radius = LobbyFireballRadius;
+		Spec.Magnitude = LobbyFireballDamage;
+		Spec.ProjectileSpeed = LobbyFireballSpeed;
+		Spec.ProjectileRadius = LobbyFireballRadius;
 		Spec.Cooldown = LobbyFireballCooldown;
 	}
 
@@ -632,7 +658,7 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		UE_LOG(LogDBACombat, Verbose, TEXT("[DBAZodiacCharacterBase] 装配技能被冷却阻止：施法者=%s 槽位=%d 技能=%s 剩余=%.2f"),
 			*GetName(),
 			SkillSlot,
-			*Spec.FallbackSkillId.ToString(),
+			*Spec.SkillId.ToString(),
 			SkillCooldowns[SkillSlot]);
 		return;
 	}
@@ -650,9 +676,9 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 	SpawnParams.Instigator = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	if (SkillSlot == 3)
+	if (Spec.EffectShape == EDBAPlayableSkillEffectShape::BloomHealing)
 	{
-		TSubclassOf<ADBABloomHealingSpell> BloomClass = LobbyBloomHealingSpellClass;
+		TSubclassOf<ADBABloomHealingSpell> BloomClass = Spec.BloomHealingClass ? Spec.BloomHealingClass : LobbyBloomHealingSpellClass;
 		if (!BloomClass)
 		{
 			BloomClass = ADBABloomHealingSpell::StaticClass();
@@ -667,7 +693,7 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		{
 			UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 生成绽放治疗法术失败：施法者=%s 技能=%s 类=%s"),
 				*GetName(),
-				*Spec.FallbackSkillId.ToString(),
+				*Spec.SkillId.ToString(),
 				*GetNameSafe(BloomClass));
 			return;
 		}
@@ -679,15 +705,15 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		MulticastPlayLobbySkillCastFeedback(SkillSlot);
 		UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放绽放治疗：施法者=%s 技能=%s 目标=%s 法术=%s"),
 			*GetName(),
-			*Spec.FallbackSkillId.ToString(),
+			*Spec.SkillId.ToString(),
 			*GetNameSafe(HealTarget),
 			*BloomSpell->GetName());
 		return;
 	}
 
-	if (SkillSlot == 4)
+	if (Spec.EffectShape == EDBAPlayableSkillEffectShape::ChainLightning)
 	{
-		TSubclassOf<ADBAChainLightningSpell> ChainClass = LobbyChainLightningSpellClass;
+		TSubclassOf<ADBAChainLightningSpell> ChainClass = Spec.ChainLightningClass ? Spec.ChainLightningClass : LobbyChainLightningSpellClass;
 		if (!ChainClass)
 		{
 			ChainClass = ADBAChainLightningSpell::StaticClass();
@@ -702,7 +728,7 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		{
 			UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 生成链式闪电法术失败：施法者=%s 技能=%s 类=%s"),
 				*GetName(),
-				*Spec.FallbackSkillId.ToString(),
+				*Spec.SkillId.ToString(),
 				*GetNameSafe(ChainClass));
 			return;
 		}
@@ -713,15 +739,15 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		MulticastPlayLobbySkillCastFeedback(SkillSlot);
 		UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放链式闪电：施法者=%s 技能=%s 初始目标=%s 法术=%s"),
 			*GetName(),
-			*Spec.FallbackSkillId.ToString(),
+			*Spec.SkillId.ToString(),
 			*GetNameSafe(TargetActor),
 			*ChainSpell->GetName());
 		return;
 	}
 
-	if (SkillSlot == 5)
+	if (Spec.EffectShape == EDBAPlayableSkillEffectShape::HolyShield)
 	{
-		TSubclassOf<ADBAHolyShieldSpell> ShieldClass = LobbyHolyShieldSpellClass;
+		TSubclassOf<ADBAHolyShieldSpell> ShieldClass = Spec.HolyShieldClass ? Spec.HolyShieldClass : LobbyHolyShieldSpellClass;
 		if (!ShieldClass)
 		{
 			ShieldClass = ADBAHolyShieldSpell::StaticClass();
@@ -736,7 +762,7 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		{
 			UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 生成牧师护盾法术失败：施法者=%s 技能=%s 类=%s"),
 				*GetName(),
-				*Spec.FallbackSkillId.ToString(),
+				*Spec.SkillId.ToString(),
 				*GetNameSafe(ShieldClass));
 			return;
 		}
@@ -748,7 +774,7 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		MulticastPlayLobbySkillCastFeedback(SkillSlot);
 		UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放牧师护盾：施法者=%s 技能=%s 目标=%s 法术=%s"),
 			*GetName(),
-			*Spec.FallbackSkillId.ToString(),
+			*Spec.SkillId.ToString(),
 			*GetNameSafe(ShieldTarget),
 			*ShieldSpell->GetName());
 		return;
@@ -761,7 +787,7 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 	{
 		if (SkillSlot == 1)
 		{
-			ProjectileClass = LobbyFireballProjectileClass;
+			ProjectileClass = Spec.ProjectileClass ? Spec.ProjectileClass : LobbyFireballProjectileClass;
 			if (!ProjectileClass)
 			{
 				ProjectileClass = ADBAFireballProjectile::StaticClass();
@@ -771,7 +797,7 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		{
 			if (SkillSlot == 2)
 			{
-				ProjectileClass = LobbyFrostShardProjectileClass;
+				ProjectileClass = Spec.ProjectileClass ? Spec.ProjectileClass : LobbyFrostShardProjectileClass;
 				if (!ProjectileClass)
 				{
 					ProjectileClass = ADBAFrostShardProjectile::StaticClass();
@@ -779,7 +805,7 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 			}
 			else if (SkillSlot == 6)
 			{
-				ProjectileClass = LobbyShadowBoltProjectileClass;
+				ProjectileClass = Spec.ProjectileClass ? Spec.ProjectileClass : LobbyShadowBoltProjectileClass;
 				if (!ProjectileClass)
 				{
 					ProjectileClass = ADBAShadowBoltProjectile::StaticClass();
@@ -801,13 +827,13 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 	{
 		UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 生成装配技能投射物失败：槽位=%d 技能=%s 类=%s"),
 			SkillSlot,
-			*Spec.FallbackSkillId.ToString(),
+			*Spec.SkillId.ToString(),
 			*GetNameSafe(ProjectileClass));
 		return;
 	}
 
 	ApplyLobbySkillProjectileAssets(Fireball, Spec);
-	Fireball->InitializeProjectile(Spec.FallbackSkillId, this, TargetActor, Spec.Damage, Spec.Speed, Spec.Radius);
+	Fireball->InitializeProjectile(Spec.SkillId, this, TargetActor, Spec.Magnitude, Spec.ProjectileSpeed, Spec.ProjectileRadius);
 	Fireball->LaunchProjectile(SafeAimDirection);
 	SkillCooldowns[SkillSlot] = Spec.Cooldown;
 	SkillMaxCooldowns[SkillSlot] = Spec.Cooldown;
@@ -816,7 +842,7 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 	UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放装配技能：施法者=%s 槽位=%d 技能=%s 投射物=%s 类=%s 目标=%s 水平方向=%s"),
 		*GetName(),
 		SkillSlot,
-		*Spec.FallbackSkillId.ToString(),
+		*Spec.SkillId.ToString(),
 		*Fireball->GetName(),
 		*GetNameSafe(ProjectileClass),
 		*GetNameSafe(TargetActor),
@@ -830,7 +856,11 @@ void ADBAZodiacCharacterBase::MulticastPlayLobbySkillCastFeedback_Implementation
 
 void ADBAZodiacCharacterBase::PlayLobbySkillCastFeedbackLocal(int32 SkillSlot)
 {
-	const FLobbyEquippedSkillCastSpec& Spec = GetDefaultLobbySkillSpec(SkillSlot);
+	FDBAPlayableSkillRuntimeSpec Spec;
+	if (!ResolvePlayableSkillSpec(this, SkillSlot, Spec))
+	{
+		return;
+	}
 
 	if (bUseLobbySingleNodeLocomotion && LobbyAttackAnimation)
 	{
@@ -849,9 +879,9 @@ void ADBAZodiacCharacterBase::PlayLobbySkillCastFeedbackLocal(int32 SkillSlot)
 	}
 
 	const FVector CastLocation = GetActorLocation() + GetActorForwardVector() * 72.0f + FVector(0.0f, 0.0f, 88.0f);
-	if (Spec.CastNiagaraPath && FCString::Strlen(Spec.CastNiagaraPath) > 0)
+	if (!Spec.CastNiagaraVFXAsset.IsNull())
 	{
-		if (UNiagaraSystem* CastVFX = LoadObject<UNiagaraSystem>(nullptr, Spec.CastNiagaraPath))
+		if (UNiagaraSystem* CastVFX = Spec.CastNiagaraVFXAsset.LoadSynchronous())
 		{
 			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 				GetWorld(),
@@ -866,9 +896,9 @@ void ADBAZodiacCharacterBase::PlayLobbySkillCastFeedbackLocal(int32 SkillSlot)
 		}
 	}
 
-	if (Spec.CastSFXPath && FCString::Strlen(Spec.CastSFXPath) > 0)
+	if (!Spec.CastSFXAsset.IsNull())
 	{
-		if (USoundBase* CastSFX = LoadObject<USoundBase>(nullptr, Spec.CastSFXPath))
+		if (USoundBase* CastSFX = Spec.CastSFXAsset.LoadSynchronous())
 		{
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), CastSFX, CastLocation, 0.85f);
 		}
@@ -951,6 +981,11 @@ UDBAAbilitySystemComponent* ADBAZodiacCharacterBase::GetDBAAbilitySystemComponen
 		return Cast<UDBAAbilitySystemComponent>(OwnerActor->FindComponentByClass<UDBAAbilitySystemComponent>());
 	}
 	return nullptr;
+}
+
+TArray<FDBAPlayableSkillRuntimeSpec> ADBAZodiacCharacterBase::GetPlayableSkillSpecs() const
+{
+	return PlayableSkillComponent ? PlayableSkillComponent->GetAllSkillSpecs() : TArray<FDBAPlayableSkillRuntimeSpec>();
 }
 
 // ==================== 灞炴€ц闂疄鐜?====================

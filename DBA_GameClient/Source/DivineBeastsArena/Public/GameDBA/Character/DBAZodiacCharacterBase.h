@@ -15,6 +15,7 @@
 #include "GameFramework/Character.h"
 #include "GameDBA/Core/DBAEnumsCore.h"
 #include "GameDBA/Combat/DBACombatTypes.h"
+#include "GameDBA/Combat/DBAPlayableSkillTypes.h"
 #include "GameDBA/Spectator/DBAObserverTypes.h"
 #include "GameDBA/Character/IDBACharacterRef.h"
 #include "DBAZodiacCharacterBase.generated.h"
@@ -29,6 +30,8 @@ class ADBABloomHealingSpell;
 class ADBAChainLightningSpell;
 class ADBAHolyShieldSpell;
 class ADBASkillProjectileBase;
+class UDBAPlayableSkillComponent;
+struct FDBAPlayableSkillRuntimeSpec;
 
 /**
  * DBAZodiacCharacterBase
@@ -61,6 +64,12 @@ public:
 	/** 获取能力系统组件 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character")
 	UDBAAbilitySystemComponent* GetDBAAbilitySystemComponent() const;
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Skill")
+	UDBAPlayableSkillComponent* GetPlayableSkillComponent() const { return PlayableSkillComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Skill")
+	TArray<FDBAPlayableSkillRuntimeSpec> GetPlayableSkillSpecs() const;
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character")
 	EDBAZodiacType GetZodiacType() const { return ZodiacType; }
@@ -275,6 +284,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DBA|Camera")
 	TObjectPtr<UCameraComponent> LobbyFollowCamera;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DBA|Skill")
+	TObjectPtr<UDBAPlayableSkillComponent> PlayableSkillComponent;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimationAsset> LobbyIdleAnimation;
