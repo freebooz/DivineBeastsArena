@@ -32,6 +32,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+	virtual void HandleMonsterDefeated(AActor* DamageCauser);
 
 	UFUNCTION()
 	virtual void OnRep_CurrentHealth();

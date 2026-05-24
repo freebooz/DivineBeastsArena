@@ -17,6 +17,7 @@
 #include "GameDBA/UI/DBAGameUIManager.h"
 #include "GameDBA/UI/Common/UDBASoftwareCursorWidget.h"
 #include "Blueprint/UserWidget.h"
+#include "EngineUtils.h"
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -439,6 +440,28 @@ void ADBALobbyPlayerController::CastEquippedSkillSlot(int32 SkillSlot)
 	if (ADBAZodiacCharacterBase* ZodiacPawn = Cast<ADBAZodiacCharacterBase>(GetPawn()))
 	{
 		AActor* Target = SelectedAttackTarget.IsValid() ? SelectedAttackTarget.Get() : nullptr;
+		if (ADBALobbyTrainingMonster* TrainingTarget = Cast<ADBALobbyTrainingMonster>(Target))
+		{
+			if (TrainingTarget->GetHealthPercent() <= 0.0f)
+			{
+				TrainingTarget->SetLobbySelected(false);
+				SelectedAttackTarget.Reset();
+				Target = nullptr;
+			}
+		}
+		if (!Target)
+		{
+			Target = ResolveAutoAttackTarget();
+			if (ADBALobbyTrainingMonster* AutoTrainingTarget = Cast<ADBALobbyTrainingMonster>(Target))
+			{
+				if (ADBALobbyTrainingMonster* PreviousTarget = Cast<ADBALobbyTrainingMonster>(SelectedAttackTarget.Get()))
+				{
+					PreviousTarget->SetLobbySelected(false);
+				}
+				SelectedAttackTarget = AutoTrainingTarget;
+				AutoTrainingTarget->SetLobbySelected(true);
+			}
+		}
 		if (Target)
 		{
 			ZodiacPawn->CastEquippedSkillAtTarget(SkillSlot, Target);
@@ -473,6 +496,55 @@ void ADBALobbyPlayerController::HandleSelectTargetPressed()
 		NewTarget->SetLobbySelected(true);
 	}
 	UE_LOG(LogDBACore, Log, TEXT("[DBALobbyPlayerController] 已选中攻击目标：%s"), *GetNameSafe(Target));
+}
+
+AActor* ADBALobbyPlayerController::ResolveAutoAttackTarget() const
+{
+	const APawn* ControlledPawn = GetPawn();
+	const UWorld* World = GetWorld();
+	if (!ControlledPawn || !World)
+	{
+		return nullptr;
+	}
+
+	const FVector PawnLocation = ControlledPawn->GetActorLocation();
+	const FVector Forward = ControlledPawn->GetActorForwardVector().GetSafeNormal();
+	constexpr float MaxAutoTargetDistance = 1800.0f;
+	constexpr float MinForwardDot = 0.12f;
+
+	AActor* BestTarget = nullptr;
+	float BestScore = TNumericLimits<float>::Max();
+	for (TActorIterator<ADBALobbyTrainingMonster> It(World); It; ++It)
+	{
+		ADBALobbyTrainingMonster* Candidate = *It;
+		if (!Candidate || Candidate->GetHealthPercent() <= 0.0f)
+		{
+			continue;
+		}
+
+		const FVector ToTarget = Candidate->GetActorLocation() - PawnLocation;
+		const float DistanceSquared = ToTarget.SizeSquared2D();
+		if (DistanceSquared > FMath::Square(MaxAutoTargetDistance))
+		{
+			continue;
+		}
+
+		const FVector Direction = FVector(ToTarget.X, ToTarget.Y, 0.0f).GetSafeNormal();
+		const float ForwardDot = FVector::DotProduct(Forward, Direction);
+		if (ForwardDot < MinForwardDot)
+		{
+			continue;
+		}
+
+		const float Score = DistanceSquared * (1.35f - FMath::Clamp(ForwardDot, 0.0f, 1.0f));
+		if (Score < BestScore)
+		{
+			BestScore = Score;
+			BestTarget = Candidate;
+		}
+	}
+
+	return BestTarget;
 }
 
 void ADBALobbyPlayerController::LookUpAxis(float Value)

@@ -41,10 +41,12 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void OnRep_CurrentHealth() override;
+	virtual void HandleMonsterDefeated(AActor* DamageCauser) override;
 
 private:
 	void ApplyLobbyMonsterVisuals();
 	void UpdateHealthBar();
+	void RespawnAfterDefeat();
 	void ConfigurePatrolRoute();
 	void UpdateLobbyPatrol(float DeltaSeconds);
 	void AdvancePatrolTarget();
@@ -54,6 +56,9 @@ private:
 
 	UFUNCTION()
 	void OnRep_ReplicatedPatrolMoving();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSetDefeatedVisualState(bool bDefeated);
 
 private:
 	UPROPERTY(EditAnywhere, Category = "DBA|Lobby|Monster")
@@ -74,6 +79,9 @@ private:
 	UPROPERTY(EditAnywhere, Category = "DBA|Lobby|Monster|Patrol")
 	float PatrolPauseSeconds = 0.6f;
 
+	UPROPERTY(EditAnywhere, Category = "DBA|Lobby|Monster|Respawn", meta = (ClampMin = "0.1"))
+	float RespawnDelaySeconds = 2.25f;
+
 	UPROPERTY(Transient)
 	TArray<FVector> PatrolPoints;
 
@@ -85,6 +93,14 @@ private:
 
 	UPROPERTY(Transient)
 	bool bPatrolRouteConfigured = false;
+
+	UPROPERTY(Transient)
+	bool bRespawning = false;
+
+	UPROPERTY(Transient)
+	FTransform InitialSpawnTransform;
+
+	FTimerHandle RespawnTimerHandle;
 
 	UPROPERTY(ReplicatedUsing = OnRep_ReplicatedPatrolMoving, Transient)
 	bool bReplicatedPatrolMoving = false;

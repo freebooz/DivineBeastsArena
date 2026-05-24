@@ -72,17 +72,25 @@ float ADBAMonsterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damage
 
 	if (CurrentHealth <= 0.0f)
 	{
-		PlayDeathVFX();
-		UE_LOG(LogDBACombat, Log, TEXT("[DBAMonsterBase] 怪物已被击败：怪物=%s 类型=%s"), *GetName(), *MonsterType.ToString());
-		SetLifeSpan(1.0f);
-		SetActorEnableCollision(false);
-		if (GetMesh())
-		{
-			GetMesh()->SetHiddenInGame(true);
-		}
+		HandleMonsterDefeated(DamageCauser);
 	}
 
 	return FinalDamage;
+}
+
+void ADBAMonsterBase::HandleMonsterDefeated(AActor* DamageCauser)
+{
+	PlayDeathVFX();
+	UE_LOG(LogDBACombat, Log, TEXT("[DBAMonsterBase] 怪物已被击败：怪物=%s 类型=%s 伤害来源=%s"),
+		*GetName(),
+		*MonsterType.ToString(),
+		*GetNameSafe(DamageCauser));
+	SetLifeSpan(1.0f);
+	SetActorEnableCollision(false);
+	if (GetMesh())
+	{
+		GetMesh()->SetHiddenInGame(true);
+	}
 }
 
 void ADBAMonsterBase::MulticastShowDamageNumber_Implementation(float DamageAmount, FVector_NetQuantize ImpactPoint, bool bIsCritical)

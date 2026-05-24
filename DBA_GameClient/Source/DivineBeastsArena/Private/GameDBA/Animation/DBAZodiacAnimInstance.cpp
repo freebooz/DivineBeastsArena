@@ -15,6 +15,24 @@
 #include "GameFramework/Pawn.h"
 #include "Engine/World.h"
 
+namespace
+{
+	float CalculateDBAMovementDirection(const FVector& Velocity, const FRotator& BaseRotation)
+	{
+		const FVector HorizontalVelocity(Velocity.X, Velocity.Y, 0.0f);
+		if (HorizontalVelocity.IsNearlyZero())
+		{
+			return 0.0f;
+		}
+
+		const FRotationMatrix RotationMatrix(BaseRotation);
+		const FVector Forward = RotationMatrix.GetScaledAxis(EAxis::X).GetSafeNormal2D();
+		const FVector Right = RotationMatrix.GetScaledAxis(EAxis::Y).GetSafeNormal2D();
+		const FVector Direction = HorizontalVelocity.GetSafeNormal2D();
+		return FMath::RadiansToDegrees(FMath::Atan2(FVector::DotProduct(Direction, Right), FVector::DotProduct(Direction, Forward)));
+	}
+}
+
 UDBAZodiacAnimInstance::UDBAZodiacAnimInstance()
 {
 }
@@ -71,7 +89,7 @@ void UDBAZodiacAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	const FVector Velocity = OwningPawn->GetVelocity();
 	GroundSpeed = FVector(Velocity.X, Velocity.Y, 0.0f).Size();
 	MoveSpeed = GroundSpeed;
-	Direction = CalculateDirection(Velocity, OwningPawn->GetActorRotation());
+	Direction = CalculateDBAMovementDirection(Velocity, OwningPawn->GetActorRotation());
 	VerticalSpeed = Velocity.Z;
 	bIsMoving = GroundSpeed > MoveSpeedThreshold;
 	bIsRunning = GroundSpeed > RunSpeedThreshold;

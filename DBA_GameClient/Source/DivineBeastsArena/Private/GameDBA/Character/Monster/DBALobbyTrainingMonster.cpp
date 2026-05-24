@@ -27,6 +27,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "Net/UnrealNetwork.h"
+#include "TimerManager.h"
 
 namespace
 {
@@ -100,6 +101,7 @@ ADBALobbyTrainingMonster::ADBALobbyTrainingMonster()
 void ADBALobbyTrainingMonster::BeginPlay()
 {
 	Super::BeginPlay();
+	InitialSpawnTransform = GetActorTransform();
 	ApplyLobbyMonsterVisuals();
 	UpdateHealthBar();
 	ConfigurePatrolRoute();
@@ -261,7 +263,7 @@ void ADBALobbyTrainingMonster::ConfigurePatrolRoute()
 
 void ADBALobbyTrainingMonster::UpdateLobbyPatrol(float DeltaSeconds)
 {
-	if (!HasAuthority() || !bPatrolRouteConfigured || PatrolPoints.Num() == 0 || CurrentHealth <= 0.0f)
+	if (!HasAuthority() || bRespawning || !bPatrolRouteConfigured || PatrolPoints.Num() == 0 || CurrentHealth <= 0.0f)
 	{
 		return;
 	}
@@ -363,6 +365,86 @@ void ADBALobbyTrainingMonster::OnRep_CurrentHealth()
 {
 	Super::OnRep_CurrentHealth();
 	UpdateHealthBar();
+}
+
+void ADBALobbyTrainingMonster::HandleMonsterDefeated(AActor* DamageCauser)
+{
+	if (bRespawning)
+	{
+		return;
+	}
+
+	bRespawning = true;
+	PlayDeathVFX();
+	SetActorEnableCollision(false);
+	SetPatrolMovingAnimation(false);
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		Movement->Velocity = FVector::ZeroVector;
+		Movement->DisableMovement();
+	}
+	MulticastSetDefeatedVisualState(true);
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(RespawnTimerHandle, this, &ADBALobbyTrainingMonster::RespawnAfterDefeat, RespawnDelaySeconds, false);
+	}
+
+	UE_LOG(LogDBACombat, Log, TEXT("[DBALobbyTrainingMonster] 训练假人被击败并等待复活：怪物=%s 来源=%s 延迟=%.2f"),
+		*GetName(),
+		*GetNameSafe(DamageCauser),
+		RespawnDelaySeconds);
+}
+
+void ADBALobbyTrainingMonster::RespawnAfterDefeat()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	bRespawning = false;
+	SetActorTransform(InitialSpawnTransform);
+	CurrentHealth = MaxHealth;
+	OnRep_CurrentHealth();
+	SetActorEnableCollision(true);
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		Movement->SetMovementMode(MOVE_Walking);
+		Movement->MaxWalkSpeed = PatrolSpeed;
+		Movement->Velocity = FVector::ZeroVector;
+	}
+	ConfigurePatrolRoute();
+	MulticastSetDefeatedVisualState(false);
+
+	UE_LOG(LogDBACombat, Log, TEXT("[DBALobbyTrainingMonster] 训练假人已复活：怪物=%s 生命=%.1f/%.1f"),
+		*GetName(),
+		CurrentHealth,
+		MaxHealth);
+}
+
+void ADBALobbyTrainingMonster::MulticastSetDefeatedVisualState_Implementation(bool bDefeated)
+{
+	if (USkeletalMeshComponent* MeshComponent = GetMesh())
+	{
+		MeshComponent->SetHiddenInGame(bDefeated);
+		MeshComponent->SetVisibility(!bDefeated, true);
+	}
+
+	if (HealthBarComponent)
+	{
+		HealthBarComponent->SetHiddenInGame(bDefeated);
+		HealthBarComponent->SetVisibility(!bDefeated, true);
+	}
+
+	if (SelectionRingComponent)
+	{
+		SelectionRingComponent->SetHiddenInGame(true);
+	}
+	if (SelectionLightComponent)
+	{
+		SelectionLightComponent->Intensity = 0.0f;
+	}
 }
 
 void ADBALobbyTrainingMonster::UpdateHealthBar()

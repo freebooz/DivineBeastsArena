@@ -111,6 +111,7 @@ protected:
 	void RestoreMouseLookCursorPosition();
 	void ApplyTouchLook();
 	AActor* ResolveClickedAttackTarget() const;
+	AActor* ResolveAutoAttackTarget() const;
 	void EnsureCustomSoftwareCursor();
 
 protected:
