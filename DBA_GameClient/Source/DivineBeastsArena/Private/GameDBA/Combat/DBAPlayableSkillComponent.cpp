@@ -108,7 +108,7 @@ void UDBAPlayableSkillComponent::BeginPlay()
 	{
 		for (const FString& ValidationError : ValidationErrors)
 		{
-			UE_LOG(LogDBACombat, Warning, TEXT("[DBAPlayableSkillComponent] 技能目录配置异常：Owner=%s Error=%s"), *GetNameSafe(GetOwner()), *ValidationError);
+			UE_LOG(LogDBACombat, Warning, TEXT("[DBAPlayableSkillComponent] Playable skill catalog validation failed: Owner=%s Error=%s"), *GetNameSafe(GetOwner()), *ValidationError);
 		}
 	}
 }
@@ -253,6 +253,23 @@ bool UDBAPlayableSkillComponent::ValidateEffectiveSkillSpecs(TArray<FString>& Ou
 	TArray<FDBAPlayableSkillRuntimeSpec> EffectiveSpecs;
 	BuildEffectiveSkillSpecs(EffectiveSpecs);
 	return UDBAPlayableSkillCatalogDataAsset::ValidateSkillSpecs(EffectiveSpecs, OutErrors);
+}
+
+FDBAPlayableSkillCatalogSummary UDBAPlayableSkillComponent::GetSkillCatalogSummary() const
+{
+	FDBAPlayableSkillCatalogSummary Summary;
+	Summary.Source = SkillCatalog
+		? (bAppendDefaultSkillsWhenCatalogMissingSlots ? EDBAPlayableSkillCatalogSource::DataAssetWithDefaults : EDBAPlayableSkillCatalogSource::DataAssetOnly)
+		: EDBAPlayableSkillCatalogSource::BuiltInDefaults;
+	Summary.CatalogId = SkillCatalog ? SkillCatalog->CatalogId : FName(TEXT("BuiltInDefaults"));
+	Summary.ConfiguredCatalogSkillCount = SkillCatalog ? SkillCatalog->GetAllSkillSpecs().Num() : 0;
+	Summary.bAppendsBuiltInDefaults = !SkillCatalog || bAppendDefaultSkillsWhenCatalogMissingSlots;
+
+	TArray<FDBAPlayableSkillRuntimeSpec> EffectiveSpecs;
+	BuildEffectiveSkillSpecs(EffectiveSpecs);
+	Summary.SkillCount = EffectiveSpecs.Num();
+	Summary.bIsValid = UDBAPlayableSkillCatalogDataAsset::ValidateSkillSpecs(EffectiveSpecs, Summary.ValidationErrors);
+	return Summary;
 }
 
 void UDBAPlayableSkillComponent::BuildEffectiveSkillSpecs(TArray<FDBAPlayableSkillRuntimeSpec>& OutSpecs) const

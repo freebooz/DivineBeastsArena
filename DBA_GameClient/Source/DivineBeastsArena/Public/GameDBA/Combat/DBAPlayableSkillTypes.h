@@ -30,6 +30,14 @@ enum class EDBAPlayableSkillEffectShape : uint8
 	HolyShield UMETA(DisplayName = "Holy Shield")
 };
 
+UENUM(BlueprintType)
+enum class EDBAPlayableSkillCatalogSource : uint8
+{
+	BuiltInDefaults UMETA(DisplayName = "Built-In Defaults"),
+	DataAssetWithDefaults UMETA(DisplayName = "Data Asset With Defaults"),
+	DataAssetOnly UMETA(DisplayName = "Data Asset Only")
+};
+
 USTRUCT(BlueprintType)
 struct DIVINEBEASTSARENA_API FDBAPlayableSkillRuntimeSpec
 {
@@ -103,4 +111,31 @@ struct DIVINEBEASTSARENA_API FDBAPlayableSkillRuntimeSpec
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|SFX")
 	TSoftObjectPtr<USoundBase> ImpactSFXAsset;
+};
+
+USTRUCT(BlueprintType)
+struct DIVINEBEASTSARENA_API FDBAPlayableSkillCatalogSummary
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|Skill")
+	EDBAPlayableSkillCatalogSource Source = EDBAPlayableSkillCatalogSource::BuiltInDefaults;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|Skill")
+	FName CatalogId = NAME_None;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|Skill")
+	int32 SkillCount = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|Skill")
+	int32 ConfiguredCatalogSkillCount = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|Skill")
+	bool bAppendsBuiltInDefaults = true;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|Skill")
+	bool bIsValid = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|Skill")
+	TArray<FString> ValidationErrors;
 };

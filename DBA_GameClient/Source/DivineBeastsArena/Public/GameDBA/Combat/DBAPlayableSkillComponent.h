@@ -49,6 +49,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Playable Skill")
 	bool ValidateEffectiveSkillSpecs(TArray<FString>& OutErrors) const;
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|Playable Skill")
+	FDBAPlayableSkillCatalogSummary GetSkillCatalogSummary() const;
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Playable Skill")
 	bool bResolveSkillIdsFromEquippedSkillGroup = true;

@@ -33,6 +33,14 @@ bool FDBAPlayableSkillCatalogDefaultsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Default skill catalog validates"), SkillComponent->ValidateEffectiveSkillSpecs(ValidationErrors));
 	TestEqual(TEXT("Default skill catalog validation error count"), ValidationErrors.Num(), 0);
 
+	const FDBAPlayableSkillCatalogSummary DefaultSummary = SkillComponent->GetSkillCatalogSummary();
+	TestEqual(TEXT("Default summary source"), DefaultSummary.Source, EDBAPlayableSkillCatalogSource::BuiltInDefaults);
+	TestEqual(TEXT("Default summary catalog id"), DefaultSummary.CatalogId, FName(TEXT("BuiltInDefaults")));
+	TestEqual(TEXT("Default summary skill count"), DefaultSummary.SkillCount, 6);
+	TestEqual(TEXT("Default summary configured catalog count"), DefaultSummary.ConfiguredCatalogSkillCount, 0);
+	TestTrue(TEXT("Default summary is valid"), DefaultSummary.bIsValid);
+	TestTrue(TEXT("Default summary appends defaults"), DefaultSummary.bAppendsBuiltInDefaults);
+
 	const auto FindSkill = [&SkillSpecs](int32 SkillSlot) -> const FDBAPlayableSkillRuntimeSpec*
 	{
 		return SkillSpecs.FindByPredicate([SkillSlot](const FDBAPlayableSkillRuntimeSpec& Spec)
@@ -145,7 +153,7 @@ bool FDBAPlayableSkillCatalogValidationTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("Missing catalog id is reported"), HasErrorContaining(TEXT("CatalogId")));
 	TestTrue(TEXT("Missing projectile class is reported"), HasErrorContaining(TEXT("ProjectileClass")));
-	TestTrue(TEXT("Duplicate slot is reported"), HasErrorContaining(TEXT("SkillSlot 重复")));
+	TestTrue(TEXT("Duplicate slot is reported"), HasErrorContaining(TEXT("SkillSlot is duplicated")));
 	TestTrue(TEXT("Missing cast SFX is reported"), HasErrorContaining(TEXT("CastSFXAsset")));
 	TestTrue(TEXT("Missing impact VFX is reported"), HasErrorContaining(TEXT("ImpactNiagaraVFXAsset")));
 
@@ -203,6 +211,13 @@ bool FDBAPlayableSkillCatalogDataAssetOverrideTest::RunTest(const FString& Param
 	const TArray<FDBAPlayableSkillRuntimeSpec> EffectiveSpecs = SkillComponent->GetAllSkillSpecs();
 	TestEqual(TEXT("Catalog override keeps default fallback count"), EffectiveSpecs.Num(), 6);
 
+	FDBAPlayableSkillCatalogSummary OverrideSummary = SkillComponent->GetSkillCatalogSummary();
+	TestEqual(TEXT("Override summary source"), OverrideSummary.Source, EDBAPlayableSkillCatalogSource::DataAssetWithDefaults);
+	TestEqual(TEXT("Override summary catalog id"), OverrideSummary.CatalogId, FName(TEXT("DefaultPlayableSkillCatalog")));
+	TestEqual(TEXT("Override summary skill count"), OverrideSummary.SkillCount, 6);
+	TestEqual(TEXT("Override summary configured catalog count"), OverrideSummary.ConfiguredCatalogSkillCount, 1);
+	TestTrue(TEXT("Override summary appends defaults"), OverrideSummary.bAppendsBuiltInDefaults);
+
 	const auto FindSkill = [](const TArray<FDBAPlayableSkillRuntimeSpec>& SkillSpecs, int32 SkillSlot) -> const FDBAPlayableSkillRuntimeSpec*
 	{
 		return SkillSpecs.FindByPredicate([SkillSlot](const FDBAPlayableSkillRuntimeSpec& Spec)
@@ -232,6 +247,11 @@ bool FDBAPlayableSkillCatalogDataAssetOverrideTest::RunTest(const FString& Param
 	SkillComponent->SetAppendDefaultSkillsWhenCatalogMissingSlots(false);
 	const TArray<FDBAPlayableSkillRuntimeSpec> CatalogOnlySpecs = SkillComponent->GetAllSkillSpecs();
 	TestEqual(TEXT("Catalog-only mode does not append defaults"), CatalogOnlySpecs.Num(), 1);
+
+	const FDBAPlayableSkillCatalogSummary CatalogOnlySummary = SkillComponent->GetSkillCatalogSummary();
+	TestEqual(TEXT("Catalog-only summary source"), CatalogOnlySummary.Source, EDBAPlayableSkillCatalogSource::DataAssetOnly);
+	TestEqual(TEXT("Catalog-only summary skill count"), CatalogOnlySummary.SkillCount, 1);
+	TestFalse(TEXT("Catalog-only summary does not append defaults"), CatalogOnlySummary.bAppendsBuiltInDefaults);
 
 	FDBAPlayableSkillRuntimeSpec MissingSpec;
 	TestFalse(TEXT("Catalog-only mode has no slot 2"), SkillComponent->GetSkillSpec(2, MissingSpec));

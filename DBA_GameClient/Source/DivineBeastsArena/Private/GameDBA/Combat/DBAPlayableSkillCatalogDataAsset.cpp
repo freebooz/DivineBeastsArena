@@ -21,33 +21,33 @@ namespace
 		case EDBAPlayableSkillEffectShape::Projectile:
 			if (!Spec.ProjectileClass)
 			{
-				AddSkillValidationError(OutErrors, Spec, TEXT("ProjectileClass 未配置"));
+				AddSkillValidationError(OutErrors, Spec, TEXT("ProjectileClass is not configured"));
 				return false;
 			}
 			return true;
 		case EDBAPlayableSkillEffectShape::ChainLightning:
 			if (!Spec.ChainLightningClass)
 			{
-				AddSkillValidationError(OutErrors, Spec, TEXT("ChainLightningClass 未配置"));
+				AddSkillValidationError(OutErrors, Spec, TEXT("ChainLightningClass is not configured"));
 				return false;
 			}
 			return true;
 		case EDBAPlayableSkillEffectShape::BloomHealing:
 			if (!Spec.BloomHealingClass)
 			{
-				AddSkillValidationError(OutErrors, Spec, TEXT("BloomHealingClass 未配置"));
+				AddSkillValidationError(OutErrors, Spec, TEXT("BloomHealingClass is not configured"));
 				return false;
 			}
 			return true;
 		case EDBAPlayableSkillEffectShape::HolyShield:
 			if (!Spec.HolyShieldClass)
 			{
-				AddSkillValidationError(OutErrors, Spec, TEXT("HolyShieldClass 未配置"));
+				AddSkillValidationError(OutErrors, Spec, TEXT("HolyShieldClass is not configured"));
 				return false;
 			}
 			return true;
 		default:
-			AddSkillValidationError(OutErrors, Spec, TEXT("EffectShape 无效"));
+			AddSkillValidationError(OutErrors, Spec, TEXT("EffectShape is invalid"));
 			return false;
 		}
 	}
@@ -59,13 +59,13 @@ namespace
 		{
 			if (Spec.ProjectileSpeed <= 0.0f)
 			{
-				AddSkillValidationError(OutErrors, Spec, TEXT("ProjectileSpeed 必须大于 0"));
+				AddSkillValidationError(OutErrors, Spec, TEXT("ProjectileSpeed must be greater than 0"));
 				bIsValid = false;
 			}
 
 			if (Spec.ProjectileRadius <= 0.0f)
 			{
-				AddSkillValidationError(OutErrors, Spec, TEXT("ProjectileRadius 必须大于 0"));
+				AddSkillValidationError(OutErrors, Spec, TEXT("ProjectileRadius must be greater than 0"));
 				bIsValid = false;
 			}
 		}
@@ -79,31 +79,31 @@ namespace
 
 		if (Spec.ProjectileNiagaraVFXAsset.IsNull())
 		{
-			AddSkillValidationError(OutErrors, Spec, TEXT("ProjectileNiagaraVFXAsset 未配置"));
+			AddSkillValidationError(OutErrors, Spec, TEXT("ProjectileNiagaraVFXAsset is not configured"));
 			bIsValid = false;
 		}
 
 		if (Spec.ImpactNiagaraVFXAsset.IsNull())
 		{
-			AddSkillValidationError(OutErrors, Spec, TEXT("ImpactNiagaraVFXAsset 未配置"));
+			AddSkillValidationError(OutErrors, Spec, TEXT("ImpactNiagaraVFXAsset is not configured"));
 			bIsValid = false;
 		}
 
 		if (Spec.CastSFXAsset.IsNull())
 		{
-			AddSkillValidationError(OutErrors, Spec, TEXT("CastSFXAsset 未配置"));
+			AddSkillValidationError(OutErrors, Spec, TEXT("CastSFXAsset is not configured"));
 			bIsValid = false;
 		}
 
 		if (Spec.FlySFXAsset.IsNull())
 		{
-			AddSkillValidationError(OutErrors, Spec, TEXT("FlySFXAsset 未配置"));
+			AddSkillValidationError(OutErrors, Spec, TEXT("FlySFXAsset is not configured"));
 			bIsValid = false;
 		}
 
 		if (Spec.ImpactSFXAsset.IsNull())
 		{
-			AddSkillValidationError(OutErrors, Spec, TEXT("ImpactSFXAsset 未配置"));
+			AddSkillValidationError(OutErrors, Spec, TEXT("ImpactSFXAsset is not configured"));
 			bIsValid = false;
 		}
 
@@ -166,7 +166,7 @@ bool UDBAPlayableSkillCatalogDataAsset::ValidateDataIntegrity(TArray<FString>& O
 	bool bIsValid = true;
 	if (CatalogId.IsNone())
 	{
-		OutErrors.Add(TEXT("CatalogId 未配置"));
+		OutErrors.Add(TEXT("CatalogId is not configured"));
 		bIsValid = false;
 	}
 
@@ -192,7 +192,7 @@ bool UDBAPlayableSkillCatalogDataAsset::ValidateSkillSpecs(const TArray<FDBAPlay
 
 	if (InSkillSpecs.IsEmpty())
 	{
-		OutErrors.Add(TEXT("SkillSpecs 为空"));
+		OutErrors.Add(TEXT("SkillSpecs is empty"));
 		return false;
 	}
 
@@ -201,45 +201,45 @@ bool UDBAPlayableSkillCatalogDataAsset::ValidateSkillSpecs(const TArray<FDBAPlay
 	{
 		if (Spec.SkillSlot <= 0)
 		{
-			AddSkillValidationError(OutErrors, Spec, TEXT("SkillSlot 必须大于 0"));
+			AddSkillValidationError(OutErrors, Spec, TEXT("SkillSlot must be greater than 0"));
 			bIsValid = false;
 			continue;
 		}
 
 		if (SeenSlots.Contains(Spec.SkillSlot))
 		{
-			AddSkillValidationError(OutErrors, Spec, TEXT("SkillSlot 重复"));
+			AddSkillValidationError(OutErrors, Spec, TEXT("SkillSlot is duplicated"));
 			bIsValid = false;
 		}
 		SeenSlots.Add(Spec.SkillSlot);
 
 		if (Spec.SkillId.IsNone())
 		{
-			AddSkillValidationError(OutErrors, Spec, TEXT("SkillId 未配置"));
+			AddSkillValidationError(OutErrors, Spec, TEXT("SkillId is not configured"));
 			bIsValid = false;
 		}
 
 		if (Spec.DisplayName.IsEmptyOrWhitespace())
 		{
-			AddSkillValidationError(OutErrors, Spec, TEXT("DisplayName 未配置"));
+			AddSkillValidationError(OutErrors, Spec, TEXT("DisplayName is not configured"));
 			bIsValid = false;
 		}
 
 		if (Spec.Magnitude <= 0.0f)
 		{
-			AddSkillValidationError(OutErrors, Spec, TEXT("Magnitude 必须大于 0"));
+			AddSkillValidationError(OutErrors, Spec, TEXT("Magnitude must be greater than 0"));
 			bIsValid = false;
 		}
 
 		if (Spec.Cooldown <= 0.0f)
 		{
-			AddSkillValidationError(OutErrors, Spec, TEXT("Cooldown 必须大于 0"));
+			AddSkillValidationError(OutErrors, Spec, TEXT("Cooldown must be greater than 0"));
 			bIsValid = false;
 		}
 
 		if (Spec.CastVFXScale <= 0.0f)
 		{
-			AddSkillValidationError(OutErrors, Spec, TEXT("CastVFXScale 必须大于 0"));
+			AddSkillValidationError(OutErrors, Spec, TEXT("CastVFXScale must be greater than 0"));
 			bIsValid = false;
 		}
 
