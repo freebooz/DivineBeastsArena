@@ -12,7 +12,11 @@
 
 #include "CoreMinimal.h"
 #include "GameMoba/UI/UDBAMobaUserWidgetBase.h"
+#include "GameDBA/Combat/DBAPlayableSkillTypes.h"
 #include "UDBAAbilityBarWidgetBase.generated.h"
+
+class ADBAZodiacCharacterBase;
+class UDBAAbilitySlotWidget;
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBAAbilityBarWidgetBase : public UDBAMobaUserWidgetBase
@@ -34,7 +38,59 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|AbilityBar")
 	void SetAbilityEnabled(int32 SlotIndex, bool bEnabled);
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|AbilityBar")
+	void BindToCharacter(ADBAZodiacCharacterBase* InCharacter);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|AbilityBar")
+	void RefreshSkillCatalog();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|AbilityBar")
+	void RefreshCooldowns();
+
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|AbilityBar", meta = (DisplayName = "On Ability Updated"))
 	void BP_OnAbilityUpdated(int32 SlotIndex, float Cooldown, float ManaCost, bool bOnCooldown);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|AbilityBar", meta = (DisplayName = "On Skill Catalog Refreshed"))
+	void BP_OnSkillCatalogRefreshed(const TArray<FDBAPlayableSkillRuntimeSpec>& SkillSpecs);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|AbilityBar", meta = (DisplayName = "On Ability Enabled Changed"))
+	void BP_OnAbilityEnabledChanged(int32 SlotIndex, bool bEnabled);
+
+protected:
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|AbilityBar", meta = (BindWidgetOptional))
+	TObjectPtr<UDBAAbilitySlotWidget> SkillSlot01;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|AbilityBar", meta = (BindWidgetOptional))
+	TObjectPtr<UDBAAbilitySlotWidget> SkillSlot02;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|AbilityBar", meta = (BindWidgetOptional))
+	TObjectPtr<UDBAAbilitySlotWidget> SkillSlot03;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|AbilityBar", meta = (BindWidgetOptional))
+	TObjectPtr<UDBAAbilitySlotWidget> SkillSlot04;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|AbilityBar", meta = (BindWidgetOptional))
+	TObjectPtr<UDBAAbilitySlotWidget> SkillSlot05;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|AbilityBar", meta = (BindWidgetOptional))
+	TObjectPtr<UDBAAbilitySlotWidget> SkillSlot06;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|AbilityBar")
+	bool bAutoBindOwningPawn = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|AbilityBar")
+	bool bRefreshCooldownsEveryTick = true;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "DBA|UI|AbilityBar")
+	TWeakObjectPtr<ADBAZodiacCharacterBase> BoundCharacter;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UDBAAbilitySlotWidget>> SkillSlotWidgets;
+
+	UPROPERTY(Transient)
+	TArray<FDBAPlayableSkillRuntimeSpec> CachedSkillSpecs;
+
+	void CacheSkillSlotWidgets();
+	FKey ResolveHotkeyForSlot(int32 SkillSlot) const;
 };

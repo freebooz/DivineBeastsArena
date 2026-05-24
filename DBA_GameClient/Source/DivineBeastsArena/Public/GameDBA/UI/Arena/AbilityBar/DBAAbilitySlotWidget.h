@@ -18,6 +18,7 @@
 class UImage;
 class UTextBlock;
 class UProgressBar;
+struct FDBAPlayableSkillRuntimeSpec;
 
 /**
  * FDBAAbilityInfo
@@ -92,6 +93,9 @@ public:
 	/** 设置技能信息 */
 	UFUNCTION(BlueprintCallable, Category = "UI|AbilitySlot")
 	void SetAbilityInfo(const FDBAAbilityInfo& Info);
+
+	UFUNCTION(BlueprintCallable, Category = "UI|AbilitySlot")
+	void SetAbilityFromPlayableSkill(const FDBAPlayableSkillRuntimeSpec& SkillSpec, FKey InHotkey);
 
 	/** 设置冷却状态 */
 	UFUNCTION(BlueprintCallable, Category = "UI|AbilitySlot")

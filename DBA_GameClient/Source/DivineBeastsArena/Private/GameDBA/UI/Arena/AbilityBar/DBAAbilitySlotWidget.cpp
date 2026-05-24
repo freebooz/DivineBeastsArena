@@ -10,8 +10,10 @@
 // 技能槽Widget实现
 
 #include "GameDBA/UI/Arena/AbilityBar/DBAAbilitySlotWidget.h"
+
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "GameDBA/Combat/DBAPlayableSkillTypes.h"
 
 UDBAAbilitySlotWidget::UDBAAbilitySlotWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -36,11 +38,24 @@ void UDBAAbilitySlotWidget::SetAbilityInfo(const FDBAAbilityInfo& Info)
 	}
 
 	SetAvailable(Info.bEnabled);
+	UpdateCooldownDisplay();
+}
+
+void UDBAAbilitySlotWidget::SetAbilityFromPlayableSkill(const FDBAPlayableSkillRuntimeSpec& SkillSpec, FKey InHotkey)
+{
+	FDBAAbilityInfo Info;
+	Info.AbilityName = SkillSpec.DisplayName.IsEmpty() ? FText::FromName(SkillSpec.SkillId) : SkillSpec.DisplayName;
+	Info.Hotkey = InHotkey;
+	Info.Cooldown = SkillSpec.Cooldown;
+	Info.CurrentCooldown = 0.0f;
+	Info.bEnabled = true;
+	SetAbilityInfo(Info);
 }
 
 void UDBAAbilitySlotWidget::SetCooldown(float RemainingTime, float TotalTime)
 {
 	AbilityInfo.CurrentCooldown = RemainingTime;
+	AbilityInfo.Cooldown = TotalTime;
 	UpdateCooldownDisplay();
 }
 

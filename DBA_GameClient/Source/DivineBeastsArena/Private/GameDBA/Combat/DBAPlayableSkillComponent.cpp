@@ -13,7 +13,7 @@
 
 namespace
 {
-	EDBAZodiac ToCommonZodiac(EDBAZodiacType ZodiacType)
+	EDBAZodiac ToPlayableSkillCommonZodiac(EDBAZodiacType ZodiacType)
 	{
 		switch (ZodiacType)
 		{
@@ -33,7 +33,7 @@ namespace
 		}
 	}
 
-	EDBAElement ToCommonElement(EDBAElementType ElementType)
+	EDBAElement ToPlayableSkillCommonElement(EDBAElementType ElementType)
 	{
 		switch (ElementType)
 		{
@@ -232,7 +232,7 @@ FName UDBAPlayableSkillComponent::ResolveEquippedSkillId(int32 SkillSlot, FName 
 	}
 
 	FDBAZodiacElementFixedSkillGroupRow SkillGroup;
-	if (!SkillGroups->GetSkillGroup(ToCommonZodiac(Character->GetZodiacType()), ToCommonElement(Character->GetElementType()), SkillGroup))
+	if (!SkillGroups->GetSkillGroup(ToPlayableSkillCommonZodiac(Character->GetZodiacType()), ToPlayableSkillCommonElement(Character->GetElementType()), SkillGroup))
 	{
 		return FallbackSkillId;
 	}
