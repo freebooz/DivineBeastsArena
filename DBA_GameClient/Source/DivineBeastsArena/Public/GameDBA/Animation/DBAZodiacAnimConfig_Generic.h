@@ -91,6 +91,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Animation")
 	UAnimMontage* GetAnimationByType(FName AnimationType) const;
 
+	/** 异步预加载所有动画，播放阶段不做同步加载 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Animation")
+	void PreloadAllAnimations();
+
 	/** 获取所有可用动画 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Animation")
 	TMap<FName, TSoftObjectPtr<UAnimMontage>> GetAllAnimations() const;

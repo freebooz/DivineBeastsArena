@@ -8,9 +8,11 @@ Readable notes:
 #include "GameDBA/Combat/DBABloomHealingSpell.h"
 
 #include "AbilitySystemComponent.h"
+#include "Components/SceneComponent.h"
 #include "Engine/OverlapResult.h"
 #include "Engine/World.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
@@ -46,6 +48,9 @@ ADBABloomHealingSpell::ADBABloomHealingSpell()
 	bReplicates = true;
 	InitialLifeSpan = 3.5f;
 
+	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
+	RootComponent = SceneRoot;
+
 	SeedVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingSeed_Projectile.NS_WoodCrane_Q_HealingSeed_Projectile")));
 	GroveVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingGrove_Area.NS_WoodCrane_Q_HealingGrove_Area")));
 	BloomVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingBurst_Impact.NS_WoodCrane_Q_HealingBurst_Impact")));
@@ -69,11 +74,13 @@ void ADBABloomHealingSpell::CastBloomHealing(AActor* InCaster, AActor* Preferred
 
 	CachedCaster = InCaster;
 	CachedPreferredTarget = PreferredTarget;
-	const FVector CastLocation = BloomGroundLocation(PreferredTarget ? PreferredTarget : InCaster);
-	MulticastPlayBloomStart(CastLocation);
+	AActor* AnchorActor = PreferredTarget ? PreferredTarget : InCaster;
+	const FVector CastLocation = BloomGroundLocation(AnchorActor);
+	PreloadPresentationAssets();
+	MulticastPlayBloomStart(AnchorActor, CastLocation);
 	if (GetNetMode() == NM_Standalone)
 	{
-		MulticastPlayBloomStart_Implementation(CastLocation);
+		MulticastPlayBloomStart_Implementation(AnchorActor, CastLocation);
 	}
 
 	GetWorldTimerManager().SetTimer(BloomTimerHandle, this, &ADBABloomHealingSpell::ReleaseBloom, BloomDelay, false);
@@ -106,9 +113,11 @@ void ADBABloomHealingSpell::ReleaseBloom()
 	{
 		MulticastPlayBloomRelease_Implementation(BloomLocation, HealTargetLocations);
 	}
+
+	SetLifeSpan(1.25f);
 }
 
-void ADBABloomHealingSpell::MulticastPlayBloomStart_Implementation(FVector_NetQuantize Location)
+void ADBABloomHealingSpell::MulticastPlayBloomStart_Implementation(AActor* AnchorActor, FVector_NetQuantize Location)
 {
 	if (GetNetMode() == NM_DedicatedServer)
 	{
@@ -116,8 +125,16 @@ void ADBABloomHealingSpell::MulticastPlayBloomStart_Implementation(FVector_NetQu
 	}
 
 	const FVector StartLocation(Location);
-	SpawnVFX(GroveVFXAsset, StartLocation, FRotator::ZeroRotator, FVector(0.92f));
-	SpawnVFX(SeedVFXAsset, StartLocation + FVector(0.0f, 0.0f, 54.0f), FRotator::ZeroRotator, FVector(0.72f));
+	if (AnchorActor)
+	{
+		SpawnAttachedVFX(GroveVFXAsset, AnchorActor, FVector(0.0f, 0.0f, 8.0f), FRotator::ZeroRotator, FVector(0.92f));
+		SpawnAttachedVFX(SeedVFXAsset, AnchorActor, FVector(0.0f, 0.0f, 62.0f), FRotator::ZeroRotator, FVector(0.72f));
+	}
+	else
+	{
+		SpawnVFX(GroveVFXAsset, StartLocation, FRotator::ZeroRotator, FVector(0.92f));
+		SpawnVFX(SeedVFXAsset, StartLocation + FVector(0.0f, 0.0f, 54.0f), FRotator::ZeroRotator, FVector(0.72f));
+	}
 	PlaySFX(CastSFXAsset, StartLocation, 0.82f);
 	PlaySFX(FlightSFXAsset, StartLocation + FVector(0.0f, 0.0f, 42.0f), 0.66f);
 }
@@ -165,7 +182,7 @@ void ADBABloomHealingSpell::SpawnVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset
 		return;
 	}
 
-	if (UNiagaraSystem* VFX = Asset.LoadSynchronous())
+	if (UNiagaraSystem* VFX = Asset.Get())
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
@@ -178,6 +195,45 @@ void ADBABloomHealingSpell::SpawnVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset
 			ENCPoolMethod::AutoRelease,
 			true);
 	}
+	else
+	{
+		TArray<FSoftObjectPath> Paths;
+		DBAAsyncAssetLoader::AddPreloadPath(Asset, Paths);
+		DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBABloomHealingSpell*>(this), Paths);
+	}
+}
+
+void ADBABloomHealingSpell::SpawnAttachedVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, AActor* AnchorActor, const FVector& RelativeOffset, const FRotator& Rotation, const FVector& Scale) const
+{
+	if (Asset.IsNull() || !AnchorActor || !AnchorActor->GetRootComponent() || GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+
+	if (UNiagaraSystem* VFX = Asset.Get())
+	{
+		if (!AnchorActor || !AnchorActor->GetRootComponent())
+		{
+			return;
+		}
+		UNiagaraFunctionLibrary::SpawnSystemAttached(
+			VFX,
+			AnchorActor->GetRootComponent(),
+			NAME_None,
+			RelativeOffset,
+			Rotation,
+			Scale,
+			EAttachLocation::KeepRelativeOffset,
+			true,
+			ENCPoolMethod::AutoRelease,
+			true);
+	}
+	else
+	{
+		TArray<FSoftObjectPath> Paths;
+		DBAAsyncAssetLoader::AddPreloadPath(Asset, Paths);
+		DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBABloomHealingSpell*>(this), Paths);
+	}
 }
 
 void ADBABloomHealingSpell::PlaySFX(const TSoftObjectPtr<USoundBase>& Asset, const FVector& Location, float Volume) const
@@ -187,9 +243,15 @@ void ADBABloomHealingSpell::PlaySFX(const TSoftObjectPtr<USoundBase>& Asset, con
 		return;
 	}
 
-	if (USoundBase* SFX = Asset.LoadSynchronous())
+	if (USoundBase* SFX = Asset.Get())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, Location, Volume);
+	}
+	else
+	{
+		TArray<FSoftObjectPath> Paths;
+		DBAAsyncAssetLoader::AddPreloadPath(Asset, Paths);
+		DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBABloomHealingSpell*>(this), Paths);
 	}
 }
 
@@ -238,4 +300,17 @@ TArray<AActor*> ADBABloomHealingSpell::ResolveHealTargets(AActor* Caster, AActor
 	}
 
 	return Targets;
+}
+
+void ADBABloomHealingSpell::PreloadPresentationAssets()
+{
+	TArray<FSoftObjectPath> Paths;
+	DBAAsyncAssetLoader::AddPreloadPath(SeedVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(GroveVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(BloomVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(PulseVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(CastSFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(FlightSFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(BloomSFXAsset, Paths);
+	DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
 }

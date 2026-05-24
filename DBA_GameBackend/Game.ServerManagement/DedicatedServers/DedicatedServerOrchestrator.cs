@@ -66,6 +66,7 @@ public sealed class DedicatedServerOrchestrator : IDedicatedServerOrchestrator
 
         if (existing is not null)
         {
+            await AttachServerToSessionAsync(existing, cancellationToken);
             return ToDto(existing, runtimeToken: null);
         }
 
@@ -109,6 +110,7 @@ public sealed class DedicatedServerOrchestrator : IDedicatedServerOrchestrator
         _db.GameServerEvents.Add(NewEvent(server.Id, "ALLOCATE_REQUESTED", $$"""
             {"sessionId":"{{command.SessionId}}","mode":"{{command.Mode}}","mapId":"{{command.MapId}}","port":{{port.Value}}}
             """));
+        await AttachServerToSessionAsync(server, cancellationToken);
 
         var allocation = await _db.PortAllocations.FirstOrDefaultAsync(x => x.Port == port.Value, cancellationToken);
         if (allocation is null)
@@ -291,6 +293,30 @@ public sealed class DedicatedServerOrchestrator : IDedicatedServerOrchestrator
         }
 
         await StartProcessAsync(_options.UeServerExecutablePath, args, server, cancellationToken);
+    }
+
+    private async Task AttachServerToSessionAsync(GameServerInstance server, CancellationToken cancellationToken)
+    {
+        if (server.SessionId is null)
+        {
+            return;
+        }
+
+        var session = await _db.GameSessions.FindAsync([server.SessionId.Value], cancellationToken);
+        if (session is null)
+        {
+            return;
+        }
+
+        session.ServerId = server.Id;
+        session.ServerIp = server.Ip;
+        session.ServerPort = server.Port;
+        if (session.Status is "CREATED")
+        {
+            session.Status = "ALLOCATING_SERVER";
+        }
+        session.AllocatedAt ??= DateTimeOffset.UtcNow;
+        session.UpdatedAt = DateTimeOffset.UtcNow;
     }
 
     private async Task StartProcessAsync(string fileName, string arguments, GameServerInstance server, CancellationToken cancellationToken)

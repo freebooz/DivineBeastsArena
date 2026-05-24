@@ -11,6 +11,7 @@
 #include "GameDBA/Services/DBASkillGroupGeneratorSubsystem.h"
 
 #include "Engine/DataTable.h"
+#include "Engine/AssetManager.h"
 #include "GameDBA/Core/DBAConstants.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "Misc/PackageName.h"
@@ -103,7 +104,21 @@ void UDBASkillGroupGeneratorSubsystem::LoadSkillGroupDataTable()
 
 	if (!LoadedSkillGroupDataTable)
 	{
-		LoadedSkillGroupDataTable = SkillGroupDataTable.LoadSynchronous();
+		if (UDataTable* ExistingTable = SkillGroupDataTable.Get())
+		{
+			LoadedSkillGroupDataTable = ExistingTable;
+		}
+		else
+		{
+			UAssetManager::GetStreamableManager().RequestAsyncLoad(
+				SkillGroupDataTable.ToSoftObjectPath(),
+				FStreamableDelegate::CreateWeakLambda(this, [this]()
+				{
+					LoadedSkillGroupDataTable = SkillGroupDataTable.Get();
+				}),
+				FStreamableManager::AsyncLoadHighPriority,
+				true);
+		}
 	}
 }
 
@@ -121,7 +136,21 @@ void UDBASkillGroupGeneratorSubsystem::LoadSkillGroupSummaryDataTable()
 
 	if (!LoadedSkillGroupSummaryDataTable)
 	{
-		LoadedSkillGroupSummaryDataTable = SkillGroupSummaryDataTable.LoadSynchronous();
+		if (UDataTable* ExistingTable = SkillGroupSummaryDataTable.Get())
+		{
+			LoadedSkillGroupSummaryDataTable = ExistingTable;
+		}
+		else
+		{
+			UAssetManager::GetStreamableManager().RequestAsyncLoad(
+				SkillGroupSummaryDataTable.ToSoftObjectPath(),
+				FStreamableDelegate::CreateWeakLambda(this, [this]()
+				{
+					LoadedSkillGroupSummaryDataTable = SkillGroupSummaryDataTable.Get();
+				}),
+				FStreamableManager::AsyncLoadHighPriority,
+				true);
+		}
 	}
 }
 

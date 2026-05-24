@@ -20,11 +20,13 @@
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "GameDBA/GAS/DBAAbilitySystemComponent.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Particles/ParticleSystem.h"
+#include "Sound/SoundBase.h"
 
 namespace
 {
@@ -199,11 +201,13 @@ ADBASkillProjectileBase::ADBASkillProjectileBase()
 
 	ProjectileVFX = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ProjectileVFX"));
 	ProjectileVFX->SetupAttachment(RootComponent);
-	ProjectileVFX->bAutoActivate = true;
+	ProjectileVFX->bAutoActivate = false;
+	ProjectileVFX->SetVisibility(false);
 
 	ProjectileNiagaraVFX = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ProjectileNiagaraVFX"));
 	ProjectileNiagaraVFX->SetupAttachment(RootComponent);
-	ProjectileNiagaraVFX->bAutoActivate = true;
+	ProjectileNiagaraVFX->bAutoActivate = false;
+	ProjectileNiagaraVFX->SetVisibility(false);
 
 	ProjectileLoopAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("ProjectileLoopAudio"));
 	ProjectileLoopAudio->SetupAttachment(RootComponent);
@@ -232,6 +236,7 @@ void ADBASkillProjectileBase::InitializeProjectile(
 	const FString ProjectileVFXPath = SoftObjectPathString(ProjectileVFXAsset.ToSoftObjectPath());
 	const FString ProjectileNiagaraVFXPath = SoftObjectPathString(ProjectileNiagaraVFXAsset.ToSoftObjectPath());
 	const FString FlySFXPath = SoftObjectPathString(FlySFXAsset.ToSoftObjectPath());
+	PreloadPresentationAssets();
 	ApplyProjectileVisualsLocal(ProjectileVFXPath, ProjectileNiagaraVFXPath, FlySFXPath);
 	if (HasAuthority() && GetNetMode() != NM_Standalone)
 	{
@@ -269,24 +274,34 @@ void ADBASkillProjectileBase::ApplyProjectileVisualsLocal(
 		return;
 	}
 
-	if (!ProjectileVFXPath.IsEmpty())
+	if (!ProjectileVFXPath.IsEmpty() && ProjectileVFX)
 	{
-		if (UParticleSystem* VFX = LoadObject<UParticleSystem>(nullptr, *ProjectileVFXPath))
+		TSoftObjectPtr<UParticleSystem> VFXAsset{FSoftObjectPath(ProjectileVFXPath)};
+		if (UParticleSystem* VFX = VFXAsset.Get())
 		{
 			ProjectileVFX->SetTemplate(VFX);
+			ProjectileVFX->SetVisibility(true);
 			ProjectileVFX->Activate(true);
 		}
 		else
 		{
-			UE_LOG(LogDBACombat, Warning, TEXT("[DBASkillProjectileBase] 加载投射物 Cascade 飞行特效失败：技能=%s 路径=%s"),
-				*SkillId.ToString(),
-				*ProjectileVFXPath);
+			DBAAsyncAssetLoader::RequestAsyncAsset<UParticleSystem>(this, VFXAsset, [this](UParticleSystem* LoadedVFX)
+			{
+				if (!ProjectileVFX || bProjectileHitProcessed)
+				{
+					return;
+				}
+				ProjectileVFX->SetTemplate(LoadedVFX);
+				ProjectileVFX->SetVisibility(true);
+				ProjectileVFX->Activate(true);
+			});
 		}
 	}
 
-	if (!ProjectileNiagaraVFXPath.IsEmpty())
+	if (!ProjectileNiagaraVFXPath.IsEmpty() && ProjectileNiagaraVFX)
 	{
-		if (UNiagaraSystem* VFX = LoadObject<UNiagaraSystem>(nullptr, *ProjectileNiagaraVFXPath))
+		TSoftObjectPtr<UNiagaraSystem> VFXAsset{FSoftObjectPath(ProjectileNiagaraVFXPath)};
+		if (UNiagaraSystem* VFX = VFXAsset.Get())
 		{
 			ProjectileNiagaraVFX->SetAsset(VFX);
 			ProjectileNiagaraVFX->SetVisibility(true);
@@ -294,18 +309,38 @@ void ADBASkillProjectileBase::ApplyProjectileVisualsLocal(
 		}
 		else
 		{
-			UE_LOG(LogDBACombat, Warning, TEXT("[DBASkillProjectileBase] 加载投射物 Niagara 飞行特效失败：技能=%s 路径=%s"),
-				*SkillId.ToString(),
-				*ProjectileNiagaraVFXPath);
+			DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(this, VFXAsset, [this](UNiagaraSystem* LoadedVFX)
+			{
+				if (!ProjectileNiagaraVFX || bProjectileHitProcessed)
+				{
+					return;
+				}
+				ProjectileNiagaraVFX->SetAsset(LoadedVFX);
+				ProjectileNiagaraVFX->SetVisibility(true);
+				ProjectileNiagaraVFX->Activate(true);
+			});
 		}
 	}
 
 	if (!FlySFXPath.IsEmpty() && ProjectileLoopAudio)
 	{
-		if (USoundBase* FlySFX = LoadObject<USoundBase>(nullptr, *FlySFXPath))
+		TSoftObjectPtr<USoundBase> SFXAsset{FSoftObjectPath(FlySFXPath)};
+		if (USoundBase* FlySFX = SFXAsset.Get())
 		{
 			ProjectileLoopAudio->SetSound(FlySFX);
 			ProjectileLoopAudio->Play();
+		}
+		else
+		{
+			DBAAsyncAssetLoader::RequestAsyncAsset<USoundBase>(this, SFXAsset, [this](USoundBase* LoadedSFX)
+			{
+				if (!ProjectileLoopAudio || bProjectileHitProcessed)
+				{
+					return;
+				}
+				ProjectileLoopAudio->SetSound(LoadedSFX);
+				ProjectileLoopAudio->Play();
+			});
 		}
 	}
 }
@@ -347,6 +382,32 @@ void ADBASkillProjectileBase::LaunchProjectile(const FVector& Direction)
 
 void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocation)
 {
+	if (bProjectileHitProcessed)
+	{
+		return;
+	}
+	bProjectileHitProcessed = true;
+
+	SetActorEnableCollision(false);
+	if (CollisionSphere)
+	{
+		CollisionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		CollisionSphere->SetGenerateOverlapEvents(false);
+	}
+	if (ProjectileMovement)
+	{
+		ProjectileMovement->StopMovementImmediately();
+		ProjectileMovement->Deactivate();
+	}
+	if (ProjectileVFX)
+	{
+		ProjectileVFX->DeactivateSystem();
+	}
+	if (ProjectileNiagaraVFX)
+	{
+		ProjectileNiagaraVFX->Deactivate();
+	}
+
 	const FString ImpactVFXPath = SoftObjectPathString(ImpactVFXAsset.ToSoftObjectPath());
 	const FString ImpactNiagaraVFXPath = SoftObjectPathString(ImpactNiagaraVFXAsset.ToSoftObjectPath());
 	const FString ImpactSFXPath = SoftObjectPathString(ImpactSFXAsset.ToSoftObjectPath());
@@ -388,7 +449,7 @@ void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocat
 
 	if (ProjectileLoopAudio)
 	{
-		ProjectileLoopAudio->Stop();
+		ProjectileLoopAudio->FadeOut(0.08f, 0.0f);
 	}
 
 	BP_OnProjectileHit(HitActor, HitLocation);
@@ -424,7 +485,8 @@ void ADBASkillProjectileBase::PlayImpactFeedbackLocal(
 
 	if (!ImpactNiagaraVFXPath.IsEmpty())
 	{
-		if (UNiagaraSystem* VFX = LoadObject<UNiagaraSystem>(nullptr, *ImpactNiagaraVFXPath))
+		TSoftObjectPtr<UNiagaraSystem> VFXAsset{FSoftObjectPath(ImpactNiagaraVFXPath)};
+		if (UNiagaraSystem* VFX = VFXAsset.Get())
 		{
 			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 				GetWorld(),
@@ -437,21 +499,41 @@ void ADBASkillProjectileBase::PlayImpactFeedbackLocal(
 				ENCPoolMethod::AutoRelease,
 				true);
 		}
+		else
+		{
+			TArray<FSoftObjectPath> Paths;
+			DBAAsyncAssetLoader::AddPreloadPath(VFXAsset, Paths);
+			DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
+		}
 	}
 
 	if (!ImpactVFXPath.IsEmpty())
 	{
-		if (UParticleSystem* VFX = LoadObject<UParticleSystem>(nullptr, *ImpactVFXPath))
+		TSoftObjectPtr<UParticleSystem> VFXAsset{FSoftObjectPath(ImpactVFXPath)};
+		if (UParticleSystem* VFX = VFXAsset.Get())
 		{
 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, HitLocation, FRotator::ZeroRotator, true);
+		}
+		else
+		{
+			TArray<FSoftObjectPath> Paths;
+			DBAAsyncAssetLoader::AddPreloadPath(VFXAsset, Paths);
+			DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
 		}
 	}
 
 	if (!ImpactSFXPath.IsEmpty())
 	{
-		if (USoundBase* SFX = LoadObject<USoundBase>(nullptr, *ImpactSFXPath))
+		TSoftObjectPtr<USoundBase> SFXAsset{FSoftObjectPath(ImpactSFXPath)};
+		if (USoundBase* SFX = SFXAsset.Get())
 		{
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, HitLocation);
+		}
+		else
+		{
+			TArray<FSoftObjectPath> Paths;
+			DBAAsyncAssetLoader::AddPreloadPath(SFXAsset, Paths);
+			DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
 		}
 	}
 }
@@ -462,6 +544,18 @@ void ADBASkillProjectileBase::SetCollisionChannel(ECollisionChannel Channel)
 	{
 		CollisionSphere->SetCollisionObjectType(Channel);
 	}
+}
+
+void ADBASkillProjectileBase::PreloadPresentationAssets()
+{
+	TArray<FSoftObjectPath> Paths;
+	DBAAsyncAssetLoader::AddPreloadPath(ProjectileVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(ImpactVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(ProjectileNiagaraVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(ImpactNiagaraVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(FlySFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(ImpactSFXAsset, Paths);
+	DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
 }
 
 void ADBASkillProjectileBase::HandleProjectileHit(
@@ -476,7 +570,7 @@ void ADBASkillProjectileBase::HandleProjectileHit(
 		return;
 	}
 
-	if (OtherActor && OtherActor != this && OtherActor != ProjectileOwner)
+	if (!bProjectileHitProcessed && OtherActor && OtherActor != this && OtherActor != ProjectileOwner)
 	{
 		const FVector ImpactPoint = Hit.ImpactPoint.IsNearlyZero() ? GetActorLocation() : FVector(Hit.ImpactPoint);
 		OnProjectileHit(OtherActor, ImpactPoint);
@@ -496,7 +590,7 @@ void ADBASkillProjectileBase::HandleProjectileOverlap(
 		return;
 	}
 
-	if (OtherActor && OtherActor != this && OtherActor != ProjectileOwner)
+	if (!bProjectileHitProcessed && OtherActor && OtherActor != this && OtherActor != ProjectileOwner)
 	{
 		const FVector ImpactPoint = SweepResult.ImpactPoint.IsNearlyZero() ? GetActorLocation() : FVector(SweepResult.ImpactPoint);
 		OnProjectileHit(OtherActor, ImpactPoint);

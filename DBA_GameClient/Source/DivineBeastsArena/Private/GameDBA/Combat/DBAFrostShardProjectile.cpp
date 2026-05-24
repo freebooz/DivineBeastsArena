@@ -12,6 +12,7 @@ Readable notes:
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -151,10 +152,24 @@ void ADBAFrostShardProjectile::BeginPlay()
 
 	if (ProjectileNiagaraVFX && !ProjectileNiagaraVFXAsset.IsNull())
 	{
-		if (UNiagaraSystem* MainVFX = ProjectileNiagaraVFXAsset.LoadSynchronous())
+		if (UNiagaraSystem* MainVFX = ProjectileNiagaraVFXAsset.Get())
 		{
 			ProjectileNiagaraVFX->SetAsset(MainVFX);
+			ProjectileNiagaraVFX->SetVisibility(true);
 			ProjectileNiagaraVFX->Activate(true);
+		}
+		else
+		{
+			DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(this, ProjectileNiagaraVFXAsset, [this](UNiagaraSystem* MainVFX)
+			{
+				if (!ProjectileNiagaraVFX || bProjectileHitProcessed)
+				{
+					return;
+				}
+				ProjectileNiagaraVFX->SetAsset(MainVFX);
+				ProjectileNiagaraVFX->SetVisibility(true);
+				ProjectileNiagaraVFX->Activate(true);
+			});
 		}
 	}
 
@@ -214,6 +229,19 @@ void ADBAFrostShardProjectile::OnProjectileHit(AActor* HitActor, FVector HitLoca
 	Super::OnProjectileHit(HitActor, HitLocation);
 }
 
+void ADBAFrostShardProjectile::PreloadPresentationAssets()
+{
+	Super::PreloadPresentationAssets();
+
+	TArray<FSoftObjectPath> Paths;
+	DBAAsyncAssetLoader::AddPreloadPath(CrystalWakeVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(MistWakeVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(SpiralWakeVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(SecondaryImpactVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(RingImpactVFXAsset, Paths);
+	DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
+}
+
 void ADBAFrostShardProjectile::ApplyFrostMaterial(UStaticMeshComponent* Mesh, float EmissiveStrength, float Alpha) const
 {
 	if (!Mesh || !FrostCoreMaterial)
@@ -238,11 +266,28 @@ void ADBAFrostShardProjectile::ActivateNiagaraComponent(UNiagaraComponent* Compo
 		return;
 	}
 
-	if (UNiagaraSystem* VFX = Asset.LoadSynchronous())
+	if (UNiagaraSystem* VFX = Asset.Get())
 	{
+		if (!Component || bProjectileHitProcessed)
+		{
+			return;
+		}
 		Component->SetAsset(VFX);
 		Component->SetVisibility(true);
 		Component->Activate(true);
+	}
+	else
+	{
+		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(const_cast<ADBAFrostShardProjectile*>(this), Asset, [this, Component](UNiagaraSystem* LoadedVFX)
+		{
+			if (!Component || bProjectileHitProcessed)
+			{
+				return;
+			}
+			Component->SetAsset(LoadedVFX);
+			Component->SetVisibility(true);
+			Component->Activate(true);
+		});
 	}
 }
 
@@ -281,7 +326,7 @@ void ADBAFrostShardProjectile::SpawnImpactLayer(
 		return;
 	}
 
-	if (UNiagaraSystem* Impact = Asset.LoadSynchronous())
+	if (UNiagaraSystem* Impact = Asset.Get())
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
@@ -293,5 +338,11 @@ void ADBAFrostShardProjectile::SpawnImpactLayer(
 			true,
 			ENCPoolMethod::AutoRelease,
 			true);
+	}
+	else
+	{
+		TArray<FSoftObjectPath> Paths;
+		DBAAsyncAssetLoader::AddPreloadPath(Asset, Paths);
+		DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBAFrostShardProjectile*>(this), Paths);
 	}
 }

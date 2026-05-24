@@ -92,7 +92,7 @@ public:
 	virtual void Deinitialize() override;
 
 public:
-	/** 同步加载技能特效表 */
+	/** 兼容旧蓝图入口：异步预加载技能特效表和表内表现资源 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Effect|Table")
 	void LoadSkillEffectTable(const TSoftObjectPtr<UDataTable>& TablePath);
 

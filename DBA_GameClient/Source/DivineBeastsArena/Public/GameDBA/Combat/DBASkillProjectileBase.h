@@ -54,6 +54,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Projectile")
 	void SetCollisionChannel(ECollisionChannel Channel);
 
+	virtual void PreloadPresentationAssets();
+
 protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastApplyProjectileVisuals(const FString& ProjectileVFXPath, const FString& ProjectileNiagaraVFXPath, const FString& FlySFXPath);
@@ -137,6 +139,8 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<AActor> TargetActor;
+
+	bool bProjectileHitProcessed = false;
 
 	UFUNCTION()
 	void HandleProjectileHit(

@@ -13,7 +13,9 @@ Readable notes:
 #include "DBAHolyShieldSpell.generated.h"
 
 class UNiagaraSystem;
+class USceneComponent;
 class USoundBase;
+class UNiagaraComponent;
 
 UCLASS(Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API ADBAHolyShieldSpell : public AActor
@@ -25,6 +27,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|Holy Shield")
 	void CastHolyShield(AActor* InCaster, AActor* PreferredTarget = nullptr);
+
+	void PreloadPresentationAssets();
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Holy Shield", meta = (ClampMin = "0.0"))
@@ -52,7 +56,7 @@ protected:
 	TSoftObjectPtr<USoundBase> ImpactSFXAsset;
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastPlayShieldStart(FVector_NetQuantize Location);
+	void MulticastPlayShieldStart(AActor* TargetActor, FVector_NetQuantize Location);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayShieldEnd(FVector_NetQuantize Location);
@@ -60,11 +64,18 @@ protected:
 private:
 	void ApplyShield(AActor* Target);
 	void ReleaseShield();
-	void SpawnVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, const FVector& Location, const FRotator& Rotation, const FVector& Scale) const;
+	UNiagaraComponent* SpawnVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, const FVector& Location, const FRotator& Rotation, const FVector& Scale, bool bAutoDestroy = true) const;
+	UNiagaraComponent* SpawnAttachedVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, AActor* TargetActor, const FVector& RelativeOffset, const FRotator& Rotation, const FVector& Scale, bool bAutoDestroy = true) const;
 	void PlaySFX(const TSoftObjectPtr<USoundBase>& Asset, const FVector& Location, float Volume = 1.0f) const;
 
 	UPROPERTY(Transient)
 	TObjectPtr<AActor> ShieldTarget;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USceneComponent> SceneRoot;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UNiagaraComponent> ActiveBarrierVFX;
 
 	float AppliedShieldAmount = 0.0f;
 	FTimerHandle ShieldTimerHandle;

@@ -11,6 +11,7 @@
 
 #include "GameDBA/Animation/DBAZodiacAnimConfig_Generic.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 
 UDBAZodiacAnimConfig_Generic::UDBAZodiacAnimConfig_Generic()
 {
@@ -30,20 +31,37 @@ UAnimMontage* UDBAZodiacAnimConfig_Generic::GetAnimationByType(FName AnimationTy
 	static const FString HitStr = TEXT("Hit");
 	static const FString DeathStr = TEXT("Death");
 
-	if (AnimationType == IdleStr) return Idle_Montage.LoadSynchronous();
-	if (AnimationType == WalkStr) return Walk_Montage.LoadSynchronous();
-	if (AnimationType == RunStr) return Run_Montage.LoadSynchronous();
-	if (AnimationType == AttackStr) return Attack_Montage.LoadSynchronous();
-	if (AnimationType == PassiveStr) return Passive_Montage.LoadSynchronous();
-	if (AnimationType == QStr) return Q_Montage.LoadSynchronous();
-	if (AnimationType == WStr) return W_Montage.LoadSynchronous();
-	if (AnimationType == EStr) return E_Montage.LoadSynchronous();
-	if (AnimationType == RStr) return R_Montage.LoadSynchronous();
-	if (AnimationType == HitStr) return Hit_Montage.LoadSynchronous();
-	if (AnimationType == DeathStr) return Death_Montage.LoadSynchronous();
+	if (AnimationType == IdleStr) return Idle_Montage.Get();
+	if (AnimationType == WalkStr) return Walk_Montage.Get();
+	if (AnimationType == RunStr) return Run_Montage.Get();
+	if (AnimationType == AttackStr) return Attack_Montage.Get();
+	if (AnimationType == PassiveStr) return Passive_Montage.Get();
+	if (AnimationType == QStr) return Q_Montage.Get();
+	if (AnimationType == WStr) return W_Montage.Get();
+	if (AnimationType == EStr) return E_Montage.Get();
+	if (AnimationType == RStr) return R_Montage.Get();
+	if (AnimationType == HitStr) return Hit_Montage.Get();
+	if (AnimationType == DeathStr) return Death_Montage.Get();
 
 	UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacAnimConfig_Generic] 未找到动画类型: %s"), *AnimationType.ToString());
 	return nullptr;
+}
+
+void UDBAZodiacAnimConfig_Generic::PreloadAllAnimations()
+{
+	TArray<FSoftObjectPath> Paths;
+	DBAAsyncAssetLoader::AddPreloadPath(Idle_Montage, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(Walk_Montage, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(Run_Montage, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(Attack_Montage, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(Passive_Montage, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(Q_Montage, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(W_Montage, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(E_Montage, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(R_Montage, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(Hit_Montage, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(Death_Montage, Paths);
+	DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
 }
 
 TMap<FName, TSoftObjectPtr<UAnimMontage>> UDBAZodiacAnimConfig_Generic::GetAllAnimations() const

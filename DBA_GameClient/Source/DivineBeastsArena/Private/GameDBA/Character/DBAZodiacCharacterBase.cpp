@@ -18,6 +18,7 @@
 #include "GameDBA/Combat/DBAPlayableSkillComponent.h"
 #include "GameDBA/Combat/DBAProjectile_Generic.h"
 #include "GameDBA/Combat/DBAShadowBoltProjectile.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "GameDBA/Combat/DBASkillProjectileBase.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/GAS/DBAAbilitySystemComponent.h"
@@ -780,41 +781,36 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		return;
 	}
 
-	TSubclassOf<ADBASkillProjectileBase> ProjectileClass = LoadClass<ADBASkillProjectileBase>(
-		nullptr,
-		TEXT("/Game/DBA/Blueprints/Projectiles/BP_DBA_FireballProjectile.BP_DBA_FireballProjectile_C"));
-	if (SkillSlot != 1 || !ProjectileClass)
+	TSubclassOf<ADBASkillProjectileBase> ProjectileClass = nullptr;
+	if (SkillSlot == 1)
 	{
-		if (SkillSlot == 1)
+		ProjectileClass = Spec.ProjectileClass ? Spec.ProjectileClass : LobbyFireballProjectileClass;
+		if (!ProjectileClass)
 		{
-			ProjectileClass = Spec.ProjectileClass ? Spec.ProjectileClass : LobbyFireballProjectileClass;
+			ProjectileClass = ADBAFireballProjectile::StaticClass();
+		}
+	}
+	else
+	{
+		if (SkillSlot == 2)
+		{
+			ProjectileClass = Spec.ProjectileClass ? Spec.ProjectileClass : LobbyFrostShardProjectileClass;
 			if (!ProjectileClass)
 			{
-				ProjectileClass = ADBAFireballProjectile::StaticClass();
+				ProjectileClass = ADBAFrostShardProjectile::StaticClass();
+			}
+		}
+		else if (SkillSlot == 6)
+		{
+			ProjectileClass = Spec.ProjectileClass ? Spec.ProjectileClass : LobbyShadowBoltProjectileClass;
+			if (!ProjectileClass)
+			{
+				ProjectileClass = ADBAShadowBoltProjectile::StaticClass();
 			}
 		}
 		else
 		{
-			if (SkillSlot == 2)
-			{
-				ProjectileClass = Spec.ProjectileClass ? Spec.ProjectileClass : LobbyFrostShardProjectileClass;
-				if (!ProjectileClass)
-				{
-					ProjectileClass = ADBAFrostShardProjectile::StaticClass();
-				}
-			}
-			else if (SkillSlot == 6)
-			{
-				ProjectileClass = Spec.ProjectileClass ? Spec.ProjectileClass : LobbyShadowBoltProjectileClass;
-				if (!ProjectileClass)
-				{
-					ProjectileClass = ADBAShadowBoltProjectile::StaticClass();
-				}
-			}
-			else
-			{
-				ProjectileClass = ADBAProjectile_Generic::StaticClass();
-			}
+			ProjectileClass = ADBAProjectile_Generic::StaticClass();
 		}
 	}
 
@@ -878,29 +874,54 @@ void ADBAZodiacCharacterBase::PlayLobbySkillCastFeedbackLocal(int32 SkillSlot)
 		return;
 	}
 
-	const FVector CastLocation = GetActorLocation() + GetActorForwardVector() * 72.0f + FVector(0.0f, 0.0f, 88.0f);
+	const FVector CastRelativeLocation(72.0f, 0.0f, 88.0f);
+	const FVector CastLocation = GetActorLocation() + GetActorForwardVector() * CastRelativeLocation.X + FVector(0.0f, 0.0f, CastRelativeLocation.Z);
 	if (!Spec.CastNiagaraVFXAsset.IsNull())
 	{
-		if (UNiagaraSystem* CastVFX = Spec.CastNiagaraVFXAsset.LoadSynchronous())
+		if (UNiagaraSystem* CastVFX = Spec.CastNiagaraVFXAsset.Get())
 		{
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(),
-				CastVFX,
-				CastLocation,
-				GetActorRotation(),
-				FVector(Spec.CastVFXScale),
-				true,
-				true,
-				ENCPoolMethod::AutoRelease,
-				true);
+			if (GetRootComponent())
+			{
+				UNiagaraFunctionLibrary::SpawnSystemAttached(
+					CastVFX,
+					GetRootComponent(),
+					NAME_None,
+					CastRelativeLocation,
+					FRotator::ZeroRotator,
+					FVector(Spec.CastVFXScale),
+					EAttachLocation::KeepRelativeOffset,
+					true,
+					ENCPoolMethod::AutoRelease,
+					true,
+					true);
+			}
+		}
+		else
+		{
+			TArray<FSoftObjectPath> Paths;
+			DBAAsyncAssetLoader::AddPreloadPath(Spec.CastNiagaraVFXAsset, Paths);
+			DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
 		}
 	}
 
 	if (!Spec.CastSFXAsset.IsNull())
 	{
-		if (USoundBase* CastSFX = Spec.CastSFXAsset.LoadSynchronous())
+		if (USoundBase* CastSFX = Spec.CastSFXAsset.Get())
 		{
-			UGameplayStatics::PlaySoundAtLocation(GetWorld(), CastSFX, CastLocation, 0.85f);
+			if (GetRootComponent())
+			{
+				UGameplayStatics::SpawnSoundAttached(CastSFX, GetRootComponent(), NAME_None, CastRelativeLocation, EAttachLocation::KeepRelativeOffset, true, 0.85f);
+			}
+			else
+			{
+				UGameplayStatics::PlaySoundAtLocation(GetWorld(), CastSFX, CastLocation, 0.85f);
+			}
+		}
+		else
+		{
+			TArray<FSoftObjectPath> Paths;
+			DBAAsyncAssetLoader::AddPreloadPath(Spec.CastSFXAsset, Paths);
+			DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
 		}
 	}
 }

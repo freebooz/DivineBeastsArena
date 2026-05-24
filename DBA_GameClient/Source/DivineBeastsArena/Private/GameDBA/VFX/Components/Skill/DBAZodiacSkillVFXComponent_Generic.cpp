@@ -16,6 +16,7 @@
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "GameDBA/GAS/DBAAbilitySystemComponent.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "Animation/AnimInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
@@ -148,6 +149,7 @@ void UDBAZodiacSkillVFXComponent_Generic::LoadFromDataTable()
 	if (Row)
 	{
 		CachedVFXData = *Row;
+		PreloadCachedVFXDataResources();
 		UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacSkillVFXComponent_Generic] 加载VFX配置: %s"), *RowName.ToString());
 	}
 	else
@@ -161,6 +163,24 @@ const FDBAVFXDataRow& UDBAZodiacSkillVFXComponent_Generic::GetVFXData() const
 	return CachedVFXData;
 }
 
+void UDBAZodiacSkillVFXComponent_Generic::PreloadCachedVFXDataResources()
+{
+	TArray<FSoftObjectPath> Paths;
+	DBAAsyncAssetLoader::AddPreloadPath(CachedVFXData.CastingVFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(CachedVFXData.ImpactVFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(CachedVFXData.ProjectileVFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(CachedVFXData.AOEVFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(CachedVFXData.ChannelVFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(CachedVFXData.BuffVFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(CachedVFXData.DebuffVFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(CachedVFXData.CastingSFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(CachedVFXData.ProjectileSFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(CachedVFXData.ImpactSFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(CachedVFXData.CastingMontage, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(CachedVFXData.ImpactMontage, Paths);
+	DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
+}
+
 void UDBAZodiacSkillVFXComponent_Generic::PlayCastingVFX(AActor* Target)
 {
 	AActor* OwnerActor = GetOwner();
@@ -169,19 +189,19 @@ void UDBAZodiacSkillVFXComponent_Generic::PlayCastingVFX(AActor* Target)
 		return;
 	}
 
-	if (UParticleSystem* VFX = CachedVFXData.CastingVFX.LoadSynchronous())
+	if (UParticleSystem* VFX = CachedVFXData.CastingVFX.Get())
 	{
 		FVector Location = Target ? Target->GetActorLocation() : OwnerActor->GetActorLocation();
 		FRotator Rotation = OwnerActor->GetActorRotation();
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, Location, Rotation, true);
 	}
 
-	if (USoundBase* SFX = CachedVFXData.CastingSFX.LoadSynchronous())
+	if (USoundBase* SFX = CachedVFXData.CastingSFX.Get())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, OwnerActor->GetActorLocation());
 	}
 
-	if (UAnimMontage* Montage = CachedVFXData.CastingMontage.LoadSynchronous())
+	if (UAnimMontage* Montage = CachedVFXData.CastingMontage.Get())
 	{
 		if (USkeletalMeshComponent* Mesh = OwnerActor->FindComponentByClass<USkeletalMeshComponent>())
 		{
@@ -204,18 +224,18 @@ void UDBAZodiacSkillVFXComponent_Generic::PlayImpactVFX(AActor* HitTarget)
 	}
 
 	const FVector ImpactLocation = HitTarget ? HitTarget->GetActorLocation() : OwnerActor->GetActorLocation();
-	if (UParticleSystem* VFX = CachedVFXData.ImpactVFX.LoadSynchronous())
+	if (UParticleSystem* VFX = CachedVFXData.ImpactVFX.Get())
 	{
 		FRotator Rotation = FRotator::ZeroRotator;
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, ImpactLocation, Rotation, true);
 	}
 
-	if (USoundBase* SFX = CachedVFXData.ImpactSFX.LoadSynchronous())
+	if (USoundBase* SFX = CachedVFXData.ImpactSFX.Get())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, ImpactLocation);
 	}
 
-	if (UAnimMontage* Montage = CachedVFXData.ImpactMontage.LoadSynchronous())
+	if (UAnimMontage* Montage = CachedVFXData.ImpactMontage.Get())
 	{
 		if (HitTarget)
 		{
@@ -243,14 +263,14 @@ void UDBAZodiacSkillVFXComponent_Generic::PlayImpactVFX(AActor* HitTarget)
 
 void UDBAZodiacSkillVFXComponent_Generic::PlayProjectileVFX(FVector Start, FVector End)
 {
-	if (UParticleSystem* VFX = CachedVFXData.ProjectileVFX.LoadSynchronous())
+	if (UParticleSystem* VFX = CachedVFXData.ProjectileVFX.Get())
 	{
 		FVector Direction = (End - Start).GetSafeNormal();
 		FRotator Rotation = Direction.Rotation();
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, Start, Rotation, true);
 	}
 
-	if (USoundBase* SFX = CachedVFXData.ProjectileSFX.LoadSynchronous())
+	if (USoundBase* SFX = CachedVFXData.ProjectileSFX.Get())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, Start);
 	}
@@ -261,7 +281,7 @@ void UDBAZodiacSkillVFXComponent_Generic::PlayProjectileVFX(FVector Start, FVect
 void UDBAZodiacSkillVFXComponent_Generic::PlayAOEVFX(FVector Center, float Radius)
 {
 	const float EffectiveRadius = Radius > 0.0f ? Radius : DefaultAOEDamageRadius;
-	if (UParticleSystem* VFX = CachedVFXData.AOEVFX.LoadSynchronous())
+	if (UParticleSystem* VFX = CachedVFXData.AOEVFX.Get())
 	{
 		FRotator Rotation = FRotator::ZeroRotator;
 		UParticleSystemComponent* PSystem = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, Center, Rotation, true);
@@ -288,7 +308,7 @@ void UDBAZodiacSkillVFXComponent_Generic::PlayChannelVFX()
 		return;
 	}
 
-	if (UParticleSystem* VFX = CachedVFXData.ChannelVFX.LoadSynchronous())
+	if (UParticleSystem* VFX = CachedVFXData.ChannelVFX.Get())
 	{
 		FVector Location = OwnerActor->GetActorLocation();
 		FRotator Rotation = OwnerActor->GetActorRotation();
@@ -296,7 +316,7 @@ void UDBAZodiacSkillVFXComponent_Generic::PlayChannelVFX()
 			VFX, OwnerActor->GetRootComponent(), NAME_None, Location, Rotation, EAttachLocation::KeepRelativeOffset, true);
 	}
 
-	if (USoundBase* SFX = CachedVFXData.CastingSFX.LoadSynchronous())
+	if (USoundBase* SFX = CachedVFXData.CastingSFX.Get())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, OwnerActor->GetActorLocation());
 	}
@@ -315,7 +335,7 @@ void UDBAZodiacSkillVFXComponent_Generic::StopChannelVFX()
 
 void UDBAZodiacSkillVFXComponent_Generic::PlayCastingSFX()
 {
-	if (USoundBase* SFX = CachedVFXData.CastingSFX.LoadSynchronous())
+	if (USoundBase* SFX = CachedVFXData.CastingSFX.Get())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner() ? GetOwner()->GetActorLocation() : FVector::ZeroVector);
 	}
@@ -323,7 +343,7 @@ void UDBAZodiacSkillVFXComponent_Generic::PlayCastingSFX()
 
 void UDBAZodiacSkillVFXComponent_Generic::PlayProjectileSFX()
 {
-	if (USoundBase* SFX = CachedVFXData.ProjectileSFX.LoadSynchronous())
+	if (USoundBase* SFX = CachedVFXData.ProjectileSFX.Get())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner() ? GetOwner()->GetActorLocation() : FVector::ZeroVector);
 	}
@@ -331,7 +351,7 @@ void UDBAZodiacSkillVFXComponent_Generic::PlayProjectileSFX()
 
 void UDBAZodiacSkillVFXComponent_Generic::PlayImpactSFX()
 {
-	if (USoundBase* SFX = CachedVFXData.ImpactSFX.LoadSynchronous())
+	if (USoundBase* SFX = CachedVFXData.ImpactSFX.Get())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner() ? GetOwner()->GetActorLocation() : FVector::ZeroVector);
 	}

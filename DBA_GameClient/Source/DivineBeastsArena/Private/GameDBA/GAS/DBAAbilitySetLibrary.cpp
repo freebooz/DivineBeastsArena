@@ -74,24 +74,14 @@ namespace
 		return CandidatePaths;
 	}
 
-	UDBAFixedSkillGroupDataAsset* TryLoadFixedSkillGroupAsset(const FSoftObjectPath& AssetPath, UAssetManager* AssetManager)
+	UDBAFixedSkillGroupDataAsset* ResolveLoadedFixedSkillGroupAsset(const FSoftObjectPath& AssetPath)
 	{
 		if (!DoesObjectPackageExist(AssetPath))
 		{
 			return nullptr;
 		}
 
-		UObject* Loaded = nullptr;
-		if (AssetManager)
-		{
-			Loaded = AssetManager->GetStreamableManager().LoadSynchronous(AssetPath, false);
-		}
-		else
-		{
-			Loaded = AssetPath.TryLoad();
-		}
-
-		return Cast<UDBAFixedSkillGroupDataAsset>(Loaded);
+		return Cast<UDBAFixedSkillGroupDataAsset>(AssetPath.ResolveObject());
 	}
 
 	bool FindExistingFixedSkillGroupPath(const FName& FixedSkillGroupId, FSoftObjectPath& OutAssetPath)
@@ -144,12 +134,23 @@ UDBAFixedSkillGroupDataAsset* UDBAFixedSkillGroupLibrary::GetFixedSkillGroupById
 		return nullptr;
 	}
 
-	UAssetManager* AssetManager = UAssetManager::GetIfInitialized();
 	for (const FSoftObjectPath& AssetPath : MakeFixedSkillGroupCandidatePaths(FixedSkillGroupId))
 	{
-		if (UDBAFixedSkillGroupDataAsset* LoadedAsset = TryLoadFixedSkillGroupAsset(AssetPath, AssetManager))
+		if (UDBAFixedSkillGroupDataAsset* LoadedAsset = ResolveLoadedFixedSkillGroupAsset(AssetPath))
 		{
 			return LoadedAsset;
+		}
+		if (DoesObjectPackageExist(AssetPath))
+		{
+			if (UAssetManager* AssetManager = UAssetManager::GetIfInitialized())
+			{
+				AssetManager->GetStreamableManager().RequestAsyncLoad(
+					TArray<FSoftObjectPath>({ AssetPath }),
+					FStreamableDelegate(),
+					FStreamableManager::AsyncLoadHighPriority,
+					true);
+			}
+			break;
 		}
 	}
 
@@ -191,5 +192,6 @@ void UDBAFixedSkillGroupLibrary::LoadFixedSkillGroupByIdAsync(const FName& Fixed
 			}
 			OnLoadedDelegate.ExecuteIfBound(LoadedAsset);
 		},
-		FStreamableManager::AsyncLoadHighPriority);
+		FStreamableManager::AsyncLoadHighPriority,
+		true);
 }

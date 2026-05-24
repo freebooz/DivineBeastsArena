@@ -13,6 +13,7 @@
 #include "Engine/AssetManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 
 UDBAEffectTableManager::UDBAEffectTableManager()
 {
@@ -32,27 +33,7 @@ void UDBAEffectTableManager::Deinitialize()
 
 void UDBAEffectTableManager::LoadSkillEffectTable(const TSoftObjectPtr<UDataTable>& TablePath)
 {
-	if (!TablePath.IsValid())
-	{
-		return;
-	}
-
-	// 鍚屾鍔犺浇
-	UDataTable* LoadedTable = TablePath.LoadSynchronous();
-	if (LoadedTable)
-	{
-		SkillEffectTable = LoadedTable;
-
-		// 缂撳瓨鎵€鏈夋暟鎹?		CachedEffects.Empty();
-		TArray<FName> RowNames = LoadedTable->GetRowNames();
-		for (const FName& RowName : RowNames)
-		{
-			if (FDBASkillEffectRow* Row = LoadedTable->FindRow<FDBASkillEffectRow>(RowName, TEXT("")))
-			{
-				CachedEffects.Add(RowName, *Row);
-			}
-		}
-	}
+	AsyncLoadSkillEffectTable(TablePath);
 }
 
 TSoftObjectPtr<UDataTable> UDBAEffectTableManager::AsyncLoadSkillEffectTable(const TSoftObjectPtr<UDataTable>& TablePath)
@@ -101,15 +82,20 @@ void UDBAEffectTableManager::OnAsyncLoadComplete(TSoftObjectPtr<UDataTable> Tabl
 	{
 		SkillEffectTable = LoadedTable;
 
-		// 閲嶆柊缂撳瓨
 		CachedEffects.Empty();
+		TArray<FSoftObjectPath> PresentationPaths;
 		TArray<FName> RowNames = LoadedTable->GetRowNames();
 		for (const FName& RowName : RowNames)
 		{
 			if (FDBASkillEffectRow* Row = LoadedTable->FindRow<FDBASkillEffectRow>(RowName, TEXT("")))
 			{
 				CachedEffects.Add(RowName, *Row);
+				DBAAsyncAssetLoader::AddPreloadPath(Row->ReleaseEffect, PresentationPaths);
+				DBAAsyncAssetLoader::AddPreloadPath(Row->HitEffect, PresentationPaths);
+				DBAAsyncAssetLoader::AddPreloadPath(Row->CastSound, PresentationPaths);
+				DBAAsyncAssetLoader::AddPreloadPath(Row->HitSound, PresentationPaths);
 			}
 		}
+		DBAAsyncAssetLoader::RequestAsyncPreload(this, PresentationPaths);
 	}
 }

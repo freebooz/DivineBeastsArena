@@ -17,6 +17,7 @@ Readable notes:
 #include "NiagaraSystem.h"
 #include "Sound/SoundBase.h"
 #include "UObject/ConstructorHelpers.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 
 ADBAShadowBoltProjectile::ADBAShadowBoltProjectile()
 {
@@ -127,6 +128,16 @@ void ADBAShadowBoltProjectile::OnProjectileHit(AActor* HitActor, FVector HitLoca
 	Super::OnProjectileHit(HitActor, HitLocation);
 }
 
+void ADBAShadowBoltProjectile::PreloadPresentationAssets()
+{
+	Super::PreloadPresentationAssets();
+
+	TArray<FSoftObjectPath> Paths;
+	DBAAsyncAssetLoader::AddPreloadPath(WakeVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(SecondaryImpactVFXAsset, Paths);
+	DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
+}
+
 void ADBAShadowBoltProjectile::ApplyShadowMaterial(UStaticMeshComponent* Mesh, float EmissiveStrength, float Alpha) const
 {
 	if (!Mesh || !ShadowMaterial)
@@ -151,11 +162,24 @@ void ADBAShadowBoltProjectile::ActivateWake() const
 		return;
 	}
 
-	if (UNiagaraSystem* VFX = WakeVFXAsset.LoadSynchronous())
+	if (UNiagaraSystem* VFX = WakeVFXAsset.Get())
 	{
 		ShadowWake->SetAsset(VFX);
 		ShadowWake->SetVisibility(true);
 		ShadowWake->Activate(true);
+	}
+	else
+	{
+		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(const_cast<ADBAShadowBoltProjectile*>(this), WakeVFXAsset, [this](UNiagaraSystem* LoadedVFX)
+		{
+			if (!ShadowWake || bProjectileHitProcessed)
+			{
+				return;
+			}
+			ShadowWake->SetAsset(LoadedVFX);
+			ShadowWake->SetVisibility(true);
+			ShadowWake->Activate(true);
+		});
 	}
 }
 
@@ -166,7 +190,7 @@ void ADBAShadowBoltProjectile::SpawnImpactLayer(const TSoftObjectPtr<UNiagaraSys
 		return;
 	}
 
-	if (UNiagaraSystem* Impact = Asset.LoadSynchronous())
+	if (UNiagaraSystem* Impact = Asset.Get())
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),

@@ -34,6 +34,7 @@ class DIVINEBEASTSARENA_API UDBAZodiacVFXComponent_Generic : public UActorCompon
 
 public:
 	UDBAZodiacVFXComponent_Generic();
+	virtual void BeginPlay() override;
 
 public:
 	/** 生肖类型 */
@@ -117,6 +118,7 @@ public:
 
 protected:
 	void LoadDefaultAssets();
+	void PreloadPresentationAssets();
 
 	// ==================== VFX 资源 ====================
 

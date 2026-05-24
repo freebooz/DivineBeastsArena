@@ -8,9 +8,13 @@
 #include "GameDBA/Combat/DBAFireballProjectile.h"
 #include "GameDBA/Combat/DBAFrostShardProjectile.h"
 #include "GameDBA/Combat/DBAHolyShieldSpell.h"
+#include "GameDBA/Combat/DBASkillProjectileBase.h"
 #include "GameDBA/Combat/DBAShadowBoltProjectile.h"
 #include "GameDBA/Services/DBASkillGroupGeneratorSubsystem.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "GameCore/Core/DBALogChannels.h"
+#include "NiagaraSystem.h"
+#include "Sound/SoundBase.h"
 
 namespace
 {
@@ -111,6 +115,8 @@ void UDBAPlayableSkillComponent::BeginPlay()
 			UE_LOG(LogDBACombat, Warning, TEXT("[DBAPlayableSkillComponent] Playable skill catalog validation failed: Owner=%s Error=%s"), *GetNameSafe(GetOwner()), *ValidationError);
 		}
 	}
+
+	PreloadSkillPresentationAssets();
 }
 
 bool UDBAPlayableSkillComponent::GetSkillSpec(int32 SkillSlot, FDBAPlayableSkillRuntimeSpec& OutSpec) const
@@ -163,6 +169,10 @@ void UDBAPlayableSkillComponent::SetSkillSpec(int32 SkillSlot, const FDBAPlayabl
 		if (Spec.SkillSlot == SkillSlot)
 		{
 			Spec = NormalizedSpec;
+			if (HasBegunPlay())
+			{
+				PreloadSkillPresentationAssets();
+			}
 			return;
 		}
 	}
@@ -172,6 +182,10 @@ void UDBAPlayableSkillComponent::SetSkillSpec(int32 SkillSlot, const FDBAPlayabl
 	{
 		return Left.SkillSlot < Right.SkillSlot;
 	});
+	if (HasBegunPlay())
+	{
+		PreloadSkillPresentationAssets();
+	}
 }
 
 void UDBAPlayableSkillComponent::ResetToDefaultSkillSpecs()
@@ -236,11 +250,20 @@ void UDBAPlayableSkillComponent::ResetToDefaultSkillSpecs()
 	Shadow.FlySFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_ShadowBolt_Flight.SFX_ShadowBolt_Flight"));
 	Shadow.ImpactSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_ShadowBolt_Impact.SFX_ShadowBolt_Impact"));
 	SkillSpecs.Add(Shadow);
+
+	if (HasBegunPlay())
+	{
+		PreloadSkillPresentationAssets();
+	}
 }
 
 void UDBAPlayableSkillComponent::SetSkillCatalog(UDBAPlayableSkillCatalogDataAsset* InSkillCatalog)
 {
 	SkillCatalog = InSkillCatalog;
+	if (HasBegunPlay())
+	{
+		PreloadSkillPresentationAssets();
+	}
 }
 
 void UDBAPlayableSkillComponent::SetAppendDefaultSkillsWhenCatalogMissingSlots(bool bInAppendDefaults)
@@ -338,4 +361,56 @@ FName UDBAPlayableSkillComponent::ResolveEquippedSkillId(int32 SkillSlot, FName 
 	case 5: return SkillGroup.ZodiacUltimateSkillId.IsNone() ? FallbackSkillId : SkillGroup.ZodiacUltimateSkillId;
 	default: return FallbackSkillId;
 	}
+}
+
+void UDBAPlayableSkillComponent::PreloadSkillPresentationAssets() const
+{
+	if (GetOwner() && GetOwner()->GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+
+	TArray<FDBAPlayableSkillRuntimeSpec> EffectiveSpecs;
+	BuildEffectiveSkillSpecs(EffectiveSpecs);
+
+	TArray<FSoftObjectPath> Paths;
+	for (const FDBAPlayableSkillRuntimeSpec& Spec : EffectiveSpecs)
+	{
+		DBAAsyncAssetLoader::AddPreloadPath(Spec.CastNiagaraVFXAsset, Paths);
+		DBAAsyncAssetLoader::AddPreloadPath(Spec.ProjectileNiagaraVFXAsset, Paths);
+		DBAAsyncAssetLoader::AddPreloadPath(Spec.ImpactNiagaraVFXAsset, Paths);
+		DBAAsyncAssetLoader::AddPreloadPath(Spec.CastSFXAsset, Paths);
+		DBAAsyncAssetLoader::AddPreloadPath(Spec.FlySFXAsset, Paths);
+		DBAAsyncAssetLoader::AddPreloadPath(Spec.ImpactSFXAsset, Paths);
+
+		if (Spec.ProjectileClass)
+		{
+			if (ADBASkillProjectileBase* ProjectileCDO = Spec.ProjectileClass->GetDefaultObject<ADBASkillProjectileBase>())
+			{
+				ProjectileCDO->PreloadPresentationAssets();
+			}
+		}
+		if (Spec.BloomHealingClass)
+		{
+			if (ADBABloomHealingSpell* BloomCDO = Spec.BloomHealingClass->GetDefaultObject<ADBABloomHealingSpell>())
+			{
+				BloomCDO->PreloadPresentationAssets();
+			}
+		}
+		if (Spec.ChainLightningClass)
+		{
+			if (ADBAChainLightningSpell* ChainCDO = Spec.ChainLightningClass->GetDefaultObject<ADBAChainLightningSpell>())
+			{
+				ChainCDO->PreloadPresentationAssets();
+			}
+		}
+		if (Spec.HolyShieldClass)
+		{
+			if (ADBAHolyShieldSpell* ShieldCDO = Spec.HolyShieldClass->GetDefaultObject<ADBAHolyShieldSpell>())
+			{
+				ShieldCDO->PreloadPresentationAssets();
+			}
+		}
+	}
+	DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<UDBAPlayableSkillComponent*>(this), Paths);
 }

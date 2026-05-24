@@ -28,6 +28,7 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void OnProjectileHit(AActor* HitActor, FVector HitLocation) override;
+	virtual void PreloadPresentationAssets() override;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

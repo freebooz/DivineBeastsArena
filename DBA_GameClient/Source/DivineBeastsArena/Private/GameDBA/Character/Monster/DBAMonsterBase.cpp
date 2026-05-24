@@ -12,6 +12,7 @@
 #include "GameDBA/Character/Monster/DBAMonsterBase.h"
 #include "GameDBA/Combat/Feedback/DBAFloatingDamageComponent.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "Components/CapsuleComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
@@ -37,6 +38,13 @@ void ADBAMonsterBase::BeginPlay()
 	{
 		CurrentHealth = MaxHealth;
 	}
+
+	static const TSoftObjectPtr<UNiagaraSystem> HitVFX{FSoftObjectPath(TEXT("/Game/DBA/VFX/Common/Impact/NS_Impact_Generic_Hit.NS_Impact_Generic_Hit"))};
+	static const TSoftObjectPtr<UNiagaraSystem> DeathVFX{FSoftObjectPath(TEXT("/Game/ProjectileHitVFX/NS/NS_HIt_Explosion.NS_HIt_Explosion"))};
+	TArray<FSoftObjectPath> Paths;
+	DBAAsyncAssetLoader::AddPreloadPath(HitVFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(DeathVFX, Paths);
+	DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
 }
 
 void ADBAMonsterBase::OnRep_CurrentHealth()
@@ -115,7 +123,7 @@ void ADBAMonsterBase::PlayHitVFX(AActor* Attacker)
 	static const FSoftObjectPath HitVFXPath(TEXT("/Game/DBA/VFX/Common/Impact/NS_Impact_Generic_Hit.NS_Impact_Generic_Hit"));
 	TSoftObjectPtr<UNiagaraSystem> HitVFX(HitVFXPath);
 
-	if (UNiagaraSystem* VFX = HitVFX.LoadSynchronous())
+	if (UNiagaraSystem* VFX = HitVFX.Get())
 	{
 		FRotator Rotation = FRotator::ZeroRotator;
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), VFX, HitLocation, Rotation, FVector(1.0f), true, true);
@@ -135,7 +143,7 @@ void ADBAMonsterBase::PlayDeathVFX()
 	static const FSoftObjectPath DeathVFXPath(TEXT("/Game/ProjectileHitVFX/NS/NS_HIt_Explosion.NS_HIt_Explosion"));
 	TSoftObjectPtr<UNiagaraSystem> DeathVFX(DeathVFXPath);
 
-	if (UNiagaraSystem* VFX = DeathVFX.LoadSynchronous())
+	if (UNiagaraSystem* VFX = DeathVFX.Get())
 	{
 		FRotator Rotation = FRotator::ZeroRotator;
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), VFX, DeathLocation, Rotation, FVector(1.0f), true, true);

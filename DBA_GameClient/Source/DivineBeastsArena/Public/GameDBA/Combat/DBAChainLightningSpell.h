@@ -15,6 +15,7 @@ Readable notes:
 #include "DBAChainLightningSpell.generated.h"
 
 class UNiagaraSystem;
+class USceneComponent;
 class USoundBase;
 
 UCLASS(Blueprintable, BlueprintType)
@@ -30,6 +31,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|Chain Lightning")
 	AActor* FindInitialTarget(AActor* InCaster) const;
+
+	void PreloadPresentationAssets();
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Chain Lightning", meta = (ClampMin = "1"))
@@ -70,6 +73,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Chain Lightning|SFX")
 	TSoftObjectPtr<USoundBase> ImpactSFXAsset;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USceneComponent> SceneRoot;
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayChainLightning(const TArray<FVector_NetQuantize>& Sources, const TArray<FVector_NetQuantize>& Targets, const TArray<float>& SegmentScales);

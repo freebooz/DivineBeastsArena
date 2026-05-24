@@ -13,6 +13,7 @@ Readable notes:
 #include "DBABloomHealingSpell.generated.h"
 
 class UNiagaraSystem;
+class USceneComponent;
 class USoundBase;
 
 UCLASS(Blueprintable, BlueprintType)
@@ -25,6 +26,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|Bloom Healing")
 	void CastBloomHealing(AActor* InCaster, AActor* PreferredTarget = nullptr);
+
+	void PreloadPresentationAssets();
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Bloom Healing", meta = (ClampMin = "0.0"))
@@ -61,7 +64,7 @@ protected:
 	TSoftObjectPtr<USoundBase> BloomSFXAsset;
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastPlayBloomStart(FVector_NetQuantize Location);
+	void MulticastPlayBloomStart(AActor* AnchorActor, FVector_NetQuantize Location);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayBloomRelease(FVector_NetQuantize Location, const TArray<FVector_NetQuantize>& HealTargetLocations);
@@ -70,6 +73,7 @@ private:
 	void ReleaseBloom();
 	void ApplyHealing(AActor* Target) const;
 	void SpawnVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, const FVector& Location, const FRotator& Rotation, const FVector& Scale) const;
+	void SpawnAttachedVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, AActor* AnchorActor, const FVector& RelativeOffset, const FRotator& Rotation, const FVector& Scale) const;
 	void PlaySFX(const TSoftObjectPtr<USoundBase>& Asset, const FVector& Location, float Volume = 1.0f) const;
 	TArray<AActor*> ResolveHealTargets(AActor* Caster, AActor* PreferredTarget) const;
 
@@ -78,6 +82,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<AActor> CachedPreferredTarget;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USceneComponent> SceneRoot;
 
 	FTimerHandle BloomTimerHandle;
 };

@@ -10,6 +10,7 @@
 // 技能VFX/SFX管理器
 
 #include "GameDBA/VFX/DBASkillVFXManager.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "Particles/ParticleSystem.h"
@@ -29,15 +30,20 @@ void UDBASkillVFXManager::PlaySkillVFX(FName SkillId, AActor* Target, AActor* Ow
 	if (VFXPath.IsEmpty())
 		return;
 
-	// 动态加载VFX资源
 	FSoftObjectPath VFXAssetPath(VFXPath);
 	TSoftObjectPtr<UParticleSystem> VFXAsset(VFXAssetPath);
 
-	if (UParticleSystem* VFX = VFXAsset.LoadSynchronous())
+	if (UParticleSystem* VFX = VFXAsset.Get())
 	{
 		FVector Location = Target ? Target->GetActorLocation() : Owner->GetActorLocation();
 		FRotator Rotation = Target ? Target->GetActorRotation() : Owner->GetActorRotation();
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), VFX, Location, Rotation, true);
+	}
+	else
+	{
+		TArray<FSoftObjectPath> Paths;
+		Paths.Add(VFXAssetPath);
+		DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
 	}
 }
 
@@ -56,13 +62,18 @@ void UDBASkillVFXManager::PlaySkillSFX(FName SkillId, AActor* Owner)
 	if (SFXPath.IsEmpty())
 		return;
 
-	// 动态加载SFX资源
 	FSoftObjectPath SFXAssetPath(SFXPath);
 	TSoftObjectPtr<USoundBase> SFXAsset(SFXAssetPath);
 
-	if (USoundBase* SFX = SFXAsset.LoadSynchronous())
+	if (USoundBase* SFX = SFXAsset.Get())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, Owner->GetActorLocation());
+	}
+	else
+	{
+		TArray<FSoftObjectPath> Paths;
+		Paths.Add(SFXAssetPath);
+		DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
 	}
 }
 
@@ -73,36 +84,24 @@ void UDBASkillVFXManager::StopSkillSFX(FName SkillId)
 
 void UDBASkillVFXManager::PreloadAllSkillResources()
 {
-	// 预加载所有技能资源
-	// 遍历所有TMap，调用LoadSynchronous()
+	TArray<FSoftObjectPath> Paths;
 	for (auto& Pair : SkillCastingVFX)
 	{
-		if (Pair.Value.IsValid())
-		{
-			Pair.Value.LoadSynchronous();
-		}
+		DBAAsyncAssetLoader::AddPreloadPath(Pair.Value, Paths);
 	}
 	for (auto& Pair : SkillImpactVFX)
 	{
-		if (Pair.Value.IsValid())
-		{
-			Pair.Value.LoadSynchronous();
-		}
+		DBAAsyncAssetLoader::AddPreloadPath(Pair.Value, Paths);
 	}
 	for (auto& Pair : SkillCastingSFX)
 	{
-		if (Pair.Value.IsValid())
-		{
-			Pair.Value.LoadSynchronous();
-		}
+		DBAAsyncAssetLoader::AddPreloadPath(Pair.Value, Paths);
 	}
 	for (auto& Pair : SkillImpactSFX)
 	{
-		if (Pair.Value.IsValid())
-		{
-			Pair.Value.LoadSynchronous();
-		}
+		DBAAsyncAssetLoader::AddPreloadPath(Pair.Value, Paths);
 	}
+	DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
 }
 
 void UDBASkillVFXManager::UnloadAllSkillResources()
@@ -113,13 +112,26 @@ void UDBASkillVFXManager::UnloadAllSkillResources()
 
 FString UDBASkillVFXManager::GetSkillVFXPath(FName SkillId)
 {
-	// 从配置表或资源映射中获取VFX路径
-	// 这里返回空字符串，子类或蓝图可以实现具体逻辑
+	if (const TSoftObjectPtr<UParticleSystem>* CastingVFX = SkillCastingVFX.Find(SkillId))
+	{
+		return CastingVFX->ToSoftObjectPath().ToString();
+	}
+	if (const TSoftObjectPtr<UParticleSystem>* ImpactVFX = SkillImpactVFX.Find(SkillId))
+	{
+		return ImpactVFX->ToSoftObjectPath().ToString();
+	}
 	return FString();
 }
 
 FString UDBASkillVFXManager::GetSkillSFXPath(FName SkillId)
 {
-	// 从配置表或资源映射中获取SFX路径
+	if (const TSoftObjectPtr<USoundBase>* CastingSFX = SkillCastingSFX.Find(SkillId))
+	{
+		return CastingSFX->ToSoftObjectPath().ToString();
+	}
+	if (const TSoftObjectPtr<USoundBase>* ImpactSFX = SkillImpactSFX.Find(SkillId))
+	{
+		return ImpactSFX->ToSoftObjectPath().ToString();
+	}
 	return FString();
 }

@@ -14,6 +14,7 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -102,10 +103,24 @@ void ADBAFireballProjectile::BeginPlay()
 	}
 	if (ProjectileNiagaraVFX && !ProjectileNiagaraVFXAsset.IsNull())
 	{
-		if (UNiagaraSystem* BurningVFX = ProjectileNiagaraVFXAsset.LoadSynchronous())
+		if (UNiagaraSystem* BurningVFX = ProjectileNiagaraVFXAsset.Get())
 		{
 			ProjectileNiagaraVFX->SetAsset(BurningVFX);
+			ProjectileNiagaraVFX->SetVisibility(true);
 			ProjectileNiagaraVFX->Activate(true);
+		}
+		else
+		{
+			DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(this, ProjectileNiagaraVFXAsset, [this](UNiagaraSystem* BurningVFX)
+			{
+				if (!ProjectileNiagaraVFX || bProjectileHitProcessed)
+				{
+					return;
+				}
+				ProjectileNiagaraVFX->SetAsset(BurningVFX);
+				ProjectileNiagaraVFX->SetVisibility(true);
+				ProjectileNiagaraVFX->Activate(true);
+			});
 		}
 	}
 	// 飞行循环音效由通用投射物基类在 InitializeProjectile 中播放，确保运行时覆盖的技能音效也生效。
@@ -137,10 +152,6 @@ void ADBAFireballProjectile::OnProjectileHit(AActor* HitActor, FVector HitLocati
 	if (FireballLoopAudio)
 	{
 		FireballLoopAudio->Stop();
-	}
-	if (!ImpactSFXAsset.IsNull())
-	{
-		ImpactSFXAsset.LoadSynchronous();
 	}
 	Super::OnProjectileHit(HitActor, HitLocation);
 }

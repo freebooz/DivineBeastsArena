@@ -5,10 +5,12 @@
 # - 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
 
 import os
+from pathlib import Path
 import unreal
 
 
-SOURCE_PNG = "F:\\cc6514df-dbb1-4c79-be5d-d3cbedbf3995.png"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SOURCE_PNG = str(PROJECT_ROOT / "SourceAssets" / "UI" / "LoginCover" / "T_DBA_LoginArenaCover_Background_2048x1152.png")
 DEST_DIR = "/Game/DBA/UI/Lobby/Login/Textures"
 ASSET_NAME = "T_DBA_LoginBackground_Custom"
 
@@ -44,9 +46,9 @@ def main():
         raise RuntimeError(f"Imported texture could not be loaded: {asset_path}")
 
     try:
-        texture.set_editor_property("texture_group", unreal.TextureGroup.TEXTUREGROUP_UI)
+        texture.set_editor_property("lod_group", unreal.TextureGroup.TEXTUREGROUP_UI)
     except Exception as exc:
-        log(f"Could not set texture_group: {exc}")
+        log(f"Could not set lod_group: {exc}")
 
     try:
         texture.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_DEFAULT)

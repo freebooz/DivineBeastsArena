@@ -8,9 +8,12 @@ Readable notes:
 #include "GameDBA/Combat/DBAHolyShieldSpell.h"
 
 #include "AbilitySystemComponent.h"
+#include "Components/SceneComponent.h"
 #include "Engine/World.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Sound/SoundBase.h"
@@ -43,6 +46,9 @@ ADBAHolyShieldSpell::ADBAHolyShieldSpell()
 	bReplicates = true;
 	InitialLifeSpan = 7.0f;
 
+	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
+	RootComponent = SceneRoot;
+
 	CastVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Bless.NS_Hit_Bless")));
 	BarrierVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/DBA/VFX/Common/Status/NS_Status_Shielded.NS_Status_Shielded")));
 	ImpactVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy")));
@@ -66,10 +72,11 @@ void ADBAHolyShieldSpell::CastHolyShield(AActor* InCaster, AActor* PreferredTarg
 	ApplyShield(ShieldTarget);
 
 	const FVector Location = ShieldCenterLocation(ShieldTarget);
-	MulticastPlayShieldStart(Location);
+	PreloadPresentationAssets();
+	MulticastPlayShieldStart(ShieldTarget, Location);
 	if (GetNetMode() == NM_Standalone)
 	{
-		MulticastPlayShieldStart_Implementation(Location);
+		MulticastPlayShieldStart_Implementation(ShieldTarget, Location);
 	}
 
 	GetWorldTimerManager().SetTimer(ShieldTimerHandle, this, &ADBAHolyShieldSpell::ReleaseShield, ShieldDuration, false);
@@ -97,6 +104,12 @@ void ADBAHolyShieldSpell::ApplyShield(AActor* Target)
 
 void ADBAHolyShieldSpell::ReleaseShield()
 {
+	if (ActiveBarrierVFX)
+	{
+		ActiveBarrierVFX->Deactivate();
+		ActiveBarrierVFX = nullptr;
+	}
+
 	AActor* Target = ShieldTarget.Get();
 	if (!Target || AppliedShieldAmount <= 0.0f)
 	{
@@ -123,7 +136,7 @@ void ADBAHolyShieldSpell::ReleaseShield()
 	Destroy();
 }
 
-void ADBAHolyShieldSpell::MulticastPlayShieldStart_Implementation(FVector_NetQuantize Location)
+void ADBAHolyShieldSpell::MulticastPlayShieldStart_Implementation(AActor* TargetActor, FVector_NetQuantize Location)
 {
 	if (GetNetMode() == NM_DedicatedServer)
 	{
@@ -132,7 +145,14 @@ void ADBAHolyShieldSpell::MulticastPlayShieldStart_Implementation(FVector_NetQua
 
 	const FVector Center(Location);
 	SpawnVFX(CastVFXAsset, Center, FRotator::ZeroRotator, FVector(1.0f));
-	SpawnVFX(BarrierVFXAsset, Center - FVector(0.0f, 0.0f, 24.0f), FRotator::ZeroRotator, FVector(1.24f));
+	if (TargetActor)
+	{
+		ActiveBarrierVFX = SpawnAttachedVFX(BarrierVFXAsset, TargetActor, FVector(0.0f, 0.0f, 50.0f), FRotator::ZeroRotator, FVector(1.24f), false);
+	}
+	else
+	{
+		ActiveBarrierVFX = SpawnVFX(BarrierVFXAsset, Center - FVector(0.0f, 0.0f, 24.0f), FRotator::ZeroRotator, FVector(1.24f), false);
+	}
 	SpawnVFX(ImpactVFXAsset, Center, FRotator::ZeroRotator, FVector(0.74f));
 	PlaySFX(CastSFXAsset, Center, 0.82f);
 	PlaySFX(SustainSFXAsset, Center, 0.58f);
@@ -147,29 +167,84 @@ void ADBAHolyShieldSpell::MulticastPlayShieldEnd_Implementation(FVector_NetQuant
 	}
 
 	const FVector Center(Location);
+	if (ActiveBarrierVFX)
+	{
+		ActiveBarrierVFX->Deactivate();
+		ActiveBarrierVFX = nullptr;
+	}
 	SpawnVFX(ImpactVFXAsset, Center, FRotator::ZeroRotator, FVector(0.56f));
 }
 
-void ADBAHolyShieldSpell::SpawnVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, const FVector& Location, const FRotator& Rotation, const FVector& Scale) const
+UNiagaraComponent* ADBAHolyShieldSpell::SpawnVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, const FVector& Location, const FRotator& Rotation, const FVector& Scale, bool bAutoDestroy) const
 {
 	if (Asset.IsNull() || GetNetMode() == NM_DedicatedServer)
 	{
-		return;
+		return nullptr;
 	}
 
-	if (UNiagaraSystem* VFX = Asset.LoadSynchronous())
+	auto SpawnLoaded = [this, Location, Rotation, Scale, bAutoDestroy](UNiagaraSystem* VFX) -> UNiagaraComponent*
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		return UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
 			VFX,
 			Location,
 			Rotation,
 			Scale,
 			true,
-			true,
+			bAutoDestroy,
 			ENCPoolMethod::AutoRelease,
 			true);
+	};
+
+	if (UNiagaraSystem* LoadedVFX = Asset.Get())
+	{
+		return SpawnLoaded(LoadedVFX);
 	}
+
+	TArray<FSoftObjectPath> Paths;
+	DBAAsyncAssetLoader::AddPreloadPath(Asset, Paths);
+	DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBAHolyShieldSpell*>(this), Paths);
+
+	return nullptr;
+}
+
+UNiagaraComponent* ADBAHolyShieldSpell::SpawnAttachedVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, AActor* TargetActor, const FVector& RelativeOffset, const FRotator& Rotation, const FVector& Scale, bool bAutoDestroy) const
+{
+	if (Asset.IsNull() || !TargetActor || !TargetActor->GetRootComponent() || GetNetMode() == NM_DedicatedServer)
+	{
+		return nullptr;
+	}
+
+	auto SpawnLoaded = [TargetActor, RelativeOffset, Rotation, Scale, bAutoDestroy](UNiagaraSystem* VFX) -> UNiagaraComponent*
+	{
+		if (!TargetActor || !TargetActor->GetRootComponent())
+		{
+			return nullptr;
+		}
+		return UNiagaraFunctionLibrary::SpawnSystemAttached(
+			VFX,
+			TargetActor->GetRootComponent(),
+			NAME_None,
+			RelativeOffset,
+			Rotation,
+			Scale,
+			EAttachLocation::KeepRelativeOffset,
+			bAutoDestroy,
+			ENCPoolMethod::AutoRelease,
+			true,
+			true);
+	};
+
+	if (UNiagaraSystem* LoadedVFX = Asset.Get())
+	{
+		return SpawnLoaded(LoadedVFX);
+	}
+
+	TArray<FSoftObjectPath> Paths;
+	DBAAsyncAssetLoader::AddPreloadPath(Asset, Paths);
+	DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBAHolyShieldSpell*>(this), Paths);
+
+	return nullptr;
 }
 
 void ADBAHolyShieldSpell::PlaySFX(const TSoftObjectPtr<USoundBase>& Asset, const FVector& Location, float Volume) const
@@ -179,8 +254,26 @@ void ADBAHolyShieldSpell::PlaySFX(const TSoftObjectPtr<USoundBase>& Asset, const
 		return;
 	}
 
-	if (USoundBase* SFX = Asset.LoadSynchronous())
+	if (USoundBase* SFX = Asset.Get())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, Location, Volume);
 	}
+	else
+	{
+		TArray<FSoftObjectPath> Paths;
+		DBAAsyncAssetLoader::AddPreloadPath(Asset, Paths);
+		DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBAHolyShieldSpell*>(this), Paths);
+	}
+}
+
+void ADBAHolyShieldSpell::PreloadPresentationAssets()
+{
+	TArray<FSoftObjectPath> Paths;
+	DBAAsyncAssetLoader::AddPreloadPath(CastVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(BarrierVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(ImpactVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(CastSFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(SustainSFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(ImpactSFXAsset, Paths);
+	DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
 }

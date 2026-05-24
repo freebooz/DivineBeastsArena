@@ -25,6 +25,18 @@ public class DedicatedServerOrchestratorTests
         await using var db = CreateDbContext();
         var service = CreateService(db);
         var sessionId = Guid.NewGuid();
+        db.GameSessions.Add(new GameSession
+        {
+            Id = sessionId,
+            SourceType = "ROOM",
+            Mode = "classic",
+            MapId = "arena_01",
+            Region = "cn",
+            Status = "CREATED",
+            MaxPlayers = 2,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        await db.SaveChangesAsync();
         var command = new AllocateDedicatedServerCommand(sessionId, "classic", "arena_01", "cn", "test-build");
 
         var first = await service.AllocateAsync(command);
@@ -37,6 +49,11 @@ public class DedicatedServerOrchestratorTests
         Assert.Null(second.RuntimeToken);
         Assert.Equal(1, await db.GameServerInstances.CountAsync(x => x.SessionId == sessionId));
         Assert.Equal(1, await db.PortAllocations.CountAsync(x => x.Status == "ALLOCATED"));
+        var session = await db.GameSessions.SingleAsync(x => x.Id == sessionId);
+        Assert.Equal(first.ServerId, session.ServerId);
+        Assert.Equal(first.PublicIp, session.ServerIp);
+        Assert.Equal(first.Port, session.ServerPort);
+        Assert.Equal("ALLOCATING_SERVER", session.Status);
     }
 
     [Fact]

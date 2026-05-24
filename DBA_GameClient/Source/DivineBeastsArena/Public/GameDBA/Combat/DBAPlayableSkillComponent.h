@@ -52,6 +52,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Playable Skill")
 	FDBAPlayableSkillCatalogSummary GetSkillCatalogSummary() const;
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|Playable Skill")
+	void PreloadSkillPresentationAssets() const;
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Playable Skill")
 	bool bResolveSkillIdsFromEquippedSkillGroup = true;

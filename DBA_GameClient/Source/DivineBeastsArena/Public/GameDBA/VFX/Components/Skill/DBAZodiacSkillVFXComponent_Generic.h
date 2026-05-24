@@ -104,6 +104,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|VFX")
 	const FDBAVFXDataRow& GetVFXData() const;
 
+	/** 预加载当前技能VFX/SFX/动画资源，施法阶段只读取已加载资产 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|VFX")
+	void PreloadCachedVFXDataResources();
+
 	// ==================== 技能特效接口 ====================
 
 	/** 播放施法特效 */

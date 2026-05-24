@@ -94,8 +94,7 @@ class DIVINEBEASTSARENA_API UDBAFixedSkillGroupLibrary : public UBlueprintFuncti
 
 public:
 	/**
-	 * 通过 FixedSkillGroupId 查询对应的 AbilitySet（同步版本）
-	 * 优先从已缓存的资产中加载
+	 * 通过 FixedSkillGroupId 查询已预加载/已缓存的 AbilitySet；未加载时排队异步预加载并返回运行时兜底
 	 * @param FixedSkillGroupId 技能组 ID
 	 * @return 技能组数据资产，如果未找到返回 nullptr
 	 */

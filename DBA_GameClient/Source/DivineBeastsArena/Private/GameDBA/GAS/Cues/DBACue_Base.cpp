@@ -9,6 +9,7 @@
 
 #include "GameDBA/GAS/Cues/DBACue_Base.h"
 #include "GameDBA/Data/DBASkillDataRow.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "Engine/DataTable.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/PackageName.h"
@@ -28,13 +29,14 @@ namespace
         return Target ? Target->GetActorLocation() : FVector(Parameters.Location);
     }
 
-    UDataTable* LoadSkillDataTableIfAvailable()
+    UDataTable* LoadSkillDataTableIfAvailable(UObject* CallbackOwner)
     {
         static const TCHAR* CandidatePaths[] = {
             TEXT("/Game/DBA/Data/Skills/SkillDataTable.SkillDataTable"),
             TEXT("/Game/Data/Skills/SkillDataTable.SkillDataTable")
         };
 
+        TArray<FSoftObjectPath> PathsToPreload;
         for (const TCHAR* CandidatePath : CandidatePaths)
         {
             const FSoftObjectPath SoftPath(CandidatePath);
@@ -44,12 +46,15 @@ namespace
                 continue;
             }
 
-            if (UDataTable* SkillTable = Cast<UDataTable>(SoftPath.TryLoad()))
+            if (UDataTable* SkillTable = Cast<UDataTable>(SoftPath.ResolveObject()))
             {
                 return SkillTable;
             }
+
+            PathsToPreload.AddUnique(SoftPath);
         }
 
+        DBAAsyncAssetLoader::RequestAsyncPreload(CallbackOwner, PathsToPreload);
         return nullptr;
     }
 }
@@ -63,28 +68,40 @@ bool ADBACue_Base::OnExecuteGameplayCue(AActor* Target, const FGameplayCueParame
     FDBASkillDataRow* SkillData = nullptr;
     if (!SkillId.IsNone())
     {
-        UDataTable* SkillTable = LoadSkillDataTableIfAvailable();
+        UDataTable* SkillTable = LoadSkillDataTableIfAvailable(this);
         if (SkillTable)
         {
             SkillData = SkillTable->FindRow<FDBASkillDataRow>(SkillId, TEXT("OnExecute"), false);
         }
     }
 
-    if (SkillData && SkillData->VFXAsset.IsValid())
+    if (SkillData && !SkillData->VFXAsset.IsNull())
     {
-        if (UParticleSystem* VFX = SkillData->VFXAsset.LoadSynchronous())
+        if (UParticleSystem* VFX = SkillData->VFXAsset.Get())
         {
             FVector Location = ResolveCueLocation(Target, Parameters, bPreferCueLocation);
             FRotator Rotation = Target ? Target->GetActorRotation() : FRotator::ZeroRotator;
             UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, true);
         }
+        else
+        {
+            TArray<FSoftObjectPath> Paths;
+            DBAAsyncAssetLoader::AddPreloadPath(SkillData->VFXAsset, Paths);
+            DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
+        }
     }
 
-    if (SkillData && SkillData->SFXAsset.IsValid())
+    if (SkillData && !SkillData->SFXAsset.IsNull())
     {
-        if (USoundBase* SFX = Cast<USoundBase>(SkillData->SFXAsset.LoadSynchronous()))
+        if (USoundBase* SFX = SkillData->SFXAsset.Get())
         {
             UGameplayStatics::PlaySoundAtLocation(Target, SFX, ResolveCueLocation(Target, Parameters, bPreferCueLocation));
+        }
+        else
+        {
+            TArray<FSoftObjectPath> Paths;
+            DBAAsyncAssetLoader::AddPreloadPath(SkillData->SFXAsset, Paths);
+            DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
         }
     }
 
@@ -112,18 +129,30 @@ void ADBACue_Base::LoadSkillData()
 
 void ADBACue_Base::PlayVFX(AActor* Target, const FGameplayCueParameters& Parameters, float Scale)
 {
-    if (UParticleSystem* VFX = DefaultVFX.LoadSynchronous())
+    if (UParticleSystem* VFX = DefaultVFX.Get())
     {
         const FVector Location = ResolveCueLocation(Target, Parameters, bPreferCueLocation);
         const FRotator Rotation = Target ? Target->GetActorRotation() : FRotator::ZeroRotator;
         UGameplayStatics::SpawnEmitterAtLocation(Target, VFX, Location, Rotation, FVector(Scale), true);
     }
+    else
+    {
+        TArray<FSoftObjectPath> Paths;
+        DBAAsyncAssetLoader::AddPreloadPath(DefaultVFX, Paths);
+        DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
+    }
 }
 
 void ADBACue_Base::PlaySFX(AActor* Target, const FGameplayCueParameters& Parameters)
 {
-    if (USoundBase* SFX = DefaultSFX.LoadSynchronous())
+    if (USoundBase* SFX = DefaultSFX.Get())
     {
         UGameplayStatics::PlaySoundAtLocation(Target, SFX, ResolveCueLocation(Target, Parameters, bPreferCueLocation));
+    }
+    else
+    {
+        TArray<FSoftObjectPath> Paths;
+        DBAAsyncAssetLoader::AddPreloadPath(DefaultSFX, Paths);
+        DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
     }
 }

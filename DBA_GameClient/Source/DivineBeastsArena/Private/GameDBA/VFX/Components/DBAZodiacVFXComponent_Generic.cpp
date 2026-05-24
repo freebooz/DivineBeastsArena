@@ -12,6 +12,8 @@
 #include "GameDBA/VFX/Components/DBAZodiacVFXComponent_Generic.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/Core/DBAConstants.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
+#include "Animation/AnimInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -22,14 +24,42 @@ UDBAZodiacVFXComponent_Generic::UDBAZodiacVFXComponent_Generic()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
+void UDBAZodiacVFXComponent_Generic::BeginPlay()
+{
+	Super::BeginPlay();
+	PreloadPresentationAssets();
+}
+
 void UDBAZodiacVFXComponent_Generic::LoadDefaultAssets()
 {
 	UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacVFXComponent_Generic] 加载默认资源: ZodiacType=%d"), (uint8)ZodiacType);
 }
 
+void UDBAZodiacVFXComponent_Generic::PreloadPresentationAssets()
+{
+	TArray<FSoftObjectPath> Paths;
+	DBAAsyncAssetLoader::AddPreloadPath(AttackVFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(HitVFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(MoveVFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(DeathVFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(RespawnVFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(AttackSFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(HitSFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(MoveSFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(DeathSFX, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(AttackMontage, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(HitMontage, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(DeathMontage, Paths);
+	for (const TPair<FName, TSoftObjectPtr<UAnimMontage>>& Pair : SkillMontages)
+	{
+		DBAAsyncAssetLoader::AddPreloadPath(Pair.Value, Paths);
+	}
+	DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
+}
+
 void UDBAZodiacVFXComponent_Generic::PlayAttackVFX(AActor* Target)
 {
-	if (UParticleSystem* VFX = AttackVFX.LoadSynchronous())
+	if (UParticleSystem* VFX = AttackVFX.Get())
 	{
 		FVector Location = Target ? Target->GetActorLocation() : GetOwner()->GetActorLocation();
 		FRotator Rotation = GetOwner()->GetActorRotation();
@@ -39,7 +69,7 @@ void UDBAZodiacVFXComponent_Generic::PlayAttackVFX(AActor* Target)
 
 void UDBAZodiacVFXComponent_Generic::PlayHitVFX(AActor* Attacker)
 {
-	if (UParticleSystem* VFX = HitVFX.LoadSynchronous())
+	if (UParticleSystem* VFX = HitVFX.Get())
 	{
 		FVector Location = GetOwner()->GetActorLocation();
 		FRotator Rotation = FRotator::ZeroRotator;
@@ -49,7 +79,7 @@ void UDBAZodiacVFXComponent_Generic::PlayHitVFX(AActor* Attacker)
 
 void UDBAZodiacVFXComponent_Generic::PlayMoveVFX(const FVector& Direction)
 {
-	if (UParticleSystem* VFX = MoveVFX.LoadSynchronous())
+	if (UParticleSystem* VFX = MoveVFX.Get())
 	{
 		FVector Location = GetOwner()->GetActorLocation();
 		FRotator Rotation = Direction.Rotation();
@@ -59,7 +89,7 @@ void UDBAZodiacVFXComponent_Generic::PlayMoveVFX(const FVector& Direction)
 
 void UDBAZodiacVFXComponent_Generic::PlayDeathVFX()
 {
-	if (UParticleSystem* VFX = DeathVFX.LoadSynchronous())
+	if (UParticleSystem* VFX = DeathVFX.Get())
 	{
 		FVector Location = GetOwner()->GetActorLocation();
 		FRotator Rotation = FRotator::ZeroRotator;
@@ -69,7 +99,7 @@ void UDBAZodiacVFXComponent_Generic::PlayDeathVFX()
 
 void UDBAZodiacVFXComponent_Generic::PlayRespawnVFX()
 {
-	if (UParticleSystem* VFX = RespawnVFX.LoadSynchronous())
+	if (UParticleSystem* VFX = RespawnVFX.Get())
 	{
 		FVector Location = GetOwner()->GetActorLocation();
 		FRotator Rotation = FRotator::ZeroRotator;
@@ -79,7 +109,7 @@ void UDBAZodiacVFXComponent_Generic::PlayRespawnVFX()
 
 void UDBAZodiacVFXComponent_Generic::PlayAttackSFX()
 {
-	if (USoundBase* SFX = AttackSFX.LoadSynchronous())
+	if (USoundBase* SFX = AttackSFX.Get())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
 	}
@@ -87,7 +117,7 @@ void UDBAZodiacVFXComponent_Generic::PlayAttackSFX()
 
 void UDBAZodiacVFXComponent_Generic::PlayHitSFX()
 {
-	if (USoundBase* SFX = HitSFX.LoadSynchronous())
+	if (USoundBase* SFX = HitSFX.Get())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
 	}
@@ -95,7 +125,7 @@ void UDBAZodiacVFXComponent_Generic::PlayHitSFX()
 
 void UDBAZodiacVFXComponent_Generic::PlayMoveSFX()
 {
-	if (USoundBase* SFX = MoveSFX.LoadSynchronous())
+	if (USoundBase* SFX = MoveSFX.Get())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
 	}
@@ -103,7 +133,7 @@ void UDBAZodiacVFXComponent_Generic::PlayMoveSFX()
 
 void UDBAZodiacVFXComponent_Generic::PlayDeathSFX()
 {
-	if (USoundBase* SFX = DeathSFX.LoadSynchronous())
+	if (USoundBase* SFX = DeathSFX.Get())
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, GetOwner()->GetActorLocation());
 	}
@@ -116,22 +146,28 @@ void UDBAZodiacVFXComponent_Generic::PlaySkillSFX(FName SkillId)
 
 void UDBAZodiacVFXComponent_Generic::PlayAttackAnimation()
 {
-	if (UAnimMontage* Montage = AttackMontage.LoadSynchronous())
+	if (UAnimMontage* Montage = AttackMontage.Get())
 	{
 		if (USkeletalMeshComponent* Mesh = GetOwner()->FindComponentByClass<USkeletalMeshComponent>())
 		{
-			Mesh->GetAnimInstance()->Montage_Play(Montage);
+			if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
+			{
+				AnimInstance->Montage_Play(Montage);
+			}
 		}
 	}
 }
 
 void UDBAZodiacVFXComponent_Generic::PlayHitAnimation()
 {
-	if (UAnimMontage* Montage = HitMontage.LoadSynchronous())
+	if (UAnimMontage* Montage = HitMontage.Get())
 	{
 		if (USkeletalMeshComponent* Mesh = GetOwner()->FindComponentByClass<USkeletalMeshComponent>())
 		{
-			Mesh->GetAnimInstance()->Montage_Play(Montage);
+			if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
+			{
+				AnimInstance->Montage_Play(Montage);
+			}
 		}
 	}
 }
@@ -148,11 +184,14 @@ void UDBAZodiacVFXComponent_Generic::PlayMoveAnimation(float Speed)
 
 void UDBAZodiacVFXComponent_Generic::PlayDeathAnimation()
 {
-	if (UAnimMontage* Montage = DeathMontage.LoadSynchronous())
+	if (UAnimMontage* Montage = DeathMontage.Get())
 	{
 		if (USkeletalMeshComponent* Mesh = GetOwner()->FindComponentByClass<USkeletalMeshComponent>())
 		{
-			Mesh->GetAnimInstance()->Montage_Play(Montage);
+			if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
+			{
+				AnimInstance->Montage_Play(Montage);
+			}
 		}
 	}
 }
@@ -161,11 +200,14 @@ void UDBAZodiacVFXComponent_Generic::PlaySkillAnimation(FName SkillId)
 {
 	if (TSoftObjectPtr<UAnimMontage>* MontagePtr = SkillMontages.Find(SkillId))
 	{
-		if (UAnimMontage* Montage = MontagePtr->LoadSynchronous())
+		if (UAnimMontage* Montage = MontagePtr->Get())
 		{
 			if (USkeletalMeshComponent* Mesh = GetOwner()->FindComponentByClass<USkeletalMeshComponent>())
 			{
-				Mesh->GetAnimInstance()->Montage_Play(Montage);
+				if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
+				{
+					AnimInstance->Montage_Play(Montage);
+				}
 			}
 		}
 	}
