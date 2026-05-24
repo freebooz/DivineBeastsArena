@@ -84,6 +84,39 @@ protected:
 	void HandleDebugLoginClicked();
 
 	UFUNCTION()
+	void HandleRememberToggleClicked();
+
+	UFUNCTION()
+	void HandleAgreementToggleClicked();
+
+	UFUNCTION()
+	void HandlePasswordVisibilityClicked();
+
+	UFUNCTION()
+	void HandleServerSelectClicked();
+
+	UFUNCTION()
+	void HandleForgotPasswordClicked();
+
+	UFUNCTION()
+	void HandleRegisterAccountClicked();
+
+	UFUNCTION()
+	void HandleAnnouncementClicked();
+
+	UFUNCTION()
+	void HandleSupportClicked();
+
+	UFUNCTION()
+	void HandleRepairClicked();
+
+	UFUNCTION()
+	void HandleUserAgreementClicked();
+
+	UFUNCTION()
+	void HandlePrivacyPolicyClicked();
+
+	UFUNCTION()
 	void HandleFlowStateChanged(EDBALoginFlowState NewState);
 
 	UFUNCTION()
@@ -117,6 +150,8 @@ protected:
 	void ApplyButtonTextureStyle(UButton* Button) const;
 	void ApplyGuestButtonStyle(UButton* Button) const;
 	void UpdateLoadingStateByFlow(EDBALoginFlowState NewState);
+	bool CanSubmitLoginAction();
+	void UpdateReferenceToggleVisuals();
 
 protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
@@ -138,6 +173,39 @@ protected:
 	TObjectPtr<UButton> DebugLoginButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UButton> RememberToggleButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UButton> AgreementToggleButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UButton> PasswordVisibilityButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UButton> ServerSelectButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UButton> ForgotPasswordButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UButton> RegisterAccountButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UButton> AnnouncementButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UButton> SupportButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UButton> RepairButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UButton> UserAgreementButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UButton> PrivacyPolicyButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
 	TObjectPtr<UTextBlock> ErrorText;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
@@ -146,11 +214,38 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
 	TObjectPtr<UTextBlock> TitleText;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UTextBlock> RememberCheckText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UTextBlock> AgreementCheckText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UTextBlock> PasswordEyeText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "DBA|Login")
+	TObjectPtr<UTextBlock> ServerNameText;
+
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|Login")
 	FString LastErrorMessage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Visual")
-	bool bUseReferenceNativeLayout = false;
+	bool bUseReferenceNativeLayout = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Login")
+	bool bRememberAccount = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Login")
+	bool bAgreementAccepted = true;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|Login")
+	bool bPasswordVisible = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|Login")
+	int32 SelectedServerIndex = 0;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Login")
+	TArray<FText> AvailableServers;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Audio")
 	TObjectPtr<USoundBase> BackgroundMusicSound;
@@ -169,4 +264,25 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Visual")
 	TObjectPtr<UTexture2D> LoginBackgroundTexture;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Visual")
+	TObjectPtr<UTexture2D> ReferenceInputTexture;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Visual")
+	TObjectPtr<UTexture2D> ReferenceFrameTexture;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Visual")
+	TObjectPtr<UTexture2D> ReferenceGuestButtonTexture;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Visual")
+	TObjectPtr<UTexture2D> ReferenceSideToolTexture;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Visual")
+	TObjectPtr<UTexture2D> ReferenceAgeBadgeTexture;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Visual")
+	TObjectPtr<UTexture2D> ReferenceCheckboxOnTexture;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Visual")
+	TObjectPtr<UTexture2D> ReferenceCheckboxOffTexture;
 };

@@ -388,6 +388,11 @@ namespace
 UDBALoginFlowWidgetBase::UDBALoginFlowWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
+	AvailableServers = {
+		FText::FromString(TEXT("苍穹之森")),
+		FText::FromString(TEXT("星辉荒原")),
+		FText::FromString(TEXT("青木幻林"))
+	};
 }
 
 FDBALoginVisualLayoutSpec UDBALoginFlowWidgetBase::GetReferenceVisualLayoutSpec()
@@ -415,7 +420,11 @@ void UDBALoginFlowWidgetBase::NativeConstruct()
 
 	InitializeVisualAssets();
 	const bool bHasBlueprintLayout = WidgetTree && WidgetTree->RootWidget != nullptr;
-	if (bHasBlueprintLayout)
+	if (bUseReferenceNativeLayout)
+	{
+		BuildReferenceNativeLayout();
+	}
+	else if (bHasBlueprintLayout)
 	{
 		LoginPanel = FindLoginPanelWidget(WidgetTree);
 		EmailInput = Cast<UEditableTextBox>(FindWidgetByNames(WidgetTree, { TEXT("EmailInput") }));
@@ -489,10 +498,6 @@ void UDBALoginFlowWidgetBase::NativeConstruct()
 			}
 		}
 	}
-	else if (bUseReferenceNativeLayout)
-	{
-		BuildReferenceNativeLayout();
-	}
 	else
 	{
 		EnsureNativeFallbackLayout();
@@ -540,6 +545,11 @@ void UDBALoginFlowWidgetBase::NativeDestruct()
 
 void UDBALoginFlowWidgetBase::SubmitLogin()
 {
+	if (!CanSubmitLoginAction())
+	{
+		return;
+	}
+
 	const FString Email = EmailInput ? EmailInput->GetText().ToString().TrimStartAndEnd() : FString();
 	const FString Password = PasswordInput ? PasswordInput->GetText().ToString() : FString();
 
@@ -564,6 +574,11 @@ void UDBALoginFlowWidgetBase::SubmitLogin()
 void UDBALoginFlowWidgetBase::SubmitGuestLogin()
 {
 	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] \u70b9\u51fb\u8bbf\u5ba2\u767b\u5f55"));
+	if (!CanSubmitLoginAction())
+	{
+		return;
+	}
+
 	if (UDBALoginFlowSubsystem* LoginFlow = GetLoginFlow())
 	{
 		ClearError();
@@ -628,6 +643,95 @@ void UDBALoginFlowWidgetBase::HandleDebugLoginClicked()
 {
 	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] \u70b9\u51fb\u8c03\u8bd5\u767b\u5f55\u6309\u94ae"));
 	SubmitDebugLogin(TEXT("dba_dev_01"));
+}
+
+void UDBALoginFlowWidgetBase::HandleRememberToggleClicked()
+{
+	bRememberAccount = !bRememberAccount;
+	UpdateReferenceToggleVisuals();
+	SetStatus(bRememberAccount ? FText::FromString(TEXT("已开启记住账号。")) : FText::FromString(TEXT("已关闭记住账号。")));
+}
+
+void UDBALoginFlowWidgetBase::HandleAgreementToggleClicked()
+{
+	bAgreementAccepted = !bAgreementAccepted;
+	UpdateReferenceToggleVisuals();
+	if (bAgreementAccepted)
+	{
+		ClearError();
+		SetStatus(FText::FromString(TEXT("已同意用户协议与隐私政策。")));
+	}
+	else
+	{
+		SetStatus(FText::FromString(TEXT("请阅读并同意协议后继续。")));
+	}
+}
+
+void UDBALoginFlowWidgetBase::HandlePasswordVisibilityClicked()
+{
+	bPasswordVisible = !bPasswordVisible;
+	if (PasswordInput)
+	{
+		PasswordInput->SetIsPassword(!bPasswordVisible);
+	}
+	UpdateReferenceToggleVisuals();
+}
+
+void UDBALoginFlowWidgetBase::HandleServerSelectClicked()
+{
+	if (AvailableServers.IsEmpty())
+	{
+		return;
+	}
+
+	SelectedServerIndex = (SelectedServerIndex + 1) % AvailableServers.Num();
+	UpdateReferenceToggleVisuals();
+	SetStatus(FText::Format(FText::FromString(TEXT("已选择服务器：{0}")), AvailableServers[SelectedServerIndex]));
+}
+
+void UDBALoginFlowWidgetBase::HandleForgotPasswordClicked()
+{
+	SetStatus(FText::FromString(TEXT("密码找回功能暂未开放。")));
+}
+
+void UDBALoginFlowWidgetBase::HandleRegisterAccountClicked()
+{
+	SetStatus(FText::FromString(TEXT("注册功能暂未开放。")));
+}
+
+void UDBALoginFlowWidgetBase::HandleAnnouncementClicked()
+{
+	SetStatus(FText::FromString(TEXT("公告中心暂未开放。")));
+}
+
+void UDBALoginFlowWidgetBase::HandleSupportClicked()
+{
+	SetStatus(FText::FromString(TEXT("客服系统暂未开放，请稍后再试。")));
+}
+
+void UDBALoginFlowWidgetBase::HandleRepairClicked()
+{
+	if (EmailInput)
+	{
+		EmailInput->SetText(FText::GetEmpty());
+	}
+	if (PasswordInput)
+	{
+		PasswordInput->SetText(FText::GetEmpty());
+		PasswordInput->SetIsPassword(!bPasswordVisible);
+	}
+	ClearError();
+	SetStatus(FText::FromString(TEXT("已完成登录界面修复检查。")));
+}
+
+void UDBALoginFlowWidgetBase::HandleUserAgreementClicked()
+{
+	SetStatus(FText::FromString(TEXT("用户协议内容暂未配置。")));
+}
+
+void UDBALoginFlowWidgetBase::HandlePrivacyPolicyClicked()
+{
+	SetStatus(FText::FromString(TEXT("隐私政策内容暂未配置。")));
 }
 
 void UDBALoginFlowWidgetBase::HandleFlowStateChanged(EDBALoginFlowState NewState)
@@ -731,6 +835,62 @@ void UDBALoginFlowWidgetBase::BindControls()
 	{
 		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] DebugLoginButton \u4e3a\u7a7a\uff0c\u672a\u7ed1\u5b9a\u70b9\u51fb\u4e8b\u4ef6\u3002"));
 	}
+	if (RememberToggleButton)
+	{
+		RememberToggleButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleRememberToggleClicked);
+		RememberToggleButton->OnClicked.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleRememberToggleClicked);
+	}
+	if (AgreementToggleButton)
+	{
+		AgreementToggleButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleAgreementToggleClicked);
+		AgreementToggleButton->OnClicked.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleAgreementToggleClicked);
+	}
+	if (PasswordVisibilityButton)
+	{
+		PasswordVisibilityButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandlePasswordVisibilityClicked);
+		PasswordVisibilityButton->OnClicked.AddDynamic(this, &UDBALoginFlowWidgetBase::HandlePasswordVisibilityClicked);
+	}
+	if (ServerSelectButton)
+	{
+		ServerSelectButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleServerSelectClicked);
+		ServerSelectButton->OnClicked.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleServerSelectClicked);
+	}
+	if (ForgotPasswordButton)
+	{
+		ForgotPasswordButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleForgotPasswordClicked);
+		ForgotPasswordButton->OnClicked.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleForgotPasswordClicked);
+	}
+	if (RegisterAccountButton)
+	{
+		RegisterAccountButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleRegisterAccountClicked);
+		RegisterAccountButton->OnClicked.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleRegisterAccountClicked);
+	}
+	if (AnnouncementButton)
+	{
+		AnnouncementButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleAnnouncementClicked);
+		AnnouncementButton->OnClicked.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleAnnouncementClicked);
+	}
+	if (SupportButton)
+	{
+		SupportButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleSupportClicked);
+		SupportButton->OnClicked.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleSupportClicked);
+	}
+	if (RepairButton)
+	{
+		RepairButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleRepairClicked);
+		RepairButton->OnClicked.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleRepairClicked);
+	}
+	if (UserAgreementButton)
+	{
+		UserAgreementButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleUserAgreementClicked);
+		UserAgreementButton->OnClicked.AddDynamic(this, &UDBALoginFlowWidgetBase::HandleUserAgreementClicked);
+	}
+	if (PrivacyPolicyButton)
+	{
+		PrivacyPolicyButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandlePrivacyPolicyClicked);
+		PrivacyPolicyButton->OnClicked.AddDynamic(this, &UDBALoginFlowWidgetBase::HandlePrivacyPolicyClicked);
+	}
+	UpdateReferenceToggleVisuals();
 }
 void UDBALoginFlowWidgetBase::UnbindControls()
 {
@@ -745,6 +905,50 @@ void UDBALoginFlowWidgetBase::UnbindControls()
 	if (DebugLoginButton)
 	{
 		DebugLoginButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleDebugLoginClicked);
+	}
+	if (RememberToggleButton)
+	{
+		RememberToggleButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleRememberToggleClicked);
+	}
+	if (AgreementToggleButton)
+	{
+		AgreementToggleButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleAgreementToggleClicked);
+	}
+	if (PasswordVisibilityButton)
+	{
+		PasswordVisibilityButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandlePasswordVisibilityClicked);
+	}
+	if (ServerSelectButton)
+	{
+		ServerSelectButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleServerSelectClicked);
+	}
+	if (ForgotPasswordButton)
+	{
+		ForgotPasswordButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleForgotPasswordClicked);
+	}
+	if (RegisterAccountButton)
+	{
+		RegisterAccountButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleRegisterAccountClicked);
+	}
+	if (AnnouncementButton)
+	{
+		AnnouncementButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleAnnouncementClicked);
+	}
+	if (SupportButton)
+	{
+		SupportButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleSupportClicked);
+	}
+	if (RepairButton)
+	{
+		RepairButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleRepairClicked);
+	}
+	if (UserAgreementButton)
+	{
+		UserAgreementButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandleUserAgreementClicked);
+	}
+	if (PrivacyPolicyButton)
+	{
+		PrivacyPolicyButton->OnClicked.RemoveDynamic(this, &UDBALoginFlowWidgetBase::HandlePrivacyPolicyClicked);
 	}
 }
 
@@ -810,12 +1014,49 @@ void UDBALoginFlowWidgetBase::InitializeVisualAssets()
 {
 	if (!LoginPanelTexture)
 	{
-		LoginPanelTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginPanel_StoneGold.T_DBA_LoginPanel_StoneGold"));
+		LoginPanelTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/Reference/T_DBA_LoginRef_Panel.T_DBA_LoginRef_Panel"));
+		if (!LoginPanelTexture)
+		{
+			LoginPanelTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginPanel_StoneGold.T_DBA_LoginPanel_StoneGold"));
+		}
 	}
 
 	if (!LoginButtonTexture)
 	{
-		LoginButtonTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginButton_ParchmentGold.T_DBA_LoginButton_ParchmentGold"));
+		LoginButtonTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/Reference/T_DBA_LoginRef_ButtonPrimary.T_DBA_LoginRef_ButtonPrimary"));
+		if (!LoginButtonTexture)
+		{
+			LoginButtonTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginButton_ParchmentGold.T_DBA_LoginButton_ParchmentGold"));
+		}
+	}
+
+	if (!ReferenceInputTexture)
+	{
+		ReferenceInputTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/Reference/T_DBA_LoginRef_Input.T_DBA_LoginRef_Input"));
+	}
+	if (!ReferenceFrameTexture)
+	{
+		ReferenceFrameTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/Reference/T_DBA_LoginRef_Frame.T_DBA_LoginRef_Frame"));
+	}
+	if (!ReferenceGuestButtonTexture)
+	{
+		ReferenceGuestButtonTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/Reference/T_DBA_LoginRef_ButtonGuest.T_DBA_LoginRef_ButtonGuest"));
+	}
+	if (!ReferenceSideToolTexture)
+	{
+		ReferenceSideToolTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/Reference/T_DBA_LoginRef_SideTool.T_DBA_LoginRef_SideTool"));
+	}
+	if (!ReferenceAgeBadgeTexture)
+	{
+		ReferenceAgeBadgeTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/Reference/T_DBA_LoginRef_AgeBadge.T_DBA_LoginRef_AgeBadge"));
+	}
+	if (!ReferenceCheckboxOnTexture)
+	{
+		ReferenceCheckboxOnTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/Reference/T_DBA_LoginRef_CheckOn.T_DBA_LoginRef_CheckOn"));
+	}
+	if (!ReferenceCheckboxOffTexture)
+	{
+		ReferenceCheckboxOffTexture = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/Reference/T_DBA_LoginRef_CheckOff.T_DBA_LoginRef_CheckOff"));
 	}
 
 	if (UTexture2D* CustomLoginBackground = LoadAssetIfCookedAvailable<UTexture2D>(TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginBackground_Custom.T_DBA_LoginBackground_Custom")))
@@ -836,6 +1077,14 @@ void UDBALoginFlowWidgetBase::BuildReferenceNativeLayout()
 	}
 
 	const FDBALoginVisualLayoutSpec Spec = GetReferenceVisualLayoutSpec();
+	if (AvailableServers.IsEmpty())
+	{
+		AvailableServers = {
+			FText::FromString(TEXT("苍穹之森")),
+			FText::FromString(TEXT("星辉荒原")),
+			FText::FromString(TEXT("青木幻林"))
+		};
+	}
 
 	UCanvasPanel* RootCanvas = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("ReferenceLoginRoot"));
 	WidgetTree->RootWidget = RootCanvas;
@@ -871,40 +1120,76 @@ void UDBALoginFlowWidgetBase::BuildReferenceNativeLayout()
 		FAnchors(0.0f, 0.0f, 1.0f, 1.0f),
 		FMargin(0.0f, 0.0f, 0.0f, 0.0f));
 
-	UVerticalBox* LeftTools = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("ReferenceLeftTools"));
-	AddCanvasChild(RootCanvas, LeftTools, FVector2D(56.0f, 56.0f), FVector2D(104.0f, 330.0f));
-	for (int32 Index = 0; Index < Spec.LeftToolLabels.Num(); ++Index)
+	if (ReferenceFrameTexture)
 	{
-		const FText ButtonLabel = FText::Format(NSLOCTEXT("DBALoginFlowWidget", "LeftToolButtonFormat", "{0}\n{1}"),
-			Index == 0 ? FText::FromString(TEXT("!")) : (Index == 1 ? FText::FromString(TEXT("*")) : FText::FromString(TEXT("?"))),
-			Spec.LeftToolLabels[Index]);
-		UButton* ToolButton = MakeTextButton(WidgetTree, FName(*FString::Printf(TEXT("ReferenceLeftTool_%d"), Index)), ButtonLabel, 24.0f, GoldText);
-		AddVerticalChild(LeftTools, ToolButton, FMargin(0.0f, 0.0f, 0.0f, 24.0f));
+		UImage* FrameImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("ReferenceOuterFrame"));
+		FrameImage->SetBrushFromTexture(ReferenceFrameTexture);
+		FrameImage->SetColorAndOpacity(FLinearColor(1.0f, 1.0f, 1.0f, 0.94f));
+		AddCanvasChildAnchored(RootCanvas, FrameImage, FAnchors(0.0f, 0.0f, 1.0f, 1.0f), FMargin(0.0f));
 	}
 
-	TitleText = MakeText(WidgetTree, TEXT("ReferenceLoginTitle"), Spec.TitleText, 82.0f, FLinearColor(1.0f, 0.78f, 0.34f, 1.0f));
+	TitleText = MakeText(WidgetTree, TEXT("ReferenceLoginTitle"), Spec.TitleText, 92.0f, FLinearColor(1.0f, 0.78f, 0.34f, 1.0f));
 	AddCanvasChildAnchored(
 		RootCanvas,
 		TitleText,
-		FAnchors(0.84f, 0.0f, 0.84f, 0.0f),
-		FMargin(0.0f, 76.0f, 560.0f, 112.0f),
+		FAnchors(0.5f, 0.0f, 0.5f, 0.0f),
+		FMargin(0.0f, 86.0f, 760.0f, 132.0f),
 		FVector2D(0.5f, 0.0f));
 
-	UTextBlock* SubtitleText = MakeText(WidgetTree, TEXT("ReferenceLoginSubtitle"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceSubtitle", "Divine Beasts Arena"), 30.0f, FLinearColor(1.0f, 0.80f, 0.45f, 1.0f));
+	UTextBlock* SubtitleText = MakeText(WidgetTree, TEXT("ReferenceLoginSubtitle"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceSubtitle", "Divine Beasts Arena"), 26.0f, FLinearColor(0.38f, 0.76f, 1.0f, 0.86f));
 	AddCanvasChildAnchored(
 		RootCanvas,
 		SubtitleText,
-		FAnchors(0.84f, 0.0f, 0.84f, 0.0f),
-		FMargin(0.0f, 178.0f, 540.0f, 48.0f),
+		FAnchors(0.5f, 0.0f, 0.5f, 0.0f),
+		FMargin(0.0f, 205.0f, 420.0f, 42.0f),
 		FVector2D(0.5f, 0.0f));
+
+	UVerticalBox* SideTools = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("ReferenceSideTools"));
+	AddCanvasChildAnchored(
+		RootCanvas,
+		SideTools,
+		FAnchors(1.0f, 0.5f, 1.0f, 0.5f),
+		FMargin(-154.0f, -170.0f, 108.0f, 360.0f));
+	for (int32 Index = 0; Index < Spec.LeftToolLabels.Num(); ++Index)
+	{
+		const FText ButtonLabel = FText::Format(NSLOCTEXT("DBALoginFlowWidget", "SideToolButtonFormat", "{0}\n{1}"),
+			Index == 0 ? FText::FromString(TEXT("!")) : (Index == 1 ? FText::FromString(TEXT("☎")) : FText::FromString(TEXT("×"))),
+			Spec.LeftToolLabels[Index]);
+		UButton* ToolButton = MakeTextButton(WidgetTree, FName(*FString::Printf(TEXT("ReferenceSideTool_%d"), Index)), ButtonLabel, 22.0f, GoldText);
+		if (ReferenceSideToolTexture)
+		{
+			FSlateBrush ToolBrush;
+			ToolBrush.SetResourceObject(ReferenceSideToolTexture);
+			ToolBrush.ImageSize = FVector2D(96.0f, 96.0f);
+			ToolBrush.DrawAs = ESlateBrushDrawType::Image;
+			FButtonStyle ToolStyle = ToolButton->GetStyle();
+			ToolStyle.SetNormal(ToolBrush);
+			ToolStyle.SetHovered(ToolBrush);
+			ToolStyle.SetPressed(ToolBrush);
+			ToolButton->SetStyle(ToolStyle);
+		}
+		if (Index == 0)
+		{
+			AnnouncementButton = ToolButton;
+		}
+		else if (Index == 1)
+		{
+			SupportButton = ToolButton;
+		}
+		else
+		{
+			RepairButton = ToolButton;
+		}
+		AddVerticalChild(SideTools, ToolButton, FMargin(0.0f, 0.0f, 0.0f, 22.0f));
+	}
 
 	UBorder* PanelBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("LoginPanel"));
 	LoginPanel = PanelBorder;
 	AddCanvasChildAnchored(
 		RootCanvas,
 		PanelBorder,
-		FAnchors(0.84f, 0.0f, 0.84f, 0.0f),
-		FMargin(0.0f, 306.0f, 600.0f, 448.0f),
+		FAnchors(0.5f, 0.0f, 0.5f, 0.0f),
+		FMargin(0.0f, 310.0f, 768.0f, 576.0f),
 		FVector2D(0.5f, 0.0f));
 	if (LoginPanelTexture)
 	{
@@ -915,81 +1200,165 @@ void UDBALoginFlowWidgetBase::BuildReferenceNativeLayout()
 	{
 		PanelBorder->SetBrushColor(DeepJade);
 	}
-	PanelBorder->SetPadding(FMargin(48.0f, 54.0f, 48.0f, 40.0f));
+	PanelBorder->SetPadding(FMargin(52.0f, 48.0f, 52.0f, 40.0f));
 
-	UVerticalBox* FormBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("ReferenceLoginForm"));
-	PanelBorder->SetContent(FormBox);
+	UCanvasPanel* FormCanvas = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("ReferenceLoginForm"));
+	PanelBorder->SetContent(FormCanvas);
 
-	UButton* ServerButton = MakeTextButton(WidgetTree, TEXT("ReferenceServerButton"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceServer", "鎺ㄨ崘鏈嶅姟鍣?路 闈掓湪骞绘灄        v"), 25.0f, GoldText);
-	AddVerticalChild(FormBox, ServerButton, FMargin(0.0f, 0.0f, 0.0f, 18.0f));
+	UTextBlock* ServerLabel = MakeText(WidgetTree, TEXT("ReferenceServerLabel"), FText::FromString(TEXT("服务器:")), 24.0f, FLinearColor(0.96f, 0.90f, 0.76f, 1.0f), ETextJustify::Right);
+	AddCanvasChild(FormCanvas, ServerLabel, FVector2D(10.0f, 3.0f), FVector2D(118.0f, 48.0f));
+	ServerSelectButton = MakeTextButton(WidgetTree, TEXT("ServerSelectButton"), FText::GetEmpty(), 23.0f, GoldText);
+	ServerNameText = Cast<UTextBlock>(ServerSelectButton->GetContent());
+	AddCanvasChild(FormCanvas, ServerSelectButton, FVector2D(160.0f, 0.0f), FVector2D(322.0f, 56.0f));
+	UTextBlock* ServerQualityText = MakeText(WidgetTree, TEXT("ReferenceServerQuality"), FText::FromString(TEXT("●  流畅")), 21.0f, FLinearColor(0.42f, 1.0f, 0.28f, 1.0f), ETextJustify::Left);
+	AddCanvasChild(FormCanvas, ServerQualityText, FVector2D(506.0f, 12.0f), FVector2D(120.0f, 40.0f));
 
+	UImage* AccountBg = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("ReferenceAccountInputBg"));
+	if (ReferenceInputTexture)
+	{
+		AccountBg->SetBrushFromTexture(ReferenceInputTexture);
+	}
+	AddCanvasChild(FormCanvas, AccountBg, FVector2D(18.0f, 82.0f), FVector2D(628.0f, 64.0f));
+	UTextBlock* AccountLabel = MakeText(WidgetTree, TEXT("ReferenceAccountLabel"), FText::FromString(TEXT("♟  账号")), 23.0f, FLinearColor(0.98f, 0.86f, 0.58f, 1.0f), ETextJustify::Left);
+	AddCanvasChild(FormCanvas, AccountLabel, FVector2D(34.0f, 96.0f), FVector2D(132.0f, 36.0f));
 	EmailInput = WidgetTree->ConstructWidget<UEditableTextBox>(UEditableTextBox::StaticClass(), TEXT("EmailInput"));
 	EmailInput->SetHintText(NSLOCTEXT("DBALoginFlowWidget", "AccountHint", "\u8bf7\u8f93\u5165\u8d26\u53f7"));
 	ApplyEditableBoxStyle(EmailInput);
-	AddVerticalChild(FormBox, EmailInput, FMargin(0.0f, 0.0f, 0.0f, 16.0f));
+	AddCanvasChild(FormCanvas, EmailInput, FVector2D(184.0f, 88.0f), FVector2D(432.0f, 52.0f));
 
+	UImage* PasswordBg = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("ReferencePasswordInputBg"));
+	if (ReferenceInputTexture)
+	{
+		PasswordBg->SetBrushFromTexture(ReferenceInputTexture);
+	}
+	AddCanvasChild(FormCanvas, PasswordBg, FVector2D(18.0f, 164.0f), FVector2D(628.0f, 64.0f));
+	UTextBlock* PasswordLabel = MakeText(WidgetTree, TEXT("ReferencePasswordLabel"), FText::FromString(TEXT("▣  密码")), 23.0f, FLinearColor(0.98f, 0.86f, 0.58f, 1.0f), ETextJustify::Left);
+	AddCanvasChild(FormCanvas, PasswordLabel, FVector2D(34.0f, 178.0f), FVector2D(132.0f, 36.0f));
 	PasswordInput = WidgetTree->ConstructWidget<UEditableTextBox>(UEditableTextBox::StaticClass(), TEXT("PasswordInput"));
 	PasswordInput->SetHintText(NSLOCTEXT("DBALoginFlowWidget", "ReferencePasswordHint", "\u8bf7\u8f93\u5165\u5bc6\u7801"));
 	PasswordInput->SetIsPassword(true);
 	ApplyEditableBoxStyle(PasswordInput);
-	AddVerticalChild(FormBox, PasswordInput, FMargin(0.0f, 0.0f, 0.0f, 12.0f));
+	AddCanvasChild(FormCanvas, PasswordInput, FVector2D(184.0f, 170.0f), FVector2D(350.0f, 52.0f));
+	PasswordVisibilityButton = MakeTextButton(WidgetTree, TEXT("PasswordVisibilityButton"), FText::FromString(TEXT("◉")), 24.0f, FLinearColor(0.96f, 0.79f, 0.45f, 1.0f));
+	PasswordEyeText = Cast<UTextBlock>(PasswordVisibilityButton->GetContent());
+	AddCanvasChild(FormCanvas, PasswordVisibilityButton, FVector2D(548.0f, 174.0f), FVector2D(60.0f, 44.0f));
 
-	UHorizontalBox* OptionRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ReferenceLoginOptions"));
-	AddVerticalChild(FormBox, OptionRow, FMargin(0.0f, 0.0f, 0.0f, 16.0f));
-	UTextBlock* RememberText = MakeText(WidgetTree, TEXT("ReferenceRememberText"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceRemember", "[x] 璁颁綇璐﹀彿"), 22.0f, GoldText, ETextJustify::Left);
-	if (UHorizontalBoxSlot* RememberSlot = OptionRow->AddChildToHorizontalBox(RememberText))
-	{
-		RememberSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-	}
-	UTextBlock* ForgotText = MakeText(WidgetTree, TEXT("ReferenceForgotText"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceForgot", "\u5fd8\u8bb0\u5bc6\u7801\uff1f"), 22.0f, GoldText, ETextJustify::Right);
-	OptionRow->AddChildToHorizontalBox(ForgotText);
+	RememberToggleButton = MakeTextButton(WidgetTree, TEXT("RememberToggleButton"), FText::GetEmpty(), 24.0f, FLinearColor::White);
+	RememberCheckText = Cast<UTextBlock>(RememberToggleButton->GetContent());
+	AddCanvasChild(FormCanvas, RememberToggleButton, FVector2D(20.0f, 246.0f), FVector2D(42.0f, 42.0f));
+	UTextBlock* RememberLabel = MakeText(WidgetTree, TEXT("ReferenceRememberText"), FText::FromString(TEXT("记住我")), 21.0f, GoldText, ETextJustify::Left);
+	AddCanvasChild(FormCanvas, RememberLabel, FVector2D(72.0f, 250.0f), FVector2D(120.0f, 34.0f));
+	ForgotPasswordButton = MakeTextButton(WidgetTree, TEXT("ForgotPasswordButton"), FText::FromString(TEXT("忘记密码")), 21.0f, GoldText);
+	AddCanvasChild(FormCanvas, ForgotPasswordButton, FVector2D(508.0f, 244.0f), FVector2D(128.0f, 42.0f));
 
 	LoginButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("LoginButton"));
 	LoginButton->AddChild(MakeLoginButtonLabel(WidgetTree, Spec.PrimaryButtonText));
-	AddVerticalChild(FormBox, LoginButton, FMargin(0.0f), HAlign_Fill);
+	AddCanvasChild(FormCanvas, LoginButton, FVector2D(96.0f, 296.0f), FVector2D(472.0f, 86.0f));
+
+	GuestLoginButton = MakeTextButton(WidgetTree, TEXT("GuestLoginButton"), FText::FromString(TEXT("游客登录")), 30.0f, FLinearColor(0.88f, 0.92f, 1.0f, 1.0f));
+	AddCanvasChild(FormCanvas, GuestLoginButton, FVector2D(174.0f, 394.0f), FVector2D(316.0f, 66.0f));
+	RegisterAccountButton = MakeTextButton(WidgetTree, TEXT("RegisterAccountButton"), FText::FromString(TEXT("注册账号")), 23.0f, GoldText);
+	AddCanvasChild(FormCanvas, RegisterAccountButton, FVector2D(226.0f, 468.0f), FVector2D(212.0f, 46.0f));
 
 	ErrorText = MakeText(WidgetTree, TEXT("ErrorText"), FText::GetEmpty(), 18.0f, FLinearColor(1.0f, 0.35f, 0.24f, 1.0f));
 	ErrorText->SetVisibility(ESlateVisibility::Collapsed);
-	AddVerticalChild(FormBox, ErrorText, FMargin(0.0f, 10.0f, 0.0f, 0.0f));
-
+	AddCanvasChild(FormCanvas, ErrorText, FVector2D(34.0f, 512.0f), FVector2D(596.0f, 28.0f));
 	StatusText = MakeText(WidgetTree, TEXT("StatusText"), FText::GetEmpty(), 18.0f, FLinearColor(0.76f, 0.96f, 0.74f, 1.0f));
 	StatusText->SetVisibility(ESlateVisibility::Collapsed);
-	AddVerticalChild(FormBox, StatusText, FMargin(0.0f, 6.0f, 0.0f, 0.0f));
+	AddCanvasChild(FormCanvas, StatusText, FVector2D(34.0f, 536.0f), FVector2D(596.0f, 28.0f));
 
-	UTextBlock* OtherLoginText = MakeText(WidgetTree, TEXT("ReferenceOtherLoginText"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceOtherLogin", "鍏朵粬鐧诲綍鏂瑰紡"), 22.0f, GoldText);
+	UHorizontalBox* AgreementRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ReferenceAgreementRow"));
 	AddCanvasChildAnchored(
 		RootCanvas,
-		OtherLoginText,
-		FAnchors(0.84f, 0.0f, 0.84f, 0.0f),
-		FMargin(0.0f, 775.0f, 380.0f, 38.0f),
+		AgreementRow,
+		FAnchors(0.5f, 1.0f, 0.5f, 1.0f),
+		FMargin(0.0f, -102.0f, 650.0f, 48.0f),
 		FVector2D(0.5f, 0.0f));
-
-	UHorizontalBox* OtherLoginRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ReferenceOtherLoginRow"));
-	AddCanvasChildAnchored(
-		RootCanvas,
-		OtherLoginRow,
-		FAnchors(0.84f, 0.0f, 0.84f, 0.0f),
-		FMargin(0.0f, 822.0f, 512.0f, 96.0f),
-		FVector2D(0.5f, 0.0f));
-	GuestLoginButton = MakeTextButton(WidgetTree, TEXT("GuestLoginButton"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceGuestLogin", "\u795e\u517d\u901a\u884c\u8bc1"), 20.0f, GoldText);
-	if (UHorizontalBoxSlot* GuestSlot = OtherLoginRow->AddChildToHorizontalBox(GuestLoginButton))
+	AgreementToggleButton = MakeTextButton(WidgetTree, TEXT("AgreementToggleButton"), FText::GetEmpty(), 24.0f, FLinearColor::White);
+	AgreementCheckText = Cast<UTextBlock>(AgreementToggleButton->GetContent());
+	if (UHorizontalBoxSlot* AgreementCheckSlot = AgreementRow->AddChildToHorizontalBox(AgreementToggleButton))
 	{
-		GuestSlot->SetPadding(FMargin(0.0f, 0.0f, 34.0f, 0.0f));
+		AgreementCheckSlot->SetPadding(FMargin(0.0f, 0.0f, 8.0f, 0.0f));
 	}
-		OtherLoginRow->AddChildToHorizontalBox(MakeTextButton(WidgetTree, TEXT("ReferenceSpiritLogin"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceSpiritLogin", "??"), 20.0f, GoldText));
-	OtherLoginRow->AddChildToHorizontalBox(MakeTextButton(WidgetTree, TEXT("ReferenceJadeLogin"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceJadeLogin", "????"), 20.0f, GoldText));
-	DebugLoginButton = MakeTextButton(WidgetTree, TEXT("DebugLoginButton"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceDebugLogin", "????"), 20.0f, GoldText);
-	if (UHorizontalBoxSlot* DebugSlot = OtherLoginRow->AddChildToHorizontalBox(DebugLoginButton))
+	AgreementRow->AddChildToHorizontalBox(MakeText(WidgetTree, TEXT("ReferenceAgreementLead"), FText::FromString(TEXT("我已详细阅读并同意")), 22.0f, FLinearColor(0.92f, 0.88f, 0.74f, 1.0f), ETextJustify::Left));
+	UserAgreementButton = MakeTextButton(WidgetTree, TEXT("UserAgreementButton"), FText::FromString(TEXT("《用户协议》")), 22.0f, FLinearColor(0.42f, 0.84f, 1.0f, 1.0f));
+	AgreementRow->AddChildToHorizontalBox(UserAgreementButton);
+	AgreementRow->AddChildToHorizontalBox(MakeText(WidgetTree, TEXT("ReferenceAgreementAnd"), FText::FromString(TEXT("和")), 22.0f, FLinearColor(0.92f, 0.88f, 0.74f, 1.0f), ETextJustify::Left));
+	PrivacyPolicyButton = MakeTextButton(WidgetTree, TEXT("PrivacyPolicyButton"), FText::FromString(TEXT("《隐私政策》")), 22.0f, FLinearColor(0.42f, 0.84f, 1.0f, 1.0f));
+	AgreementRow->AddChildToHorizontalBox(PrivacyPolicyButton);
+
+	if (ReferenceAgeBadgeTexture)
 	{
-		DebugSlot->SetPadding(FMargin(34.0f, 0.0f, 0.0f, 0.0f));
+		UImage* AgeBadge = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("ReferenceAgeBadge"));
+		AgeBadge->SetBrushFromTexture(ReferenceAgeBadgeTexture);
+		AddCanvasChildAnchored(
+			RootCanvas,
+			AgeBadge,
+			FAnchors(0.0f, 1.0f, 0.0f, 1.0f),
+			FMargin(54.0f, -190.0f, 104.0f, 130.0f));
 	}
 
-	UButton* SwitchAccountButton = MakeTextButton(WidgetTree, TEXT("ReferenceSwitchAccount"), NSLOCTEXT("DBALoginFlowWidget", "ReferenceSwitchAccount", "鍒囨崲璐﹀彿"), 20.0f, GoldText);
-	AddCanvasChildAnchored(
-		RootCanvas,
-		SwitchAccountButton,
-		FAnchors(1.0f, 1.0f, 1.0f, 1.0f),
-		FMargin(-220.0f, -72.0f, 190.0f, 48.0f));
+	DebugLoginButton = nullptr;
+	UpdateReferenceToggleVisuals();
+}
+
+bool UDBALoginFlowWidgetBase::CanSubmitLoginAction()
+{
+	if (!bAgreementAccepted)
+	{
+		ShowError(TEXT("请先阅读并同意《用户协议》和《隐私政策》。"));
+		return false;
+	}
+	return true;
+}
+
+void UDBALoginFlowWidgetBase::UpdateReferenceToggleVisuals()
+{
+	const auto ApplyCheckboxStyle = [this](UButton* Button, const bool bChecked)
+	{
+		if (!Button)
+		{
+			return;
+		}
+
+		if (UTexture2D* Texture = bChecked ? ReferenceCheckboxOnTexture : ReferenceCheckboxOffTexture)
+		{
+			FSlateBrush Brush;
+			Brush.SetResourceObject(Texture);
+			Brush.ImageSize = FVector2D(40.0f, 40.0f);
+			Brush.DrawAs = ESlateBrushDrawType::Image;
+
+			FButtonStyle Style = Button->GetStyle();
+			Style.SetNormal(Brush);
+			Style.SetHovered(Brush);
+			Style.SetPressed(Brush);
+			Button->SetStyle(Style);
+		}
+	};
+
+	if (RememberCheckText)
+	{
+		RememberCheckText->SetText(bRememberAccount ? FText::FromString(TEXT("✓")) : FText::GetEmpty());
+	}
+	if (AgreementCheckText)
+	{
+		AgreementCheckText->SetText(bAgreementAccepted ? FText::FromString(TEXT("✓")) : FText::GetEmpty());
+	}
+	ApplyCheckboxStyle(RememberToggleButton, bRememberAccount);
+	ApplyCheckboxStyle(AgreementToggleButton, bAgreementAccepted);
+
+	if (PasswordInput)
+	{
+		PasswordInput->SetIsPassword(!bPasswordVisible);
+	}
+	if (PasswordEyeText)
+	{
+		PasswordEyeText->SetText(bPasswordVisible ? FText::FromString(TEXT("◌")) : FText::FromString(TEXT("◉")));
+	}
+	if (ServerNameText && AvailableServers.IsValidIndex(SelectedServerIndex))
+	{
+		ServerNameText->SetText(FText::Format(FText::FromString(TEXT("{0}        ▼")), AvailableServers[SelectedServerIndex]));
+	}
 }
 
 void UDBALoginFlowWidgetBase::ApplyLoginBackgroundTexture()
@@ -1153,8 +1522,18 @@ void UDBALoginFlowWidgetBase::ApplyGuestButtonStyle(UButton* Button) const
 	}
 
 	FSlateBrush NormalBrush;
-	NormalBrush.DrawAs = ESlateBrushDrawType::RoundedBox;
-	NormalBrush.TintColor = FSlateColor(FLinearColor(0.05f, 0.28f, 0.62f, 0.96f));
+	if (ReferenceGuestButtonTexture)
+	{
+		NormalBrush.SetResourceObject(ReferenceGuestButtonTexture);
+		NormalBrush.ImageSize = FVector2D(360.0f, 72.0f);
+		NormalBrush.DrawAs = ESlateBrushDrawType::Image;
+		NormalBrush.TintColor = FSlateColor(FLinearColor::White);
+	}
+	else
+	{
+		NormalBrush.DrawAs = ESlateBrushDrawType::RoundedBox;
+		NormalBrush.TintColor = FSlateColor(FLinearColor(0.05f, 0.28f, 0.62f, 0.96f));
+	}
 
 	FSlateBrush HoveredBrush = NormalBrush;
 	HoveredBrush.TintColor = FSlateColor(FLinearColor(0.08f, 0.40f, 0.84f, 1.0f));
