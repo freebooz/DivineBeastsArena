@@ -94,6 +94,37 @@ public class DedicatedServerOrchestratorTests
     }
 
     [Fact]
+    public async Task AllocateAsync_WhenExecutableMissingAndMockDisabled_MarksFailedAndFreesPort()
+    {
+        await using var db = CreateDbContext();
+        var service = CreateService(db, new DedicatedServerOrchestrationOptions
+        {
+            ServerMode = "LocalProcess",
+            PublicIp = "127.0.0.1",
+            PortRangeStart = 7777,
+            PortRangeEnd = 7778,
+            UeServerExecutablePath = string.Empty,
+            BackendUrl = "http://localhost:8080",
+            AllowMockServerAllocation = false,
+            StartupTimeoutSeconds = 30,
+            HeartbeatTimeoutSeconds = 30,
+            IdleTimeoutSeconds = 60,
+            MaxServersPerMachine = 4
+        });
+
+        var allocated = await service.AllocateAsync(new AllocateDedicatedServerCommand(Guid.NewGuid(), "classic", "arena_01", "cn", null));
+
+        Assert.NotNull(allocated);
+        Assert.Equal("FAILED", allocated!.Status);
+        var stored = await db.GameServerInstances.SingleAsync(x => x.Id == allocated.ServerId);
+        var port = await db.PortAllocations.SingleAsync(x => x.Port == allocated.Port);
+        Assert.Equal("FAILED", stored.Status);
+        Assert.Equal("FREE", port.Status);
+        Assert.Null(port.ServerId);
+        Assert.Contains(await db.GameServerEvents.ToListAsync(), x => x.ServerId == allocated.ServerId && x.EventType == "LAUNCH_FAILED_CONFIG");
+    }
+
+    [Fact]
     public async Task RunMaintenanceAsync_WhenHeartbeatTimedOut_StopsServerAndFreesPort()
     {
         await using var db = CreateDbContext();

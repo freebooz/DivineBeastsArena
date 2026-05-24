@@ -65,6 +65,78 @@ public class RequiredOptionsValidatorTests
     }
 
     [Fact]
+    public void ValidateDedicatedServerOrchestration_WhenProductionAllowsMock_ThrowsReadableConfigKey()
+    {
+        var options = new DedicatedServerOrchestrationOptions
+        {
+            ServerMode = "LocalProcess",
+            PublicIp = "127.0.0.1",
+            PortRangeStart = 7777,
+            PortRangeEnd = 8000,
+            UeServerExecutablePath = "D:\\GameServer\\DivineBeastsArenaServer.exe",
+            AllowMockServerAllocation = true,
+            MaxServersPerMachine = 1,
+            StartupTimeoutSeconds = 120,
+            HeartbeatTimeoutSeconds = 60,
+            IdleTimeoutSeconds = 300
+        };
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            RequiredOptionsValidator.ValidateDedicatedServerOrchestration(options, isProduction: true));
+
+        Assert.Contains("GameServerManager:AllowMockServerAllocation", ex.Message);
+    }
+
+    [Fact]
+    public void ValidateDedicatedServerOrchestration_WhenProductionLocalProcessWithoutExecutable_ThrowsReadableConfigKey()
+    {
+        var options = new DedicatedServerOrchestrationOptions
+        {
+            ServerMode = "LocalProcess",
+            PublicIp = "127.0.0.1",
+            PortRangeStart = 7777,
+            PortRangeEnd = 8000,
+            UeServerExecutablePath = "",
+            AllowMockServerAllocation = false,
+            MaxServersPerMachine = 1,
+            StartupTimeoutSeconds = 120,
+            HeartbeatTimeoutSeconds = 60,
+            IdleTimeoutSeconds = 300
+        };
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            RequiredOptionsValidator.ValidateDedicatedServerOrchestration(options, isProduction: true));
+
+        Assert.Contains("GameServerManager:UeServerExecutablePath", ex.Message);
+    }
+
+    [Fact]
+    public void ValidateDedicatedServerOrchestration_WhenProductionLocalProcessComplete_DoesNotThrow()
+    {
+        var executablePath = Path.GetTempFileName();
+        try
+        {
+            RequiredOptionsValidator.ValidateDedicatedServerOrchestration(new DedicatedServerOrchestrationOptions
+            {
+                ServerMode = "LocalProcess",
+                PublicIp = "127.0.0.1",
+                PortRangeStart = 7777,
+                PortRangeEnd = 8000,
+                UeServerExecutablePath = executablePath,
+                AllowMockServerAllocation = false,
+                MaxServersPerMachine = 4,
+                StartupTimeoutSeconds = 120,
+                HeartbeatTimeoutSeconds = 60,
+                IdleTimeoutSeconds = 300
+            }, isProduction: true);
+        }
+        finally
+        {
+            File.Delete(executablePath);
+        }
+    }
+
+    [Fact]
     public void ValidateAll_WhenOptionsAreComplete_DoesNotThrow()
     {
         RequiredOptionsValidator.ValidateDatabase(new DatabaseOptions

@@ -45,7 +45,7 @@ public static class PlatformEndpoints
                 new[]
                 {
                     "DBA_GameClient uses /api/auth and /api/account.",
-                    "DBA_GameAdmin uses /api/admin, /internal/servers, and /api/platform.",
+                    "DBA_GameAdmin uses /api/admin, /api/live-ops, and /api/platform.",
                     "Ops probes /health and /metrics."
                 },
                 new[]
@@ -86,10 +86,10 @@ public static class PlatformEndpoints
                 "DBA_GameAdmin",
                 "Admin",
                 "DBA_GameAdmin",
-                "Blazor Server + MudBlazor",
+                "Angular 18+ + TypeScript + Nginx",
                 "Provide an internal operations console for dashboard data, players, matches, game servers, configs, inventory, audit logs, and platform health.",
-                "Partially implemented",
-                "dotnet run --project DBA_GameAdmin/GameAdmin.csproj",
+                "Implemented",
+                "cd DBA_GameAdmin && npm start",
                 "Calls Game.Api /health/live",
                 new[]
                 {
@@ -99,14 +99,14 @@ public static class PlatformEndpoints
                 },
                 new[]
                 {
-                    "Consumes Game.Api through ApiBaseUrl.",
-                    "Should authenticate admins through backend admin auth before write operations."
+                    "Consumes Game.Api through same-origin /api routes or the configured reverse proxy.",
+                    "Authenticates admins through backend admin auth before write operations."
                 },
                 new[]
                 {
-                    "Replace remaining placeholder tables with API-backed data.",
-                    "Add admin token storage and authorization headers.",
-                    "Add safe confirmation flows for GM write actions."
+                    "Add Playwright coverage for login, list pages, and high-risk write confirmations.",
+                    "Add richer filtering and search for players, support tickets, matches, and servers.",
+                    "Move remaining live-ops workflows behind explicit role-aware Angular guards."
                 }),
             new(
                 "game-website",
@@ -251,4 +251,3 @@ public static class PlatformEndpoints
             applications)));
     }
 }
-

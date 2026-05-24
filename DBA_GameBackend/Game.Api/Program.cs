@@ -47,7 +47,7 @@ try
 
     builder.Host.UseSerilog();
 
-    builder.Services.AddGameInfrastructure(builder.Configuration);
+    builder.Services.AddGameInfrastructure(builder.Configuration, builder.Environment);
     builder.Services.AddGameOpenTelemetry(builder.Configuration);
     builder.Services.AddGameSwagger(builder.Configuration);
     builder.Services.AddGameHealthChecks(builder.Configuration);

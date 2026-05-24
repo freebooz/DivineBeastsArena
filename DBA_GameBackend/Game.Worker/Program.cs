@@ -29,7 +29,7 @@ builder.Services.AddSerilog();
 var databaseOptions = builder.Configuration.GetSection(DatabaseOptions.Section).Get<DatabaseOptions>() ?? new();
 var dedicatedServerOptions = builder.Configuration.GetSection(DedicatedServerOrchestrationOptions.Section).Get<DedicatedServerOrchestrationOptions>() ?? new();
 RequiredOptionsValidator.ValidateDatabase(databaseOptions);
-RequiredOptionsValidator.ValidateDedicatedServerOrchestration(dedicatedServerOptions);
+RequiredOptionsValidator.ValidateDedicatedServerOrchestration(dedicatedServerOptions, builder.Environment.IsProduction());
 
 builder.Services.AddDbContext<GameDbContext>(options => options.UseNpgsql(databaseOptions.ConnectionString));
 builder.Services.Configure<MaintenanceWorkerOptions>(builder.Configuration.GetSection(MaintenanceWorkerOptions.Section));

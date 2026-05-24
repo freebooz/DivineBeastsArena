@@ -47,7 +47,7 @@
 
 已具备：
 
-- Blazor 后台页面、登录状态管理、Admin API Client。
+- Angular 18+ 后台页面、登录状态管理、Admin API Client。
 - 玩家、对局、服务器、配置、背包、审计日志页面。
 - 高危操作 reason 和二次确认。
 - Token 过期跳转和后端 RBAC。

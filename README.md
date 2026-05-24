@@ -8,7 +8,7 @@ DivineBeastsArena 是一个 UE 5 多人在线游戏的单仓库解决方案。�
 
 - `DBA_GameBackend/GameBackend.sln`：.NET 后端解决方案，包含 API、Worker、共享契约、基础设施和测试。
 - `DBA_GameClient/DivineBeastsArena.uproject`：UE 客户端与 Dedicated Server 工程，不在 `.sln` 中。
-- `DBA_GameAdmin/GameAdmin.csproj`：Blazor GM 后台，独立构建。
+- `DBA_GameAdmin`：Angular 18+ GM 后台，独立构建。
 - `DBA_GameWebsite/package.json`：Next.js 官网，独立构建。
 - `DBA_GameLauncher/package.json`：Tauri 启动器，独立构建。
 
@@ -18,7 +18,7 @@ DivineBeastsArena 是一个 UE 5 多人在线游戏的单仓库解决方案。�
 | --- | --- | --- | --- |
 | `DBA_GameClient` | Unreal Engine 5 / C++ / GAS | 客户端、Dedicated Server、玩法、UI、后端 UE 插件 | UE Editor / UnrealBuildTool |
 | `DBA_GameBackend` | .NET 10 / ASP.NET Core / EF Core / PostgreSQL / Redis | 登录、玩家、配置、房间、匹配、会话、结算、背包、Runtime API、Worker | `dotnet build/test GameBackend.sln` |
-| `DBA_GameAdmin` | .NET 10 / Blazor / MudBlazor | GM 管理后台、玩家/对局/服务器/配置/审计管理 | `dotnet build` |
+| `DBA_GameAdmin` | Angular 18+ / TypeScript / Nginx | GM 管理后台、玩家/对局/服务器/配置/审计管理 | `npm run build` |
 | `DBA_GameWebsite` | Next.js / React / TypeScript / Tailwind | 官网、下载、公告、FAQ、反馈 | `npm run build` |
 | `DBA_GameLauncher` | Tauri / React / TypeScript / Rust | 游戏启动器、版本检查、下载、校验、修复、启动 | `npm run build` + `cargo check` |
 | `.github/workflows` | GitHub Actions | CI、镜像构建、部署、回滚、安全检查 | `solution-ci` |
@@ -42,7 +42,8 @@ dotnet build GameBackend.sln
 dotnet test GameBackend.sln --no-build
 
 cd ..\DBA_GameAdmin
-dotnet build
+npm ci
+npm run build
 
 cd ..\DBA_GameWebsite
 npm install

@@ -30,9 +30,9 @@
 ## DBA_GameAdmin
 
 结构判断：
-- Blazor 页面位于 `Components/Pages`，页面职责清晰。
-- `Services/ApiClient.*.cs` 已按领域拆分，符合后台应用维护方式。
-- DTO 已从核心 `ApiClient.cs` 抽到 `ApiClient.Contracts.cs`，核心 HTTP 通信逻辑更干净。
+- Angular 页面位于 `src/app/pages`，路由位于 `src/app/app.routes.ts`，页面职责清晰。
+- `src/app/core/admin-api.service.ts` 统一封装 Game.Api 调用和 API envelope 解包。
+- `src/app/core/auth.service.ts` 管理 Admin JWT 本地会话，HTTP 拦截器统一附加授权头。
 
 本轮修复：
 - 修复 `ApiClient.cs` 文件头坏编码注释。
@@ -88,7 +88,7 @@
 ## 验证入口
 
 - Backend：`dotnet test DBA_GameBackend/GameBackend.sln`
-- Admin：`dotnet build DBA_GameAdmin/GameAdmin.csproj`
+- Admin：`cd DBA_GameAdmin && npm ci && npm run build`
 - Website：`npm run build` in `DBA_GameWebsite`
 - Launcher：`npm run build` and `cargo check --manifest-path src-tauri/Cargo.toml` in `DBA_GameLauncher`
 - UE Client：使用 `E:\UnrealEngine-5.7.1-release\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe`

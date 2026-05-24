@@ -20,6 +20,7 @@ public sealed class DedicatedServerOrchestrationOptions
     public string UeServerImage { get; init; } = "divine-beasts-arena-server:latest";
     public string UeServerExecutablePath { get; init; } = string.Empty;
     public string BackendUrl { get; init; } = "http://localhost:8080";
+    public bool AllowMockServerAllocation { get; init; } = true;
     public int StartupTimeoutSeconds { get; init; } = 120;
     public int HeartbeatTimeoutSeconds { get; init; } = 60;
     public int IdleTimeoutSeconds { get; init; } = 300;

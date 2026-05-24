@@ -18,6 +18,13 @@ services:
       SeedData__Enabled: ${SEED_DATA_ENABLED:-false}
       Swagger__Enabled: ${SWAGGER_ENABLED:-false}
       Database__RunMigrationsAndExit: ${DATABASE_RUN_MIGRATIONS_AND_EXIT:-false}
+      GameServerManager__ServerMode: ${GAME_SERVER_MODE:-LocalProcess}
+      GameServerManager__PublicIp: ${GAME_SERVER_PUBLIC_IP:-127.0.0.1}
+      GameServerManager__PortRangeStart: ${GAME_SERVER_PORT_START:-7777}
+      GameServerManager__PortRangeEnd: ${GAME_SERVER_PORT_END:-7877}
+      GameServerManager__UeServerExecutablePath: ${UE_SERVER_EXECUTABLE_PATH:-/opt/game-server/GameServer.sh}
+      GameServerManager__BackendUrl: ${BACKEND_INTERNAL_URL:-http://game-api:8080}
+      GameServerManager__AllowMockServerAllocation: ${GAME_SERVER_ALLOW_MOCK_ALLOCATION:-false}
     expose:
       - "8080"
     ports:
@@ -54,6 +61,7 @@ services:
       GameServerManager__PortRangeEnd: ${GAME_SERVER_PORT_END:-7877}
       GameServerManager__UeServerExecutablePath: ${UE_SERVER_EXECUTABLE_PATH:-/opt/game-server/GameServer.sh}
       GameServerManager__BackendUrl: ${BACKEND_INTERNAL_URL:-http://game-api:8080}
+      GameServerManager__AllowMockServerAllocation: ${GAME_SERVER_ALLOW_MOCK_ALLOCATION:-false}
     depends_on:
       game-api:
         condition: service_healthy

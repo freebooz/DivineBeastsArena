@@ -37,7 +37,10 @@ namespace Game.Api.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddGameInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddGameInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment? environment = null)
     {
         var databaseOptions = configuration.GetSection(DatabaseOptions.Section).Get<DatabaseOptions>() ?? new();
         var redisOptions = configuration.GetSection(RedisOptions.Section).Get<RedisOptions>() ?? new();
@@ -48,7 +51,9 @@ public static class ServiceCollectionExtensions
         RequiredOptionsValidator.ValidateRedis(redisOptions);
         RequiredOptionsValidator.ValidateJwt(jwtOptions);
         RequiredOptionsValidator.ValidateInternalApiKey(configuration["InternalApi:Key"]);
-        RequiredOptionsValidator.ValidateDedicatedServerOrchestration(dedicatedServerOptions);
+        RequiredOptionsValidator.ValidateDedicatedServerOrchestration(
+            dedicatedServerOptions,
+            environment?.IsProduction() ?? false);
 
         services.AddDbContext<GameDbContext>(options =>
             options

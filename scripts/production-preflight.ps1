@@ -10,7 +10,10 @@ param(
     [switch]$SkipDocker,
     [switch]$SkipCargo,
     [switch]$SkipUnreal,
-    [string]$UnrealRoot = $env:UNREAL_ENGINE_ROOT
+    [switch]$SkipUnrealAutomation,
+    [string]$UnrealRoot = $env:UNREAL_ENGINE_ROOT,
+    [string]$UnrealProjectPath = "",
+    [string]$UnrealAutomationTests = "DivineBeastsArena.Combat.PlayableSkillCatalog"
 )
 
 $ErrorActionPreference = "Stop"
@@ -56,6 +59,35 @@ function Invoke-CommandInDir {
     }
 }
 
+function Resolve-UnrealTool {
+    param(
+        [Parameter(Mandatory = $true)][string]$ToolName,
+        [Parameter(Mandatory = $true)][string[]]$RelativePaths
+    )
+
+    $tool = Get-Command $ToolName -ErrorAction SilentlyContinue
+    if ($tool) {
+        return $tool.Source
+    }
+
+    $candidateRoots = @()
+    if (-not [string]::IsNullOrWhiteSpace($UnrealRoot)) {
+        $candidateRoots += $UnrealRoot
+    }
+    $candidateRoots += "E:\UnrealEngine-5.7.1-release"
+
+    foreach ($root in ($candidateRoots | Select-Object -Unique)) {
+        foreach ($relativePath in $RelativePaths) {
+            $candidate = Join-Path $root $relativePath
+            if (Test-Path $candidate) {
+                return $candidate
+            }
+        }
+    }
+
+    throw "$ToolName not found. Set UNREAL_ENGINE_ROOT or pass -UnrealRoot."
+}
+
 Set-Location $repoRoot
 
 Invoke-Check "git workspace" {
@@ -67,11 +99,12 @@ Invoke-Check "git workspace" {
 }
 
 Invoke-Check "backend dotnet test" {
-    Invoke-CommandInDir (Join-Path $repoRoot "DBA_GameBackend") "dotnet" @("test", "GameBackend.sln")
+    Invoke-CommandInDir (Join-Path $repoRoot "DBA_GameBackend") "dotnet" @("test", "GameBackend.sln", "--configuration", "Release")
 }
 
-Invoke-Check "admin dotnet build" {
-    Invoke-CommandInDir (Join-Path $repoRoot "DBA_GameAdmin") "dotnet" @("build")
+Invoke-Check "admin angular build" {
+    Invoke-CommandInDir (Join-Path $repoRoot "DBA_GameAdmin") "npm" @("ci")
+    Invoke-CommandInDir (Join-Path $repoRoot "DBA_GameAdmin") "npm" @("run", "build")
 }
 
 if (-not $SkipNode) {
@@ -110,34 +143,73 @@ if (-not $SkipDocker) {
 
 if (-not $SkipUnreal) {
     Invoke-Check "UnrealBuildTool availability" {
-        $ubt = Get-Command UnrealBuildTool -ErrorAction SilentlyContinue
-        if ($ubt) {
-            Write-Host "UnrealBuildTool: $($ubt.Source)"
-            return
+        $ubt = Resolve-UnrealTool "UnrealBuildTool" @(
+            "Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe",
+            "Engine\Binaries\DotNET\AutomationTool\UnrealBuildTool.exe"
+        )
+        Write-Host "UnrealBuildTool: $ubt"
+    }
+
+    Invoke-Check "Unreal editor target build" {
+        $projectPath = if ([string]::IsNullOrWhiteSpace($UnrealProjectPath)) {
+            Resolve-Path (Join-Path $repoRoot "DBA_GameClient\DivineBeastsArena.uproject")
         }
-
-        $candidateRoots = @()
-        if (-not [string]::IsNullOrWhiteSpace($UnrealRoot)) {
-            $candidateRoots += $UnrealRoot
+        else {
+            Resolve-Path $UnrealProjectPath
         }
-        $candidateRoots += "E:\UnrealEngine-5.7.1-release"
+        $ubt = Resolve-UnrealTool "UnrealBuildTool" @(
+            "Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe",
+            "Engine\Binaries\DotNET\AutomationTool\UnrealBuildTool.exe"
+        )
+        Invoke-CommandInDir (Join-Path $repoRoot "DBA_GameClient") $ubt @(
+            "DivineBeastsArenaEditor",
+            "Win64",
+            "Development",
+            "-Project=$projectPath",
+            "-WaitMutex",
+            "-NoHotReloadFromIDE"
+        )
+    }
 
-        foreach ($root in $candidateRoots) {
-            $candidatePaths = @(
-                (Join-Path $root "Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe"),
-                (Join-Path $root "Engine\Binaries\DotNET\AutomationTool\UnrealBuildTool.exe")
-            )
+    Invoke-Check "Unreal dedicated server target build" {
+        $projectPath = if ([string]::IsNullOrWhiteSpace($UnrealProjectPath)) {
+            Resolve-Path (Join-Path $repoRoot "DBA_GameClient\DivineBeastsArena.uproject")
+        }
+        else {
+            Resolve-Path $UnrealProjectPath
+        }
+        $ubt = Resolve-UnrealTool "UnrealBuildTool" @(
+            "Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe",
+            "Engine\Binaries\DotNET\AutomationTool\UnrealBuildTool.exe"
+        )
+        Invoke-CommandInDir (Join-Path $repoRoot "DBA_GameClient") $ubt @(
+            "DivineBeastsArenaServer",
+            "Win64",
+            "Development",
+            "-Project=$projectPath",
+            "-WaitMutex",
+            "-NoHotReloadFromIDE"
+        )
+    }
 
-            foreach ($candidate in $candidatePaths) {
-                if (Test-Path $candidate) {
-                    Write-Host "UnrealBuildTool: $candidate"
-                    return
-                }
+    if (-not $SkipUnrealAutomation) {
+        Invoke-Check "Unreal automation tests" {
+            $projectPath = if ([string]::IsNullOrWhiteSpace($UnrealProjectPath)) {
+                Resolve-Path (Join-Path $repoRoot "DBA_GameClient\DivineBeastsArena.uproject")
             }
-        }
-
-        if (-not $ubt) {
-            throw "UnrealBuildTool not found. This machine cannot verify UE C++ compilation."
+            else {
+                Resolve-Path $UnrealProjectPath
+            }
+            $editorCmd = Resolve-UnrealTool "UnrealEditor-Cmd" @("Engine\Binaries\Win64\UnrealEditor-Cmd.exe")
+            Invoke-CommandInDir (Join-Path $repoRoot "DBA_GameClient") $editorCmd @(
+                "$projectPath",
+                "-ExecCmds=Automation RunTests $UnrealAutomationTests; Quit",
+                "-unattended",
+                "-nop4",
+                "-nosplash",
+                "-NullRHI",
+                "-log"
+            )
         }
     }
 }

@@ -52,7 +52,9 @@ public static class RequiredOptionsValidator
         }
     }
 
-    public static void ValidateDedicatedServerOrchestration(DedicatedServerOrchestrationOptions options)
+    public static void ValidateDedicatedServerOrchestration(
+        DedicatedServerOrchestrationOptions options,
+        bool isProduction = false)
     {
         if (string.IsNullOrWhiteSpace(options.ServerMode))
         {
@@ -91,6 +93,24 @@ public static class RequiredOptionsValidator
             string.IsNullOrWhiteSpace(options.UeServerImage))
         {
             throw new InvalidOperationException("GameServerManager:UeServerImage must be configured in Docker mode.");
+        }
+
+        if (isProduction && options.AllowMockServerAllocation)
+        {
+            throw new InvalidOperationException("GameServerManager:AllowMockServerAllocation must be false in Production.");
+        }
+
+        if (isProduction && options.ServerMode.Equals("LocalProcess", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(options.UeServerExecutablePath))
+            {
+                throw new InvalidOperationException("GameServerManager:UeServerExecutablePath must be configured in Production LocalProcess mode.");
+            }
+
+            if (!File.Exists(options.UeServerExecutablePath))
+            {
+                throw new InvalidOperationException("GameServerManager:UeServerExecutablePath must point to an existing file in Production LocalProcess mode.");
+            }
         }
     }
 }

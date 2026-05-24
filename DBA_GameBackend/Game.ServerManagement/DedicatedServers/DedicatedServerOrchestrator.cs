@@ -270,8 +270,22 @@ public sealed class DedicatedServerOrchestrator : IDedicatedServerOrchestrator
 
         if (string.IsNullOrWhiteSpace(_options.UeServerExecutablePath) || !File.Exists(_options.UeServerExecutablePath))
         {
-            _logger.LogInformation("UE dedicated server executable is not configured, allocation {ServerId} stays in mock STARTING mode", server.Id);
-            _db.GameServerEvents.Add(NewEvent(server.Id, "LAUNCH_SKIPPED_MOCK", "{}"));
+            if (_options.AllowMockServerAllocation)
+            {
+                _logger.LogInformation("UE dedicated server executable is not configured, allocation {ServerId} stays in mock STARTING mode", server.Id);
+                _db.GameServerEvents.Add(NewEvent(server.Id, "LAUNCH_SKIPPED_MOCK", "{}"));
+                await _db.SaveChangesAsync(cancellationToken);
+                return;
+            }
+
+            const string reason = "UE dedicated server executable is not configured.";
+            _logger.LogError("UE dedicated server launch failed for allocation {ServerId}: {Reason}", server.Id, reason);
+            server.Status = "FAILED";
+            server.CrashReason = reason;
+            server.EndedAt ??= DateTimeOffset.UtcNow;
+            server.UpdatedAt = DateTimeOffset.UtcNow;
+            _db.GameServerEvents.Add(NewEvent(server.Id, "LAUNCH_FAILED_CONFIG", $$"""{"reason":"{{reason}}"}"""));
+            await ReleasePortAsync(server, cancellationToken);
             await _db.SaveChangesAsync(cancellationToken);
             return;
         }
