@@ -91,6 +91,7 @@ protected:
 	void HandleSkill03Pressed();
 	void HandleSkill04Pressed();
 	void HandleUltimatePressed();
+	void HandleSkill06Pressed();
 	void HandleSelectTargetPressed();
 
 	void ApplyMovementInput(float ForwardValue, float RightValue);

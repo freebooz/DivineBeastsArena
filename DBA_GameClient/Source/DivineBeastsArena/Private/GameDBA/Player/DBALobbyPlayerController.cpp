@@ -197,7 +197,9 @@ void ADBALobbyPlayerController::SetupInputComponent()
 	InputComponent->BindAction(TEXT("Skill03"), IE_Pressed, this, &ADBALobbyPlayerController::HandleSkill03Pressed);
 	InputComponent->BindAction(TEXT("Skill04"), IE_Pressed, this, &ADBALobbyPlayerController::HandleSkill04Pressed);
 	InputComponent->BindAction(TEXT("Ultimate"), IE_Pressed, this, &ADBALobbyPlayerController::HandleUltimatePressed);
+	InputComponent->BindAction(TEXT("Skill06"), IE_Pressed, this, &ADBALobbyPlayerController::HandleSkill06Pressed);
 	InputComponent->BindKey(EKeys::F, IE_Pressed, this, &ADBALobbyPlayerController::HandleSkill01Pressed);
+	InputComponent->BindKey(EKeys::Six, IE_Pressed, this, &ADBALobbyPlayerController::HandleSkill06Pressed);
 	InputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &ADBALobbyPlayerController::HandleLeftMousePressed);
 	InputComponent->BindKey(EKeys::LeftMouseButton, IE_Released, this, &ADBALobbyPlayerController::HandleLeftMouseReleased);
 	InputComponent->BindKey(EKeys::RightMouseButton, IE_Pressed, this, &ADBALobbyPlayerController::HandleRightMousePressed);
@@ -425,6 +427,11 @@ void ADBALobbyPlayerController::HandleSkill04Pressed()
 void ADBALobbyPlayerController::HandleUltimatePressed()
 {
 	CastEquippedSkillSlot(5);
+}
+
+void ADBALobbyPlayerController::HandleSkill06Pressed()
+{
+	CastEquippedSkillSlot(6);
 }
 
 void ADBALobbyPlayerController::CastEquippedSkillSlot(int32 SkillSlot)

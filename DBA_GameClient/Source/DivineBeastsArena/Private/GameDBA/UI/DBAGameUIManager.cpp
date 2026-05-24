@@ -545,6 +545,12 @@ void UDBAGameUIManager::OnSubsystemInitialize()
 		return;
 	}
 
+	if (FParse::Param(FCommandLine::Get(), TEXT("DBASkipFrontendFlow")))
+	{
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 命令行要求跳过前端登录/启动视频流程。"));
+		return;
+	}
+
 	if (UDBALoginFlowSubsystem* LoginFlow = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBALoginFlowSubsystem>() : nullptr)
 	{
 		LoginFlow->OnFlowStateChanged.RemoveDynamic(this, &UDBAGameUIManager::HandleLoginFlowStateChanged);
@@ -576,6 +582,14 @@ void UDBAGameUIManager::TryShowSplashVideo()
 {
 	UWorld* World = GetWorld();
 	if (IsServerLikeRuntime(World))
+	{
+		if (World)
+		{
+			World->GetTimerManager().ClearTimer(SplashVideoTimerHandle);
+		}
+		return;
+	}
+	if (FParse::Param(FCommandLine::Get(), TEXT("DBASkipFrontendFlow")))
 	{
 		if (World)
 		{

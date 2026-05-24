@@ -12,6 +12,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $BaseUrl = $BaseUrl.TrimEnd("/")
+$TimeoutSec = 15
 
 function Invoke-Smoke {
     param(
@@ -25,26 +26,26 @@ function Invoke-Smoke {
 }
 
 Invoke-Smoke "live health" {
-    Invoke-RestMethod -Method Get -Uri "$BaseUrl/health/live" | Out-Null
+    Invoke-RestMethod -Method Get -Uri "$BaseUrl/health/live" -TimeoutSec $TimeoutSec | Out-Null
 }
 
 Invoke-Smoke "ready health" {
-    Invoke-RestMethod -Method Get -Uri "$BaseUrl/health/ready" | Out-Null
+    Invoke-RestMethod -Method Get -Uri "$BaseUrl/health/ready" -TimeoutSec $TimeoutSec | Out-Null
 }
 
 Invoke-Smoke "version api" {
-    Invoke-RestMethod -Method Get -Uri "$BaseUrl/api/version" | Out-Null
+    Invoke-RestMethod -Method Get -Uri "$BaseUrl/api/version" -TimeoutSec $TimeoutSec | Out-Null
 }
 
 Invoke-Smoke "launcher manifest" {
-    $manifest = Invoke-RestMethod -Method Get -Uri "$BaseUrl/launcher/manifest.json?channel=stable&platform=Windows"
+    $manifest = Invoke-RestMethod -Method Get -Uri "$BaseUrl/launcher/manifest.json?channel=stable&platform=Windows" -TimeoutSec $TimeoutSec
     if (-not $manifest.version) {
         throw "launcher manifest is missing version"
     }
 }
 
 Invoke-Smoke "metrics endpoint" {
-    $metrics = Invoke-WebRequest -Method Get -Uri "$BaseUrl/metrics"
+    $metrics = Invoke-WebRequest -Method Get -Uri "$BaseUrl/metrics" -TimeoutSec $TimeoutSec -UseBasicParsing
     if ($metrics.StatusCode -lt 200 -or $metrics.StatusCode -ge 300) {
         throw "metrics endpoint returned status $($metrics.StatusCode)"
     }
@@ -57,7 +58,7 @@ if ($GuestLogin) {
             deviceName = "production-smoke"
             platform = "Windows"
         } | ConvertTo-Json
-        $result = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/auth/guest-login" -ContentType "application/json" -Body $body
+        $result = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/auth/guest-login" -ContentType "application/json" -Body $body -TimeoutSec $TimeoutSec
         if (-not $result.success) {
             throw "guest login returned success=false"
         }

@@ -25,6 +25,9 @@ class UAnimationAsset;
 class UCameraComponent;
 class USpringArmComponent;
 class ADBARpcHandler;
+class ADBABloomHealingSpell;
+class ADBAChainLightningSpell;
+class ADBAHolyShieldSpell;
 class ADBASkillProjectileBase;
 
 /**
@@ -189,14 +192,29 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell")
 	TSubclassOf<ADBASkillProjectileBase> LobbyFireballProjectileClass;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell")
+	TSubclassOf<ADBASkillProjectileBase> LobbyFrostShardProjectileClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell")
+	TSubclassOf<ADBABloomHealingSpell> LobbyBloomHealingSpellClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell")
+	TSubclassOf<ADBAChainLightningSpell> LobbyChainLightningSpellClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell")
+	TSubclassOf<ADBAHolyShieldSpell> LobbyHolyShieldSpellClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell")
+	TSubclassOf<ADBASkillProjectileBase> LobbyShadowBoltProjectileClass;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell", meta = (ClampMin = "100.0"))
-	float LobbyFireballSpeed = 1450.0f;
+	float LobbyFireballSpeed = 1580.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell", meta = (ClampMin = "1.0"))
-	float LobbyFireballRadius = 42.0f;
+	float LobbyFireballRadius = 46.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell", meta = (ClampMin = "0.0"))
-	float LobbyFireballDamage = 35.0f;
+	float LobbyFireballDamage = 42.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell", meta = (ClampMin = "0.1"))
 	float LobbyFireballCooldown = 3.0f;

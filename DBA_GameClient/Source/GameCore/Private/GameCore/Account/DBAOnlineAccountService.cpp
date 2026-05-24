@@ -39,8 +39,30 @@ FString NormalizeBaseUrl(FString BaseUrl)
 
 FString BuildStableGuestDeviceId()
 {
+	FString CommandLineDeviceId;
+	if (FParse::Value(FCommandLine::Get(), TEXT("DBAGuestDeviceId="), CommandLineDeviceId))
+	{
+		CommandLineDeviceId.TrimStartAndEndInline();
+		if (!CommandLineDeviceId.IsEmpty())
+		{
+			return CommandLineDeviceId;
+		}
+	}
+
 	FString DeviceId = FPlatformProcess::ComputerName();
-	return DeviceId.IsEmpty() ? TEXT("DBA_LOCAL_DEVICE") : FString::Printf(TEXT("DBA_%s"), *DeviceId);
+	DeviceId = DeviceId.IsEmpty() ? TEXT("DBA_LOCAL_DEVICE") : FString::Printf(TEXT("DBA_%s"), *DeviceId);
+
+	FString SaveSlotSuffix;
+	if (FParse::Value(FCommandLine::Get(), TEXT("DBASaveSlotSuffix="), SaveSlotSuffix))
+	{
+		SaveSlotSuffix.TrimStartAndEndInline();
+		if (!SaveSlotSuffix.IsEmpty())
+		{
+			return FString::Printf(TEXT("%s_%s"), *DeviceId, *SaveSlotSuffix);
+		}
+	}
+
+	return DeviceId;
 }
 
 FString BuildRefreshTokenRequestBody(const FString& RefreshToken)

@@ -10,8 +10,13 @@
 // 鐢熻倴瑙掕壊妯″瀷鍩虹被
 
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
+#include "GameDBA/Combat/DBABloomHealingSpell.h"
+#include "GameDBA/Combat/DBAChainLightningSpell.h"
 #include "GameDBA/Combat/DBAFireballProjectile.h"
+#include "GameDBA/Combat/DBAFrostShardProjectile.h"
+#include "GameDBA/Combat/DBAHolyShieldSpell.h"
 #include "GameDBA/Combat/DBAProjectile_Generic.h"
+#include "GameDBA/Combat/DBAShadowBoltProjectile.h"
 #include "GameDBA/Combat/DBASkillProjectileBase.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/GAS/DBAAbilitySystemComponent.h"
@@ -61,93 +66,111 @@ namespace
 	{
 		static const FLobbyEquippedSkillCastSpec Skill01{
 			1,
-			TEXT("Lobby.Skill01.Fire"),
-			35.0f,
-			EDBAElement::Fire,
-			1450.0f,
+			TEXT("Lobby.Skill01.MageFireball"),
 			42.0f,
+			EDBAElement::Fire,
+			1580.0f,
+			46.0f,
 			3.0f,
-			1.0f,
+			1.12f,
 			TEXT("GameplayCue.DBA.Skill.Projectile"),
 			TEXT("GameplayCue.DBA.Skill.Impact"),
 			TEXT("/Game/DBA/VFX/Abilities/FireLion/NS_FireLion_Q_FlameClaw_Slash.NS_FireLion_Q_FlameClaw_Slash"),
 			TEXT("/Game/DBA/VFX/Fireball/NS_DBA_Fireball_Projectile.NS_DBA_Fireball_Projectile"),
 			TEXT("/Game/DBA/VFX/Fireball/NS_DBA_Fireball_Impact.NS_DBA_Fireball_Impact"),
-			TEXT("/Game/DBA/Audio/SFX/Abilities/FireLion/SFX_FireLion_Q_FlameClaw_Slash.SFX_FireLion_Q_FlameClaw_Slash"),
-			TEXT("/Game/DBA/Audio/SFX/Common/Status/SFX_Status_Burning_Loop.SFX_Status_Burning_Loop"),
-			TEXT("/Game/DBA/Audio/SFX/Abilities/FireLion/SFX_FireLion_Q_FlameClaw_Impact.SFX_FireLion_Q_FlameClaw_Impact")
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_MageFireball_PreCast.SFX_MageFireball_PreCast"),
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_MageFireball_Flight.SFX_MageFireball_Flight"),
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_MageFireball_Impact.SFX_MageFireball_Impact")
 		};
 		static const FLobbyEquippedSkillCastSpec Skill02{
 			2,
-			TEXT("Lobby.Skill02.Water"),
-			42.0f,
+			TEXT("Lobby.Skill02.FrostShard"),
+			32.0f,
 			EDBAElement::Water,
-			1350.0f,
-			46.0f,
+			1840.0f,
+			38.0f,
 			4.5f,
-			1.0f,
+			1.15f,
 			TEXT("GameplayCue.DBA.Skill.Projectile"),
 			TEXT("GameplayCue.DBA.Skill.Impact"),
-			TEXT("/Game/DBA/VFX/Common/Status/NS_Status_Wet.NS_Status_Wet"),
-			TEXT("/Game/DBA/VFX/Abilities/WaterDragon/NS_WaterDragon_Q_WaterBlast_Projectile.NS_WaterDragon_Q_WaterBlast_Projectile"),
-			TEXT("/Game/DBA/VFX/Abilities/WaterDragon/NS_WaterDragon_Q_WaterBlast_Impact.NS_WaterDragon_Q_WaterBlast_Impact"),
-			TEXT("/Game/DBA/Audio/SFX/Abilities/WaterDragon/SFX_WaterDragon_Q_WaterBlast_Cast.SFX_WaterDragon_Q_WaterBlast_Cast"),
-			TEXT("/Game/DBA/Audio/SFX/Common/Status/SFX_Status_Wet.SFX_Status_Wet"),
-			TEXT("/Game/DBA/Audio/SFX/Abilities/WaterDragon/SFX_WaterDragon_Q_WaterBlast_Impact.SFX_WaterDragon_Q_WaterBlast_Impact")
+			TEXT("/Game/ProjectileHitVFX/NS/NS_IceCrystal.NS_IceCrystal"),
+			TEXT("/Game/ProjectileHitVFX/NS/NS_IceDart.NS_IceDart"),
+			TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Ice_01.NS_Hit_Ice_01"),
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_FrostShard_PreCast.SFX_FrostShard_PreCast"),
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_FrostShard_Flight.SFX_FrostShard_Flight"),
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_FrostShard_Impact.SFX_FrostShard_Impact")
 		};
 		static const FLobbyEquippedSkillCastSpec Skill03{
 			3,
-			TEXT("Lobby.Skill03.Wood"),
-			48.0f,
+			TEXT("Lobby.Skill03.BloomHealing"),
+			115.0f,
 			EDBAElement::Wood,
-			1220.0f,
-			48.0f,
-			6.0f,
-			1.05f,
+			0.0f,
+			0.0f,
+			5.5f,
+			1.2f,
 			TEXT("GameplayCue.DBA.Skill.Projectile"),
 			TEXT("GameplayCue.DBA.Skill.Impact"),
-			TEXT("/Game/DBA/VFX/Common/Status/NS_Status_HealingOverTime.NS_Status_HealingOverTime"),
-			TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingSeed_Projectile.NS_WoodCrane_Q_HealingSeed_Projectile"),
+			TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingGrove_Area.NS_WoodCrane_Q_HealingGrove_Area"),
+			TEXT("/Game/DBA/VFX/Common/Impact/NS_Impact_Heal_Burst.NS_Impact_Heal_Burst"),
 			TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingBurst_Impact.NS_WoodCrane_Q_HealingBurst_Impact"),
-			TEXT("/Game/DBA/Audio/SFX/Abilities/WoodCrane/SFX_WoodCrane_Q_HealingSeed_Cast.SFX_WoodCrane_Q_HealingSeed_Cast"),
-			TEXT("/Game/DBA/Audio/SFX/Common/Status/SFX_Status_HealingOverTime.SFX_Status_HealingOverTime"),
-			TEXT("/Game/DBA/Audio/SFX/Abilities/WoodCrane/SFX_WoodCrane_Q_HealingBurst_Impact.SFX_WoodCrane_Q_HealingBurst_Impact")
+			nullptr,
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_Flight.SFX_BloomHealing_Flight"),
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_Impact.SFX_BloomHealing_Impact")
 		};
 		static const FLobbyEquippedSkillCastSpec Skill04{
 			4,
-			TEXT("Lobby.Skill04.Gold"),
-			56.0f,
-			EDBAElement::Gold,
-			1580.0f,
+			TEXT("Lobby.Skill04.ChainLightning"),
 			38.0f,
-			7.5f,
-			1.0f,
+			EDBAElement::Gold,
+			0.0f,
+			0.0f,
+			6.0f,
+			1.2f,
 			TEXT("GameplayCue.DBA.Skill.Projectile"),
 			TEXT("GameplayCue.DBA.Skill.Impact"),
-			TEXT("/Game/DBA/VFX/Abilities/GoldPhoenix/NS_GoldPhoenix_Q_GoldFeather_Impact.NS_GoldPhoenix_Q_GoldFeather_Impact"),
-			TEXT("/Game/DBA/VFX/Abilities/GoldPhoenix/NS_GoldPhoenix_Q_GoldFeather_Projectile.NS_GoldPhoenix_Q_GoldFeather_Projectile"),
-			TEXT("/Game/DBA/VFX/Abilities/GoldPhoenix/NS_GoldPhoenix_Q_GoldFeather_Impact.NS_GoldPhoenix_Q_GoldFeather_Impact"),
-			TEXT("/Game/DBA/Audio/SFX/Abilities/GoldPhoenix/SFX_GoldPhoenix_Q_GoldFeather_Cast.SFX_GoldPhoenix_Q_GoldFeather_Cast"),
+			TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Eletric_01.NS_Hit_Eletric_01"),
+			TEXT("/Game/ProjectileHitVFX/NS/NS_ThunderBolt.NS_ThunderBolt"),
+			TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Thunder.NS_Hit_Thunder"),
 			nullptr,
-			TEXT("/Game/DBA/Audio/SFX/Abilities/GoldPhoenix/SFX_GoldPhoenix_Q_GoldFeather_Impact.SFX_GoldPhoenix_Q_GoldFeather_Impact")
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_ChainLightning_Flight.SFX_ChainLightning_Flight"),
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_ChainLightning_Impact.SFX_ChainLightning_Impact")
 		};
 		static const FLobbyEquippedSkillCastSpec Ultimate{
 			5,
-			TEXT("Lobby.Ultimate"),
-			86.0f,
-			EDBAElement::Fire,
-			1700.0f,
-			64.0f,
-			12.0f,
-			1.35f,
+			TEXT("Lobby.Skill05.PriestShield"),
+			0.0f,
+			EDBAElement::Wood,
+			0.0f,
+			0.0f,
+			8.0f,
+			1.22f,
 			TEXT("GameplayCue.DBA.Skill.Projectile"),
 			TEXT("GameplayCue.DBA.Skill.Impact"),
-			TEXT("/Game/DBA/VFX/Abilities/FireLion/NS_FireLion_R_DivineBeastTransform.NS_FireLion_R_DivineBeastTransform"),
-			TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy"),
-			TEXT("/Game/ProjectileHitVFX/NS/NS_HIt_Explosion.NS_HIt_Explosion"),
-			TEXT("/Game/DBA/Audio/SFX/Abilities/FireLion/SFX_FireLion_R_DivineBeastTransform.SFX_FireLion_R_DivineBeastTransform"),
 			nullptr,
-			TEXT("/Game/DBA/Audio/SFX/Abilities/FireLion/SFX_FireLion_E_FlameLeap_Impact.SFX_FireLion_E_FlameLeap_Impact")
+			TEXT("/Game/DBA/VFX/Common/Status/NS_Status_Shielded.NS_Status_Shielded"),
+			TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy"),
+			nullptr,
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_Flight.SFX_PriestShield_Flight"),
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_Impact.SFX_PriestShield_Impact")
+		};
+		static const FLobbyEquippedSkillCastSpec Skill06{
+			6,
+			TEXT("Lobby.Skill06.ShadowBolt"),
+			44.0f,
+			EDBAElement::Gold,
+			1580.0f,
+			40.0f,
+			4.8f,
+			1.10f,
+			TEXT("GameplayCue.DBA.Skill.Projectile"),
+			TEXT("GameplayCue.DBA.Skill.Impact"),
+			TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Magic.NS_Hit_Magic"),
+			TEXT("/Game/ProjectileHitVFX/NS/NS_PoisonSkullFish.NS_PoisonSkullFish"),
+			TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Poison.NS_Hit_Poison"),
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_ShadowBolt_PreCast.SFX_ShadowBolt_PreCast"),
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_ShadowBolt_Flight.SFX_ShadowBolt_Flight"),
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_ShadowBolt_Impact.SFX_ShadowBolt_Impact")
 		};
 
 		switch (SkillSlot)
@@ -157,13 +180,14 @@ namespace
 		case 3: return Skill03;
 		case 4: return Skill04;
 		case 5: return Ultimate;
+		case 6: return Skill06;
 		default: return Skill01;
 		}
 	}
 
 	bool IsLobbyEquippedSkillSlot(int32 SkillSlot)
 	{
-		return SkillSlot >= 1 && SkillSlot <= 5;
+		return SkillSlot >= 1 && SkillSlot <= 6;
 	}
 
 	EDBAZodiac ToCommonZodiac(EDBAZodiacType ZodiacType)
@@ -332,6 +356,11 @@ ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 	LobbyFireballProjectileClass = ADBAFireballProjectile::StaticClass();
+	LobbyFrostShardProjectileClass = ADBAFrostShardProjectile::StaticClass();
+	LobbyBloomHealingSpellClass = ADBABloomHealingSpell::StaticClass();
+	LobbyChainLightningSpellClass = ADBAChainLightningSpell::StaticClass();
+	LobbyHolyShieldSpellClass = ADBAHolyShieldSpell::StaticClass();
+	LobbyShadowBoltProjectileClass = ADBAShadowBoltProjectile::StaticClass();
 	SkillCooldowns.Init(0.0f, 7);
 	SkillMaxCooldowns.Init(0.0f, 7);
 	for (int32 SkillSlot = 1; SkillSlot <= 5; ++SkillSlot)
@@ -581,7 +610,6 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 	}
 
 	FLobbyEquippedSkillCastSpec Spec = GetDefaultLobbySkillSpec(SkillSlot);
-	Spec.FallbackSkillId = ResolveEquippedLobbySkillId(this, SkillSlot);
 	if (SkillSlot == 1)
 	{
 		Spec.Damage = LobbyFireballDamage;
@@ -615,6 +643,117 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		SafeAimDirection = ResolveHorizontalAimDirection(TargetActor->GetActorLocation() - GetActorLocation(), SafeAimDirection);
 	}
 
+	const FVector SpawnLocation = GetActorLocation() + SafeAimDirection * 110.0f + FVector(0.0f, 0.0f, 74.0f);
+	const FRotator SpawnRotation = SafeAimDirection.Rotation();
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	if (SkillSlot == 3)
+	{
+		TSubclassOf<ADBABloomHealingSpell> BloomClass = LobbyBloomHealingSpellClass;
+		if (!BloomClass)
+		{
+			BloomClass = ADBABloomHealingSpell::StaticClass();
+		}
+
+		ADBABloomHealingSpell* BloomSpell = GetWorld()->SpawnActor<ADBABloomHealingSpell>(
+			BloomClass,
+			GetActorLocation(),
+			GetActorRotation(),
+			SpawnParams);
+		if (!BloomSpell)
+		{
+			UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 生成绽放治疗法术失败：施法者=%s 技能=%s 类=%s"),
+				*GetName(),
+				*Spec.FallbackSkillId.ToString(),
+				*GetNameSafe(BloomClass));
+			return;
+		}
+
+		AActor* HealTarget = Cast<ADBAZodiacCharacterBase>(TargetActor) ? TargetActor : this;
+		BloomSpell->CastBloomHealing(this, HealTarget);
+		SkillCooldowns[SkillSlot] = Spec.Cooldown;
+		SkillMaxCooldowns[SkillSlot] = Spec.Cooldown;
+		MulticastPlayLobbySkillCastFeedback(SkillSlot);
+		UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放绽放治疗：施法者=%s 技能=%s 目标=%s 法术=%s"),
+			*GetName(),
+			*Spec.FallbackSkillId.ToString(),
+			*GetNameSafe(HealTarget),
+			*BloomSpell->GetName());
+		return;
+	}
+
+	if (SkillSlot == 4)
+	{
+		TSubclassOf<ADBAChainLightningSpell> ChainClass = LobbyChainLightningSpellClass;
+		if (!ChainClass)
+		{
+			ChainClass = ADBAChainLightningSpell::StaticClass();
+		}
+
+		ADBAChainLightningSpell* ChainSpell = GetWorld()->SpawnActor<ADBAChainLightningSpell>(
+			ChainClass,
+			GetActorLocation(),
+			GetActorRotation(),
+			SpawnParams);
+		if (!ChainSpell)
+		{
+			UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 生成链式闪电法术失败：施法者=%s 技能=%s 类=%s"),
+				*GetName(),
+				*Spec.FallbackSkillId.ToString(),
+				*GetNameSafe(ChainClass));
+			return;
+		}
+
+		ChainSpell->CastChainLightning(this, TargetActor);
+		SkillCooldowns[SkillSlot] = Spec.Cooldown;
+		SkillMaxCooldowns[SkillSlot] = Spec.Cooldown;
+		MulticastPlayLobbySkillCastFeedback(SkillSlot);
+		UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放链式闪电：施法者=%s 技能=%s 初始目标=%s 法术=%s"),
+			*GetName(),
+			*Spec.FallbackSkillId.ToString(),
+			*GetNameSafe(TargetActor),
+			*ChainSpell->GetName());
+		return;
+	}
+
+	if (SkillSlot == 5)
+	{
+		TSubclassOf<ADBAHolyShieldSpell> ShieldClass = LobbyHolyShieldSpellClass;
+		if (!ShieldClass)
+		{
+			ShieldClass = ADBAHolyShieldSpell::StaticClass();
+		}
+
+		ADBAHolyShieldSpell* ShieldSpell = GetWorld()->SpawnActor<ADBAHolyShieldSpell>(
+			ShieldClass,
+			GetActorLocation(),
+			GetActorRotation(),
+			SpawnParams);
+		if (!ShieldSpell)
+		{
+			UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 生成牧师护盾法术失败：施法者=%s 技能=%s 类=%s"),
+				*GetName(),
+				*Spec.FallbackSkillId.ToString(),
+				*GetNameSafe(ShieldClass));
+			return;
+		}
+
+		AActor* ShieldTarget = Cast<ADBAZodiacCharacterBase>(TargetActor) ? TargetActor : this;
+		ShieldSpell->CastHolyShield(this, ShieldTarget);
+		SkillCooldowns[SkillSlot] = Spec.Cooldown;
+		SkillMaxCooldowns[SkillSlot] = Spec.Cooldown;
+		MulticastPlayLobbySkillCastFeedback(SkillSlot);
+		UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放牧师护盾：施法者=%s 技能=%s 目标=%s 法术=%s"),
+			*GetName(),
+			*Spec.FallbackSkillId.ToString(),
+			*GetNameSafe(ShieldTarget),
+			*ShieldSpell->GetName());
+		return;
+	}
+
 	TSubclassOf<ADBASkillProjectileBase> ProjectileClass = LoadClass<ADBASkillProjectileBase>(
 		nullptr,
 		TEXT("/Game/DBA/Blueprints/Projectiles/BP_DBA_FireballProjectile.BP_DBA_FireballProjectile_C"));
@@ -630,16 +769,28 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		}
 		else
 		{
-			ProjectileClass = ADBAProjectile_Generic::StaticClass();
+			if (SkillSlot == 2)
+			{
+				ProjectileClass = LobbyFrostShardProjectileClass;
+				if (!ProjectileClass)
+				{
+					ProjectileClass = ADBAFrostShardProjectile::StaticClass();
+				}
+			}
+			else if (SkillSlot == 6)
+			{
+				ProjectileClass = LobbyShadowBoltProjectileClass;
+				if (!ProjectileClass)
+				{
+					ProjectileClass = ADBAShadowBoltProjectile::StaticClass();
+				}
+			}
+			else
+			{
+				ProjectileClass = ADBAProjectile_Generic::StaticClass();
+			}
 		}
 	}
-
-	const FVector SpawnLocation = GetActorLocation() + SafeAimDirection * 110.0f + FVector(0.0f, 0.0f, 74.0f);
-	const FRotator SpawnRotation = SafeAimDirection.Rotation();
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.Instigator = this;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	ADBASkillProjectileBase* Fireball = GetWorld()->SpawnActor<ADBASkillProjectileBase>(
 		ProjectileClass,
