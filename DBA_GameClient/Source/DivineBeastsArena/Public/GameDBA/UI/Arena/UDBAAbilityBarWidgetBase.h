@@ -47,12 +47,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|AbilityBar")
 	void RefreshCooldowns();
 
+	UFUNCTION(BlueprintPure, Category = "DBA|UI|AbilityBar")
+	const FDBAPlayableSkillCatalogSummary& GetCachedSkillCatalogSummary() const { return CachedSkillCatalogSummary; }
+
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|AbilityBar", meta = (DisplayName = "On Ability Updated"))
 	void BP_OnAbilityUpdated(int32 SlotIndex, float Cooldown, float ManaCost, bool bOnCooldown);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|AbilityBar", meta = (DisplayName = "On Skill Catalog Refreshed"))
 	void BP_OnSkillCatalogRefreshed(const TArray<FDBAPlayableSkillRuntimeSpec>& SkillSpecs);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|AbilityBar", meta = (DisplayName = "On Skill Catalog Summary Refreshed"))
+	void BP_OnSkillCatalogSummaryRefreshed(const FDBAPlayableSkillCatalogSummary& SkillCatalogSummary);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|AbilityBar", meta = (DisplayName = "On Ability Enabled Changed"))
 	void BP_OnAbilityEnabledChanged(int32 SlotIndex, bool bEnabled);
@@ -90,6 +96,9 @@ protected:
 
 	UPROPERTY(Transient)
 	TArray<FDBAPlayableSkillRuntimeSpec> CachedSkillSpecs;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "DBA|UI|AbilityBar")
+	FDBAPlayableSkillCatalogSummary CachedSkillCatalogSummary;
 
 	void CacheSkillSlotWidgets();
 	FKey ResolveHotkeyForSlot(int32 SkillSlot) const;

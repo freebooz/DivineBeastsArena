@@ -11,6 +11,7 @@
 #include "GameDBA/UI/Arena/UDBAAbilityBarWidgetBase.h"
 
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
+#include "GameDBA/Combat/DBAPlayableSkillComponent.h"
 #include "GameDBA/UI/Arena/AbilityBar/DBAAbilitySlotWidget.h"
 #include "InputCoreTypes.h"
 
@@ -90,15 +91,22 @@ void UDBAAbilityBarWidgetBase::BindToCharacter(ADBAZodiacCharacterBase* InCharac
 void UDBAAbilityBarWidgetBase::RefreshSkillCatalog()
 {
 	CachedSkillSpecs.Reset();
+	CachedSkillCatalogSummary = FDBAPlayableSkillCatalogSummary();
 
 	ADBAZodiacCharacterBase* Character = BoundCharacter.Get();
 	if (!Character)
 	{
 		BP_OnSkillCatalogRefreshed(CachedSkillSpecs);
+		BP_OnSkillCatalogSummaryRefreshed(CachedSkillCatalogSummary);
 		return;
 	}
 
 	CachedSkillSpecs = Character->GetPlayableSkillSpecs();
+	if (const UDBAPlayableSkillComponent* SkillComponent = Character->GetPlayableSkillComponent())
+	{
+		CachedSkillCatalogSummary = SkillComponent->GetSkillCatalogSummary();
+	}
+
 	CachedSkillSpecs.Sort([](const FDBAPlayableSkillRuntimeSpec& Left, const FDBAPlayableSkillRuntimeSpec& Right)
 	{
 		return Left.SkillSlot < Right.SkillSlot;
@@ -119,6 +127,7 @@ void UDBAAbilityBarWidgetBase::RefreshSkillCatalog()
 	}
 
 	BP_OnSkillCatalogRefreshed(CachedSkillSpecs);
+	BP_OnSkillCatalogSummaryRefreshed(CachedSkillCatalogSummary);
 }
 
 void UDBAAbilityBarWidgetBase::RefreshCooldowns()
