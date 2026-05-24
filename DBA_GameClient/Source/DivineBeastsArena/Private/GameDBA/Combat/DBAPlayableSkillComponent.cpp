@@ -100,7 +100,10 @@ UDBAPlayableSkillComponent::UDBAPlayableSkillComponent()
 
 bool UDBAPlayableSkillComponent::GetSkillSpec(int32 SkillSlot, FDBAPlayableSkillRuntimeSpec& OutSpec) const
 {
-	for (const FDBAPlayableSkillRuntimeSpec& Spec : SkillSpecs)
+	TArray<FDBAPlayableSkillRuntimeSpec> EffectiveSpecs;
+	BuildEffectiveSkillSpecs(EffectiveSpecs);
+
+	for (const FDBAPlayableSkillRuntimeSpec& Spec : EffectiveSpecs)
 	{
 		if (Spec.SkillSlot == SkillSlot)
 		{
@@ -118,9 +121,12 @@ bool UDBAPlayableSkillComponent::GetSkillSpec(int32 SkillSlot, FDBAPlayableSkill
 
 TArray<FDBAPlayableSkillRuntimeSpec> UDBAPlayableSkillComponent::GetAllSkillSpecs() const
 {
+	TArray<FDBAPlayableSkillRuntimeSpec> EffectiveSpecs;
+	BuildEffectiveSkillSpecs(EffectiveSpecs);
+
 	TArray<FDBAPlayableSkillRuntimeSpec> ResolvedSpecs;
-	ResolvedSpecs.Reserve(SkillSpecs.Num());
-	for (const FDBAPlayableSkillRuntimeSpec& Spec : SkillSpecs)
+	ResolvedSpecs.Reserve(EffectiveSpecs.Num());
+	for (const FDBAPlayableSkillRuntimeSpec& Spec : EffectiveSpecs)
 	{
 		FDBAPlayableSkillRuntimeSpec ResolvedSpec = Spec;
 		if (bResolveSkillIdsFromEquippedSkillGroup)
@@ -212,6 +218,50 @@ void UDBAPlayableSkillComponent::ResetToDefaultSkillSpecs()
 	Shadow.FlySFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_ShadowBolt_Flight.SFX_ShadowBolt_Flight"));
 	Shadow.ImpactSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_ShadowBolt_Impact.SFX_ShadowBolt_Impact"));
 	SkillSpecs.Add(Shadow);
+}
+
+void UDBAPlayableSkillComponent::SetSkillCatalog(UDBAPlayableSkillCatalogDataAsset* InSkillCatalog)
+{
+	SkillCatalog = InSkillCatalog;
+}
+
+void UDBAPlayableSkillComponent::SetAppendDefaultSkillsWhenCatalogMissingSlots(bool bInAppendDefaults)
+{
+	bAppendDefaultSkillsWhenCatalogMissingSlots = bInAppendDefaults;
+}
+
+void UDBAPlayableSkillComponent::BuildEffectiveSkillSpecs(TArray<FDBAPlayableSkillRuntimeSpec>& OutSpecs) const
+{
+	OutSpecs.Reset();
+
+	if (!SkillCatalog || bAppendDefaultSkillsWhenCatalogMissingSlots)
+	{
+		OutSpecs = SkillSpecs;
+	}
+
+	if (SkillCatalog)
+	{
+		const TArray<FDBAPlayableSkillRuntimeSpec> CatalogSpecs = SkillCatalog->GetAllSkillSpecs();
+		for (const FDBAPlayableSkillRuntimeSpec& CatalogSpec : CatalogSpecs)
+		{
+			if (FDBAPlayableSkillRuntimeSpec* ExistingSpec = OutSpecs.FindByPredicate([&CatalogSpec](const FDBAPlayableSkillRuntimeSpec& Candidate)
+				{
+					return Candidate.SkillSlot == CatalogSpec.SkillSlot;
+				}))
+			{
+				*ExistingSpec = CatalogSpec;
+			}
+			else
+			{
+				OutSpecs.Add(CatalogSpec);
+			}
+		}
+	}
+
+	OutSpecs.Sort([](const FDBAPlayableSkillRuntimeSpec& Left, const FDBAPlayableSkillRuntimeSpec& Right)
+	{
+		return Left.SkillSlot < Right.SkillSlot;
+	});
 }
 
 FName UDBAPlayableSkillComponent::ResolveEquippedSkillId(int32 SkillSlot, FName FallbackSkillId) const

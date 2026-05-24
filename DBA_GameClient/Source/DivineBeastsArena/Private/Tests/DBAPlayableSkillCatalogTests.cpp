@@ -3,9 +3,11 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "GameDBA/Combat/DBAPlayableSkillComponent.h"
+#include "GameDBA/Combat/DBAPlayableSkillCatalogDataAsset.h"
 #include "GameDBA/Combat/DBAPlayableSkillTypes.h"
 #include "GameDBA/Combat/DBABloomHealingSpell.h"
 #include "GameDBA/Combat/DBAChainLightningSpell.h"
+#include "GameDBA/Combat/DBAFireballProjectile.h"
 #include "GameDBA/Combat/DBAHolyShieldSpell.h"
 #include "GameDBA/Combat/DBASkillProjectileBase.h"
 #include "Misc/AutomationTest.h"
@@ -88,6 +90,93 @@ bool FDBAPlayableSkillCatalogDefaultsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Shadow has projectile class"), Shadow->ProjectileClass != nullptr);
 		TestTrue(TEXT("Shadow has impact SFX"), !Shadow->ImpactSFXAsset.IsNull());
 	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FDBAPlayableSkillCatalogDataAssetOverrideTest,
+	"DivineBeastsArena.Combat.PlayableSkillCatalog.DataAssetOverride",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FDBAPlayableSkillCatalogDataAssetOverrideTest::RunTest(const FString& Parameters)
+{
+	UDBAPlayableSkillCatalogDataAsset* Catalog = NewObject<UDBAPlayableSkillCatalogDataAsset>();
+	TestNotNull(TEXT("Catalog"), Catalog);
+	if (!Catalog)
+	{
+		return false;
+	}
+
+	FDBAPlayableSkillRuntimeSpec InvalidSpec;
+	InvalidSpec.SkillSlot = 0;
+	InvalidSpec.SkillId = TEXT("Test.Invalid");
+
+	FDBAPlayableSkillRuntimeSpec OverrideSpec;
+	OverrideSpec.SkillSlot = 1;
+	OverrideSpec.SkillId = TEXT("Test.Skill.OverrideFireball");
+	OverrideSpec.DisplayName = FText::FromString(TEXT("Override Fireball"));
+	OverrideSpec.EffectShape = EDBAPlayableSkillEffectShape::Projectile;
+	OverrideSpec.Element = EDBAElement::Fire;
+	OverrideSpec.Magnitude = 99.0f;
+	OverrideSpec.ProjectileSpeed = 2000.0f;
+	OverrideSpec.ProjectileRadius = 64.0f;
+	OverrideSpec.Cooldown = 9.5f;
+	OverrideSpec.CastVFXScale = 1.4f;
+	OverrideSpec.ProjectileClass = ADBAFireballProjectile::StaticClass();
+
+	Catalog->SkillSpecs.Reset();
+	Catalog->SkillSpecs.Add(InvalidSpec);
+	Catalog->SkillSpecs.Add(OverrideSpec);
+
+	const TArray<FDBAPlayableSkillRuntimeSpec> CatalogSpecs = Catalog->GetAllSkillSpecs();
+	TestEqual(TEXT("Catalog ignores invalid slots"), CatalogSpecs.Num(), 1);
+	TestEqual(TEXT("Catalog override slot"), CatalogSpecs[0].SkillSlot, 1);
+
+	UDBAPlayableSkillComponent* SkillComponent = NewObject<UDBAPlayableSkillComponent>();
+	TestNotNull(TEXT("SkillComponent"), SkillComponent);
+	if (!SkillComponent)
+	{
+		return false;
+	}
+
+	SkillComponent->SetSkillCatalog(Catalog);
+
+	const TArray<FDBAPlayableSkillRuntimeSpec> EffectiveSpecs = SkillComponent->GetAllSkillSpecs();
+	TestEqual(TEXT("Catalog override keeps default fallback count"), EffectiveSpecs.Num(), 6);
+
+	const auto FindSkill = [](const TArray<FDBAPlayableSkillRuntimeSpec>& SkillSpecs, int32 SkillSlot) -> const FDBAPlayableSkillRuntimeSpec*
+	{
+		return SkillSpecs.FindByPredicate([SkillSlot](const FDBAPlayableSkillRuntimeSpec& Spec)
+		{
+			return Spec.SkillSlot == SkillSlot;
+		});
+	};
+
+	const FDBAPlayableSkillRuntimeSpec* SlotOne = FindSkill(EffectiveSpecs, 1);
+	TestNotNull(TEXT("Slot 1 override"), SlotOne);
+	if (SlotOne)
+	{
+		TestEqual(TEXT("Slot 1 override skill id"), SlotOne->SkillId, FName(TEXT("Test.Skill.OverrideFireball")));
+		TestEqual(TEXT("Slot 1 override name"), SlotOne->DisplayName.ToString(), FString(TEXT("Override Fireball")));
+		TestEqual(TEXT("Slot 1 override magnitude"), SlotOne->Magnitude, 99.0f);
+		TestEqual(TEXT("Slot 1 override cooldown"), SlotOne->Cooldown, 9.5f);
+		TestTrue(TEXT("Slot 1 override keeps projectile class"), SlotOne->ProjectileClass == ADBAFireballProjectile::StaticClass());
+	}
+
+	const FDBAPlayableSkillRuntimeSpec* SlotTwo = FindSkill(EffectiveSpecs, 2);
+	TestNotNull(TEXT("Slot 2 default fallback"), SlotTwo);
+	if (SlotTwo)
+	{
+		TestEqual(TEXT("Slot 2 remains default frost skill"), SlotTwo->SkillId, FName(TEXT("Lobby.Skill02.FrostShard")));
+	}
+
+	SkillComponent->SetAppendDefaultSkillsWhenCatalogMissingSlots(false);
+	const TArray<FDBAPlayableSkillRuntimeSpec> CatalogOnlySpecs = SkillComponent->GetAllSkillSpecs();
+	TestEqual(TEXT("Catalog-only mode does not append defaults"), CatalogOnlySpecs.Num(), 1);
+
+	FDBAPlayableSkillRuntimeSpec MissingSpec;
+	TestFalse(TEXT("Catalog-only mode has no slot 2"), SkillComponent->GetSkillSpec(2, MissingSpec));
 
 	return true;
 }

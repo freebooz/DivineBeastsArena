@@ -11,6 +11,7 @@ Readable notes:
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "GameDBA/Combat/DBAPlayableSkillCatalogDataAsset.h"
 #include "GameDBA/Combat/DBAPlayableSkillTypes.h"
 #include "DBAPlayableSkillComponent.generated.h"
 
@@ -34,13 +35,29 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Playable Skill")
 	void ResetToDefaultSkillSpecs();
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|Playable Skill")
+	void SetSkillCatalog(UDBAPlayableSkillCatalogDataAsset* InSkillCatalog);
+
+	UFUNCTION(BlueprintPure, Category = "DBA|Playable Skill")
+	UDBAPlayableSkillCatalogDataAsset* GetSkillCatalog() const { return SkillCatalog; }
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Playable Skill")
+	void SetAppendDefaultSkillsWhenCatalogMissingSlots(bool bInAppendDefaults);
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Playable Skill")
 	bool bResolveSkillIdsFromEquippedSkillGroup = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Playable Skill")
+	bool bAppendDefaultSkillsWhenCatalogMissingSlots = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Playable Skill")
+	TObjectPtr<UDBAPlayableSkillCatalogDataAsset> SkillCatalog;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Playable Skill")
 	TArray<FDBAPlayableSkillRuntimeSpec> SkillSpecs;
 
 private:
+	void BuildEffectiveSkillSpecs(TArray<FDBAPlayableSkillRuntimeSpec>& OutSpecs) const;
 	FName ResolveEquippedSkillId(int32 SkillSlot, FName FallbackSkillId) const;
 };
