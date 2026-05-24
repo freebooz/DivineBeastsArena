@@ -23,6 +23,8 @@ class DIVINEBEASTSARENA_API UDBAPlayableSkillComponent : public UActorComponent
 public:
 	UDBAPlayableSkillComponent();
 
+	virtual void BeginPlay() override;
+
 	UFUNCTION(BlueprintCallable, Category = "DBA|Playable Skill")
 	bool GetSkillSpec(int32 SkillSlot, FDBAPlayableSkillRuntimeSpec& OutSpec) const;
 
@@ -43,6 +45,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|Playable Skill")
 	void SetAppendDefaultSkillsWhenCatalogMissingSlots(bool bInAppendDefaults);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Playable Skill")
+	bool ValidateEffectiveSkillSpecs(TArray<FString>& OutErrors) const;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Playable Skill")

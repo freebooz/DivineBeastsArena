@@ -10,6 +10,7 @@
 #include "GameDBA/Combat/DBAHolyShieldSpell.h"
 #include "GameDBA/Combat/DBAShadowBoltProjectile.h"
 #include "GameDBA/Services/DBASkillGroupGeneratorSubsystem.h"
+#include "GameCore/Core/DBALogChannels.h"
 
 namespace
 {
@@ -96,6 +97,20 @@ UDBAPlayableSkillComponent::UDBAPlayableSkillComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 	ResetToDefaultSkillSpecs();
+}
+
+void UDBAPlayableSkillComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	TArray<FString> ValidationErrors;
+	if (!ValidateEffectiveSkillSpecs(ValidationErrors))
+	{
+		for (const FString& ValidationError : ValidationErrors)
+		{
+			UE_LOG(LogDBACombat, Warning, TEXT("[DBAPlayableSkillComponent] 技能目录配置异常：Owner=%s Error=%s"), *GetNameSafe(GetOwner()), *ValidationError);
+		}
+	}
 }
 
 bool UDBAPlayableSkillComponent::GetSkillSpec(int32 SkillSlot, FDBAPlayableSkillRuntimeSpec& OutSpec) const
@@ -188,6 +203,7 @@ void UDBAPlayableSkillComponent::ResetToDefaultSkillSpecs()
 	Bloom.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingGrove_Area.NS_WoodCrane_Q_HealingGrove_Area"));
 	Bloom.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Common/Impact/NS_Impact_Heal_Burst.NS_Impact_Heal_Burst"));
 	Bloom.ImpactNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingBurst_Impact.NS_WoodCrane_Q_HealingBurst_Impact"));
+	Bloom.CastSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_PreCast.SFX_BloomHealing_PreCast"));
 	Bloom.FlySFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_Flight.SFX_BloomHealing_Flight"));
 	Bloom.ImpactSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_Impact.SFX_BloomHealing_Impact"));
 	SkillSpecs.Add(Bloom);
@@ -197,6 +213,7 @@ void UDBAPlayableSkillComponent::ResetToDefaultSkillSpecs()
 	Chain.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Eletric_01.NS_Hit_Eletric_01"));
 	Chain.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_ThunderBolt.NS_ThunderBolt"));
 	Chain.ImpactNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Thunder.NS_Hit_Thunder"));
+	Chain.CastSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_ChainLightning_PreCast.SFX_ChainLightning_PreCast"));
 	Chain.FlySFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_ChainLightning_Flight.SFX_ChainLightning_Flight"));
 	Chain.ImpactSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_ChainLightning_Impact.SFX_ChainLightning_Impact"));
 	SkillSpecs.Add(Chain);
@@ -205,6 +222,7 @@ void UDBAPlayableSkillComponent::ResetToDefaultSkillSpecs()
 	Shield.HolyShieldClass = ADBAHolyShieldSpell::StaticClass();
 	Shield.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Common/Status/NS_Status_Shielded.NS_Status_Shielded"));
 	Shield.ImpactNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy"));
+	Shield.CastSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_PreCast.SFX_PriestShield_PreCast"));
 	Shield.FlySFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_Flight.SFX_PriestShield_Flight"));
 	Shield.ImpactSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_Impact.SFX_PriestShield_Impact"));
 	SkillSpecs.Add(Shield);
@@ -228,6 +246,13 @@ void UDBAPlayableSkillComponent::SetSkillCatalog(UDBAPlayableSkillCatalogDataAss
 void UDBAPlayableSkillComponent::SetAppendDefaultSkillsWhenCatalogMissingSlots(bool bInAppendDefaults)
 {
 	bAppendDefaultSkillsWhenCatalogMissingSlots = bInAppendDefaults;
+}
+
+bool UDBAPlayableSkillComponent::ValidateEffectiveSkillSpecs(TArray<FString>& OutErrors) const
+{
+	TArray<FDBAPlayableSkillRuntimeSpec> EffectiveSpecs;
+	BuildEffectiveSkillSpecs(EffectiveSpecs);
+	return UDBAPlayableSkillCatalogDataAsset::ValidateSkillSpecs(EffectiveSpecs, OutErrors);
 }
 
 void UDBAPlayableSkillComponent::BuildEffectiveSkillSpecs(TArray<FDBAPlayableSkillRuntimeSpec>& OutSpecs) const

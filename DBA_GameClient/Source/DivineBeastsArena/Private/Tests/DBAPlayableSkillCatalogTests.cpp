@@ -29,6 +29,10 @@ bool FDBAPlayableSkillCatalogDefaultsTest::RunTest(const FString& Parameters)
 	const TArray<FDBAPlayableSkillRuntimeSpec> SkillSpecs = SkillComponent->GetAllSkillSpecs();
 	TestEqual(TEXT("Default skill count"), SkillSpecs.Num(), 6);
 
+	TArray<FString> ValidationErrors;
+	TestTrue(TEXT("Default skill catalog validates"), SkillComponent->ValidateEffectiveSkillSpecs(ValidationErrors));
+	TestEqual(TEXT("Default skill catalog validation error count"), ValidationErrors.Num(), 0);
+
 	const auto FindSkill = [&SkillSpecs](int32 SkillSlot) -> const FDBAPlayableSkillRuntimeSpec*
 	{
 		return SkillSpecs.FindByPredicate([SkillSlot](const FDBAPlayableSkillRuntimeSpec& Spec)
@@ -90,6 +94,60 @@ bool FDBAPlayableSkillCatalogDefaultsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Shadow has projectile class"), Shadow->ProjectileClass != nullptr);
 		TestTrue(TEXT("Shadow has impact SFX"), !Shadow->ImpactSFXAsset.IsNull());
 	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FDBAPlayableSkillCatalogValidationTest,
+	"DivineBeastsArena.Combat.PlayableSkillCatalog.Validation",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FDBAPlayableSkillCatalogValidationTest::RunTest(const FString& Parameters)
+{
+	UDBAPlayableSkillCatalogDataAsset* Catalog = NewObject<UDBAPlayableSkillCatalogDataAsset>();
+	TestNotNull(TEXT("Catalog"), Catalog);
+	if (!Catalog)
+	{
+		return false;
+	}
+
+	Catalog->CatalogId = NAME_None;
+
+	FDBAPlayableSkillRuntimeSpec BrokenProjectile;
+	BrokenProjectile.SkillSlot = 1;
+	BrokenProjectile.EffectShape = EDBAPlayableSkillEffectShape::Projectile;
+
+	FDBAPlayableSkillRuntimeSpec DuplicateSlot;
+	DuplicateSlot.SkillSlot = 1;
+	DuplicateSlot.SkillId = TEXT("Test.DuplicateSlot");
+	DuplicateSlot.DisplayName = FText::FromString(TEXT("Duplicate Slot"));
+	DuplicateSlot.EffectShape = EDBAPlayableSkillEffectShape::HolyShield;
+	DuplicateSlot.Magnitude = 10.0f;
+	DuplicateSlot.Cooldown = 1.0f;
+	DuplicateSlot.CastVFXScale = 1.0f;
+	DuplicateSlot.HolyShieldClass = ADBAHolyShieldSpell::StaticClass();
+
+	Catalog->SkillSpecs.Add(BrokenProjectile);
+	Catalog->SkillSpecs.Add(DuplicateSlot);
+
+	TArray<FString> ValidationErrors;
+	TestFalse(TEXT("Broken catalog fails validation"), Catalog->ValidateDataIntegrity(ValidationErrors));
+	TestTrue(TEXT("Broken catalog reports errors"), ValidationErrors.Num() > 0);
+
+	const auto HasErrorContaining = [&ValidationErrors](const TCHAR* ExpectedText)
+	{
+		return ValidationErrors.ContainsByPredicate([ExpectedText](const FString& Error)
+		{
+			return Error.Contains(ExpectedText);
+		});
+	};
+
+	TestTrue(TEXT("Missing catalog id is reported"), HasErrorContaining(TEXT("CatalogId")));
+	TestTrue(TEXT("Missing projectile class is reported"), HasErrorContaining(TEXT("ProjectileClass")));
+	TestTrue(TEXT("Duplicate slot is reported"), HasErrorContaining(TEXT("SkillSlot 重复")));
+	TestTrue(TEXT("Missing cast SFX is reported"), HasErrorContaining(TEXT("CastSFXAsset")));
+	TestTrue(TEXT("Missing impact VFX is reported"), HasErrorContaining(TEXT("ImpactNiagaraVFXAsset")));
 
 	return true;
 }
