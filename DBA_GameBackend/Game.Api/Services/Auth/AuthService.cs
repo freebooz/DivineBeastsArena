@@ -28,6 +28,7 @@ public sealed class AuthService : IAuthService
     private readonly JwtOptions _jwtOptions;
     private readonly ILogger<AuthService> _logger;
     private readonly bool _isProduction;
+    private readonly string? _passwordResetBootstrapToken;
 
     public AuthService(
         GameDbContext db,
@@ -43,6 +44,9 @@ public sealed class AuthService : IAuthService
         _jwtOptions = jwtOptions;
         _logger = logger;
         _isProduction = configuration["ASPNETCORE_ENVIRONMENT"] == "Production";
+        _passwordResetBootstrapToken = FirstNonEmpty(
+            configuration["Auth:PasswordResetBootstrapToken"],
+            configuration["PasswordReset:BootstrapToken"]);
     }
 
     public async Task<AuthServiceResult> GuestLoginAsync(GuestLoginRequest request, string? ip, string? userAgent)
@@ -353,16 +357,81 @@ public sealed class AuthService : IAuthService
         return new AuthServiceResult(true, accessToken, refreshToken, account.Id, identity.PlayerId, identity.DisplayName);
     }
 
-    public Task<PasswordChangeResponse> ChangePasswordAsync(Guid accountId, string oldPassword, string newPassword)
+    public async Task<PasswordChangeResponse> ChangePasswordAsync(Guid accountId, string oldPassword, string newPassword)
     {
-        // TODO: Implement BCrypt password verification and update
-        return Task.FromResult(new PasswordChangeResponse(false, "Password change not implemented"));
+        if (string.IsNullOrWhiteSpace(oldPassword) || string.IsNullOrWhiteSpace(newPassword))
+            return new PasswordChangeResponse(false, "Old password and new password are required");
+        if (newPassword.Length < 6)
+            return new PasswordChangeResponse(false, "Password must be at least 6 characters");
+
+        var account = await _db.Accounts.FirstOrDefaultAsync(x => x.Id == accountId);
+        if (account == null)
+            return new PasswordChangeResponse(false, "Account not found");
+        if (account.Status == "BANNED")
+            return new PasswordChangeResponse(false, "Account is banned");
+        if (string.IsNullOrEmpty(account.PasswordHash))
+            return new PasswordChangeResponse(false, "Account has no password credential");
+        if (!PasswordHasher.Verify(oldPassword, account.PasswordHash))
+            return new PasswordChangeResponse(false, "Old password is incorrect");
+        if (PasswordHasher.Verify(newPassword, account.PasswordHash))
+            return new PasswordChangeResponse(false, "New password must be different from the current password");
+
+        account.PasswordHash = PasswordHasher.Hash(newPassword);
+        account.UpdatedAt = DateTimeOffset.UtcNow;
+        await RevokeActiveRefreshTokensAsync(account.Id);
+        await _db.SaveChangesAsync();
+
+        return new PasswordChangeResponse(true, "Password changed");
     }
 
-    public Task<PasswordChangeResponse> ResetPasswordAsync(string email, string? token, string? newPassword)
+    public async Task<PasswordChangeResponse> ResetPasswordAsync(string email, string? token, string? newPassword)
     {
-        // TODO: Implement password reset flow with email token verification
-        return Task.FromResult(new PasswordChangeResponse(false, "Password reset not implemented"));
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(newPassword))
+            return new PasswordChangeResponse(false, "Email and new password are required");
+        if (newPassword.Length < 6)
+            return new PasswordChangeResponse(false, "Password must be at least 6 characters");
+        if (string.IsNullOrWhiteSpace(_passwordResetBootstrapToken))
+            return new PasswordChangeResponse(false, "Password reset token service is not configured");
+        if (!FixedTimeEquals(token, _passwordResetBootstrapToken))
+            return new PasswordChangeResponse(false, "Invalid reset token");
+
+        var normalizedEmail = email.Trim();
+        var account = await _db.Accounts.FirstOrDefaultAsync(x => x.Email == normalizedEmail);
+        if (account == null)
+            return new PasswordChangeResponse(false, "Account not found");
+        if (account.Status == "BANNED")
+            return new PasswordChangeResponse(false, "Account is banned");
+
+        account.PasswordHash = PasswordHasher.Hash(newPassword);
+        account.UpdatedAt = DateTimeOffset.UtcNow;
+        await RevokeActiveRefreshTokensAsync(account.Id);
+        await _db.SaveChangesAsync();
+
+        return new PasswordChangeResponse(true, "Password reset completed");
+    }
+
+    private async Task RevokeActiveRefreshTokensAsync(Guid accountId)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var tokens = await _db.RefreshTokens
+            .Where(x => x.AccountId == accountId && x.RevokedAt == null)
+            .ToListAsync();
+
+        foreach (var token in tokens)
+        {
+            token.RevokedAt = now;
+        }
+    }
+
+    private static bool FixedTimeEquals(string? left, string right)
+    {
+        if (string.IsNullOrWhiteSpace(left))
+            return false;
+
+        var leftBytes = Encoding.UTF8.GetBytes(left);
+        var rightBytes = Encoding.UTF8.GetBytes(right);
+        return leftBytes.Length == rightBytes.Length &&
+            CryptographicOperations.FixedTimeEquals(leftBytes, rightBytes);
     }
 
     private static AuthServiceResult Fail(string errorCode, string message) =>
