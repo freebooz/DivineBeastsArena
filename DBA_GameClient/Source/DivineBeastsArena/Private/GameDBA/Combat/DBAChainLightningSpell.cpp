@@ -12,6 +12,7 @@ Readable notes:
 #include "Engine/OverlapResult.h"
 #include "Engine/World.h"
 #include "GameDBA/Combat/DBADamageCalculator.h"
+#include "GameDBA/Combat/DBAPlayableSkillTypes.h"
 #include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
@@ -26,10 +27,30 @@ namespace
 		return Actor ? Actor->GetActorLocation() + FVector(0.0f, 0.0f, 72.0f) : FVector::ZeroVector;
 	}
 
+	FVector HorizontalForward(AActor* Actor)
+	{
+		FVector Forward = Actor ? Actor->GetActorForwardVector() : FVector::ForwardVector;
+		Forward.Z = 0.0f;
+		Forward = Forward.GetSafeNormal();
+		return Forward.IsNearlyZero() ? FVector::ForwardVector : Forward;
+	}
+
+	FVector MakeParallelTarget(const FVector& Source, const FVector& RawTarget)
+	{
+		FVector Target = RawTarget;
+		Target.Z = Source.Z;
+		return Target;
+	}
+
 	FRotator RotationBetweenPoints(const FVector& Source, const FVector& Target)
 	{
 		const FVector Direction = (Target - Source).GetSafeNormal();
 		return Direction.IsNearlyZero() ? FRotator::ZeroRotator : Direction.Rotation();
+	}
+
+	bool IsUsableChainWorld(const UWorld* World)
+	{
+		return IsValid(World);
 	}
 }
 
@@ -50,6 +71,40 @@ ADBAChainLightningSpell::ADBAChainLightningSpell()
 	ImpactSFXAsset = TSoftObjectPtr<USoundBase>(FSoftObjectPath(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_ChainLightning_Impact.SFX_ChainLightning_Impact")));
 }
 
+void ADBAChainLightningSpell::ConfigureFromSkillSpec(const FDBAPlayableSkillRuntimeSpec& Spec)
+{
+	if (Spec.Magnitude > 0.0f)
+	{
+		BaseDamage = Spec.Magnitude;
+	}
+	DamageElement = Spec.Element == EDBAElement::None ? DamageElement : Spec.Element;
+	ImpactCueTag = Spec.ImpactCueTag;
+	if (!Spec.CastNiagaraVFXAsset.IsNull())
+	{
+		BranchVFXAsset = Spec.CastNiagaraVFXAsset;
+	}
+	if (!Spec.ProjectileNiagaraVFXAsset.IsNull())
+	{
+		ArcVFXAsset = Spec.ProjectileNiagaraVFXAsset;
+	}
+	if (!Spec.ImpactNiagaraVFXAsset.IsNull())
+	{
+		ImpactVFXAsset = Spec.ImpactNiagaraVFXAsset;
+	}
+	if (!Spec.CastSFXAsset.IsNull())
+	{
+		CastSFXAsset = Spec.CastSFXAsset;
+	}
+	if (!Spec.FlySFXAsset.IsNull())
+	{
+		FlightSFXAsset = Spec.FlySFXAsset;
+	}
+	if (!Spec.ImpactSFXAsset.IsNull())
+	{
+		ImpactSFXAsset = Spec.ImpactSFXAsset;
+	}
+}
+
 void ADBAChainLightningSpell::CastChainLightning(AActor* InCaster, AActor* InitialTarget)
 {
 	UWorld* World = GetWorld();
@@ -64,10 +119,6 @@ void ADBAChainLightningSpell::CastChainLightning(AActor* InCaster, AActor* Initi
 	}
 
 	AActor* CurrentTarget = InitialTarget ? InitialTarget : FindInitialTarget(InCaster);
-	if (!CurrentTarget || CurrentTarget == InCaster)
-	{
-		return;
-	}
 
 	TArray<FVector_NetQuantize> Sources;
 	TArray<FVector_NetQuantize> Targets;
@@ -75,9 +126,18 @@ void ADBAChainLightningSpell::CastChainLightning(AActor* InCaster, AActor* Initi
 	TSet<TObjectPtr<AActor>> AlreadyHit;
 
 	FVector CurrentSource = ChainLightningSocketLocation(InCaster);
+	if (!CurrentTarget || CurrentTarget == InCaster)
+	{
+		const FVector FallbackTarget = CurrentSource + HorizontalForward(InCaster) * FMath::Max(JumpRadius * 0.78f, 420.0f);
+		Sources.Add(FVector_NetQuantize(CurrentSource));
+		Targets.Add(FVector_NetQuantize(MakeParallelTarget(CurrentSource, FallbackTarget)));
+		SegmentScales.Add(1.0f);
+		CurrentTarget = nullptr;
+	}
+
 	for (int32 JumpIndex = 0; JumpIndex < MaxJumps && CurrentTarget; ++JumpIndex)
 	{
-		const FVector CurrentTargetLocation = ChainLightningSocketLocation(CurrentTarget);
+		const FVector CurrentTargetLocation = MakeParallelTarget(CurrentSource, ChainLightningSocketLocation(CurrentTarget));
 		const float SegmentScale = FMath::Pow(FMath::Clamp(DamageFalloffPerJump, 0.0f, 1.0f), JumpIndex);
 		Sources.Add(FVector_NetQuantize(CurrentSource));
 		Targets.Add(FVector_NetQuantize(CurrentTargetLocation));
@@ -263,9 +323,25 @@ void ADBAChainLightningSpell::SpawnArcSegment(const FVector& Source, const FVect
 	}
 	else
 	{
-		TArray<FSoftObjectPath> Paths;
-		DBAAsyncAssetLoader::AddPreloadPath(ArcVFXAsset, Paths);
-		DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBAChainLightningSpell*>(this), Paths);
+		UWorld* World = GetWorld();
+		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, ArcVFXAsset, [World, MidPoint, Rotation, ArcScale](UNiagaraSystem* LoadedVFX)
+		{
+			if (!IsUsableChainWorld(World) || !LoadedVFX)
+			{
+				return;
+			}
+
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				World,
+				LoadedVFX,
+				MidPoint,
+				Rotation,
+				ArcScale,
+				true,
+				true,
+				ENCPoolMethod::AutoRelease,
+				true);
+		});
 	}
 
 	if (UNiagaraSystem* BranchVFX = BranchVFXAsset.Get())
@@ -284,9 +360,28 @@ void ADBAChainLightningSpell::SpawnArcSegment(const FVector& Source, const FVect
 	}
 	else
 	{
-		TArray<FSoftObjectPath> Paths;
-		DBAAsyncAssetLoader::AddPreloadPath(BranchVFXAsset, Paths);
-		DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBAChainLightningSpell*>(this), Paths);
+		UWorld* World = GetWorld();
+		const FVector BranchLocation = MidPoint + Rotation.RotateVector(FVector(0.0f, 0.0f, 26.0f + 18.0f * SegmentScale));
+		const FRotator BranchRotation = Rotation + FRotator(0.0f, 18.0f, 0.0f);
+		const FVector BranchScale(0.55f + SegmentScale * 0.35f);
+		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, BranchVFXAsset, [World, BranchLocation, BranchRotation, BranchScale](UNiagaraSystem* LoadedVFX)
+		{
+			if (!IsUsableChainWorld(World) || !LoadedVFX)
+			{
+				return;
+			}
+
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				World,
+				LoadedVFX,
+				BranchLocation,
+				BranchRotation,
+				BranchScale,
+				true,
+				true,
+				ENCPoolMethod::AutoRelease,
+				true);
+		});
 	}
 
 	PlaySFXAtLocation(FlightSFXAsset, MidPoint, 0.50f + SegmentScale * 0.14f);
@@ -314,9 +409,26 @@ void ADBAChainLightningSpell::SpawnImpactBurst(const FVector& Location, float Se
 	}
 	else
 	{
-		TArray<FSoftObjectPath> Paths;
-		DBAAsyncAssetLoader::AddPreloadPath(ImpactVFXAsset, Paths);
-		DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBAChainLightningSpell*>(this), Paths);
+		UWorld* World = GetWorld();
+		const FVector ImpactScale(0.82f + SegmentScale * 0.42f);
+		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, ImpactVFXAsset, [World, Location, ImpactScale](UNiagaraSystem* LoadedVFX)
+		{
+			if (!IsUsableChainWorld(World) || !LoadedVFX)
+			{
+				return;
+			}
+
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				World,
+				LoadedVFX,
+				Location,
+				FRotator::ZeroRotator,
+				ImpactScale,
+				true,
+				true,
+				ENCPoolMethod::AutoRelease,
+				true);
+		});
 	}
 
 	PlaySFXAtLocation(ImpactSFXAsset, Location, 0.76f + SegmentScale * 0.18f);
@@ -335,9 +447,15 @@ void ADBAChainLightningSpell::PlaySFXAtLocation(const TSoftObjectPtr<USoundBase>
 	}
 	else
 	{
-		TArray<FSoftObjectPath> Paths;
-		DBAAsyncAssetLoader::AddPreloadPath(Asset, Paths);
-		DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBAChainLightningSpell*>(this), Paths);
+		UWorld* World = GetWorld();
+		DBAAsyncAssetLoader::RequestAsyncAsset<USoundBase>(World, Asset, [World, Location, Volume](USoundBase* LoadedSFX)
+		{
+			if (!IsUsableChainWorld(World) || !LoadedSFX)
+			{
+				return;
+			}
+			UGameplayStatics::PlaySoundAtLocation(World, LoadedSFX, Location, Volume);
+		});
 	}
 }
 

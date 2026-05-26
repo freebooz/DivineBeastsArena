@@ -21,9 +21,12 @@
 class UNiagaraComponent;
 class UNiagaraSystem;
 class UAudioComponent;
+class UMaterialInterface;
+class UPointLightComponent;
 class UPrimitiveComponent;
 class USoundBase;
 class USphereComponent;
+class UStaticMeshComponent;
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API ADBASkillProjectileBase : public AActor
@@ -56,6 +59,8 @@ public:
 
 	virtual void PreloadPresentationAssets();
 
+	virtual void Tick(float DeltaSeconds) override;
+
 protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastApplyProjectileVisuals(const FString& ProjectileVFXPath, const FString& ProjectileNiagaraVFXPath, const FString& FlySFXPath);
@@ -65,12 +70,20 @@ protected:
 
 	void ApplyProjectileVisualsLocal(const FString& ProjectileVFXPath, const FString& ProjectileNiagaraVFXPath, const FString& FlySFXPath);
 	void PlayImpactFeedbackLocal(const FString& ImpactVFXPath, const FString& ImpactNiagaraVFXPath, const FString& ImpactSFXPath, const FVector& HitLocation, const FRotator& HitRotation);
+	void ApplyFallbackFlightVisuals();
+	FLinearColor ResolveFallbackFlightColor() const;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USphereComponent> CollisionSphere;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UStaticMeshComponent> ProjectileFallbackCore;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UPointLightComponent> ProjectileFallbackLight;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UParticleSystemComponent> ProjectileVFX;
@@ -135,12 +148,19 @@ public:
 
 protected:
 	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInterface> ProjectileFallbackMaterial;
+
+	UPROPERTY(Transient)
 	TObjectPtr<AActor> ProjectileOwner;
 
 	UPROPERTY(Transient)
 	TObjectPtr<AActor> TargetActor;
 
 	bool bProjectileHitProcessed = false;
+	bool bMaintainFlightPlane = false;
+	float FlightPlaneZ = 0.0f;
+
+	virtual void LifeSpanExpired() override;
 
 	UFUNCTION()
 	void HandleProjectileHit(

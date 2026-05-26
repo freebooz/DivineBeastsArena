@@ -49,6 +49,8 @@ protected:
 	void BuildTopLeftAvatarPanel(UCanvasPanel* RootCanvas);
 	void BuildBottomSkillBar(UCanvasPanel* RootCanvas);
 	void BuildTopRightMinimap(UCanvasPanel* RootCanvas);
+	void ResolveBoundWidgetsFromWidgetTree();
+	void BindSkillButtonDelegates();
 	void ApplyResponsiveLayout(const FVector2D& ViewportSize);
 	void EnforceLobbyHudLayoutLimits();
 
@@ -121,6 +123,21 @@ protected:
 	TObjectPtr<UImage> AvatarFrameImage;
 
 	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> AvatarLevelText;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> AvatarHealthBarImage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> AvatarHealthText;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> AvatarManaBarImage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> AvatarManaText;
+
+	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> AvatarNameText;
 
 	UPROPERTY(Transient)
@@ -161,6 +178,9 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UCanvasPanel> MinimapDotCanvas;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> MinimapFrameImage;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UImage>> MinimapDots;

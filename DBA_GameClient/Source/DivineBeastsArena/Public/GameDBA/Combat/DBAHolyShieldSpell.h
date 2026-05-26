@@ -16,6 +16,7 @@ class UNiagaraSystem;
 class USceneComponent;
 class USoundBase;
 class UNiagaraComponent;
+struct FDBAPlayableSkillRuntimeSpec;
 
 UCLASS(Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API ADBAHolyShieldSpell : public AActor
@@ -28,6 +29,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Holy Shield")
 	void CastHolyShield(AActor* InCaster, AActor* PreferredTarget = nullptr);
 
+	void ConfigureFromSkillSpec(const FDBAPlayableSkillRuntimeSpec& Spec);
 	void PreloadPresentationAssets();
 
 protected:
@@ -44,6 +46,9 @@ protected:
 	TSoftObjectPtr<UNiagaraSystem> BarrierVFXAsset;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Holy Shield|VFX")
+	TSoftObjectPtr<UNiagaraSystem> FlightVFXAsset;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Holy Shield|VFX")
 	TSoftObjectPtr<UNiagaraSystem> ImpactVFXAsset;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Holy Shield|SFX")
@@ -56,7 +61,11 @@ protected:
 	TSoftObjectPtr<USoundBase> ImpactSFXAsset;
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastPlayShieldStart(AActor* TargetActor, FVector_NetQuantize Location);
+	void MulticastPlayShieldStart(
+		AActor* TargetActor,
+		FVector_NetQuantize SourceLocation,
+		FVector_NetQuantize FlightTargetLocation,
+		FVector_NetQuantize ImpactLocation);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayShieldEnd(FVector_NetQuantize Location);
@@ -66,6 +75,7 @@ private:
 	void ReleaseShield();
 	UNiagaraComponent* SpawnVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, const FVector& Location, const FRotator& Rotation, const FVector& Scale, bool bAutoDestroy = true) const;
 	UNiagaraComponent* SpawnAttachedVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, AActor* TargetActor, const FVector& RelativeOffset, const FRotator& Rotation, const FVector& Scale, bool bAutoDestroy = true) const;
+	void SpawnTravelVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, const FVector& SourceLocation, const FVector& TargetLocation, float WidthScale) const;
 	void PlaySFX(const TSoftObjectPtr<USoundBase>& Asset, const FVector& Location, float Volume = 1.0f) const;
 
 	UPROPERTY(Transient)

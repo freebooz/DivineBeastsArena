@@ -114,9 +114,9 @@ namespace
 			TEXT("GameplayCue.DBA.Skill.Projectile"),
 			TEXT("GameplayCue.DBA.Skill.Impact"),
 			TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingGrove_Area.NS_WoodCrane_Q_HealingGrove_Area"),
-			TEXT("/Game/DBA/VFX/Common/Impact/NS_Impact_Heal_Burst.NS_Impact_Heal_Burst"),
+			TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingSeed_Projectile.NS_WoodCrane_Q_HealingSeed_Projectile"),
 			TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingBurst_Impact.NS_WoodCrane_Q_HealingBurst_Impact"),
-			nullptr,
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_PreCast.SFX_BloomHealing_PreCast"),
 			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_Flight.SFX_BloomHealing_Flight"),
 			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_Impact.SFX_BloomHealing_Impact")
 		};
@@ -134,7 +134,7 @@ namespace
 			TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Eletric_01.NS_Hit_Eletric_01"),
 			TEXT("/Game/ProjectileHitVFX/NS/NS_ThunderBolt.NS_ThunderBolt"),
 			TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Thunder.NS_Hit_Thunder"),
-			nullptr,
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_ChainLightning_PreCast.SFX_ChainLightning_PreCast"),
 			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_ChainLightning_Flight.SFX_ChainLightning_Flight"),
 			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_ChainLightning_Impact.SFX_ChainLightning_Impact")
 		};
@@ -149,10 +149,10 @@ namespace
 			1.22f,
 			TEXT("GameplayCue.DBA.Skill.Projectile"),
 			TEXT("GameplayCue.DBA.Skill.Impact"),
-			nullptr,
-			TEXT("/Game/DBA/VFX/Common/Status/NS_Status_Shielded.NS_Status_Shielded"),
+			TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Bless.NS_Hit_Bless"),
 			TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy"),
-			nullptr,
+			TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy"),
+			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_PreCast.SFX_PriestShield_PreCast"),
 			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_Flight.SFX_PriestShield_Flight"),
 			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_Impact.SFX_PriestShield_Impact")
 		};
@@ -322,6 +322,11 @@ namespace
 		Projectile->ImpactNiagaraVFXAsset = Spec.ImpactNiagaraVFXAsset;
 		Projectile->FlySFXAsset = Spec.FlySFXAsset;
 		Projectile->ImpactSFXAsset = Spec.ImpactSFXAsset;
+	}
+
+	bool IsUsablePresentationWorld(const UWorld* World)
+	{
+		return IsValid(World);
 	}
 }
 
@@ -700,10 +705,11 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		}
 
 		AActor* HealTarget = Cast<ADBAZodiacCharacterBase>(TargetActor) ? TargetActor : this;
+		MulticastPlayLobbySkillCastFeedback(SkillSlot);
+		BloomSpell->ConfigureFromSkillSpec(Spec);
 		BloomSpell->CastBloomHealing(this, HealTarget);
 		SkillCooldowns[SkillSlot] = Spec.Cooldown;
 		SkillMaxCooldowns[SkillSlot] = Spec.Cooldown;
-		MulticastPlayLobbySkillCastFeedback(SkillSlot);
 		UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放绽放治疗：施法者=%s 技能=%s 目标=%s 法术=%s"),
 			*GetName(),
 			*Spec.SkillId.ToString(),
@@ -734,10 +740,11 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 			return;
 		}
 
+		MulticastPlayLobbySkillCastFeedback(SkillSlot);
+		ChainSpell->ConfigureFromSkillSpec(Spec);
 		ChainSpell->CastChainLightning(this, TargetActor);
 		SkillCooldowns[SkillSlot] = Spec.Cooldown;
 		SkillMaxCooldowns[SkillSlot] = Spec.Cooldown;
-		MulticastPlayLobbySkillCastFeedback(SkillSlot);
 		UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放链式闪电：施法者=%s 技能=%s 初始目标=%s 法术=%s"),
 			*GetName(),
 			*Spec.SkillId.ToString(),
@@ -769,10 +776,11 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		}
 
 		AActor* ShieldTarget = Cast<ADBAZodiacCharacterBase>(TargetActor) ? TargetActor : this;
+		MulticastPlayLobbySkillCastFeedback(SkillSlot);
+		ShieldSpell->ConfigureFromSkillSpec(Spec);
 		ShieldSpell->CastHolyShield(this, ShieldTarget);
 		SkillCooldowns[SkillSlot] = Spec.Cooldown;
 		SkillMaxCooldowns[SkillSlot] = Spec.Cooldown;
-		MulticastPlayLobbySkillCastFeedback(SkillSlot);
 		UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放牧师护盾：施法者=%s 技能=%s 目标=%s 法术=%s"),
 			*GetName(),
 			*Spec.SkillId.ToString(),
@@ -829,11 +837,11 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 	}
 
 	ApplyLobbySkillProjectileAssets(Fireball, Spec);
+	MulticastPlayLobbySkillCastFeedback(SkillSlot);
 	Fireball->InitializeProjectile(Spec.SkillId, this, TargetActor, Spec.Magnitude, Spec.ProjectileSpeed, Spec.ProjectileRadius);
 	Fireball->LaunchProjectile(SafeAimDirection);
 	SkillCooldowns[SkillSlot] = Spec.Cooldown;
 	SkillMaxCooldowns[SkillSlot] = Spec.Cooldown;
-	MulticastPlayLobbySkillCastFeedback(SkillSlot);
 
 	UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放装配技能：施法者=%s 槽位=%d 技能=%s 投射物=%s 类=%s 目标=%s 水平方向=%s"),
 		*GetName(),
@@ -898,9 +906,33 @@ void ADBAZodiacCharacterBase::PlayLobbySkillCastFeedbackLocal(int32 SkillSlot)
 		}
 		else
 		{
-			TArray<FSoftObjectPath> Paths;
-			DBAAsyncAssetLoader::AddPreloadPath(Spec.CastNiagaraVFXAsset, Paths);
-			DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
+			TWeakObjectPtr<ADBAZodiacCharacterBase> WeakThis(this);
+			const FVector RelativeLocation = CastRelativeLocation;
+			const FVector Scale(Spec.CastVFXScale);
+			DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(this, Spec.CastNiagaraVFXAsset, [WeakThis, RelativeLocation, Scale](UNiagaraSystem* LoadedVFX)
+			{
+				ADBAZodiacCharacterBase* StrongThis = WeakThis.Get();
+				if (!StrongThis || !LoadedVFX || StrongThis->GetNetMode() == NM_DedicatedServer)
+				{
+					return;
+				}
+
+				if (USceneComponent* Root = StrongThis->GetRootComponent())
+				{
+					UNiagaraFunctionLibrary::SpawnSystemAttached(
+						LoadedVFX,
+						Root,
+						NAME_None,
+						RelativeLocation,
+						FRotator::ZeroRotator,
+						Scale,
+						EAttachLocation::KeepRelativeOffset,
+						true,
+						ENCPoolMethod::AutoRelease,
+						true,
+						true);
+				}
+			});
 		}
 	}
 
@@ -919,9 +951,26 @@ void ADBAZodiacCharacterBase::PlayLobbySkillCastFeedbackLocal(int32 SkillSlot)
 		}
 		else
 		{
-			TArray<FSoftObjectPath> Paths;
-			DBAAsyncAssetLoader::AddPreloadPath(Spec.CastSFXAsset, Paths);
-			DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
+			TWeakObjectPtr<ADBAZodiacCharacterBase> WeakThis(this);
+			const FVector RelativeLocation = CastRelativeLocation;
+			const FVector WorldLocation = CastLocation;
+			DBAAsyncAssetLoader::RequestAsyncAsset<USoundBase>(this, Spec.CastSFXAsset, [WeakThis, RelativeLocation, WorldLocation](USoundBase* LoadedSFX)
+			{
+				ADBAZodiacCharacterBase* StrongThis = WeakThis.Get();
+				if (!StrongThis || !LoadedSFX || StrongThis->GetNetMode() == NM_DedicatedServer)
+				{
+					return;
+				}
+
+				if (USceneComponent* Root = StrongThis->GetRootComponent())
+				{
+					UGameplayStatics::SpawnSoundAttached(LoadedSFX, Root, NAME_None, RelativeLocation, EAttachLocation::KeepRelativeOffset, true, 0.85f);
+				}
+				else if (IsUsablePresentationWorld(StrongThis->GetWorld()))
+				{
+					UGameplayStatics::PlaySoundAtLocation(StrongThis->GetWorld(), LoadedSFX, WorldLocation, 0.85f);
+				}
+			});
 		}
 	}
 }

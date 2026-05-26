@@ -12,6 +12,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "Components/AudioComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
@@ -22,11 +23,14 @@
 #include "GameDBA/GAS/DBAAbilitySystemComponent.h"
 #include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "Kismet/GameplayStatics.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Particles/ParticleSystem.h"
 #include "Sound/SoundBase.h"
+#include "UObject/ConstructorHelpers.h"
 
 namespace
 {
@@ -169,6 +173,11 @@ namespace
 			DBAASC->OnSkillCueExecuted.Broadcast(CueTag.GetTagName(), CueTarget);
 		}
 	}
+
+	bool IsUsableWorld(const UWorld* World)
+	{
+		return IsValid(World);
+	}
 }
 
 ADBASkillProjectileBase::ADBASkillProjectileBase()
@@ -186,10 +195,29 @@ ADBASkillProjectileBase::ADBASkillProjectileBase()
 	CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &ADBASkillProjectileBase::HandleProjectileOverlap);
 	RootComponent = CollisionSphere;
 
-	UStaticMeshComponent* MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
-	MeshComp->SetupAttachment(RootComponent);
-	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	MeshComp->SetHiddenInGame(true);
+	ProjectileFallbackCore = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileFallbackCore"));
+	ProjectileFallbackCore->SetupAttachment(RootComponent);
+	ProjectileFallbackCore->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ProjectileFallbackCore->SetCastShadow(false);
+	ProjectileFallbackCore->SetRelativeScale3D(FVector(0.18f));
+
+	ProjectileFallbackLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("ProjectileFallbackLight"));
+	ProjectileFallbackLight->SetupAttachment(RootComponent);
+	ProjectileFallbackLight->Intensity = 3600.0f;
+	ProjectileFallbackLight->AttenuationRadius = 360.0f;
+	ProjectileFallbackLight->bUseInverseSquaredFalloff = false;
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMeshFinder(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+	if (SphereMeshFinder.Succeeded() && ProjectileFallbackCore)
+	{
+		ProjectileFallbackCore->SetStaticMesh(SphereMeshFinder.Object);
+	}
+
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> FallbackMaterialFinder(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+	if (FallbackMaterialFinder.Succeeded())
+	{
+		ProjectileFallbackMaterial = FallbackMaterialFinder.Object;
+	}
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovement->UpdatedComponent = RootComponent;
@@ -237,6 +265,7 @@ void ADBASkillProjectileBase::InitializeProjectile(
 	const FString ProjectileNiagaraVFXPath = SoftObjectPathString(ProjectileNiagaraVFXAsset.ToSoftObjectPath());
 	const FString FlySFXPath = SoftObjectPathString(FlySFXAsset.ToSoftObjectPath());
 	PreloadPresentationAssets();
+	ApplyFallbackFlightVisuals();
 	ApplyProjectileVisualsLocal(ProjectileVFXPath, ProjectileNiagaraVFXPath, FlySFXPath);
 	if (HasAuthority() && GetNetMode() != NM_Standalone)
 	{
@@ -247,7 +276,9 @@ void ADBASkillProjectileBase::InitializeProjectile(
 
 	if (InTarget)
 	{
-		LaunchProjectile(InTarget->GetActorLocation() - GetActorLocation());
+		FVector TargetDirection = InTarget->GetActorLocation() - GetActorLocation();
+		TargetDirection.Z = 0.0f;
+		LaunchProjectile(TargetDirection);
 	}
 }
 
@@ -370,14 +401,59 @@ void ADBASkillProjectileBase::LaunchProjectile(const FVector& Direction)
 		return;
 	}
 
-	const FVector SafeDirection = Direction.GetSafeNormal();
+	FVector HorizontalDirection = Direction;
+	HorizontalDirection.Z = 0.0f;
+	FVector SafeDirection = HorizontalDirection.GetSafeNormal();
 	if (SafeDirection.IsNearlyZero())
+	{
+		SafeDirection = GetActorForwardVector();
+		SafeDirection.Z = 0.0f;
+		SafeDirection = SafeDirection.GetSafeNormal();
+		if (SafeDirection.IsNearlyZero())
+		{
+			return;
+		}
+	}
+
+	FlightPlaneZ = GetActorLocation().Z;
+	bMaintainFlightPlane = true;
+	ProjectileMovement->Velocity = SafeDirection * Speed;
+	SetActorRotation(FRotator(0.0f, SafeDirection.Rotation().Yaw, 0.0f));
+}
+
+void ADBASkillProjectileBase::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (!bMaintainFlightPlane || bProjectileHitProcessed)
 	{
 		return;
 	}
 
-	ProjectileMovement->Velocity = SafeDirection * Speed;
-	SetActorRotation(SafeDirection.Rotation());
+	FVector CurrentLocation = GetActorLocation();
+	if (!FMath::IsNearlyEqual(CurrentLocation.Z, FlightPlaneZ, 0.5f))
+	{
+		CurrentLocation.Z = FlightPlaneZ;
+		SetActorLocation(CurrentLocation, false, nullptr, ETeleportType::TeleportPhysics);
+	}
+
+	if (ProjectileMovement)
+	{
+		FVector Velocity = ProjectileMovement->Velocity;
+		Velocity.Z = 0.0f;
+		ProjectileMovement->Velocity = Velocity;
+	}
+}
+
+void ADBASkillProjectileBase::LifeSpanExpired()
+{
+	if (!bProjectileHitProcessed)
+	{
+		OnProjectileHit(nullptr, GetActorLocation());
+		return;
+	}
+
+	Super::LifeSpanExpired();
 }
 
 void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocation)
@@ -406,6 +482,14 @@ void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocat
 	if (ProjectileNiagaraVFX)
 	{
 		ProjectileNiagaraVFX->Deactivate();
+	}
+	if (ProjectileFallbackCore)
+	{
+		ProjectileFallbackCore->SetVisibility(false, true);
+	}
+	if (ProjectileFallbackLight)
+	{
+		ProjectileFallbackLight->Deactivate();
 	}
 
 	const FString ImpactVFXPath = SoftObjectPathString(ImpactVFXAsset.ToSoftObjectPath());
@@ -501,9 +585,25 @@ void ADBASkillProjectileBase::PlayImpactFeedbackLocal(
 		}
 		else
 		{
-			TArray<FSoftObjectPath> Paths;
-			DBAAsyncAssetLoader::AddPreloadPath(VFXAsset, Paths);
-			DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
+			UWorld* World = GetWorld();
+			DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, VFXAsset, [World, HitLocation, HitRotation](UNiagaraSystem* LoadedVFX)
+			{
+				if (!IsUsableWorld(World) || !LoadedVFX)
+				{
+					return;
+				}
+
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+					World,
+					LoadedVFX,
+					HitLocation,
+					HitRotation,
+					FVector(1.0f),
+					true,
+					true,
+					ENCPoolMethod::AutoRelease,
+					true);
+			});
 		}
 	}
 
@@ -516,9 +616,15 @@ void ADBASkillProjectileBase::PlayImpactFeedbackLocal(
 		}
 		else
 		{
-			TArray<FSoftObjectPath> Paths;
-			DBAAsyncAssetLoader::AddPreloadPath(VFXAsset, Paths);
-			DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
+			UWorld* World = GetWorld();
+			DBAAsyncAssetLoader::RequestAsyncAsset<UParticleSystem>(World, VFXAsset, [World, HitLocation](UParticleSystem* LoadedVFX)
+			{
+				if (!IsUsableWorld(World) || !LoadedVFX)
+				{
+					return;
+				}
+				UGameplayStatics::SpawnEmitterAtLocation(World, LoadedVFX, HitLocation, FRotator::ZeroRotator, true);
+			});
 		}
 	}
 
@@ -531,10 +637,66 @@ void ADBASkillProjectileBase::PlayImpactFeedbackLocal(
 		}
 		else
 		{
-			TArray<FSoftObjectPath> Paths;
-			DBAAsyncAssetLoader::AddPreloadPath(SFXAsset, Paths);
-			DBAAsyncAssetLoader::RequestAsyncPreload(this, Paths);
+			UWorld* World = GetWorld();
+			DBAAsyncAssetLoader::RequestAsyncAsset<USoundBase>(World, SFXAsset, [World, HitLocation](USoundBase* LoadedSFX)
+			{
+				if (!IsUsableWorld(World) || !LoadedSFX)
+				{
+					return;
+				}
+				UGameplayStatics::PlaySoundAtLocation(World, LoadedSFX, HitLocation);
+			});
 		}
+	}
+}
+
+void ADBASkillProjectileBase::ApplyFallbackFlightVisuals()
+{
+	const FLinearColor FlightColor = ResolveFallbackFlightColor();
+
+	if (ProjectileFallbackCore)
+	{
+		ProjectileFallbackCore->SetHiddenInGame(false);
+		ProjectileFallbackCore->SetVisibility(true, true);
+		ProjectileFallbackCore->SetRelativeScale3D(FVector(FMath::Clamp(Radius / 220.0f, 0.14f, 0.34f)));
+
+		if (ProjectileFallbackMaterial)
+		{
+			if (UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(ProjectileFallbackMaterial, this))
+			{
+				DynamicMaterial->SetVectorParameterValue(TEXT("Color"), FlightColor);
+				DynamicMaterial->SetVectorParameterValue(TEXT("BaseColor"), FlightColor);
+				DynamicMaterial->SetVectorParameterValue(TEXT("EmissiveColor"), FlightColor * 6.0f);
+				ProjectileFallbackCore->SetMaterial(0, DynamicMaterial);
+			}
+		}
+	}
+
+	if (ProjectileFallbackLight)
+	{
+		ProjectileFallbackLight->SetLightColor(FlightColor);
+		ProjectileFallbackLight->Intensity = 3000.0f + Radius * 42.0f;
+		ProjectileFallbackLight->AttenuationRadius = 260.0f + Radius * 4.0f;
+		ProjectileFallbackLight->Activate(true);
+	}
+}
+
+FLinearColor ADBASkillProjectileBase::ResolveFallbackFlightColor() const
+{
+	switch (DamageElement)
+	{
+	case EDBAElement::Fire:
+		return FLinearColor(1.0f, 0.34f, 0.05f, 1.0f);
+	case EDBAElement::Water:
+		return FLinearColor(0.36f, 0.78f, 1.0f, 1.0f);
+	case EDBAElement::Wood:
+		return FLinearColor(0.32f, 1.0f, 0.45f, 1.0f);
+	case EDBAElement::Gold:
+		return FLinearColor(0.78f, 0.38f, 1.0f, 1.0f);
+	case EDBAElement::Earth:
+		return FLinearColor(1.0f, 0.78f, 0.34f, 1.0f);
+	default:
+		return FLinearColor(0.65f, 0.78f, 1.0f, 1.0f);
 	}
 }
 

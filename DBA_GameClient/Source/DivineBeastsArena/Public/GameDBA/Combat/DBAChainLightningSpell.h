@@ -17,6 +17,7 @@ Readable notes:
 class UNiagaraSystem;
 class USceneComponent;
 class USoundBase;
+struct FDBAPlayableSkillRuntimeSpec;
 
 UCLASS(Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API ADBAChainLightningSpell : public AActor
@@ -32,6 +33,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Chain Lightning")
 	AActor* FindInitialTarget(AActor* InCaster) const;
 
+	void ConfigureFromSkillSpec(const FDBAPlayableSkillRuntimeSpec& Spec);
 	void PreloadPresentationAssets();
 
 protected:

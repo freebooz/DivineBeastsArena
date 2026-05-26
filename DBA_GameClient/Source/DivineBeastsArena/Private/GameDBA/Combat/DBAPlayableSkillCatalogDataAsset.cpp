@@ -77,6 +77,12 @@ namespace
 	{
 		bool bIsValid = true;
 
+		if (Spec.CastNiagaraVFXAsset.IsNull())
+		{
+			AddSkillValidationError(OutErrors, Spec, TEXT("CastNiagaraVFXAsset is not configured"));
+			bIsValid = false;
+		}
+
 		if (Spec.ProjectileNiagaraVFXAsset.IsNull())
 		{
 			AddSkillValidationError(OutErrors, Spec, TEXT("ProjectileNiagaraVFXAsset is not configured"));

@@ -43,11 +43,20 @@
 namespace
 {
 	constexpr int32 LobbySkillSlotCount = 7;
-	const FVector2D LobbyAvatarPanelLimit(190.0f, 58.0f);
-	const FVector2D LobbySkillSlotLimit(42.667f, 42.667f);
-	const FVector2D LobbySkillBarLimit(344.0f, 53.333f);
+	const FVector2D LobbyAvatarPanelLimit(320.0f, 120.0f);
+	const FVector2D LobbySkillSlotLimit(64.0f, 64.0f);
+	const FVector2D LobbySkillBarLimit(760.0f, 118.0f);
+	const FVector2D LobbyMinimapLimit(260.0f, 260.0f);
+	constexpr float LobbyMinimapInnerCircleRadiusRatio = 0.386f;
+	constexpr float LobbyMinimapDotDiameter = 9.0f;
 	const TCHAR* DesktopSkillHotkeys[LobbySkillSlotCount] = { TEXT("AUTO"), TEXT("1"), TEXT("2"), TEXT("3"), TEXT("4"), TEXT("5"), TEXT("AUTO") };
 	const TCHAR* MobileSkillHotkeys[LobbySkillSlotCount] = { TEXT("AUTO"), TEXT("S1"), TEXT("S2"), TEXT("S3"), TEXT("S4"), TEXT("ULT"), TEXT("AUTO") };
+	const TCHAR* LobbyHudUnitFrameTexture = TEXT("/Game/DBA/UI/Lobby/HUD/Textures/T_DBA_LobbyHUD_UnitFrame_512x192.T_DBA_LobbyHUD_UnitFrame_512x192");
+	const TCHAR* LobbyHudPortraitTexture = TEXT("/Game/DBA/UI/Lobby/HUD/Textures/T_DBA_LobbyHUD_PlayerPortrait_Default_256.T_DBA_LobbyHUD_PlayerPortrait_Default_256");
+	const TCHAR* LobbyHudPortraitFrameTexture = TEXT("/Game/DBA/UI/Lobby/HUD/Textures/T_DBA_LobbyHUD_PortraitFrame_256.T_DBA_LobbyHUD_PortraitFrame_256");
+	const TCHAR* LobbyHudSkillBarTexture = TEXT("/Game/DBA/UI/Lobby/HUD/Textures/T_DBA_LobbyHUD_SkillBar_1024x160.T_DBA_LobbyHUD_SkillBar_1024x160");
+	const TCHAR* LobbyHudSkillSlotTexture = TEXT("/Game/DBA/UI/Lobby/HUD/Textures/T_DBA_LobbyHUD_SkillSlot_128.T_DBA_LobbyHUD_SkillSlot_128");
+	const TCHAR* LobbyHudMinimapFrameTexture = TEXT("/Game/DBA/UI/Lobby/HUD/Textures/T_DBA_LobbyHUD_MinimapFrame_512.T_DBA_LobbyHUD_MinimapFrame_512");
 
 	bool IsMobilePlatform()
 	{
@@ -147,6 +156,16 @@ namespace
 		return ObjectPath ? LoadObject<UTexture2D>(nullptr, ObjectPath) : nullptr;
 	}
 
+	template<typename WidgetType>
+	WidgetType* FindHudWidget(UWidgetTree* WidgetTree, const TCHAR* WidgetName)
+	{
+		if (!WidgetTree || !WidgetName)
+		{
+			return nullptr;
+		}
+		return Cast<WidgetType>(WidgetTree->FindWidget(FName(WidgetName)));
+	}
+
 	void ApplyTextureBrush(UImage* Image, UTexture2D* Texture, const FLinearColor& Tint)
 	{
 		if (!Image)
@@ -196,6 +215,23 @@ namespace
 		Style.SetPressedPadding(FMargin(0.0f));
 		return Style;
 	}
+
+	FVector2D ClampMinimapOffsetToInnerCircle(const FVector2D& NormalizedOffset, const FVector2D& MapPixelSize)
+	{
+		const FVector2D MapCenter = MapPixelSize * 0.5f;
+		const float DotRadius = LobbyMinimapDotDiameter * 0.5f;
+		const float InnerRadius = FMath::Min(MapPixelSize.X, MapPixelSize.Y) * LobbyMinimapInnerCircleRadiusRatio;
+		const float SafeRadius = FMath::Max(1.0f, InnerRadius - DotRadius - 2.0f);
+
+		FVector2D ClampedOffset = NormalizedOffset;
+		const float OffsetLength = ClampedOffset.Size();
+		if (OffsetLength > 1.0f)
+		{
+			ClampedOffset /= OffsetLength;
+		}
+
+		return MapCenter + ClampedOffset * SafeRadius;
+	}
 }
 
 UDBALobbyPlayerHUDWidgetBase::UDBALobbyPlayerHUDWidgetBase(const FObjectInitializer& ObjectInitializer)
@@ -208,15 +244,19 @@ UDBALobbyPlayerHUDWidgetBase::UDBALobbyPlayerHUDWidgetBase(const FObjectInitiali
 void UDBALobbyPlayerHUDWidgetBase::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
+	ResolveBoundWidgetsFromWidgetTree();
 	EnforceLobbyHudLayoutLimits();
 	BuildDefaultLayoutIfNeeded();
+	BindSkillButtonDelegates();
 }
 
 void UDBALobbyPlayerHUDWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+	ResolveBoundWidgetsFromWidgetTree();
 	EnforceLobbyHudLayoutLimits();
 	BuildDefaultLayoutIfNeeded();
+	BindSkillButtonDelegates();
 	BindButtonClickAudio();
 	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	RefreshFromCurrentCharacterData();
@@ -258,6 +298,18 @@ void UDBALobbyPlayerHUDWidgetBase::RefreshFromCurrentCharacterData()
 			AvatarMetaText->SetText(PawnZodiac == EDBAZodiac::None
 				? FText::FromString(TEXT("No Character Data"))
 				: FText::Format(FText::FromString(TEXT("{0} | Lobby | Lv.1")), ZodiacToShortText(PawnZodiac)));
+		}
+		if (AvatarLevelText)
+		{
+			AvatarLevelText->SetText(FText::FromString(TEXT("1")));
+		}
+		if (AvatarHealthText)
+		{
+			AvatarHealthText->SetText(FText::FromString(TEXT("1,285 / 1,285 (100%)")));
+		}
+		if (AvatarManaText)
+		{
+			AvatarManaText->SetText(FText::FromString(TEXT("2,146 / 2,520 (85%)")));
 		}
 		if (AvatarImage && PawnZodiac != EDBAZodiac::None)
 		{
@@ -308,6 +360,18 @@ void UDBALobbyPlayerHUDWidgetBase::RefreshFromCurrentCharacterData()
 			FMath::Max(1, Summary.Level));
 		AvatarMetaText->SetText(FText::FromString(MetaString));
 	}
+	if (AvatarLevelText)
+	{
+		AvatarLevelText->SetText(FText::AsNumber(FMath::Max(1, Summary.Level)));
+	}
+	if (AvatarHealthText)
+	{
+		AvatarHealthText->SetText(FText::FromString(TEXT("1,285 / 1,285 (100%)")));
+	}
+	if (AvatarManaText)
+	{
+		AvatarManaText->SetText(FText::FromString(TEXT("2,146 / 2,520 (85%)")));
+	}
 	if (AvatarImage)
 	{
 		AvatarImage->SetColorAndOpacity(ZodiacToColor(Zodiac));
@@ -324,6 +388,7 @@ void UDBALobbyPlayerHUDWidgetBase::RefreshFromCurrentCharacterData()
 void UDBALobbyPlayerHUDWidgetBase::BuildDefaultLayoutIfNeeded()
 {
 	EnforceLobbyHudLayoutLimits();
+	ResolveBoundWidgetsFromWidgetTree();
 
 	if (!WidgetTree)
 	{
@@ -350,6 +415,8 @@ void UDBALobbyPlayerHUDWidgetBase::BuildDefaultLayoutIfNeeded()
 		WidgetTree->RootWidget = SafeZone;
 	}
 
+	ResolveBoundWidgetsFromWidgetTree();
+
 	if (!AvatarRootBorder)
 	{
 		BuildTopLeftAvatarPanel(RootCanvasPanel);
@@ -362,12 +429,15 @@ void UDBALobbyPlayerHUDWidgetBase::BuildDefaultLayoutIfNeeded()
 	{
 		BuildTopRightMinimap(RootCanvasPanel);
 	}
+
+	ResolveBoundWidgetsFromWidgetTree();
 }
 
 void UDBALobbyPlayerHUDWidgetBase::EnforceLobbyHudLayoutLimits()
 {
 	AvatarPanelSize = LobbyAvatarPanelLimit;
 	SkillSlotSize = LobbySkillSlotLimit;
+	MinimapSize = LobbyMinimapLimit;
 
 	if (AvatarRootSlot)
 	{
@@ -379,6 +449,12 @@ void UDBALobbyPlayerHUDWidgetBase::EnforceLobbyHudLayoutLimits()
 	{
 		SkillBarRootSlot->SetAutoSize(false);
 		SkillBarRootSlot->SetSize(LobbySkillBarLimit);
+	}
+
+	if (MinimapRootSlot)
+	{
+		MinimapRootSlot->SetAutoSize(false);
+		MinimapRootSlot->SetSize(MinimapSize);
 	}
 
 	if (AvatarRootBorder)
@@ -400,6 +476,147 @@ void UDBALobbyPlayerHUDWidgetBase::EnforceLobbyHudLayoutLimits()
 			SkillSlotBorder->SetClipping(EWidgetClipping::ClipToBounds);
 			SkillSlotBorder->SetDesiredSizeScale(FVector2D(1.0f, 1.0f));
 			SkillSlotBorder->SetRenderScale(FVector2D(1.0f, 1.0f));
+		}
+	}
+}
+
+void UDBALobbyPlayerHUDWidgetBase::ResolveBoundWidgetsFromWidgetTree()
+{
+	if (!WidgetTree)
+	{
+		return;
+	}
+
+	if (!RootCanvasPanel)
+	{
+		RootCanvasPanel = FindHudWidget<UCanvasPanel>(WidgetTree, TEXT("LobbyHUDCanvas"));
+		if (!RootCanvasPanel)
+		{
+			RootCanvasPanel = Cast<UCanvasPanel>(WidgetTree->RootWidget);
+		}
+		if (!RootCanvasPanel)
+		{
+			if (USafeZone* ExistingSafeZone = Cast<USafeZone>(WidgetTree->RootWidget))
+			{
+				RootCanvasPanel = Cast<UCanvasPanel>(ExistingSafeZone->GetChildAt(0));
+			}
+		}
+	}
+
+	if (!AvatarRootBorder) { AvatarRootBorder = FindHudWidget<UBorder>(WidgetTree, TEXT("LobbyHUD_AvatarRoot")); }
+	if (!AvatarImage) { AvatarImage = FindHudWidget<UImage>(WidgetTree, TEXT("LobbyHUD_AvatarImage")); }
+	if (!AvatarBackdropImage) { AvatarBackdropImage = FindHudWidget<UImage>(WidgetTree, TEXT("LobbyHUD_AvatarBackdrop")); }
+	if (!AvatarFrameImage) { AvatarFrameImage = FindHudWidget<UImage>(WidgetTree, TEXT("LobbyHUD_AvatarFrame")); }
+	if (!AvatarLevelText) { AvatarLevelText = FindHudWidget<UTextBlock>(WidgetTree, TEXT("LobbyHUD_AvatarLevelText")); }
+	if (!AvatarHealthBarImage) { AvatarHealthBarImage = FindHudWidget<UImage>(WidgetTree, TEXT("LobbyHUD_AvatarHealthFill")); }
+	if (!AvatarHealthText) { AvatarHealthText = FindHudWidget<UTextBlock>(WidgetTree, TEXT("LobbyHUD_AvatarHealthText")); }
+	if (!AvatarManaBarImage) { AvatarManaBarImage = FindHudWidget<UImage>(WidgetTree, TEXT("LobbyHUD_AvatarManaFill")); }
+	if (!AvatarManaText) { AvatarManaText = FindHudWidget<UTextBlock>(WidgetTree, TEXT("LobbyHUD_AvatarManaText")); }
+	if (!AvatarNameText) { AvatarNameText = FindHudWidget<UTextBlock>(WidgetTree, TEXT("LobbyHUD_AvatarNameText")); }
+	if (!AvatarMetaText) { AvatarMetaText = FindHudWidget<UTextBlock>(WidgetTree, TEXT("LobbyHUD_AvatarMetaText")); }
+
+	if (!SkillBarRootBorder) { SkillBarRootBorder = FindHudWidget<UBorder>(WidgetTree, TEXT("LobbyHUD_SkillBarRoot")); }
+	if (!SkillBarBackdropImage) { SkillBarBackdropImage = FindHudWidget<UImage>(WidgetTree, TEXT("LobbyHUD_SkillBarBackdrop")); }
+	if (!MinimapRootBorder) { MinimapRootBorder = FindHudWidget<UBorder>(WidgetTree, TEXT("LobbyHUD_MinimapRoot")); }
+	if (!MinimapFrameImage) { MinimapFrameImage = FindHudWidget<UImage>(WidgetTree, TEXT("LobbyHUD_MinimapBackImage")); }
+	if (!MinimapDotCanvas) { MinimapDotCanvas = FindHudWidget<UCanvasPanel>(WidgetTree, TEXT("LobbyHUD_MinimapDotCanvas")); }
+
+	if (AvatarRootBorder) { AvatarRootSlot = Cast<UCanvasPanelSlot>(AvatarRootBorder->Slot); }
+	if (SkillBarRootBorder) { SkillBarRootSlot = Cast<UCanvasPanelSlot>(SkillBarRootBorder->Slot); }
+	if (MinimapRootBorder)
+	{
+		MinimapRootSlot = Cast<UCanvasPanelSlot>(MinimapRootBorder->Slot);
+		MinimapRootBorder->SetClipping(EWidgetClipping::ClipToBounds);
+	}
+	if (MinimapDotCanvas)
+	{
+		MinimapDotCanvas->SetClipping(EWidgetClipping::ClipToBounds);
+	}
+
+	if (SkillSlotBorders.Num() == 0)
+	{
+		for (int32 Index = 0; Index < LobbySkillSlotCount; ++Index)
+		{
+			if (UBorder* SkillSlotBorder = FindHudWidget<UBorder>(WidgetTree, *FString::Printf(TEXT("LobbyHUD_SkillSlot_%d"), Index)))
+			{
+				SkillSlotBorders.Add(SkillSlotBorder);
+			}
+			if (UButton* SkillButton = FindHudWidget<UButton>(WidgetTree, *FString::Printf(TEXT("LobbyHUD_SkillButton_%d"), Index)))
+			{
+				SkillSlotButtons.Add(SkillButton);
+			}
+			if (UImage* SkillBack = FindHudWidget<UImage>(WidgetTree, *FString::Printf(TEXT("LobbyHUD_SkillBack_%d"), Index)))
+			{
+				SkillSlotBackdropImages.Add(SkillBack);
+			}
+			if (UImage* CooldownOverlay = FindHudWidget<UImage>(WidgetTree, *FString::Printf(TEXT("LobbyHUD_SkillCooldownOverlay_%d"), Index)))
+			{
+				SkillCooldownOverlayImages.Add(CooldownOverlay);
+			}
+			if (UImage* ReadyGlow = FindHudWidget<UImage>(WidgetTree, *FString::Printf(TEXT("LobbyHUD_SkillGlow_%d"), Index)))
+			{
+				SkillReadyGlowImages.Add(ReadyGlow);
+			}
+			if (UTextBlock* NameText = FindHudWidget<UTextBlock>(WidgetTree, *FString::Printf(TEXT("LobbyHUD_SkillName_%d"), Index)))
+			{
+				SkillNameTexts.Add(NameText);
+			}
+			if (UTextBlock* CooldownText = FindHudWidget<UTextBlock>(WidgetTree, *FString::Printf(TEXT("LobbyHUD_SkillCD_%d"), Index)))
+			{
+				SkillCooldownTexts.Add(CooldownText);
+			}
+			if (UTextBlock* HotkeyText = FindHudWidget<UTextBlock>(WidgetTree, *FString::Printf(TEXT("LobbyHUD_SkillHotkey_%d"), Index)))
+			{
+				SkillHotkeyTexts.Add(HotkeyText);
+			}
+		}
+	}
+}
+
+void UDBALobbyPlayerHUDWidgetBase::BindSkillButtonDelegates()
+{
+	for (int32 Index = 0; Index < SkillSlotButtons.Num(); ++Index)
+	{
+		UButton* SkillButton = SkillSlotButtons[Index];
+		if (!SkillButton)
+		{
+			continue;
+		}
+
+		SkillButton->SetStyle(MakeSkillSlotButtonStyle());
+		SkillButton->SetClickMethod(EButtonClickMethod::MouseDown);
+		SkillButton->SetTouchMethod(EButtonTouchMethod::Down);
+
+		switch (Index)
+		{
+		case 1:
+			SkillButton->SetIsEnabled(true);
+			SkillButton->OnClicked.RemoveDynamic(this, &UDBALobbyPlayerHUDWidgetBase::HandleSkill01ButtonClicked);
+			SkillButton->OnClicked.AddDynamic(this, &UDBALobbyPlayerHUDWidgetBase::HandleSkill01ButtonClicked);
+			break;
+		case 2:
+			SkillButton->SetIsEnabled(true);
+			SkillButton->OnClicked.RemoveDynamic(this, &UDBALobbyPlayerHUDWidgetBase::HandleSkill02ButtonClicked);
+			SkillButton->OnClicked.AddDynamic(this, &UDBALobbyPlayerHUDWidgetBase::HandleSkill02ButtonClicked);
+			break;
+		case 3:
+			SkillButton->SetIsEnabled(true);
+			SkillButton->OnClicked.RemoveDynamic(this, &UDBALobbyPlayerHUDWidgetBase::HandleSkill03ButtonClicked);
+			SkillButton->OnClicked.AddDynamic(this, &UDBALobbyPlayerHUDWidgetBase::HandleSkill03ButtonClicked);
+			break;
+		case 4:
+			SkillButton->SetIsEnabled(true);
+			SkillButton->OnClicked.RemoveDynamic(this, &UDBALobbyPlayerHUDWidgetBase::HandleSkill04ButtonClicked);
+			SkillButton->OnClicked.AddDynamic(this, &UDBALobbyPlayerHUDWidgetBase::HandleSkill04ButtonClicked);
+			break;
+		case 5:
+			SkillButton->SetIsEnabled(true);
+			SkillButton->OnClicked.RemoveDynamic(this, &UDBALobbyPlayerHUDWidgetBase::HandleUltimateButtonClicked);
+			SkillButton->OnClicked.AddDynamic(this, &UDBALobbyPlayerHUDWidgetBase::HandleUltimateButtonClicked);
+			break;
+		default:
+			SkillButton->SetIsEnabled(false);
+			break;
 		}
 	}
 }
@@ -434,8 +651,8 @@ void UDBALobbyPlayerHUDWidgetBase::BuildTopLeftAvatarPanel(UCanvasPanel* RootCan
 	AvatarBackdropImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("LobbyHUD_AvatarBackdrop"));
 	ApplyTextureBrush(
 		AvatarBackdropImage,
-		LoadHudTexture(TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginPanel_StoneGold.T_DBA_LoginPanel_StoneGold")),
-		FLinearColor(0.28f, 0.22f, 0.16f, 0.92f));
+		LoadHudTexture(LobbyHudUnitFrameTexture),
+		FLinearColor(1.0f, 1.0f, 1.0f, 1.0f));
 	if (UOverlaySlot* BackdropSlot = AvatarOverlay->AddChildToOverlay(AvatarBackdropImage))
 	{
 		BackdropSlot->SetHorizontalAlignment(HAlign_Fill);
@@ -462,8 +679,8 @@ void UDBALobbyPlayerHUDWidgetBase::BuildTopLeftAvatarPanel(UCanvasPanel* RootCan
 	AvatarImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("LobbyHUD_AvatarImage"));
 	ApplyTextureBrush(
 		AvatarImage,
-		LoadHudTexture(TEXT("/Game/DBA/Characters/Rosales/Meshes/T_Rosales_Diffuse.T_Rosales_Diffuse")),
-		FLinearColor(0.18f, 0.48f, 1.0f, 1.0f));
+		LoadHudTexture(LobbyHudPortraitTexture),
+		FLinearColor(1.0f, 1.0f, 1.0f, 1.0f));
 	const float PortraitSize = FMath::Clamp(LocalPanelSize.Y - 12.0f, 38.0f, 46.0f);
 	AvatarImage->SetDesiredSizeOverride(FVector2D(PortraitSize, PortraitSize));
 	if (UOverlaySlot* PortraitImageSlot = PortraitOverlay->AddChildToOverlay(AvatarImage))
@@ -476,8 +693,8 @@ void UDBALobbyPlayerHUDWidgetBase::BuildTopLeftAvatarPanel(UCanvasPanel* RootCan
 	AvatarFrameImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("LobbyHUD_AvatarFrame"));
 	ApplyTextureBrush(
 		AvatarFrameImage,
-		LoadHudTexture(TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginButton_ParchmentGold.T_DBA_LoginButton_ParchmentGold")),
-		FLinearColor(1.0f, 0.76f, 0.24f, 0.96f));
+		LoadHudTexture(LobbyHudPortraitFrameTexture),
+		FLinearColor(1.0f, 1.0f, 1.0f, 1.0f));
 	AvatarFrameImage->SetDesiredSizeOverride(FVector2D(PortraitSize, PortraitSize));
 	if (UOverlaySlot* PortraitFrameSlot = PortraitOverlay->AddChildToOverlay(AvatarFrameImage))
 	{
@@ -539,8 +756,8 @@ void UDBALobbyPlayerHUDWidgetBase::BuildBottomSkillBar(UCanvasPanel* RootCanvas)
 	SkillBarBackdropImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("LobbyHUD_SkillBarBackdrop"));
 	ApplyTextureBrush(
 		SkillBarBackdropImage,
-		LoadHudTexture(TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginPanel_StoneGold.T_DBA_LoginPanel_StoneGold")),
-		FLinearColor(0.22f, 0.17f, 0.11f, 0.88f));
+		LoadHudTexture(LobbyHudSkillBarTexture),
+		FLinearColor(1.0f, 1.0f, 1.0f, 1.0f));
 	SkillBarBackdropImage->SetDesiredSizeOverride(bMobile ? LobbySkillBarLimit * 0.94f : LobbySkillBarLimit);
 	SkillBarBackdropImage->SetClipping(EWidgetClipping::ClipToBounds);
 	if (UOverlaySlot* BackdropSlot = SkillBarOverlay->AddChildToOverlay(SkillBarBackdropImage))
@@ -621,7 +838,7 @@ void UDBALobbyPlayerHUDWidgetBase::BuildBottomSkillBar(UCanvasPanel* RootCanvas)
 		UImage* SlotBackdrop = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), *FString::Printf(TEXT("LobbyHUD_SkillBack_%d"), Index));
 		ApplyTextureBrush(
 			SlotBackdrop,
-			LoadHudTexture(TEXT("/Game/DBA/UI/Lobby/Login/Textures/T_DBA_LoginButton_ParchmentGold.T_DBA_LoginButton_ParchmentGold")),
+			LoadHudTexture(LobbyHudSkillSlotTexture),
 			SkillGemColor(Index));
 		SlotBackdrop->SetDesiredSizeOverride(LocalSlotSize);
 		SlotBackdrop->SetClipping(EWidgetClipping::ClipToBounds);
@@ -759,7 +976,11 @@ void UDBALobbyPlayerHUDWidgetBase::BuildTopRightMinimap(UCanvasPanel* RootCanvas
 	MinimapRootBorder->SetContent(MinimapOverlay);
 
 	UImage* MapBackImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("LobbyHUD_MinimapBackImage"));
-	MapBackImage->SetColorAndOpacity(FLinearColor(0.08f, 0.14f, 0.1f, 0.9f));
+	MinimapFrameImage = MapBackImage;
+	ApplyTextureBrush(
+		MapBackImage,
+		LoadHudTexture(LobbyHudMinimapFrameTexture),
+		FLinearColor(1.0f, 1.0f, 1.0f, 1.0f));
 	if (UOverlaySlot* BackSlot = MinimapOverlay->AddChildToOverlay(MapBackImage))
 	{
 		BackSlot->SetHorizontalAlignment(HAlign_Fill);
@@ -817,7 +1038,16 @@ void UDBALobbyPlayerHUDWidgetBase::UpdateMinimap()
 		MinimapDots.Add(Dot);
 	}
 
-	const FVector2D MapPixelSize = MinimapRootBorder ? MinimapRootBorder->GetCachedGeometry().GetLocalSize() : MinimapSize;
+	FVector2D MapPixelSize = MinimapDotCanvas ? MinimapDotCanvas->GetCachedGeometry().GetLocalSize() : FVector2D::ZeroVector;
+	if (MapPixelSize.X <= 1.0f || MapPixelSize.Y <= 1.0f)
+	{
+		MapPixelSize = MinimapRootBorder ? MinimapRootBorder->GetCachedGeometry().GetLocalSize() : MinimapSize;
+	}
+	if (MapPixelSize.X <= 1.0f || MapPixelSize.Y <= 1.0f)
+	{
+		MapPixelSize = MinimapSize;
+	}
+
 	for (int32 Index = 0; Index < MinimapDots.Num(); ++Index)
 	{
 		if (UImage* Dot = MinimapDots[Index])
@@ -837,12 +1067,8 @@ void UDBALobbyPlayerHUDWidgetBase::UpdateMinimap()
 
 		const FVector Relative = Character->GetActorLocation() - MinimapOriginWorld;
 		const float HalfRange = FMath::Max(1.0f, MinimapWorldRange * 0.5f);
-		const float NormalizedX = FMath::Clamp(Relative.Y / HalfRange, -1.0f, 1.0f);
-		const float NormalizedY = FMath::Clamp(Relative.X / HalfRange, -1.0f, 1.0f);
-
-		const FVector2D PixelPos(
-			(0.5f + 0.46f * NormalizedX) * MapPixelSize.X,
-			(0.5f - 0.46f * NormalizedY) * MapPixelSize.Y);
+		const FVector2D NormalizedOffset(Relative.Y / HalfRange, -Relative.X / HalfRange);
+		const FVector2D PixelPos = ClampMinimapOffsetToInnerCircle(NormalizedOffset, MapPixelSize);
 
 		if (UCanvasPanelSlot* DotSlot = Cast<UCanvasPanelSlot>(Dot->Slot))
 		{

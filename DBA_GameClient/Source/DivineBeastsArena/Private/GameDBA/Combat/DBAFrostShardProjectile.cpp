@@ -278,16 +278,8 @@ void ADBAFrostShardProjectile::ActivateNiagaraComponent(UNiagaraComponent* Compo
 	}
 	else
 	{
-		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(const_cast<ADBAFrostShardProjectile*>(this), Asset, [this, Component](UNiagaraSystem* LoadedVFX)
-		{
-			if (!Component || bProjectileHitProcessed)
-			{
-				return;
-			}
-			Component->SetAsset(LoadedVFX);
-			Component->SetVisibility(true);
-			Component->Activate(true);
-		});
+		// Optional frost wake layers are warmed by UDBAPlayableSkillComponent.
+		// Do not compile or load them from the cast path; the base projectile core remains visible.
 	}
 }
 
@@ -341,8 +333,6 @@ void ADBAFrostShardProjectile::SpawnImpactLayer(
 	}
 	else
 	{
-		TArray<FSoftObjectPath> Paths;
-		DBAAsyncAssetLoader::AddPreloadPath(Asset, Paths);
-		DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBAFrostShardProjectile*>(this), Paths);
+		// Optional impact layers are skipped if not warmed yet to keep key-press casting hitch-free.
 	}
 }

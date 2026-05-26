@@ -15,6 +15,7 @@ Readable notes:
 class UNiagaraSystem;
 class USceneComponent;
 class USoundBase;
+struct FDBAPlayableSkillRuntimeSpec;
 
 UCLASS(Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API ADBABloomHealingSpell : public AActor
@@ -27,6 +28,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Bloom Healing")
 	void CastBloomHealing(AActor* InCaster, AActor* PreferredTarget = nullptr);
 
+	void ConfigureFromSkillSpec(const FDBAPlayableSkillRuntimeSpec& Spec);
 	void PreloadPresentationAssets();
 
 protected:
@@ -64,7 +66,11 @@ protected:
 	TSoftObjectPtr<USoundBase> BloomSFXAsset;
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastPlayBloomStart(AActor* AnchorActor, FVector_NetQuantize Location);
+	void MulticastPlayBloomStart(
+		AActor* AnchorActor,
+		FVector_NetQuantize SourceLocation,
+		FVector_NetQuantize FlightTargetLocation,
+		FVector_NetQuantize BloomLocation);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayBloomRelease(FVector_NetQuantize Location, const TArray<FVector_NetQuantize>& HealTargetLocations);
@@ -74,6 +80,7 @@ private:
 	void ApplyHealing(AActor* Target) const;
 	void SpawnVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, const FVector& Location, const FRotator& Rotation, const FVector& Scale) const;
 	void SpawnAttachedVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, AActor* AnchorActor, const FVector& RelativeOffset, const FRotator& Rotation, const FVector& Scale) const;
+	void SpawnTravelVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, const FVector& SourceLocation, const FVector& TargetLocation, float WidthScale) const;
 	void PlaySFX(const TSoftObjectPtr<USoundBase>& Asset, const FVector& Location, float Volume = 1.0f) const;
 	TArray<AActor*> ResolveHealTargets(AActor* Caster, AActor* PreferredTarget) const;
 

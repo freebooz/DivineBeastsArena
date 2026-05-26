@@ -11,6 +11,7 @@ Readable notes:
 #include "Components/SceneComponent.h"
 #include "Engine/OverlapResult.h"
 #include "Engine/World.h"
+#include "GameDBA/Combat/DBAPlayableSkillTypes.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "Kismet/GameplayStatics.h"
@@ -26,6 +27,36 @@ namespace
 		return Actor ? Actor->GetActorLocation() + FVector(0.0f, 0.0f, 8.0f) : FVector::ZeroVector;
 	}
 
+	FVector BloomFlightSocketLocation(AActor* Actor)
+	{
+		return Actor ? Actor->GetActorLocation() + FVector(0.0f, 0.0f, 86.0f) : FVector::ZeroVector;
+	}
+
+	FVector BloomCastSourceLocation(AActor* Caster, AActor* AnchorActor)
+	{
+		if (!Caster)
+		{
+			return BloomFlightSocketLocation(AnchorActor);
+		}
+
+		FVector Forward = Caster->GetActorForwardVector();
+		Forward.Z = 0.0f;
+		Forward = Forward.GetSafeNormal();
+		if (Forward.IsNearlyZero())
+		{
+			Forward = FVector::ForwardVector;
+		}
+		return BloomFlightSocketLocation(Caster) + Forward * 96.0f;
+	}
+
+	FRotator BloomTravelRotation(const FVector& Source, const FVector& Target)
+	{
+		FVector Direction = Target - Source;
+		Direction.Z = 0.0f;
+		Direction = Direction.GetSafeNormal();
+		return Direction.IsNearlyZero() ? FRotator::ZeroRotator : Direction.Rotation();
+	}
+
 	UAbilitySystemComponent* ResolveASC(AActor* Actor)
 	{
 		if (!Actor)
@@ -39,6 +70,11 @@ namespace
 		}
 
 		return Actor->GetOwner() ? Actor->GetOwner()->FindComponentByClass<UAbilitySystemComponent>() : nullptr;
+	}
+
+	bool IsUsableBloomWorld(const UWorld* World)
+	{
+		return IsValid(World);
 	}
 }
 
@@ -60,6 +96,39 @@ ADBABloomHealingSpell::ADBABloomHealingSpell()
 	BloomSFXAsset = TSoftObjectPtr<USoundBase>(FSoftObjectPath(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_Impact.SFX_BloomHealing_Impact")));
 }
 
+void ADBABloomHealingSpell::ConfigureFromSkillSpec(const FDBAPlayableSkillRuntimeSpec& Spec)
+{
+	if (Spec.Magnitude > 0.0f)
+	{
+		HealAmount = Spec.Magnitude;
+	}
+	if (!Spec.CastNiagaraVFXAsset.IsNull())
+	{
+		GroveVFXAsset = Spec.CastNiagaraVFXAsset;
+	}
+	if (!Spec.ProjectileNiagaraVFXAsset.IsNull())
+	{
+		SeedVFXAsset = Spec.ProjectileNiagaraVFXAsset;
+	}
+	if (!Spec.ImpactNiagaraVFXAsset.IsNull())
+	{
+		BloomVFXAsset = Spec.ImpactNiagaraVFXAsset;
+		PulseVFXAsset = Spec.ImpactNiagaraVFXAsset;
+	}
+	if (!Spec.CastSFXAsset.IsNull())
+	{
+		CastSFXAsset = Spec.CastSFXAsset;
+	}
+	if (!Spec.FlySFXAsset.IsNull())
+	{
+		FlightSFXAsset = Spec.FlySFXAsset;
+	}
+	if (!Spec.ImpactSFXAsset.IsNull())
+	{
+		BloomSFXAsset = Spec.ImpactSFXAsset;
+	}
+}
+
 void ADBABloomHealingSpell::CastBloomHealing(AActor* InCaster, AActor* PreferredTarget)
 {
 	if (!InCaster || !GetWorld())
@@ -76,11 +145,14 @@ void ADBABloomHealingSpell::CastBloomHealing(AActor* InCaster, AActor* Preferred
 	CachedPreferredTarget = PreferredTarget;
 	AActor* AnchorActor = PreferredTarget ? PreferredTarget : InCaster;
 	const FVector CastLocation = BloomGroundLocation(AnchorActor);
+	const FVector SourceLocation = BloomCastSourceLocation(InCaster, AnchorActor);
+	FVector FlightTargetLocation = BloomFlightSocketLocation(AnchorActor);
+	FlightTargetLocation.Z = SourceLocation.Z;
 	PreloadPresentationAssets();
-	MulticastPlayBloomStart(AnchorActor, CastLocation);
+	MulticastPlayBloomStart(AnchorActor, SourceLocation, FlightTargetLocation, CastLocation);
 	if (GetNetMode() == NM_Standalone)
 	{
-		MulticastPlayBloomStart_Implementation(AnchorActor, CastLocation);
+		MulticastPlayBloomStart_Implementation(AnchorActor, SourceLocation, FlightTargetLocation, CastLocation);
 	}
 
 	GetWorldTimerManager().SetTimer(BloomTimerHandle, this, &ADBABloomHealingSpell::ReleaseBloom, BloomDelay, false);
@@ -117,14 +189,21 @@ void ADBABloomHealingSpell::ReleaseBloom()
 	SetLifeSpan(1.25f);
 }
 
-void ADBABloomHealingSpell::MulticastPlayBloomStart_Implementation(AActor* AnchorActor, FVector_NetQuantize Location)
+void ADBABloomHealingSpell::MulticastPlayBloomStart_Implementation(
+	AActor* AnchorActor,
+	FVector_NetQuantize SourceLocation,
+	FVector_NetQuantize FlightTargetLocation,
+	FVector_NetQuantize BloomLocation)
 {
 	if (GetNetMode() == NM_DedicatedServer)
 	{
 		return;
 	}
 
-	const FVector StartLocation(Location);
+	const FVector Source(SourceLocation);
+	const FVector FlightTarget(FlightTargetLocation);
+	const FVector StartLocation(BloomLocation);
+	SpawnTravelVFX(SeedVFXAsset, Source, FlightTarget, 0.72f);
 	if (AnchorActor)
 	{
 		SpawnAttachedVFX(GroveVFXAsset, AnchorActor, FVector(0.0f, 0.0f, 8.0f), FRotator::ZeroRotator, FVector(0.92f));
@@ -135,8 +214,8 @@ void ADBABloomHealingSpell::MulticastPlayBloomStart_Implementation(AActor* Ancho
 		SpawnVFX(GroveVFXAsset, StartLocation, FRotator::ZeroRotator, FVector(0.92f));
 		SpawnVFX(SeedVFXAsset, StartLocation + FVector(0.0f, 0.0f, 54.0f), FRotator::ZeroRotator, FVector(0.72f));
 	}
-	PlaySFX(CastSFXAsset, StartLocation, 0.82f);
-	PlaySFX(FlightSFXAsset, StartLocation + FVector(0.0f, 0.0f, 42.0f), 0.66f);
+	PlaySFX(CastSFXAsset, Source, 0.82f);
+	PlaySFX(FlightSFXAsset, (Source + FlightTarget) * 0.5f, 0.66f);
 }
 
 void ADBABloomHealingSpell::MulticastPlayBloomRelease_Implementation(FVector_NetQuantize Location, const TArray<FVector_NetQuantize>& HealTargetLocations)
@@ -197,9 +276,25 @@ void ADBABloomHealingSpell::SpawnVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset
 	}
 	else
 	{
-		TArray<FSoftObjectPath> Paths;
-		DBAAsyncAssetLoader::AddPreloadPath(Asset, Paths);
-		DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBABloomHealingSpell*>(this), Paths);
+		UWorld* World = GetWorld();
+		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, Asset, [World, Location, Rotation, Scale](UNiagaraSystem* LoadedVFX)
+		{
+			if (!IsUsableBloomWorld(World) || !LoadedVFX)
+			{
+				return;
+			}
+
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				World,
+				LoadedVFX,
+				Location,
+				Rotation,
+				Scale,
+				true,
+				true,
+				ENCPoolMethod::AutoRelease,
+				true);
+		});
 	}
 }
 
@@ -230,9 +325,84 @@ void ADBABloomHealingSpell::SpawnAttachedVFX(const TSoftObjectPtr<UNiagaraSystem
 	}
 	else
 	{
-		TArray<FSoftObjectPath> Paths;
-		DBAAsyncAssetLoader::AddPreloadPath(Asset, Paths);
-		DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBABloomHealingSpell*>(this), Paths);
+		TWeakObjectPtr<AActor> WeakAnchor(AnchorActor);
+		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(AnchorActor, Asset, [WeakAnchor, RelativeOffset, Rotation, Scale](UNiagaraSystem* LoadedVFX)
+		{
+			AActor* StrongAnchor = WeakAnchor.Get();
+			if (!StrongAnchor || !StrongAnchor->GetRootComponent() || StrongAnchor->GetNetMode() == NM_DedicatedServer || !LoadedVFX)
+			{
+				return;
+			}
+
+			UNiagaraFunctionLibrary::SpawnSystemAttached(
+				LoadedVFX,
+				StrongAnchor->GetRootComponent(),
+				NAME_None,
+				RelativeOffset,
+				Rotation,
+				Scale,
+				EAttachLocation::KeepRelativeOffset,
+				true,
+				ENCPoolMethod::AutoRelease,
+				true);
+		});
+	}
+}
+
+void ADBABloomHealingSpell::SpawnTravelVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, const FVector& SourceLocation, const FVector& TargetLocation, float WidthScale) const
+{
+	if (Asset.IsNull() || GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+
+	FVector HorizontalTarget = TargetLocation;
+	HorizontalTarget.Z = SourceLocation.Z;
+	const FVector Delta = HorizontalTarget - SourceLocation;
+	const float Distance = Delta.Size();
+	if (Distance <= KINDA_SMALL_NUMBER)
+	{
+		return;
+	}
+
+	const FVector MidPoint = SourceLocation + Delta * 0.5f;
+	const FRotator Rotation = BloomTravelRotation(SourceLocation, HorizontalTarget);
+	const FVector Scale(FMath::Max(Distance / 360.0f, 0.34f), WidthScale, WidthScale);
+
+	if (UNiagaraSystem* VFX = Asset.Get())
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			VFX,
+			MidPoint,
+			Rotation,
+			Scale,
+			true,
+			true,
+			ENCPoolMethod::AutoRelease,
+			true);
+	}
+	else
+	{
+		UWorld* World = GetWorld();
+		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, Asset, [World, MidPoint, Rotation, Scale](UNiagaraSystem* LoadedVFX)
+		{
+			if (!IsUsableBloomWorld(World) || !LoadedVFX)
+			{
+				return;
+			}
+
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				World,
+				LoadedVFX,
+				MidPoint,
+				Rotation,
+				Scale,
+				true,
+				true,
+				ENCPoolMethod::AutoRelease,
+				true);
+		});
 	}
 }
 
@@ -249,9 +419,15 @@ void ADBABloomHealingSpell::PlaySFX(const TSoftObjectPtr<USoundBase>& Asset, con
 	}
 	else
 	{
-		TArray<FSoftObjectPath> Paths;
-		DBAAsyncAssetLoader::AddPreloadPath(Asset, Paths);
-		DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBABloomHealingSpell*>(this), Paths);
+		UWorld* World = GetWorld();
+		DBAAsyncAssetLoader::RequestAsyncAsset<USoundBase>(World, Asset, [World, Location, Volume](USoundBase* LoadedSFX)
+		{
+			if (!IsUsableBloomWorld(World) || !LoadedSFX)
+			{
+				return;
+			}
+			UGameplayStatics::PlaySoundAtLocation(World, LoadedSFX, Location, Volume);
+		});
 	}
 }
 

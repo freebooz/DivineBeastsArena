@@ -10,6 +10,7 @@ Readable notes:
 #include "AbilitySystemComponent.h"
 #include "Components/SceneComponent.h"
 #include "Engine/World.h"
+#include "GameDBA/Combat/DBAPlayableSkillTypes.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "Kismet/GameplayStatics.h"
@@ -26,6 +27,32 @@ namespace
 		return Actor ? Actor->GetActorLocation() + FVector(0.0f, 0.0f, 74.0f) : FVector::ZeroVector;
 	}
 
+	FVector ShieldCastSourceLocation(AActor* Caster, AActor* Target)
+	{
+		if (!Caster)
+		{
+			return ShieldCenterLocation(Target);
+		}
+
+		FVector Forward = Caster->GetActorForwardVector();
+		Forward.Z = 0.0f;
+		Forward = Forward.GetSafeNormal();
+		if (Forward.IsNearlyZero())
+		{
+			Forward = FVector::ForwardVector;
+		}
+
+		return ShieldCenterLocation(Caster) + Forward * 96.0f;
+	}
+
+	FRotator ShieldTravelRotation(const FVector& Source, const FVector& Target)
+	{
+		FVector Direction = Target - Source;
+		Direction.Z = 0.0f;
+		Direction = Direction.GetSafeNormal();
+		return Direction.IsNearlyZero() ? FRotator::ZeroRotator : Direction.Rotation();
+	}
+
 	UAbilitySystemComponent* ResolveHolyShieldASC(AActor* Actor)
 	{
 		if (!Actor)
@@ -37,6 +64,11 @@ namespace
 			return ASC;
 		}
 		return Actor->GetOwner() ? Actor->GetOwner()->FindComponentByClass<UAbilitySystemComponent>() : nullptr;
+	}
+
+	bool IsUsableHolyShieldWorld(const UWorld* World)
+	{
+		return IsValid(World);
 	}
 }
 
@@ -51,10 +83,43 @@ ADBAHolyShieldSpell::ADBAHolyShieldSpell()
 
 	CastVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Bless.NS_Hit_Bless")));
 	BarrierVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/DBA/VFX/Common/Status/NS_Status_Shielded.NS_Status_Shielded")));
+	FlightVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy")));
 	ImpactVFXAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy")));
 	CastSFXAsset = TSoftObjectPtr<USoundBase>(FSoftObjectPath(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_PreCast.SFX_PriestShield_PreCast")));
 	SustainSFXAsset = TSoftObjectPtr<USoundBase>(FSoftObjectPath(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_Flight.SFX_PriestShield_Flight")));
 	ImpactSFXAsset = TSoftObjectPtr<USoundBase>(FSoftObjectPath(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_Impact.SFX_PriestShield_Impact")));
+}
+
+void ADBAHolyShieldSpell::ConfigureFromSkillSpec(const FDBAPlayableSkillRuntimeSpec& Spec)
+{
+	if (Spec.Magnitude > 0.0f)
+	{
+		ShieldAmount = Spec.Magnitude;
+	}
+	if (!Spec.CastNiagaraVFXAsset.IsNull())
+	{
+		CastVFXAsset = Spec.CastNiagaraVFXAsset;
+	}
+	if (!Spec.ProjectileNiagaraVFXAsset.IsNull())
+	{
+		FlightVFXAsset = Spec.ProjectileNiagaraVFXAsset;
+	}
+	if (!Spec.ImpactNiagaraVFXAsset.IsNull())
+	{
+		ImpactVFXAsset = Spec.ImpactNiagaraVFXAsset;
+	}
+	if (!Spec.CastSFXAsset.IsNull())
+	{
+		CastSFXAsset = Spec.CastSFXAsset;
+	}
+	if (!Spec.FlySFXAsset.IsNull())
+	{
+		SustainSFXAsset = Spec.FlySFXAsset;
+	}
+	if (!Spec.ImpactSFXAsset.IsNull())
+	{
+		ImpactSFXAsset = Spec.ImpactSFXAsset;
+	}
 }
 
 void ADBAHolyShieldSpell::CastHolyShield(AActor* InCaster, AActor* PreferredTarget)
@@ -72,11 +137,14 @@ void ADBAHolyShieldSpell::CastHolyShield(AActor* InCaster, AActor* PreferredTarg
 	ApplyShield(ShieldTarget);
 
 	const FVector Location = ShieldCenterLocation(ShieldTarget);
+	const FVector SourceLocation = ShieldCastSourceLocation(InCaster, ShieldTarget);
+	FVector FlightTargetLocation = Location;
+	FlightTargetLocation.Z = SourceLocation.Z;
 	PreloadPresentationAssets();
-	MulticastPlayShieldStart(ShieldTarget, Location);
+	MulticastPlayShieldStart(ShieldTarget, SourceLocation, FlightTargetLocation, Location);
 	if (GetNetMode() == NM_Standalone)
 	{
-		MulticastPlayShieldStart_Implementation(ShieldTarget, Location);
+		MulticastPlayShieldStart_Implementation(ShieldTarget, SourceLocation, FlightTargetLocation, Location);
 	}
 
 	GetWorldTimerManager().SetTimer(ShieldTimerHandle, this, &ADBAHolyShieldSpell::ReleaseShield, ShieldDuration, false);
@@ -136,15 +204,22 @@ void ADBAHolyShieldSpell::ReleaseShield()
 	Destroy();
 }
 
-void ADBAHolyShieldSpell::MulticastPlayShieldStart_Implementation(AActor* TargetActor, FVector_NetQuantize Location)
+void ADBAHolyShieldSpell::MulticastPlayShieldStart_Implementation(
+	AActor* TargetActor,
+	FVector_NetQuantize SourceLocation,
+	FVector_NetQuantize FlightTargetLocation,
+	FVector_NetQuantize ImpactLocation)
 {
 	if (GetNetMode() == NM_DedicatedServer)
 	{
 		return;
 	}
 
-	const FVector Center(Location);
-	SpawnVFX(CastVFXAsset, Center, FRotator::ZeroRotator, FVector(1.0f));
+	const FVector Source(SourceLocation);
+	const FVector FlightTarget(FlightTargetLocation);
+	const FVector Center(ImpactLocation);
+	SpawnVFX(CastVFXAsset, Source, FRotator::ZeroRotator, FVector(1.0f));
+	SpawnTravelVFX(FlightVFXAsset, Source, FlightTarget, 0.72f);
 	if (TargetActor)
 	{
 		ActiveBarrierVFX = SpawnAttachedVFX(BarrierVFXAsset, TargetActor, FVector(0.0f, 0.0f, 50.0f), FRotator::ZeroRotator, FVector(1.24f), false);
@@ -154,8 +229,8 @@ void ADBAHolyShieldSpell::MulticastPlayShieldStart_Implementation(AActor* Target
 		ActiveBarrierVFX = SpawnVFX(BarrierVFXAsset, Center - FVector(0.0f, 0.0f, 24.0f), FRotator::ZeroRotator, FVector(1.24f), false);
 	}
 	SpawnVFX(ImpactVFXAsset, Center, FRotator::ZeroRotator, FVector(0.74f));
-	PlaySFX(CastSFXAsset, Center, 0.82f);
-	PlaySFX(SustainSFXAsset, Center, 0.58f);
+	PlaySFX(CastSFXAsset, Source, 0.82f);
+	PlaySFX(SustainSFXAsset, (Source + FlightTarget) * 0.5f, 0.58f);
 	PlaySFX(ImpactSFXAsset, Center, 0.70f);
 }
 
@@ -201,9 +276,25 @@ UNiagaraComponent* ADBAHolyShieldSpell::SpawnVFX(const TSoftObjectPtr<UNiagaraSy
 		return SpawnLoaded(LoadedVFX);
 	}
 
-	TArray<FSoftObjectPath> Paths;
-	DBAAsyncAssetLoader::AddPreloadPath(Asset, Paths);
-	DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBAHolyShieldSpell*>(this), Paths);
+	UWorld* World = GetWorld();
+	DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, Asset, [World, Location, Rotation, Scale, bAutoDestroy](UNiagaraSystem* LoadedVFX)
+	{
+		if (!IsUsableHolyShieldWorld(World) || !LoadedVFX)
+		{
+			return;
+		}
+
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			World,
+			LoadedVFX,
+			Location,
+			Rotation,
+			Scale,
+			true,
+			bAutoDestroy,
+			ENCPoolMethod::AutoRelease,
+			true);
+	});
 
 	return nullptr;
 }
@@ -240,11 +331,52 @@ UNiagaraComponent* ADBAHolyShieldSpell::SpawnAttachedVFX(const TSoftObjectPtr<UN
 		return SpawnLoaded(LoadedVFX);
 	}
 
-	TArray<FSoftObjectPath> Paths;
-	DBAAsyncAssetLoader::AddPreloadPath(Asset, Paths);
-	DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBAHolyShieldSpell*>(this), Paths);
+	TWeakObjectPtr<AActor> WeakTarget(TargetActor);
+	DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(TargetActor, Asset, [WeakTarget, RelativeOffset, Rotation, Scale, bAutoDestroy](UNiagaraSystem* LoadedVFX)
+	{
+		AActor* StrongTarget = WeakTarget.Get();
+		if (!StrongTarget || !StrongTarget->GetRootComponent() || StrongTarget->GetNetMode() == NM_DedicatedServer || !LoadedVFX)
+		{
+			return;
+		}
+
+		UNiagaraFunctionLibrary::SpawnSystemAttached(
+			LoadedVFX,
+			StrongTarget->GetRootComponent(),
+			NAME_None,
+			RelativeOffset,
+			Rotation,
+			Scale,
+			EAttachLocation::KeepRelativeOffset,
+			bAutoDestroy,
+			ENCPoolMethod::AutoRelease,
+			true,
+			true);
+	});
 
 	return nullptr;
+}
+
+void ADBAHolyShieldSpell::SpawnTravelVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset, const FVector& SourceLocation, const FVector& TargetLocation, float WidthScale) const
+{
+	if (Asset.IsNull() || GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+
+	FVector HorizontalTarget = TargetLocation;
+	HorizontalTarget.Z = SourceLocation.Z;
+	const FVector Delta = HorizontalTarget - SourceLocation;
+	const float Distance = Delta.Size();
+	if (Distance <= KINDA_SMALL_NUMBER)
+	{
+		return;
+	}
+
+	const FVector MidPoint = SourceLocation + Delta * 0.5f;
+	const FRotator Rotation = ShieldTravelRotation(SourceLocation, HorizontalTarget);
+	const FVector Scale(FMath::Max(Distance / 360.0f, 0.34f), WidthScale, WidthScale);
+	SpawnVFX(Asset, MidPoint, Rotation, Scale);
 }
 
 void ADBAHolyShieldSpell::PlaySFX(const TSoftObjectPtr<USoundBase>& Asset, const FVector& Location, float Volume) const
@@ -260,9 +392,15 @@ void ADBAHolyShieldSpell::PlaySFX(const TSoftObjectPtr<USoundBase>& Asset, const
 	}
 	else
 	{
-		TArray<FSoftObjectPath> Paths;
-		DBAAsyncAssetLoader::AddPreloadPath(Asset, Paths);
-		DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<ADBAHolyShieldSpell*>(this), Paths);
+		UWorld* World = GetWorld();
+		DBAAsyncAssetLoader::RequestAsyncAsset<USoundBase>(World, Asset, [World, Location, Volume](USoundBase* LoadedSFX)
+		{
+			if (!IsUsableHolyShieldWorld(World) || !LoadedSFX)
+			{
+				return;
+			}
+			UGameplayStatics::PlaySoundAtLocation(World, LoadedSFX, Location, Volume);
+		});
 	}
 }
 
@@ -271,6 +409,7 @@ void ADBAHolyShieldSpell::PreloadPresentationAssets()
 	TArray<FSoftObjectPath> Paths;
 	DBAAsyncAssetLoader::AddPreloadPath(CastVFXAsset, Paths);
 	DBAAsyncAssetLoader::AddPreloadPath(BarrierVFXAsset, Paths);
+	DBAAsyncAssetLoader::AddPreloadPath(FlightVFXAsset, Paths);
 	DBAAsyncAssetLoader::AddPreloadPath(ImpactVFXAsset, Paths);
 	DBAAsyncAssetLoader::AddPreloadPath(CastSFXAsset, Paths);
 	DBAAsyncAssetLoader::AddPreloadPath(SustainSFXAsset, Paths);

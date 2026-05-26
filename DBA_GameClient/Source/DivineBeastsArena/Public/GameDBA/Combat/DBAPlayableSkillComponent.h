@@ -13,7 +13,10 @@ Readable notes:
 #include "Components/ActorComponent.h"
 #include "GameDBA/Combat/DBAPlayableSkillCatalogDataAsset.h"
 #include "GameDBA/Combat/DBAPlayableSkillTypes.h"
+#include "TimerManager.h"
 #include "DBAPlayableSkillComponent.generated.h"
+
+class UNiagaraSystem;
 
 UCLASS(ClassGroup=(DBA), meta=(BlueprintSpawnableComponent))
 class DIVINEBEASTSARENA_API UDBAPlayableSkillComponent : public UActorComponent
@@ -71,4 +74,12 @@ protected:
 private:
 	void BuildEffectiveSkillSpecs(TArray<FDBAPlayableSkillRuntimeSpec>& OutSpecs) const;
 	FName ResolveEquippedSkillId(int32 SkillSlot, FName FallbackSkillId) const;
+	void QueueNiagaraWarmupAssets();
+	void AddNiagaraWarmupPath(const TSoftObjectPtr<UNiagaraSystem>& Asset);
+	void AddNiagaraWarmupPath(const TCHAR* AssetPath);
+	void PumpNiagaraWarmupQueue();
+	void WarmUpNiagaraSystem(UNiagaraSystem* NiagaraSystem) const;
+
+	TArray<FSoftObjectPath> PendingNiagaraWarmupPaths;
+	FTimerHandle NiagaraWarmupTimerHandle;
 };

@@ -13,6 +13,8 @@
 #include "GameDBA/Services/DBASkillGroupGeneratorSubsystem.h"
 #include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "GameCore/Core/DBALogChannels.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Sound/SoundBase.h"
 
@@ -117,6 +119,7 @@ void UDBAPlayableSkillComponent::BeginPlay()
 	}
 
 	PreloadSkillPresentationAssets();
+	QueueNiagaraWarmupAssets();
 }
 
 bool UDBAPlayableSkillComponent::GetSkillSpec(int32 SkillSlot, FDBAPlayableSkillRuntimeSpec& OutSpec) const
@@ -215,7 +218,7 @@ void UDBAPlayableSkillComponent::ResetToDefaultSkillSpecs()
 	FDBAPlayableSkillRuntimeSpec Bloom = MakeSkill(3, TEXT("Lobby.Skill03.BloomHealing"), TEXT("Bloom Healing"), EDBAPlayableSkillEffectShape::BloomHealing, 115.0f, EDBAElement::Wood, 0.0f, 0.0f, 5.5f, 1.2f);
 	Bloom.BloomHealingClass = ADBABloomHealingSpell::StaticClass();
 	Bloom.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingGrove_Area.NS_WoodCrane_Q_HealingGrove_Area"));
-	Bloom.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Common/Impact/NS_Impact_Heal_Burst.NS_Impact_Heal_Burst"));
+	Bloom.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingSeed_Projectile.NS_WoodCrane_Q_HealingSeed_Projectile"));
 	Bloom.ImpactNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingBurst_Impact.NS_WoodCrane_Q_HealingBurst_Impact"));
 	Bloom.CastSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_PreCast.SFX_BloomHealing_PreCast"));
 	Bloom.FlySFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_Flight.SFX_BloomHealing_Flight"));
@@ -234,7 +237,8 @@ void UDBAPlayableSkillComponent::ResetToDefaultSkillSpecs()
 
 	FDBAPlayableSkillRuntimeSpec Shield = MakeSkill(5, TEXT("Lobby.Skill05.PriestShield"), TEXT("Priest Shield"), EDBAPlayableSkillEffectShape::HolyShield, 180.0f, EDBAElement::Wood, 0.0f, 0.0f, 8.0f, 1.22f);
 	Shield.HolyShieldClass = ADBAHolyShieldSpell::StaticClass();
-	Shield.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Common/Status/NS_Status_Shielded.NS_Status_Shielded"));
+	Shield.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Bless.NS_Hit_Bless"));
+	Shield.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy"));
 	Shield.ImpactNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy"));
 	Shield.CastSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_PreCast.SFX_PriestShield_PreCast"));
 	Shield.FlySFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_Flight.SFX_PriestShield_Flight"));
@@ -413,4 +417,134 @@ void UDBAPlayableSkillComponent::PreloadSkillPresentationAssets() const
 		}
 	}
 	DBAAsyncAssetLoader::RequestAsyncPreload(const_cast<UDBAPlayableSkillComponent*>(this), Paths);
+}
+
+void UDBAPlayableSkillComponent::QueueNiagaraWarmupAssets()
+{
+	AActor* OwnerActor = GetOwner();
+	if (!OwnerActor || OwnerActor->GetNetMode() == NM_DedicatedServer || !GetWorld())
+	{
+		return;
+	}
+
+	PendingNiagaraWarmupPaths.Reset();
+
+	TArray<FDBAPlayableSkillRuntimeSpec> EffectiveSpecs;
+	BuildEffectiveSkillSpecs(EffectiveSpecs);
+	for (const FDBAPlayableSkillRuntimeSpec& Spec : EffectiveSpecs)
+	{
+		AddNiagaraWarmupPath(Spec.CastNiagaraVFXAsset);
+		AddNiagaraWarmupPath(Spec.ProjectileNiagaraVFXAsset);
+		AddNiagaraWarmupPath(Spec.ImpactNiagaraVFXAsset);
+	}
+
+	// Slot 2 uses extra frost wake layers beyond the three catalog VFX entries.
+	// Warm them after possession so pressing 2 does not compile Niagara systems on the cast frame.
+	AddNiagaraWarmupPath(TEXT("/Game/ProjectileHitVFX/NS/NS_IceCrystal.NS_IceCrystal"));
+	AddNiagaraWarmupPath(TEXT("/Game/ProjectileHitVFX/NS/NS_Iceicle3D.NS_Iceicle3D"));
+	AddNiagaraWarmupPath(TEXT("/Game/ProjectileHitVFX/NS/NS_MagicLanceShuriken.NS_MagicLanceShuriken"));
+	AddNiagaraWarmupPath(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_ColdBlood.NS_Hit_ColdBlood"));
+
+	if (PendingNiagaraWarmupPaths.IsEmpty())
+	{
+		return;
+	}
+
+	GetWorld()->GetTimerManager().ClearTimer(NiagaraWarmupTimerHandle);
+	GetWorld()->GetTimerManager().SetTimer(
+		NiagaraWarmupTimerHandle,
+		this,
+		&UDBAPlayableSkillComponent::PumpNiagaraWarmupQueue,
+		0.12f,
+		true,
+		0.35f);
+}
+
+void UDBAPlayableSkillComponent::AddNiagaraWarmupPath(const TSoftObjectPtr<UNiagaraSystem>& Asset)
+{
+	if (!Asset.IsNull())
+	{
+		PendingNiagaraWarmupPaths.AddUnique(Asset.ToSoftObjectPath());
+	}
+}
+
+void UDBAPlayableSkillComponent::AddNiagaraWarmupPath(const TCHAR* AssetPath)
+{
+	if (AssetPath && FCString::Strlen(AssetPath) > 0)
+	{
+		PendingNiagaraWarmupPaths.AddUnique(FSoftObjectPath(AssetPath));
+	}
+}
+
+void UDBAPlayableSkillComponent::PumpNiagaraWarmupQueue()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (PendingNiagaraWarmupPaths.IsEmpty())
+	{
+		World->GetTimerManager().ClearTimer(NiagaraWarmupTimerHandle);
+		return;
+	}
+
+	const FSoftObjectPath WarmupPath = PendingNiagaraWarmupPaths[0];
+	PendingNiagaraWarmupPaths.RemoveAt(0, 1, EAllowShrinking::No);
+
+	TSoftObjectPtr<UNiagaraSystem> WarmupAsset(WarmupPath);
+	TWeakObjectPtr<UDBAPlayableSkillComponent> WeakThis(this);
+	DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(this, WarmupAsset, [WeakThis](UNiagaraSystem* LoadedSystem)
+	{
+		if (UDBAPlayableSkillComponent* StrongThis = WeakThis.Get())
+		{
+			StrongThis->WarmUpNiagaraSystem(LoadedSystem);
+		}
+	});
+}
+
+void UDBAPlayableSkillComponent::WarmUpNiagaraSystem(UNiagaraSystem* NiagaraSystem) const
+{
+	AActor* OwnerActor = GetOwner();
+	UWorld* World = GetWorld();
+	if (!NiagaraSystem || !OwnerActor || !World || OwnerActor->GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+
+	const FVector WarmupLocation = OwnerActor->GetActorLocation() - FVector(0.0f, 0.0f, 30000.0f);
+	UNiagaraComponent* WarmupComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		World,
+		NiagaraSystem,
+		WarmupLocation,
+		FRotator::ZeroRotator,
+		FVector(0.01f),
+		true,
+		true,
+		ENCPoolMethod::AutoRelease,
+		false);
+
+	if (!WarmupComponent)
+	{
+		return;
+	}
+
+	WarmupComponent->SetVisibility(false, true);
+	WarmupComponent->SetHiddenInGame(true);
+
+	TWeakObjectPtr<UNiagaraComponent> WeakWarmup(WarmupComponent);
+	FTimerHandle CleanupHandle;
+	World->GetTimerManager().SetTimer(
+		CleanupHandle,
+		FTimerDelegate::CreateLambda([WeakWarmup]()
+		{
+			if (UNiagaraComponent* Component = WeakWarmup.Get())
+			{
+				Component->Deactivate();
+				Component->DestroyComponent();
+			}
+		}),
+		0.2f,
+		false);
 }

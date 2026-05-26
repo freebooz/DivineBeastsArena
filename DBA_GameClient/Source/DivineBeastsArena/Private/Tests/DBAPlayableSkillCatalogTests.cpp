@@ -56,8 +56,10 @@ bool FDBAPlayableSkillCatalogDefaultsTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("Fireball shape"), Fireball->EffectShape, EDBAPlayableSkillEffectShape::Projectile);
 		TestEqual(TEXT("Fireball element"), Fireball->Element, EDBAElement::Fire);
 		TestTrue(TEXT("Fireball has projectile class"), Fireball->ProjectileClass != nullptr);
+		TestTrue(TEXT("Fireball has cast VFX"), !Fireball->CastNiagaraVFXAsset.IsNull());
 		TestTrue(TEXT("Fireball has cast SFX"), !Fireball->CastSFXAsset.IsNull());
 		TestTrue(TEXT("Fireball has flight VFX"), !Fireball->ProjectileNiagaraVFXAsset.IsNull());
+		TestTrue(TEXT("Fireball has impact VFX"), !Fireball->ImpactNiagaraVFXAsset.IsNull());
 	}
 
 	const FDBAPlayableSkillRuntimeSpec* Frost = FindSkill(2);
@@ -67,6 +69,9 @@ bool FDBAPlayableSkillCatalogDefaultsTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("Frost shape"), Frost->EffectShape, EDBAPlayableSkillEffectShape::Projectile);
 		TestEqual(TEXT("Frost element"), Frost->Element, EDBAElement::Water);
 		TestTrue(TEXT("Frost has projectile class"), Frost->ProjectileClass != nullptr);
+		TestTrue(TEXT("Frost has cast VFX"), !Frost->CastNiagaraVFXAsset.IsNull());
+		TestTrue(TEXT("Frost has flight VFX"), !Frost->ProjectileNiagaraVFXAsset.IsNull());
+		TestTrue(TEXT("Frost has impact VFX"), !Frost->ImpactNiagaraVFXAsset.IsNull());
 	}
 
 	const FDBAPlayableSkillRuntimeSpec* Bloom = FindSkill(3);
@@ -76,6 +81,9 @@ bool FDBAPlayableSkillCatalogDefaultsTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("Bloom shape"), Bloom->EffectShape, EDBAPlayableSkillEffectShape::BloomHealing);
 		TestEqual(TEXT("Bloom element"), Bloom->Element, EDBAElement::Wood);
 		TestTrue(TEXT("Bloom has spell class"), Bloom->BloomHealingClass != nullptr);
+		TestTrue(TEXT("Bloom has cast VFX"), !Bloom->CastNiagaraVFXAsset.IsNull());
+		TestTrue(TEXT("Bloom has flight VFX"), !Bloom->ProjectileNiagaraVFXAsset.IsNull());
+		TestTrue(TEXT("Bloom has impact VFX"), !Bloom->ImpactNiagaraVFXAsset.IsNull());
 	}
 
 	const FDBAPlayableSkillRuntimeSpec* Chain = FindSkill(4);
@@ -84,6 +92,9 @@ bool FDBAPlayableSkillCatalogDefaultsTest::RunTest(const FString& Parameters)
 	{
 		TestEqual(TEXT("Chain shape"), Chain->EffectShape, EDBAPlayableSkillEffectShape::ChainLightning);
 		TestTrue(TEXT("Chain has spell class"), Chain->ChainLightningClass != nullptr);
+		TestTrue(TEXT("Chain has cast VFX"), !Chain->CastNiagaraVFXAsset.IsNull());
+		TestTrue(TEXT("Chain has flight VFX"), !Chain->ProjectileNiagaraVFXAsset.IsNull());
+		TestTrue(TEXT("Chain has impact VFX"), !Chain->ImpactNiagaraVFXAsset.IsNull());
 	}
 
 	const FDBAPlayableSkillRuntimeSpec* Shield = FindSkill(5);
@@ -92,6 +103,9 @@ bool FDBAPlayableSkillCatalogDefaultsTest::RunTest(const FString& Parameters)
 	{
 		TestEqual(TEXT("Shield shape"), Shield->EffectShape, EDBAPlayableSkillEffectShape::HolyShield);
 		TestTrue(TEXT("Shield has spell class"), Shield->HolyShieldClass != nullptr);
+		TestTrue(TEXT("Shield has cast VFX"), !Shield->CastNiagaraVFXAsset.IsNull());
+		TestTrue(TEXT("Shield has flight VFX"), !Shield->ProjectileNiagaraVFXAsset.IsNull());
+		TestTrue(TEXT("Shield has impact VFX"), !Shield->ImpactNiagaraVFXAsset.IsNull());
 	}
 
 	const FDBAPlayableSkillRuntimeSpec* Shadow = FindSkill(6);
@@ -100,6 +114,9 @@ bool FDBAPlayableSkillCatalogDefaultsTest::RunTest(const FString& Parameters)
 	{
 		TestEqual(TEXT("Shadow shape"), Shadow->EffectShape, EDBAPlayableSkillEffectShape::Projectile);
 		TestTrue(TEXT("Shadow has projectile class"), Shadow->ProjectileClass != nullptr);
+		TestTrue(TEXT("Shadow has cast VFX"), !Shadow->CastNiagaraVFXAsset.IsNull());
+		TestTrue(TEXT("Shadow has flight VFX"), !Shadow->ProjectileNiagaraVFXAsset.IsNull());
+		TestTrue(TEXT("Shadow has impact VFX"), !Shadow->ImpactNiagaraVFXAsset.IsNull());
 		TestTrue(TEXT("Shadow has impact SFX"), !Shadow->ImpactSFXAsset.IsNull());
 	}
 
@@ -154,6 +171,7 @@ bool FDBAPlayableSkillCatalogValidationTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Missing catalog id is reported"), HasErrorContaining(TEXT("CatalogId")));
 	TestTrue(TEXT("Missing projectile class is reported"), HasErrorContaining(TEXT("ProjectileClass")));
 	TestTrue(TEXT("Duplicate slot is reported"), HasErrorContaining(TEXT("SkillSlot is duplicated")));
+	TestTrue(TEXT("Missing cast VFX is reported"), HasErrorContaining(TEXT("CastNiagaraVFXAsset")));
 	TestTrue(TEXT("Missing cast SFX is reported"), HasErrorContaining(TEXT("CastSFXAsset")));
 	TestTrue(TEXT("Missing impact VFX is reported"), HasErrorContaining(TEXT("ImpactNiagaraVFXAsset")));
 
