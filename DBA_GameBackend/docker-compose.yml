@@ -29,6 +29,9 @@ services:
       - "8080"
     ports:
       - "${API_HTTP_BIND:-127.0.0.1}:8080:8080"
+      - "${GAME_SERVER_UDP_BIND:-0.0.0.0}:${GAME_SERVER_PORT_START:-7777}-${GAME_SERVER_PORT_END:-7877}:${GAME_SERVER_PORT_START:-7777}-${GAME_SERVER_PORT_END:-7877}/udp"
+    volumes:
+      - ${UE_SERVER_HOST_DIR:-./game-server}:/opt/game-server:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,6 +72,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - ${UE_SERVER_HOST_DIR:-./game-server}:/opt/game-server:ro
     restart: unless-stopped
     networks:
       - game-internal

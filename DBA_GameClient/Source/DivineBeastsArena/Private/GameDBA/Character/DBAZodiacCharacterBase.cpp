@@ -37,6 +37,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameDBA/Animation/DBAZodiacAnimInstance.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Net/UnrealNetwork.h"
@@ -318,6 +319,7 @@ namespace
 		Projectile->DamageElement = Spec.Element;
 		Projectile->ProjectileCueTag = Spec.ProjectileCueTag;
 		Projectile->ImpactCueTag = Spec.ImpactCueTag;
+		Projectile->NiagaraParameters = Spec.NiagaraParameters;
 		Projectile->ProjectileNiagaraVFXAsset = Spec.ProjectileNiagaraVFXAsset;
 		Projectile->ImpactNiagaraVFXAsset = Spec.ImpactNiagaraVFXAsset;
 		Projectile->FlySFXAsset = Spec.FlySFXAsset;
@@ -648,6 +650,8 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		Spec.ProjectileSpeed = LobbyFireballSpeed;
 		Spec.ProjectileRadius = LobbyFireballRadius;
 		Spec.Cooldown = LobbyFireballCooldown;
+		Spec.NiagaraParameters.EffectRadius = FMath::Max(Spec.NiagaraParameters.EffectRadius, LobbyFireballRadius);
+		Spec.NiagaraParameters.Duration = FMath::Max(Spec.NiagaraParameters.Duration, LobbyFireballCooldown);
 	}
 
 	if (SkillCooldowns.Num() < 7)
@@ -890,7 +894,7 @@ void ADBAZodiacCharacterBase::PlayLobbySkillCastFeedbackLocal(int32 SkillSlot)
 		{
 			if (GetRootComponent())
 			{
-				UNiagaraFunctionLibrary::SpawnSystemAttached(
+				UNiagaraComponent* CastComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
 					CastVFX,
 					GetRootComponent(),
 					NAME_None,
@@ -902,6 +906,14 @@ void ADBAZodiacCharacterBase::PlayLobbySkillCastFeedbackLocal(int32 SkillSlot)
 					ENCPoolMethod::AutoRelease,
 					true,
 					true);
+				UDBANiagaraSkillParameterLibrary::ApplySkillParameters(
+					CastComponent,
+					Spec.NiagaraParameters,
+					Spec.Magnitude,
+					CastLocation,
+					GetActorForwardVector(),
+					Spec.ProjectileSpeed,
+					Spec.ProjectileRadius);
 			}
 		}
 		else
@@ -909,7 +921,8 @@ void ADBAZodiacCharacterBase::PlayLobbySkillCastFeedbackLocal(int32 SkillSlot)
 			TWeakObjectPtr<ADBAZodiacCharacterBase> WeakThis(this);
 			const FVector RelativeLocation = CastRelativeLocation;
 			const FVector Scale(Spec.CastVFXScale);
-			DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(this, Spec.CastNiagaraVFXAsset, [WeakThis, RelativeLocation, Scale](UNiagaraSystem* LoadedVFX)
+			const FDBAPlayableSkillRuntimeSpec CapturedSpec = Spec;
+			DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(this, Spec.CastNiagaraVFXAsset, [WeakThis, RelativeLocation, Scale, CapturedSpec](UNiagaraSystem* LoadedVFX)
 			{
 				ADBAZodiacCharacterBase* StrongThis = WeakThis.Get();
 				if (!StrongThis || !LoadedVFX || StrongThis->GetNetMode() == NM_DedicatedServer)
@@ -919,7 +932,7 @@ void ADBAZodiacCharacterBase::PlayLobbySkillCastFeedbackLocal(int32 SkillSlot)
 
 				if (USceneComponent* Root = StrongThis->GetRootComponent())
 				{
-					UNiagaraFunctionLibrary::SpawnSystemAttached(
+					UNiagaraComponent* CastComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
 						LoadedVFX,
 						Root,
 						NAME_None,
@@ -931,6 +944,15 @@ void ADBAZodiacCharacterBase::PlayLobbySkillCastFeedbackLocal(int32 SkillSlot)
 						ENCPoolMethod::AutoRelease,
 						true,
 						true);
+					const FVector CastWorldLocation = StrongThis->GetActorLocation() + StrongThis->GetActorForwardVector() * RelativeLocation.X + FVector(0.0f, 0.0f, RelativeLocation.Z);
+					UDBANiagaraSkillParameterLibrary::ApplySkillParameters(
+						CastComponent,
+						CapturedSpec.NiagaraParameters,
+						CapturedSpec.Magnitude,
+						CastWorldLocation,
+						StrongThis->GetActorForwardVector(),
+						CapturedSpec.ProjectileSpeed,
+						CapturedSpec.ProjectileRadius);
 				}
 			});
 		}

@@ -12,6 +12,8 @@ if [[ ! -f "${env_file}" ]]; then
   exit 2
 fi
 
+env_dir="$(cd "$(dirname "${env_file}")" && pwd)"
+
 declare -A values=()
 while IFS= read -r raw_line || [[ -n "${raw_line}" ]]; do
   line="$(printf '%s' "${raw_line}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
@@ -91,6 +93,19 @@ if [[ -n "${values[GAME_SERVER_PORT_START]:-}" && -n "${values[GAME_SERVER_PORT_
     port_end="${values[GAME_SERVER_PORT_END]}"
     if (( port_start <= 0 || port_end < port_start )); then
     errors+=("Game server port range is invalid.")
+    fi
+  fi
+fi
+
+if [[ "${values[GAME_SERVER_MODE]:-LocalProcess}" == "LocalProcess" ]]; then
+  require_key "UE_SERVER_HOST_DIR"
+  if [[ -n "${values[UE_SERVER_HOST_DIR]:-}" ]]; then
+    server_host_dir="${values[UE_SERVER_HOST_DIR]}"
+    if [[ "${server_host_dir}" != /* ]]; then
+      server_host_dir="${env_dir}/${server_host_dir}"
+    fi
+    if [[ ! -d "${server_host_dir}" ]]; then
+      errors+=("UE_SERVER_HOST_DIR must point to an existing host directory for LocalProcess mode.")
     fi
   fi
 fi

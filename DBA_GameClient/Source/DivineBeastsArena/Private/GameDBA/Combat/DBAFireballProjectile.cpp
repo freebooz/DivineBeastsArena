@@ -107,6 +107,7 @@ void ADBAFireballProjectile::BeginPlay()
 		{
 			ProjectileNiagaraVFX->SetAsset(BurningVFX);
 			ProjectileNiagaraVFX->SetVisibility(true);
+			ApplyNiagaraSkillParameters(ProjectileNiagaraVFX, ResolveNiagaraTargetLocation(), ResolveNiagaraDirection());
 			ProjectileNiagaraVFX->Activate(true);
 		}
 		else
@@ -119,6 +120,7 @@ void ADBAFireballProjectile::BeginPlay()
 				}
 				ProjectileNiagaraVFX->SetAsset(BurningVFX);
 				ProjectileNiagaraVFX->SetVisibility(true);
+				ApplyNiagaraSkillParameters(ProjectileNiagaraVFX, ResolveNiagaraTargetLocation(), ResolveNiagaraDirection());
 				ProjectileNiagaraVFX->Activate(true);
 			});
 		}

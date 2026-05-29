@@ -43,6 +43,6 @@ void UDBALobbyMonsterHealthBarWidget::SetSelected(bool bSelected)
 FLinearColor UDBALobbyMonsterHealthBarWidget::ResolveFillColor() const
 {
 	return bCachedSelected
-		? FLinearColor(1.0f, 0.0f, 0.0f, 1.0f)
-		: FLinearColor(0.80f, 0.05f, 0.03f, 1.0f);
+		? FLinearColor(1.0f, 0.02f, 0.0f, 1.0f)
+		: FLinearColor(0.92f, 0.0f, 0.0f, 1.0f);
 }

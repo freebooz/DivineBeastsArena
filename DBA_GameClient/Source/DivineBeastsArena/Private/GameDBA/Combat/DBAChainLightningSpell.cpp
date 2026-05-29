@@ -15,6 +15,7 @@ Readable notes:
 #include "GameDBA/Combat/DBAPlayableSkillTypes.h"
 #include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Sound/SoundBase.h"
@@ -79,6 +80,15 @@ void ADBAChainLightningSpell::ConfigureFromSkillSpec(const FDBAPlayableSkillRunt
 	}
 	DamageElement = Spec.Element == EDBAElement::None ? DamageElement : Spec.Element;
 	ImpactCueTag = Spec.ImpactCueTag;
+	NiagaraParameters = Spec.NiagaraParameters;
+	if (NiagaraParameters.EffectRadius > 0.0f)
+	{
+		JumpRadius = NiagaraParameters.EffectRadius;
+	}
+	if (NiagaraParameters.TickInterval > 0.0f)
+	{
+		SegmentDelay = NiagaraParameters.TickInterval;
+	}
 	if (!Spec.CastNiagaraVFXAsset.IsNull())
 	{
 		BranchVFXAsset = Spec.CastNiagaraVFXAsset;
@@ -310,7 +320,7 @@ void ADBAChainLightningSpell::SpawnArcSegment(const FVector& Source, const FVect
 
 	if (UNiagaraSystem* ArcVFX = ArcVFXAsset.Get())
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
 			ArcVFX,
 			MidPoint,
@@ -320,18 +330,22 @@ void ADBAChainLightningSpell::SpawnArcSegment(const FVector& Source, const FVect
 			true,
 			ENCPoolMethod::AutoRelease,
 			true);
+		UDBANiagaraSkillParameterLibrary::ApplySkillParameters(SpawnedVFX, NiagaraParameters, BaseDamage * SegmentScale, Target, Delta.GetSafeNormal(), Distance, JumpRadius);
 	}
 	else
 	{
 		UWorld* World = GetWorld();
-		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, ArcVFXAsset, [World, MidPoint, Rotation, ArcScale](UNiagaraSystem* LoadedVFX)
+		const FDBANiagaraSkillParameters CapturedParameters = NiagaraParameters;
+		const float CapturedDamage = BaseDamage * SegmentScale;
+		const float CapturedRadius = JumpRadius;
+		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, ArcVFXAsset, [World, MidPoint, Rotation, ArcScale, Target, Delta, Distance, CapturedParameters, CapturedDamage, CapturedRadius](UNiagaraSystem* LoadedVFX)
 		{
 			if (!IsUsableChainWorld(World) || !LoadedVFX)
 			{
 				return;
 			}
 
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 				World,
 				LoadedVFX,
 				MidPoint,
@@ -341,13 +355,14 @@ void ADBAChainLightningSpell::SpawnArcSegment(const FVector& Source, const FVect
 				true,
 				ENCPoolMethod::AutoRelease,
 				true);
+			UDBANiagaraSkillParameterLibrary::ApplySkillParameters(SpawnedVFX, CapturedParameters, CapturedDamage, Target, Delta.GetSafeNormal(), Distance, CapturedRadius);
 		});
 	}
 
 	if (UNiagaraSystem* BranchVFX = BranchVFXAsset.Get())
 	{
 		const FVector BranchOffset = Rotation.RotateVector(FVector(0.0f, 0.0f, 26.0f + 18.0f * SegmentScale));
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
 			BranchVFX,
 			MidPoint + BranchOffset,
@@ -357,6 +372,7 @@ void ADBAChainLightningSpell::SpawnArcSegment(const FVector& Source, const FVect
 			true,
 			ENCPoolMethod::AutoRelease,
 			true);
+		UDBANiagaraSkillParameterLibrary::ApplySkillParameters(SpawnedVFX, NiagaraParameters, BaseDamage * SegmentScale, Target, Delta.GetSafeNormal(), Distance, JumpRadius);
 	}
 	else
 	{
@@ -364,14 +380,17 @@ void ADBAChainLightningSpell::SpawnArcSegment(const FVector& Source, const FVect
 		const FVector BranchLocation = MidPoint + Rotation.RotateVector(FVector(0.0f, 0.0f, 26.0f + 18.0f * SegmentScale));
 		const FRotator BranchRotation = Rotation + FRotator(0.0f, 18.0f, 0.0f);
 		const FVector BranchScale(0.55f + SegmentScale * 0.35f);
-		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, BranchVFXAsset, [World, BranchLocation, BranchRotation, BranchScale](UNiagaraSystem* LoadedVFX)
+		const FDBANiagaraSkillParameters CapturedParameters = NiagaraParameters;
+		const float CapturedDamage = BaseDamage * SegmentScale;
+		const float CapturedRadius = JumpRadius;
+		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, BranchVFXAsset, [World, BranchLocation, BranchRotation, BranchScale, Target, Delta, Distance, CapturedParameters, CapturedDamage, CapturedRadius](UNiagaraSystem* LoadedVFX)
 		{
 			if (!IsUsableChainWorld(World) || !LoadedVFX)
 			{
 				return;
 			}
 
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 				World,
 				LoadedVFX,
 				BranchLocation,
@@ -381,6 +400,7 @@ void ADBAChainLightningSpell::SpawnArcSegment(const FVector& Source, const FVect
 				true,
 				ENCPoolMethod::AutoRelease,
 				true);
+			UDBANiagaraSkillParameterLibrary::ApplySkillParameters(SpawnedVFX, CapturedParameters, CapturedDamage, Target, Delta.GetSafeNormal(), Distance, CapturedRadius);
 		});
 	}
 
@@ -396,7 +416,7 @@ void ADBAChainLightningSpell::SpawnImpactBurst(const FVector& Location, float Se
 
 	if (UNiagaraSystem* ImpactVFX = ImpactVFXAsset.Get())
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
 			ImpactVFX,
 			Location,
@@ -406,19 +426,23 @@ void ADBAChainLightningSpell::SpawnImpactBurst(const FVector& Location, float Se
 			true,
 			ENCPoolMethod::AutoRelease,
 			true);
+		UDBANiagaraSkillParameterLibrary::ApplySkillParameters(SpawnedVFX, NiagaraParameters, BaseDamage * SegmentScale, Location, FVector::UpVector, 0.0f, JumpRadius);
 	}
 	else
 	{
 		UWorld* World = GetWorld();
 		const FVector ImpactScale(0.82f + SegmentScale * 0.42f);
-		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, ImpactVFXAsset, [World, Location, ImpactScale](UNiagaraSystem* LoadedVFX)
+		const FDBANiagaraSkillParameters CapturedParameters = NiagaraParameters;
+		const float CapturedDamage = BaseDamage * SegmentScale;
+		const float CapturedRadius = JumpRadius;
+		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, ImpactVFXAsset, [World, Location, ImpactScale, CapturedParameters, CapturedDamage, CapturedRadius](UNiagaraSystem* LoadedVFX)
 		{
 			if (!IsUsableChainWorld(World) || !LoadedVFX)
 			{
 				return;
 			}
 
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 				World,
 				LoadedVFX,
 				Location,
@@ -428,6 +452,7 @@ void ADBAChainLightningSpell::SpawnImpactBurst(const FVector& Location, float Se
 				true,
 				ENCPoolMethod::AutoRelease,
 				true);
+			UDBANiagaraSkillParameterLibrary::ApplySkillParameters(SpawnedVFX, CapturedParameters, CapturedDamage, Location, FVector::UpVector, 0.0f, CapturedRadius);
 		});
 	}
 

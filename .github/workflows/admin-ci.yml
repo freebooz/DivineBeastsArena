@@ -17,10 +17,13 @@ jobs:
         working-directory: DBA_GameAdmin
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-node@v4
         with:
-          dotnet-version: "10.0.x"
-      - run: dotnet build --configuration Release
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: DBA_GameAdmin/package-lock.json
+      - run: npm ci
+      - run: npm run build
       - name: Docker build
         working-directory: .
         run: docker build -f DBA_GameAdmin/Dockerfile -t ghcr.io/${{ github.repository }}/game-admin:${{ github.sha }} .

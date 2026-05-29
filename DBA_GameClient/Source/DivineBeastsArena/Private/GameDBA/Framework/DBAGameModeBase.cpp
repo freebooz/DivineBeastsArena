@@ -230,19 +230,21 @@ void ADBAGameModeBase::SpawnLobbyTrainingMonsters()
 	}
 	LobbyTrainingMonsters.Reset();
 
-	const FVector BaseLocation(680.0f, -900.0f, 96.0f);
-	constexpr float MonsterSpacingX = 420.0f;
-	constexpr float MonsterSpacingY = 420.0f;
+	const FVector FormationCenter(1300.0f, -900.0f, 96.0f);
+	constexpr float MonsterSpacingX = 1250.0f;
+	constexpr float MonsterSpacingY = 1250.0f;
 	constexpr int32 MonsterCount = 10;
 	constexpr int32 MonstersPerRow = 5;
+	constexpr float CenteredRowOffset = 0.5f;
+	constexpr float CenteredColumnOffset = 2.0f;
 
 	for (int32 Index = 0; Index < MonsterCount; ++Index)
 	{
 		const int32 Row = Index / MonstersPerRow;
 		const int32 Column = Index % MonstersPerRow;
-		const FVector SpawnLocation = BaseLocation + FVector(
-			static_cast<float>(Row) * MonsterSpacingX,
-			static_cast<float>(Column) * MonsterSpacingY,
+		const FVector SpawnLocation = FormationCenter + FVector(
+			(static_cast<float>(Row) - CenteredRowOffset) * MonsterSpacingX,
+			(static_cast<float>(Column) - CenteredColumnOffset) * MonsterSpacingY,
 			0.0f);
 		const FRotator SpawnRotation(0.0f, 180.0f + static_cast<float>(Column) * 12.0f, 0.0f);
 		FActorSpawnParameters SpawnParams;

@@ -17,6 +17,26 @@
 #include "Components/TextRenderComponent.h"
 #include "Engine/World.h"
 
+namespace
+{
+	FRotator ResolveBillboardRotation(const FVector& WorldLocation, APlayerController* PlayerController)
+	{
+		FVector CameraLocation = FVector::ZeroVector;
+		FRotator CameraRotation = FRotator::ZeroRotator;
+		if (PlayerController)
+		{
+			PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
+			const FVector ToCamera = CameraLocation - WorldLocation;
+			if (!ToCamera.IsNearlyZero())
+			{
+				return ToCamera.Rotation();
+			}
+		}
+
+		return CameraRotation;
+	}
+}
+
 UDBAFloatingDamageComponent::UDBAFloatingDamageComponent()
 	: Super()
 {
@@ -169,11 +189,11 @@ void UDBAFloatingDamageComponent::SpawnDamageNumberEntry(FDBAFloatingDamageEntry
 		{
 			TextComp->RegisterComponentWithWorld(World);
 			TextComp->SetWorldLocation(Entry.WorldLocation);
-			TextComp->SetWorldRotation(FRotator(0.0f, 180.0f, 0.0f));
+			TextComp->SetWorldRotation(ResolveBillboardRotation(Entry.WorldLocation, CachedPlayerController.Get()));
 			TextComp->SetHorizontalAlignment(EHTA_Center);
 			TextComp->SetVerticalAlignment(EVRTA_TextCenter);
 			TextComp->SetTextRenderColor(Entry.Color.ToFColor(true));
-			TextComp->SetWorldSize(Entry.bIsCritical ? 48.0f : 36.0f);
+			TextComp->SetWorldSize(Entry.bIsCritical ? 96.0f : 72.0f);
 			TextComp->SetText(FText::AsNumber(FMath::RoundToInt(Entry.Damage)));
 			Entry.TextComponent = TextComp;
 		}
@@ -187,6 +207,14 @@ void UDBAFloatingDamageComponent::UpdateDamageEntry(FDBAFloatingDamageEntry& Ent
 	if (Entry.TextComponent.IsValid())
 	{
 		Entry.TextComponent->SetWorldLocation(Entry.WorldLocation);
+		if (!CachedPlayerController.IsValid())
+		{
+			if (UWorld* World = GetWorld())
+			{
+				CachedPlayerController = World->GetFirstPlayerController();
+			}
+		}
+		Entry.TextComponent->SetWorldRotation(ResolveBillboardRotation(Entry.WorldLocation, CachedPlayerController.Get()));
 		const float Alpha = Entry.TotalTime > 0.0f ? FMath::Clamp(Entry.RemainingTime / Entry.TotalTime, 0.0f, 1.0f) : 0.0f;
 		FLinearColor FadedColor = Entry.Color;
 		FadedColor.A = Alpha;
@@ -212,4 +240,3 @@ void UDBAFloatingDamageComponent::RecycleDamageEntry(FDBAFloatingDamageEntry& En
 		AvailableDamageEntries.Add(Entry);
 	}
 }
-

@@ -38,6 +38,7 @@ jobs:
       fail-fast: false
       matrix:
         app:
+          - DBA_GameAdmin
           - DBA_GameWebsite
           - DBA_GameLauncher
     defaults:

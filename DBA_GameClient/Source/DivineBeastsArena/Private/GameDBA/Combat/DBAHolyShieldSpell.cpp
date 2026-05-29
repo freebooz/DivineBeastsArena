@@ -96,6 +96,11 @@ void ADBAHolyShieldSpell::ConfigureFromSkillSpec(const FDBAPlayableSkillRuntimeS
 	{
 		ShieldAmount = Spec.Magnitude;
 	}
+	NiagaraParameters = Spec.NiagaraParameters;
+	if (NiagaraParameters.Duration > 0.0f)
+	{
+		ShieldDuration = NiagaraParameters.Duration;
+	}
 	if (!Spec.CastNiagaraVFXAsset.IsNull())
 	{
 		CastVFXAsset = Spec.CastNiagaraVFXAsset;
@@ -259,7 +264,7 @@ UNiagaraComponent* ADBAHolyShieldSpell::SpawnVFX(const TSoftObjectPtr<UNiagaraSy
 
 	auto SpawnLoaded = [this, Location, Rotation, Scale, bAutoDestroy](UNiagaraSystem* VFX) -> UNiagaraComponent*
 	{
-		return UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
 			VFX,
 			Location,
@@ -269,6 +274,15 @@ UNiagaraComponent* ADBAHolyShieldSpell::SpawnVFX(const TSoftObjectPtr<UNiagaraSy
 			bAutoDestroy,
 			ENCPoolMethod::AutoRelease,
 			true);
+		UDBANiagaraSkillParameterLibrary::ApplySkillParameters(
+			SpawnedVFX,
+			NiagaraParameters,
+			ShieldAmount,
+			Location,
+			Rotation.Vector(),
+			0.0f,
+			NiagaraParameters.EffectRadius);
+		return SpawnedVFX;
 	};
 
 	if (UNiagaraSystem* LoadedVFX = Asset.Get())
@@ -277,14 +291,16 @@ UNiagaraComponent* ADBAHolyShieldSpell::SpawnVFX(const TSoftObjectPtr<UNiagaraSy
 	}
 
 	UWorld* World = GetWorld();
-	DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, Asset, [World, Location, Rotation, Scale, bAutoDestroy](UNiagaraSystem* LoadedVFX)
+	const FDBANiagaraSkillParameters CapturedParameters = NiagaraParameters;
+	const float CapturedShieldAmount = ShieldAmount;
+	DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, Asset, [World, Location, Rotation, Scale, bAutoDestroy, CapturedParameters, CapturedShieldAmount](UNiagaraSystem* LoadedVFX)
 	{
 		if (!IsUsableHolyShieldWorld(World) || !LoadedVFX)
 		{
 			return;
 		}
 
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			World,
 			LoadedVFX,
 			Location,
@@ -294,6 +310,14 @@ UNiagaraComponent* ADBAHolyShieldSpell::SpawnVFX(const TSoftObjectPtr<UNiagaraSy
 			bAutoDestroy,
 			ENCPoolMethod::AutoRelease,
 			true);
+		UDBANiagaraSkillParameterLibrary::ApplySkillParameters(
+			SpawnedVFX,
+			CapturedParameters,
+			CapturedShieldAmount,
+			Location,
+			Rotation.Vector(),
+			0.0f,
+			CapturedParameters.EffectRadius);
 	});
 
 	return nullptr;
@@ -306,13 +330,13 @@ UNiagaraComponent* ADBAHolyShieldSpell::SpawnAttachedVFX(const TSoftObjectPtr<UN
 		return nullptr;
 	}
 
-	auto SpawnLoaded = [TargetActor, RelativeOffset, Rotation, Scale, bAutoDestroy](UNiagaraSystem* VFX) -> UNiagaraComponent*
+	auto SpawnLoaded = [this, TargetActor, RelativeOffset, Rotation, Scale, bAutoDestroy](UNiagaraSystem* VFX) -> UNiagaraComponent*
 	{
 		if (!TargetActor || !TargetActor->GetRootComponent())
 		{
 			return nullptr;
 		}
-		return UNiagaraFunctionLibrary::SpawnSystemAttached(
+		UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAttached(
 			VFX,
 			TargetActor->GetRootComponent(),
 			NAME_None,
@@ -324,6 +348,15 @@ UNiagaraComponent* ADBAHolyShieldSpell::SpawnAttachedVFX(const TSoftObjectPtr<UN
 			ENCPoolMethod::AutoRelease,
 			true,
 			true);
+		UDBANiagaraSkillParameterLibrary::ApplySkillParameters(
+			SpawnedVFX,
+			NiagaraParameters,
+			ShieldAmount,
+			TargetActor->GetActorLocation(),
+			TargetActor->GetActorForwardVector(),
+			0.0f,
+			NiagaraParameters.EffectRadius);
+		return SpawnedVFX;
 	};
 
 	if (UNiagaraSystem* LoadedVFX = Asset.Get())
@@ -332,7 +365,9 @@ UNiagaraComponent* ADBAHolyShieldSpell::SpawnAttachedVFX(const TSoftObjectPtr<UN
 	}
 
 	TWeakObjectPtr<AActor> WeakTarget(TargetActor);
-	DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(TargetActor, Asset, [WeakTarget, RelativeOffset, Rotation, Scale, bAutoDestroy](UNiagaraSystem* LoadedVFX)
+	const FDBANiagaraSkillParameters CapturedParameters = NiagaraParameters;
+	const float CapturedShieldAmount = ShieldAmount;
+	DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(TargetActor, Asset, [WeakTarget, RelativeOffset, Rotation, Scale, bAutoDestroy, CapturedParameters, CapturedShieldAmount](UNiagaraSystem* LoadedVFX)
 	{
 		AActor* StrongTarget = WeakTarget.Get();
 		if (!StrongTarget || !StrongTarget->GetRootComponent() || StrongTarget->GetNetMode() == NM_DedicatedServer || !LoadedVFX)
@@ -340,7 +375,7 @@ UNiagaraComponent* ADBAHolyShieldSpell::SpawnAttachedVFX(const TSoftObjectPtr<UN
 			return;
 		}
 
-		UNiagaraFunctionLibrary::SpawnSystemAttached(
+		UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAttached(
 			LoadedVFX,
 			StrongTarget->GetRootComponent(),
 			NAME_None,
@@ -352,6 +387,14 @@ UNiagaraComponent* ADBAHolyShieldSpell::SpawnAttachedVFX(const TSoftObjectPtr<UN
 			ENCPoolMethod::AutoRelease,
 			true,
 			true);
+		UDBANiagaraSkillParameterLibrary::ApplySkillParameters(
+			SpawnedVFX,
+			CapturedParameters,
+			CapturedShieldAmount,
+			StrongTarget->GetActorLocation(),
+			StrongTarget->GetActorForwardVector(),
+			0.0f,
+			CapturedParameters.EffectRadius);
 	});
 
 	return nullptr;

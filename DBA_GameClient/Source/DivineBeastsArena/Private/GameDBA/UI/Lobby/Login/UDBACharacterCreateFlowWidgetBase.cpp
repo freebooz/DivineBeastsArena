@@ -344,7 +344,7 @@ namespace
 
 		FInputModeGameAndUI InputMode;
 		InputMode.SetHideCursorDuringCapture(false);
-		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
 		PC->SetInputMode(InputMode);
 		PC->CurrentMouseCursor = EMouseCursor::Default;
 		PC->DefaultMouseCursor = EMouseCursor::Default;

@@ -15,6 +15,7 @@ Readable notes:
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
 #include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Sound/SoundBase.h"
@@ -101,6 +102,11 @@ void ADBABloomHealingSpell::ConfigureFromSkillSpec(const FDBAPlayableSkillRuntim
 	if (Spec.Magnitude > 0.0f)
 	{
 		HealAmount = Spec.Magnitude;
+	}
+	NiagaraParameters = Spec.NiagaraParameters;
+	if (NiagaraParameters.EffectRadius > 0.0f)
+	{
+		HealRadius = NiagaraParameters.EffectRadius;
 	}
 	if (!Spec.CastNiagaraVFXAsset.IsNull())
 	{
@@ -263,7 +269,7 @@ void ADBABloomHealingSpell::SpawnVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset
 
 	if (UNiagaraSystem* VFX = Asset.Get())
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
 			VFX,
 			Location,
@@ -273,18 +279,22 @@ void ADBABloomHealingSpell::SpawnVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset
 			true,
 			ENCPoolMethod::AutoRelease,
 			true);
+		UDBANiagaraSkillParameterLibrary::ApplySkillParameters(SpawnedVFX, NiagaraParameters, HealAmount, Location, Rotation.Vector(), 0.0f, HealRadius);
 	}
 	else
 	{
 		UWorld* World = GetWorld();
-		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, Asset, [World, Location, Rotation, Scale](UNiagaraSystem* LoadedVFX)
+		const FDBANiagaraSkillParameters CapturedParameters = NiagaraParameters;
+		const float CapturedHealAmount = HealAmount;
+		const float CapturedHealRadius = HealRadius;
+		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, Asset, [World, Location, Rotation, Scale, CapturedParameters, CapturedHealAmount, CapturedHealRadius](UNiagaraSystem* LoadedVFX)
 		{
 			if (!IsUsableBloomWorld(World) || !LoadedVFX)
 			{
 				return;
 			}
 
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 				World,
 				LoadedVFX,
 				Location,
@@ -294,6 +304,7 @@ void ADBABloomHealingSpell::SpawnVFX(const TSoftObjectPtr<UNiagaraSystem>& Asset
 				true,
 				ENCPoolMethod::AutoRelease,
 				true);
+			UDBANiagaraSkillParameterLibrary::ApplySkillParameters(SpawnedVFX, CapturedParameters, CapturedHealAmount, Location, Rotation.Vector(), 0.0f, CapturedHealRadius);
 		});
 	}
 }
@@ -311,7 +322,7 @@ void ADBABloomHealingSpell::SpawnAttachedVFX(const TSoftObjectPtr<UNiagaraSystem
 		{
 			return;
 		}
-		UNiagaraFunctionLibrary::SpawnSystemAttached(
+		UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAttached(
 			VFX,
 			AnchorActor->GetRootComponent(),
 			NAME_None,
@@ -322,11 +333,22 @@ void ADBABloomHealingSpell::SpawnAttachedVFX(const TSoftObjectPtr<UNiagaraSystem
 			true,
 			ENCPoolMethod::AutoRelease,
 			true);
+		UDBANiagaraSkillParameterLibrary::ApplySkillParameters(
+			SpawnedVFX,
+			NiagaraParameters,
+			HealAmount,
+			AnchorActor->GetActorLocation(),
+			AnchorActor->GetActorForwardVector(),
+			0.0f,
+			HealRadius);
 	}
 	else
 	{
 		TWeakObjectPtr<AActor> WeakAnchor(AnchorActor);
-		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(AnchorActor, Asset, [WeakAnchor, RelativeOffset, Rotation, Scale](UNiagaraSystem* LoadedVFX)
+		const FDBANiagaraSkillParameters CapturedParameters = NiagaraParameters;
+		const float CapturedHealAmount = HealAmount;
+		const float CapturedHealRadius = HealRadius;
+		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(AnchorActor, Asset, [WeakAnchor, RelativeOffset, Rotation, Scale, CapturedParameters, CapturedHealAmount, CapturedHealRadius](UNiagaraSystem* LoadedVFX)
 		{
 			AActor* StrongAnchor = WeakAnchor.Get();
 			if (!StrongAnchor || !StrongAnchor->GetRootComponent() || StrongAnchor->GetNetMode() == NM_DedicatedServer || !LoadedVFX)
@@ -334,7 +356,7 @@ void ADBABloomHealingSpell::SpawnAttachedVFX(const TSoftObjectPtr<UNiagaraSystem
 				return;
 			}
 
-			UNiagaraFunctionLibrary::SpawnSystemAttached(
+			UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAttached(
 				LoadedVFX,
 				StrongAnchor->GetRootComponent(),
 				NAME_None,
@@ -345,6 +367,14 @@ void ADBABloomHealingSpell::SpawnAttachedVFX(const TSoftObjectPtr<UNiagaraSystem
 				true,
 				ENCPoolMethod::AutoRelease,
 				true);
+			UDBANiagaraSkillParameterLibrary::ApplySkillParameters(
+				SpawnedVFX,
+				CapturedParameters,
+				CapturedHealAmount,
+				StrongAnchor->GetActorLocation(),
+				StrongAnchor->GetActorForwardVector(),
+				0.0f,
+				CapturedHealRadius);
 		});
 	}
 }
@@ -371,7 +401,7 @@ void ADBABloomHealingSpell::SpawnTravelVFX(const TSoftObjectPtr<UNiagaraSystem>&
 
 	if (UNiagaraSystem* VFX = Asset.Get())
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
 			VFX,
 			MidPoint,
@@ -381,18 +411,22 @@ void ADBABloomHealingSpell::SpawnTravelVFX(const TSoftObjectPtr<UNiagaraSystem>&
 			true,
 			ENCPoolMethod::AutoRelease,
 			true);
+		UDBANiagaraSkillParameterLibrary::ApplySkillParameters(SpawnedVFX, NiagaraParameters, HealAmount, TargetLocation, Delta.GetSafeNormal(), Distance, HealRadius);
 	}
 	else
 	{
 		UWorld* World = GetWorld();
-		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, Asset, [World, MidPoint, Rotation, Scale](UNiagaraSystem* LoadedVFX)
+		const FDBANiagaraSkillParameters CapturedParameters = NiagaraParameters;
+		const float CapturedHealAmount = HealAmount;
+		const float CapturedHealRadius = HealRadius;
+		DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, Asset, [World, MidPoint, Rotation, Scale, TargetLocation, Delta, Distance, CapturedParameters, CapturedHealAmount, CapturedHealRadius](UNiagaraSystem* LoadedVFX)
 		{
 			if (!IsUsableBloomWorld(World) || !LoadedVFX)
 			{
 				return;
 			}
 
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 				World,
 				LoadedVFX,
 				MidPoint,
@@ -402,6 +436,7 @@ void ADBABloomHealingSpell::SpawnTravelVFX(const TSoftObjectPtr<UNiagaraSystem>&
 				true,
 				ENCPoolMethod::AutoRelease,
 				true);
+			UDBANiagaraSkillParameterLibrary::ApplySkillParameters(SpawnedVFX, CapturedParameters, CapturedHealAmount, TargetLocation, Delta.GetSafeNormal(), Distance, CapturedHealRadius);
 		});
 	}
 }

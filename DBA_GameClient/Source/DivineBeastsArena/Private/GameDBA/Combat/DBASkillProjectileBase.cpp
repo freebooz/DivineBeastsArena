@@ -336,6 +336,7 @@ void ADBASkillProjectileBase::ApplyProjectileVisualsLocal(
 		{
 			ProjectileNiagaraVFX->SetAsset(VFX);
 			ProjectileNiagaraVFX->SetVisibility(true);
+			ApplyNiagaraSkillParameters(ProjectileNiagaraVFX, ResolveNiagaraTargetLocation(), ResolveNiagaraDirection());
 			ProjectileNiagaraVFX->Activate(true);
 		}
 		else
@@ -348,6 +349,7 @@ void ADBASkillProjectileBase::ApplyProjectileVisualsLocal(
 				}
 				ProjectileNiagaraVFX->SetAsset(LoadedVFX);
 				ProjectileNiagaraVFX->SetVisibility(true);
+				ApplyNiagaraSkillParameters(ProjectileNiagaraVFX, ResolveNiagaraTargetLocation(), ResolveNiagaraDirection());
 				ProjectileNiagaraVFX->Activate(true);
 			});
 		}
@@ -572,7 +574,7 @@ void ADBASkillProjectileBase::PlayImpactFeedbackLocal(
 		TSoftObjectPtr<UNiagaraSystem> VFXAsset{FSoftObjectPath(ImpactNiagaraVFXPath)};
 		if (UNiagaraSystem* VFX = VFXAsset.Get())
 		{
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 				GetWorld(),
 				VFX,
 				HitLocation,
@@ -582,18 +584,23 @@ void ADBASkillProjectileBase::PlayImpactFeedbackLocal(
 				true,
 				ENCPoolMethod::AutoRelease,
 				true);
+			ApplyNiagaraSkillParameters(SpawnedVFX, HitLocation, HitRotation.Vector());
 		}
 		else
 		{
 			UWorld* World = GetWorld();
-			DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, VFXAsset, [World, HitLocation, HitRotation](UNiagaraSystem* LoadedVFX)
+			const FDBANiagaraSkillParameters CapturedParameters = NiagaraParameters;
+			const float CapturedDamage = Damage;
+			const float CapturedSpeed = Speed;
+			const float CapturedRadius = Radius;
+			DBAAsyncAssetLoader::RequestAsyncAsset<UNiagaraSystem>(World, VFXAsset, [World, HitLocation, HitRotation, CapturedParameters, CapturedDamage, CapturedSpeed, CapturedRadius](UNiagaraSystem* LoadedVFX)
 			{
 				if (!IsUsableWorld(World) || !LoadedVFX)
 				{
 					return;
 				}
 
-				UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 					World,
 					LoadedVFX,
 					HitLocation,
@@ -603,6 +610,14 @@ void ADBASkillProjectileBase::PlayImpactFeedbackLocal(
 					true,
 					ENCPoolMethod::AutoRelease,
 					true);
+				UDBANiagaraSkillParameterLibrary::ApplySkillParameters(
+					SpawnedVFX,
+					CapturedParameters,
+					CapturedDamage,
+					HitLocation,
+					HitRotation.Vector(),
+					CapturedSpeed,
+					CapturedRadius);
 			});
 		}
 	}
@@ -698,6 +713,36 @@ FLinearColor ADBASkillProjectileBase::ResolveFallbackFlightColor() const
 	default:
 		return FLinearColor(0.65f, 0.78f, 1.0f, 1.0f);
 	}
+}
+
+void ADBASkillProjectileBase::ApplyNiagaraSkillParameters(UNiagaraComponent* NiagaraComponent, const FVector& TargetLocation, const FVector& Direction) const
+{
+	UDBANiagaraSkillParameterLibrary::ApplySkillParameters(
+		NiagaraComponent,
+		NiagaraParameters,
+		Damage,
+		TargetLocation,
+		Direction,
+		Speed,
+		Radius);
+}
+
+FVector ADBASkillProjectileBase::ResolveNiagaraTargetLocation() const
+{
+	if (TargetActor)
+	{
+		return TargetActor->GetActorLocation();
+	}
+	return GetActorLocation() + ResolveNiagaraDirection() * FMath::Max(Speed, Radius);
+}
+
+FVector ADBASkillProjectileBase::ResolveNiagaraDirection() const
+{
+	if (ProjectileMovement && !ProjectileMovement->Velocity.IsNearlyZero())
+	{
+		return ProjectileMovement->Velocity.GetSafeNormal();
+	}
+	return GetActorForwardVector().GetSafeNormal();
 }
 
 void ADBASkillProjectileBase::SetCollisionChannel(ECollisionChannel Channel)

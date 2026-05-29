@@ -73,17 +73,18 @@ ADBALobbyTrainingMonster::ADBALobbyTrainingMonster()
 
 	SelectionRingComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SelectionRingComponent"));
 	SelectionRingComponent->SetupAttachment(RootComponent);
-	SelectionRingComponent->SetRelativeLocation(FVector(0.0f, 0.0f, -88.0f));
-	SelectionRingComponent->SetRelativeScale3D(FVector(1.25f, 1.25f, 0.025f));
+	SelectionRingComponent->SetRelativeLocation(FVector(0.0f, 0.0f, -94.0f));
+	SelectionRingComponent->SetRelativeScale3D(FVector(2.45f, 2.45f, 0.018f));
 	SelectionRingComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SelectionRingComponent->SetHiddenInGame(true);
+	SelectionRingComponent->SetCastShadow(false);
 
 	SelectionLightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("SelectionLightComponent"));
 	SelectionLightComponent->SetupAttachment(RootComponent);
-	SelectionLightComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 20.0f));
-	SelectionLightComponent->SetLightColor(FLinearColor(1.0f, 0.16f, 0.04f, 1.0f));
+	SelectionLightComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 42.0f));
+	SelectionLightComponent->SetLightColor(FLinearColor(1.0f, 0.62f, 0.08f, 1.0f));
 	SelectionLightComponent->Intensity = 0.0f;
-	SelectionLightComponent->AttenuationRadius = 300.0f;
+	SelectionLightComponent->AttenuationRadius = 440.0f;
 	SelectionLightComponent->bUseInverseSquaredFalloff = false;
 
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -133,7 +134,12 @@ void ADBALobbyTrainingMonster::SetLobbySelected(bool bSelected)
 	}
 	if (SelectionLightComponent)
 	{
-		SelectionLightComponent->Intensity = bSelected ? 3200.0f : 0.0f;
+		SelectionLightComponent->Intensity = bSelected ? 5200.0f : 0.0f;
+	}
+	if (USkeletalMeshComponent* MeshComponent = GetMesh())
+	{
+		MeshComponent->SetRenderCustomDepth(bSelected);
+		MeshComponent->SetCustomDepthStencilValue(bSelected ? 250 : 0);
 	}
 	if (HealthBarComponent)
 	{
@@ -228,6 +234,22 @@ void ADBALobbyTrainingMonster::ApplyLobbyMonsterVisuals()
 	{
 		SelectionRingComponent->SetStaticMesh(RingMesh);
 	}
+	if (SelectionRingComponent)
+	{
+		UMaterialInterface* RingBaseMaterial = LoadObject<UMaterialInterface>(nullptr, LobbyMonsterFallbackMaterialPath);
+		if (RingBaseMaterial)
+		{
+			if (UMaterialInstanceDynamic* RingMaterial = UMaterialInstanceDynamic::Create(RingBaseMaterial, this))
+			{
+				const FLinearColor RingColor(1.0f, 0.58f, 0.06f, 1.0f);
+				RingMaterial->SetVectorParameterValue(TEXT("Tint"), RingColor);
+				RingMaterial->SetVectorParameterValue(TEXT("BaseColor"), RingColor);
+				RingMaterial->SetVectorParameterValue(TEXT("Color"), RingColor);
+				RingMaterial->SetVectorParameterValue(TEXT("PrimaryColor"), RingColor);
+				SelectionRingComponent->SetMaterial(0, RingMaterial);
+			}
+		}
+	}
 }
 
 void ADBALobbyTrainingMonster::ConfigurePatrolRoute()
@@ -239,11 +261,14 @@ void ADBALobbyTrainingMonster::ConfigurePatrolRoute()
 
 	PatrolPoints.Reset();
 	const FVector Origin = GetActorLocation();
-	const float Phase = static_cast<float>(FMath::Abs(VisualIndex) % 5) * 55.0f;
-	PatrolPoints.Add(Origin + FVector(PatrolRadius, Phase, 0.0f));
-	PatrolPoints.Add(Origin + FVector(Phase * 0.35f, PatrolRadius, 0.0f));
-	PatrolPoints.Add(Origin + FVector(-PatrolRadius, -Phase, 0.0f));
-	PatrolPoints.Add(Origin + FVector(-Phase * 0.35f, -PatrolRadius, 0.0f));
+	const float PhaseDegrees = static_cast<float>(FMath::Abs(VisualIndex) % 8) * 22.5f;
+	const float PhaseRadians = FMath::DegreesToRadians(PhaseDegrees);
+	const FVector PatrolAxisA(FMath::Cos(PhaseRadians) * PatrolRadius, FMath::Sin(PhaseRadians) * PatrolRadius, 0.0f);
+	const FVector PatrolAxisB(-PatrolAxisA.Y, PatrolAxisA.X, 0.0f);
+	PatrolPoints.Add(Origin + PatrolAxisA);
+	PatrolPoints.Add(Origin + PatrolAxisB);
+	PatrolPoints.Add(Origin - PatrolAxisA);
+	PatrolPoints.Add(Origin - PatrolAxisB);
 	CurrentPatrolPointIndex = FMath::Abs(VisualIndex) % PatrolPoints.Num();
 	NextPatrolMoveTime = GetWorld() ? GetWorld()->GetTimeSeconds() + 0.15f : 0.0f;
 	bPatrolRouteConfigured = true;
@@ -429,6 +454,11 @@ void ADBALobbyTrainingMonster::MulticastSetDefeatedVisualState_Implementation(bo
 	{
 		MeshComponent->SetHiddenInGame(bDefeated);
 		MeshComponent->SetVisibility(!bDefeated, true);
+		if (bDefeated)
+		{
+			MeshComponent->SetRenderCustomDepth(false);
+			MeshComponent->SetCustomDepthStencilValue(0);
+		}
 	}
 
 	if (HealthBarComponent)

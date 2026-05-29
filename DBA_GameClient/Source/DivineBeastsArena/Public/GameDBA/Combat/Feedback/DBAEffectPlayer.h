@@ -19,6 +19,7 @@ class UDBAFloatingDamageComponent;
 class UNiagaraComponent;
 class UNiagaraSystem;
 struct FDBASkillEffectRow;
+struct FDBANiagaraSkillParameters;
 
 /**
  * UDBAEffectPlayer
@@ -74,7 +75,13 @@ protected:
 	bool GetSkillEffectData(FName SkillID, FDBASkillEffectRow& OutEffectData) const;
 
 	/** 安全播放Niagara特效 */
-	UNiagaraComponent* SafeSpawnNiagaraEffect(UNiagaraSystem* System, FVector Location, FRotator Rotation = FRotator::ZeroRotator);
+	UNiagaraComponent* SafeSpawnNiagaraEffect(
+		UNiagaraSystem* System,
+		const FDBANiagaraSkillParameters& NiagaraParameters,
+		float Damage,
+		FVector Location,
+		FVector Direction,
+		FRotator Rotation = FRotator::ZeroRotator);
 
 	/** 安全播放音效 */
 	void SafePlaySound(USoundBase* SoundBase, FVector Location, bool bIs3D = true);

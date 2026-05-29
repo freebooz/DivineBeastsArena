@@ -11,11 +11,13 @@
 #include "GameDBA/Combat/Feedback/DBAEffectPlayer.h"
 
 #include "Camera/PlayerCameraManager.h"
+#include "GameDBA/Combat/DBANiagaraSkillParameters.h"
 #include "GameDBA/Combat/Feedback/DBAEffectTableManager.h"
 #include "GameDBA/Combat/Feedback/DBAFloatingDamageComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 
 UDBAEffectPlayer::UDBAEffectPlayer() {}
@@ -43,7 +45,7 @@ void UDBAEffectPlayer::PlayReleaseEffect(AActor* Caster, FName SkillID, FVector 
 	FDBASkillEffectRow EffectData;
 	if (GetSkillEffectData(SkillID, EffectData))
 	{
-		SafeSpawnNiagaraEffect(EffectData.ReleaseEffect.Get(), Location, Direction);
+		SafeSpawnNiagaraEffect(EffectData.ReleaseEffect.Get(), EffectData.NiagaraParameters, 0.0f, Location, Direction.Vector(), Direction);
 	}
 }
 
@@ -52,7 +54,8 @@ void UDBAEffectPlayer::PlayHitEffect(AActor* Target, FName SkillID, FVector Impa
 	FDBASkillEffectRow EffectData;
 	if (GetSkillEffectData(SkillID, EffectData))
 	{
-		SafeSpawnNiagaraEffect(EffectData.HitEffect.Get(), ImpactPoint, FRotator::ZeroRotator);
+		const FVector TargetDirection = Target ? (Target->GetActorLocation() - ImpactPoint).GetSafeNormal() : FVector::UpVector;
+		SafeSpawnNiagaraEffect(EffectData.HitEffect.Get(), EffectData.NiagaraParameters, 0.0f, ImpactPoint, TargetDirection, FRotator::ZeroRotator);
 	}
 }
 
@@ -121,13 +124,21 @@ bool UDBAEffectPlayer::GetSkillEffectData(FName SkillID, FDBASkillEffectRow& Out
 	return OutEffectData.IsLoaded() || OutEffectData.ScreenShakeClass != nullptr;
 }
 
-UNiagaraComponent* UDBAEffectPlayer::SafeSpawnNiagaraEffect(UNiagaraSystem* System, FVector Location, FRotator Rotation)
+UNiagaraComponent* UDBAEffectPlayer::SafeSpawnNiagaraEffect(
+	UNiagaraSystem* System,
+	const FDBANiagaraSkillParameters& NiagaraParameters,
+	float Damage,
+	FVector Location,
+	FVector Direction,
+	FRotator Rotation)
 {
 	if (!System || !GetWorld())
 	{
 		return nullptr;
 	}
-	return UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), System, Location, Rotation, FVector(1.0f), true, true, ENCPoolMethod::AutoRelease, true);
+	UNiagaraComponent* SpawnedComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), System, Location, Rotation, FVector(1.0f), true, true, ENCPoolMethod::AutoRelease, true);
+	UDBANiagaraSkillParameterLibrary::ApplySkillParameters(SpawnedComponent, NiagaraParameters, Damage, Location, Direction, 0.0f, NiagaraParameters.EffectRadius);
+	return SpawnedComponent;
 }
 
 void UDBAEffectPlayer::SafePlaySound(USoundBase* SoundBase, FVector Location, bool bIs3D)

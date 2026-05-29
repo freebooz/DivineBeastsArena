@@ -65,10 +65,10 @@ private:
 	int32 VisualIndex = 0;
 
 	UPROPERTY(EditAnywhere, Category = "DBA|Lobby|Monster")
-	float MeshScale = 0.92f;
+	float MeshScale = 1.0f;
 
 	UPROPERTY(EditAnywhere, Category = "DBA|Lobby|Monster|Patrol")
-	float PatrolRadius = 360.0f;
+	float PatrolRadius = 100.0f;
 
 	UPROPERTY(EditAnywhere, Category = "DBA|Lobby|Monster|Patrol")
 	float PatrolSpeed = 115.0f;

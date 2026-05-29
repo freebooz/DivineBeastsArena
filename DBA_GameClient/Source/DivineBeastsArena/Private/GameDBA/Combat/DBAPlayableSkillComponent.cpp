@@ -93,6 +93,13 @@ namespace
 		Spec.ProjectileRadius = ProjectileRadius;
 		Spec.Cooldown = Cooldown;
 		Spec.CastVFXScale = CastVFXScale;
+		Spec.NiagaraParameters = UDBANiagaraSkillParameterLibrary::MakeElementParameters(
+			Element,
+			ProjectileRadius,
+			Cooldown,
+			0.0f,
+			ProjectileRadius > 0.0f ? ProjectileRadius * 3.5f : 0.0f,
+			CastVFXScale);
 		Spec.ProjectileCueTag = OptionalTag(TEXT("GameplayCue.DBA.Skill.Projectile"));
 		Spec.ImpactCueTag = OptionalTag(TEXT("GameplayCue.DBA.Skill.Impact"));
 		return Spec;
@@ -196,6 +203,7 @@ void UDBAPlayableSkillComponent::ResetToDefaultSkillSpecs()
 	SkillSpecs.Reset();
 
 	FDBAPlayableSkillRuntimeSpec Fireball = MakeSkill(1, TEXT("Lobby.Skill01.MageFireball"), TEXT("Mage Fireball"), EDBAPlayableSkillEffectShape::Projectile, 42.0f, EDBAElement::Fire, 1580.0f, 46.0f, 3.0f, 1.12f);
+	Fireball.NiagaraParameters = UDBANiagaraSkillParameterLibrary::MakeElementParameters(EDBAElement::Fire, 80.0f, 3.0f, 2.0f, 180.0f, 1.12f);
 	Fireball.ProjectileClass = ADBAFireballProjectile::StaticClass();
 	Fireball.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Abilities/FireLion/NS_FireLion_Q_FlameClaw_Slash.NS_FireLion_Q_FlameClaw_Slash"));
 	Fireball.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Fireball/NS_DBA_Fireball_Projectile.NS_DBA_Fireball_Projectile"));
@@ -206,6 +214,7 @@ void UDBAPlayableSkillComponent::ResetToDefaultSkillSpecs()
 	SkillSpecs.Add(Fireball);
 
 	FDBAPlayableSkillRuntimeSpec Frost = MakeSkill(2, TEXT("Lobby.Skill02.FrostShard"), TEXT("Frost Shard"), EDBAPlayableSkillEffectShape::Projectile, 32.0f, EDBAElement::Water, 1840.0f, 38.0f, 4.5f, 1.15f);
+	Frost.NiagaraParameters = UDBANiagaraSkillParameterLibrary::MakeElementParameters(EDBAElement::Water, 100.0f, 3.0f, 2.0f, 150.0f, 1.15f);
 	Frost.ProjectileClass = ADBAFrostShardProjectile::StaticClass();
 	Frost.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_IceCrystal.NS_IceCrystal"));
 	Frost.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_IceDart.NS_IceDart"));
@@ -216,6 +225,7 @@ void UDBAPlayableSkillComponent::ResetToDefaultSkillSpecs()
 	SkillSpecs.Add(Frost);
 
 	FDBAPlayableSkillRuntimeSpec Bloom = MakeSkill(3, TEXT("Lobby.Skill03.BloomHealing"), TEXT("Bloom Healing"), EDBAPlayableSkillEffectShape::BloomHealing, 115.0f, EDBAElement::Wood, 0.0f, 0.0f, 5.5f, 1.2f);
+	Bloom.NiagaraParameters = UDBANiagaraSkillParameterLibrary::MakeElementParameters(EDBAElement::Wood, 380.0f, 3.5f, 3.0f, 120.0f, 1.2f);
 	Bloom.BloomHealingClass = ADBABloomHealingSpell::StaticClass();
 	Bloom.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingGrove_Area.NS_WoodCrane_Q_HealingGrove_Area"));
 	Bloom.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingSeed_Projectile.NS_WoodCrane_Q_HealingSeed_Projectile"));
@@ -226,6 +236,7 @@ void UDBAPlayableSkillComponent::ResetToDefaultSkillSpecs()
 	SkillSpecs.Add(Bloom);
 
 	FDBAPlayableSkillRuntimeSpec Chain = MakeSkill(4, TEXT("Lobby.Skill04.ChainLightning"), TEXT("Chain Lightning"), EDBAPlayableSkillEffectShape::ChainLightning, 38.0f, EDBAElement::Gold, 0.0f, 0.0f, 6.0f, 1.2f);
+	Chain.NiagaraParameters = UDBANiagaraSkillParameterLibrary::MakeElementParameters(EDBAElement::Gold, 720.0f, 0.75f, 0.075f, 360.0f, 1.2f);
 	Chain.ChainLightningClass = ADBAChainLightningSpell::StaticClass();
 	Chain.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Eletric_01.NS_Hit_Eletric_01"));
 	Chain.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_ThunderBolt.NS_ThunderBolt"));
@@ -236,6 +247,7 @@ void UDBAPlayableSkillComponent::ResetToDefaultSkillSpecs()
 	SkillSpecs.Add(Chain);
 
 	FDBAPlayableSkillRuntimeSpec Shield = MakeSkill(5, TEXT("Lobby.Skill05.PriestShield"), TEXT("Priest Shield"), EDBAPlayableSkillEffectShape::HolyShield, 180.0f, EDBAElement::Wood, 0.0f, 0.0f, 8.0f, 1.22f);
+	Shield.NiagaraParameters = UDBANiagaraSkillParameterLibrary::MakeElementParameters(EDBAElement::Gold, 180.0f, 6.0f, 0.0f, 120.0f, 1.22f);
 	Shield.HolyShieldClass = ADBAHolyShieldSpell::StaticClass();
 	Shield.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Bless.NS_Hit_Bless"));
 	Shield.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy"));
@@ -246,6 +258,10 @@ void UDBAPlayableSkillComponent::ResetToDefaultSkillSpecs()
 	SkillSpecs.Add(Shield);
 
 	FDBAPlayableSkillRuntimeSpec Shadow = MakeSkill(6, TEXT("Lobby.Skill06.ShadowBolt"), TEXT("Shadow Bolt"), EDBAPlayableSkillEffectShape::Projectile, 44.0f, EDBAElement::Gold, 1580.0f, 40.0f, 4.8f, 1.1f);
+	Shadow.NiagaraParameters = UDBANiagaraSkillParameterLibrary::MakeElementParameters(EDBAElement::Gold, 60.0f, 3.0f, 0.0f, 170.0f, 1.1f);
+	Shadow.NiagaraParameters.ElementColorA = FLinearColor(0.4f, 0.133f, 0.667f, 1.0f);
+	Shadow.NiagaraParameters.ElementColorB = FLinearColor(0.133f, 0.0f, 0.4f, 1.0f);
+	Shadow.NiagaraParameters.HighlightColor = FLinearColor(0.667f, 0.267f, 1.0f, 1.0f);
 	Shadow.ProjectileClass = ADBAShadowBoltProjectile::StaticClass();
 	Shadow.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Magic.NS_Hit_Magic"));
 	Shadow.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_PoisonSkullFish.NS_PoisonSkullFish"));

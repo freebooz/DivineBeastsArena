@@ -10,6 +10,7 @@ Readable notes:
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "GameDBA/Combat/DBANiagaraSkillParameters.h"
 #include "DBAHolyShieldSpell.generated.h"
 
 class UNiagaraSystem;
@@ -59,6 +60,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Holy Shield|SFX")
 	TSoftObjectPtr<USoundBase> ImpactSFXAsset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Holy Shield|VFX")
+	FDBANiagaraSkillParameters NiagaraParameters;
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayShieldStart(

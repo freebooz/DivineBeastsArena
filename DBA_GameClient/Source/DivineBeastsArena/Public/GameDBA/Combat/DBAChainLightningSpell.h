@@ -11,6 +11,7 @@ Readable notes:
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
+#include "GameDBA/Combat/DBANiagaraSkillParameters.h"
 #include "GameCore/Types/DBACommonEnums.h"
 #include "DBAChainLightningSpell.generated.h"
 
@@ -75,6 +76,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Chain Lightning|SFX")
 	TSoftObjectPtr<USoundBase> ImpactSFXAsset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Chain Lightning|VFX")
+	FDBANiagaraSkillParameters NiagaraParameters;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> SceneRoot;

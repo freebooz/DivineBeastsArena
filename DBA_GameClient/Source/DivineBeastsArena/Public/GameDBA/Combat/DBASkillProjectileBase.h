@@ -14,6 +14,7 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GameplayTagContainer.h"
+#include "GameDBA/Combat/DBANiagaraSkillParameters.h"
 #include "GameCore/Types/DBACommonEnums.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "DBASkillProjectileBase.generated.h"
@@ -72,6 +73,9 @@ protected:
 	void PlayImpactFeedbackLocal(const FString& ImpactVFXPath, const FString& ImpactNiagaraVFXPath, const FString& ImpactSFXPath, const FVector& HitLocation, const FRotator& HitRotation);
 	void ApplyFallbackFlightVisuals();
 	FLinearColor ResolveFallbackFlightColor() const;
+	void ApplyNiagaraSkillParameters(UNiagaraComponent* NiagaraComponent, const FVector& TargetLocation, const FVector& Direction) const;
+	FVector ResolveNiagaraTargetLocation() const;
+	FVector ResolveNiagaraDirection() const;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USphereComponent> CollisionSphere;
@@ -127,6 +131,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Cue")
 	FGameplayTag ImpactCueTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|VFX")
+	FDBANiagaraSkillParameters NiagaraParameters;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|VFX")
 	TSoftObjectPtr<UParticleSystem> ProjectileVFXAsset;

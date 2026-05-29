@@ -70,7 +70,6 @@ fn check_update(current_version: String, manifest: UpdateManifest) -> bool {
     latest > current
 }
 
-#[tauri::command]
 fn download_file(url: String, destination: String) -> Result<(), String> {
     let response = ureq::get(&url)
         .call()
@@ -177,8 +176,28 @@ fn build_file_download_url(base_url: &str, file_name: &str, total_files: usize, 
 }
 
 #[tauri::command]
-fn launch_game(executable_path: String, args: Vec<String>) -> Result<(), String> {
-    std::process::Command::new(&executable_path)
+fn launch_game(game_path: String, executable_path: String, args: Vec<String>) -> Result<(), String> {
+    let base_path = PathBuf::from(&game_path)
+        .canonicalize()
+        .map_err(|e| format!("Invalid game path: {}", e))?;
+    let executable = PathBuf::from(&executable_path)
+        .canonicalize()
+        .map_err(|e| format!("Invalid executable path: {}", e))?;
+
+    if !executable.starts_with(&base_path) {
+        return Err("Executable must be inside the configured game installation path.".to_string());
+    }
+
+    let file_name = executable
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    if !file_name.starts_with("divinebeastsarena") || !file_name.ends_with(".exe") {
+        return Err("Executable must be a DivineBeastsArena Windows client binary.".to_string());
+    }
+
+    std::process::Command::new(&executable)
         .args(&args)
         .spawn()
         .map_err(|e| e.to_string())?;
@@ -200,7 +219,6 @@ pub fn run() {
             get_local_version,
             fetch_manifest,
             check_update,
-            download_file,
             verify_file_sha256,
             repair_game,
             launch_game,

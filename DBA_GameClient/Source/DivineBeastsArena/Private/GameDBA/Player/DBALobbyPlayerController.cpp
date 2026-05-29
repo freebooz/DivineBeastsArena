@@ -80,6 +80,7 @@ void ADBALobbyPlayerController::BeginPlay()
 		MouseYawSensitivityScale = FMath::Max(MouseYawSensitivityScale, 21.0f);
 		FInputModeGameAndUI InputMode;
 		InputMode.SetHideCursorDuringCapture(false);
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
 		SetInputMode(InputMode);
 		SetShowMouseCursor(true);
 		EnsureCustomSoftwareCursor();
@@ -103,6 +104,7 @@ void ADBALobbyPlayerController::OnPossess(APawn* InPawn)
 	{
 		FInputModeGameAndUI InputMode;
 		InputMode.SetHideCursorDuringCapture(false);
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
 		SetInputMode(InputMode);
 		SetShowMouseCursor(true);
 		EnsureCustomSoftwareCursor();
@@ -122,6 +124,7 @@ void ADBALobbyPlayerController::AcknowledgePossession(APawn* P)
 	{
 		FInputModeGameAndUI InputMode;
 		InputMode.SetHideCursorDuringCapture(false);
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
 		SetInputMode(InputMode);
 		SetShowMouseCursor(true);
 		EnsureCustomSoftwareCursor();
@@ -287,6 +290,8 @@ void ADBALobbyPlayerController::CancelMouseLookCapture()
 {
 	bLeftMouseLookHeld = false;
 	bRightMouseLookHeld = false;
+	bLeftMouseClickCandidate = false;
+	LeftMouseDragDistance = 0.0f;
 	SetMouseLookCaptureActive(false);
 	ConfigurePawnForRightMouseLook(false);
 }
@@ -320,22 +325,32 @@ void ADBALobbyPlayerController::TurnAxis(float Value)
 
 void ADBALobbyPlayerController::HandleLeftMousePressed()
 {
-	HandleSelectTargetPressed();
 	SaveMouseLookCursorPosition();
 	bLeftMouseLookHeld = true;
+	bLeftMouseClickCandidate = true;
+	LeftMouseDragDistance = 0.0f;
 	RefreshMouseLookCaptureMode();
 }
 
 void ADBALobbyPlayerController::HandleLeftMouseReleased()
 {
+	const bool bIsRightMouseDown = bRightMouseLookHeld || IsInputKeyDown(EKeys::RightMouseButton);
+	const bool bShouldSelectClickedTarget = bLeftMouseClickCandidate && !bIsRightMouseDown;
 	bLeftMouseLookHeld = false;
+	bLeftMouseClickCandidate = false;
+	LeftMouseDragDistance = 0.0f;
 	RefreshMouseLookCaptureMode();
+	if (bShouldSelectClickedTarget)
+	{
+		HandleSelectTargetPressed();
+	}
 }
 
 void ADBALobbyPlayerController::HandleRightMousePressed()
 {
 	SaveMouseLookCursorPosition();
 	bRightMouseLookHeld = true;
+	bLeftMouseClickCandidate = false;
 	RefreshMouseLookCaptureMode();
 }
 
@@ -561,7 +576,9 @@ void ADBALobbyPlayerController::ApplyMovementInput(float ForwardValue, float Rig
 	}
 
 	const FRotator ControlRot = GetControlRotation();
-	const FRotator YawRot(0.0f, ControlRot.Yaw, 0.0f);
+	const bool bUseMouseFacing = bRightMouseLookHeld || IsInputKeyDown(EKeys::RightMouseButton);
+	const float MovementYaw = bUseMouseFacing ? ControlRot.Yaw : ControlledPawn->GetActorRotation().Yaw;
+	const FRotator YawRot(0.0f, MovementYaw, 0.0f);
 	const FVector ForwardDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
 	const FVector RightDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
 
@@ -669,7 +686,17 @@ void ADBALobbyPlayerController::ApplyMouseLook()
 		PitchInput = -CachedLookUpAxis * PitchSensitivity;
 	}
 
-	ApplyCameraInput(YawInput, PitchInput, bIsLeftLooking || bIsRightLooking);
+	const float MouseDragDistanceThisFrame = FVector2D(MouseDeltaX, MouseDeltaY).Size();
+	if (bLeftMouseClickCandidate)
+	{
+		LeftMouseDragDistance += MouseDragDistanceThisFrame;
+		if (LeftMouseDragDistance > FMath::Max(MouseClickDragThreshold, 0.0f))
+		{
+			bLeftMouseClickCandidate = false;
+		}
+	}
+
+	ApplyCameraInput(YawInput, PitchInput, bIsRightLooking);
 	CachedTurnAxis = 0.0f;
 	CachedLookUpAxis = 0.0f;
 }
@@ -718,7 +745,7 @@ void ADBALobbyPlayerController::RefreshMouseLookCaptureMode()
 {
 	const bool bShouldCapture = bLeftMouseLookHeld || bRightMouseLookHeld;
 	SetMouseLookCaptureActive(bShouldCapture);
-	ConfigurePawnForRightMouseLook(bShouldCapture);
+	ConfigurePawnForRightMouseLook(bRightMouseLookHeld || IsInputKeyDown(EKeys::RightMouseButton));
 }
 
 void ADBALobbyPlayerController::SetMouseLookCaptureActive(bool bActive)
@@ -736,11 +763,11 @@ void ADBALobbyPlayerController::SetMouseLookCaptureActive(bool bActive)
 		SetInputMode(InputMode);
 		CurrentMouseCursor = EMouseCursor::Default;
 		DefaultMouseCursor = EMouseCursor::Default;
-		SetShowMouseCursor(true);
 		if (!SoftwareCursorWidget)
 		{
 			EnsureCustomSoftwareCursor();
 		}
+		SetShowMouseCursor(false);
 		bEnableClickEvents = false;
 		bEnableMouseOverEvents = false;
 		return;
@@ -748,7 +775,7 @@ void ADBALobbyPlayerController::SetMouseLookCaptureActive(bool bActive)
 
 	FInputModeGameAndUI InputMode;
 	InputMode.SetHideCursorDuringCapture(false);
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
 	SetInputMode(InputMode);
 	bEnableClickEvents = true;
 	bEnableMouseOverEvents = false;

@@ -49,7 +49,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Monster")
 	float GetHealthPercent() const;
 
-	UFUNCTION(NetMulticast, Unreliable)
+	UFUNCTION(NetMulticast, Reliable)
 	void MulticastShowDamageNumber(float DamageAmount, FVector_NetQuantize ImpactPoint, bool bIsCritical);
 
 protected:

@@ -15,6 +15,7 @@
 #include "NiagaraSystem.h"
 #include "Sound/SoundBase.h"
 #include "Camera/CameraShakeBase.h"
+#include "GameDBA/Combat/DBANiagaraSkillParameters.h"
 #include "DBAEffectTableManager.generated.h"
 
 class UCameraShakeBase;
@@ -67,6 +68,10 @@ struct DIVINEBEASTSARENA_API FDBASkillEffectRow
 	/** 暴击颜色 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FLinearColor CriticalColor = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f);
+
+	/** Niagara User 参数 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FDBANiagaraSkillParameters NiagaraParameters;
 
 	/** 加载状态 */
 	bool IsLoaded() const

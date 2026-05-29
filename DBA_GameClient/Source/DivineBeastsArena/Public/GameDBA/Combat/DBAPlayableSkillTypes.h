@@ -11,6 +11,7 @@ Readable notes:
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "GameDBA/Combat/DBANiagaraSkillParameters.h"
 #include "GameCore/Types/DBACommonEnums.h"
 #include "DBAPlayableSkillTypes.generated.h"
 
@@ -75,6 +76,9 @@ struct DIVINEBEASTSARENA_API FDBAPlayableSkillRuntimeSpec
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Skill", meta = (ClampMin = "0.0"))
 	float CastVFXScale = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Niagara")
+	FDBANiagaraSkillParameters NiagaraParameters;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Skill")
 	TSubclassOf<ADBASkillProjectileBase> ProjectileClass;

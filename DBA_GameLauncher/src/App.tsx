@@ -238,6 +238,7 @@ function App() {
       const args = parseCommandLineArgs(extraArgs);
 
       await invoke("launch_game", {
+        gamePath: installPath,
         executablePath,
         args,
       });

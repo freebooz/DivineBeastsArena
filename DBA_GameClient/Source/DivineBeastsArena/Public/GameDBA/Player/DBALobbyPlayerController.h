@@ -17,7 +17,7 @@
 
 /**
  * 大厅玩家控制器
- * - PC：WASD + 鼠标右键转向
+ * - PC：WASD + 魔兽世界式鼠标控制（左键转镜头、右键转角色、双键前进）
  * - Mobile：支持轴向输入（虚拟摇杆映射到 MoveForward/MoveRight）
  */
 UCLASS(Blueprintable)
@@ -146,6 +146,9 @@ protected:
 	bool bRestoreCursorAfterMouseLook = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
+	float MouseClickDragThreshold = 6.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
 	float TouchLookSensitivity = 0.06f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Lobby|Input")
@@ -164,10 +167,12 @@ private:
 	bool bJumpHeld = false;
 	bool bLeftMouseLookHeld = false;
 	bool bRightMouseLookHeld = false;
+	bool bLeftMouseClickCandidate = false;
 	bool bMouseLookCaptureActive = false;
 	bool bPawnUsingRightMouseLook = false;
 	bool bHasSavedMouseLookCursorPosition = false;
 	bool bTouchLookWasPressed = false;
+	float LeftMouseDragDistance = 0.0f;
 	FVector2D SavedMouseLookCursorPosition = FVector2D::ZeroVector;
 	FVector2D LastTouchLookPos = FVector2D::ZeroVector;
 	UPROPERTY(Transient)
