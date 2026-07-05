@@ -17,6 +17,7 @@ class FDBAOnlineAccountJson
 {
 public:
 	static FString BuildLoginRequest(const FDBALoginRequest& Request);
+	static FString BuildGuestLoginRequest(const FString& DeviceId, const FString& DeviceName, const FString& Platform);
 	static FString BuildCreateCharacterRequest(const FDBACharacterCreateRequest& Request);
 	static FString BuildSelectCharacterRequest(const FDBACharacterId& CharacterId);
 

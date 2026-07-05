@@ -249,6 +249,11 @@ void ADBABloomHealingSpell::ApplyHealing(AActor* Target) const
 		return;
 	}
 
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	if (UAbilitySystemComponent* ASC = ResolveASC(Target))
 	{
 		if (UDBABattleAttributeSet* AttrSet = const_cast<UDBABattleAttributeSet*>(ASC->GetSet<UDBABattleAttributeSet>()))

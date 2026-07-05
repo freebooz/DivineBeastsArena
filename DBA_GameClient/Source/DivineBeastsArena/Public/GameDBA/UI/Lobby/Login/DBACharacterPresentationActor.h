@@ -45,19 +45,22 @@ struct DIVINEBEASTSARENA_API FDBACharacterPresentationStageSpec
 	FRotator CameraRotation = FRotator(-2.0f, 180.0f, 0.0f);
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
-	float KeyLightIntensity = 65000.0f;
+	float KeyLightIntensity = 0.35f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
-	float FillLightIntensity = 21000.0f;
+	float FillLightIntensity = 0.0f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
-	float RimLightIntensity = 36000.0f;
+	float RimLightIntensity = 0.0f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
-	float FaceLightIntensity = 12000.0f;
+	float FaceLightIntensity = 120.0f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
-	float SkyLightIntensity = 3.2f;
+	float SkyLightIntensity = 0.06f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
+	float PillarRedLightIntensity = 800.0f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterPresentation")
 	FVector GroundScale = FVector(7.5f, 7.5f, 1.0f);
@@ -150,6 +153,12 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "DBA|CharacterPresentation")
 	TObjectPtr<UPointLightComponent> FaceLight;
+
+	UPROPERTY(VisibleAnywhere, Category = "DBA|CharacterPresentation")
+	TObjectPtr<UPointLightComponent> LeftPillarRedLight;
+
+	UPROPERTY(VisibleAnywhere, Category = "DBA|CharacterPresentation")
+	TObjectPtr<UPointLightComponent> RightPillarRedLight;
 
 	UPROPERTY(VisibleAnywhere, Category = "DBA|CharacterPresentation")
 	TObjectPtr<USkyLightComponent> SkyLight;

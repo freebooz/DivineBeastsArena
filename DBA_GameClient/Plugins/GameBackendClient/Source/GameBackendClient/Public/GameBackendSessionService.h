@@ -43,8 +43,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Session")
 	static FString BuildTravelUrl(const FString& Ip, int32 Port, const FString& SessionId, const FString& PlayerSessionToken);
 
+	static FString BuildTravelUrl(
+		const FString& Ip,
+		int32 Port,
+		const FString& SessionId,
+		const FString& PlayerSessionToken,
+		int32 TeamId,
+		const FString& Zodiac,
+		const FString& PrimaryElement,
+		const FString& FiveCamp,
+		const FString& FixedSkillGroupId);
+
+	static bool TryBuildTravelUrlFromConnectionData(
+		const FString& ConnectionDataJson,
+		const FString& OverrideSessionId,
+		FString& OutTravelUrl);
+
 private:
-	bool ParseConnectionData(const FString& DataJson, FDBA_GameBackendSessionConnection& OutConnection) const;
+	static bool ParseConnectionData(const FString& DataJson, FDBA_GameBackendSessionConnection& OutConnection);
 
 private:
 	TWeakObjectPtr<UDBA_GameBackendClientSubsystem> Subsystem;

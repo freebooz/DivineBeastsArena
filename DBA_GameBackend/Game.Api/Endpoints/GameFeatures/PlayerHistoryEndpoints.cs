@@ -14,6 +14,7 @@ using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace Game.Api.Endpoints.GameFeatures;
 public static partial class GameFeatureEndpoints
@@ -56,32 +57,151 @@ public static partial class GameFeatureEndpoints
 
     // ==================== 战绩查询 ====================
 
-    private static async Task<IResult> GetMatchHistory(Guid playerId, int page, int pageSize, GameDbContext db)
+    private static async Task<IResult> GetMatchHistory(HttpContext ctx, GameDbContext db, int page = 1, int pageSize = 50)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         (page, pageSize) = NormalizePaging(page, pageSize);
 
-        var totalCount = await db.PlayerMatchHistories.CountAsync(x => x.PlayerId == playerId);
+        var totalCount = await db.PlayerMatchHistories.CountAsync(x => x.PlayerId == playerId.Value);
 
-        var matches = await db.PlayerMatchHistories
-            .Where(x => x.PlayerId == playerId)
+        var histories = await db.PlayerMatchHistories
+            .Where(x => x.PlayerId == playerId.Value)
             .OrderByDescending(x => x.PlayedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(x => new MatchHistoryDto(
-                x.SessionId, x.Mode, x.MapId, x.Team, x.Result, x.Kills, x.Deaths, x.Assists,
-                x.Score, x.DurationSeconds, x.PlayedAt))
             .ToListAsync();
+
+        var sessionIds = histories.Select(x => x.SessionId).ToList();
+        var playerResults = await db.MatchPlayerResults
+            .Include(x => x.MatchResult)
+            .Where(x => x.PlayerId == playerId.Value &&
+                        x.MatchResult != null &&
+                        sessionIds.Contains(x.MatchResult.SessionId))
+            .ToListAsync();
+        var playerResultBySession = playerResults
+            .Where(x => x.MatchResult != null)
+            .GroupBy(x => x.MatchResult!.SessionId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.OrderByDescending(x => x.CreatedAt).First());
+
+        var matches = histories
+            .Select(x =>
+            {
+                playerResultBySession.TryGetValue(x.SessionId, out var playerResult);
+                return new MatchHistoryDto(
+                    x.SessionId,
+                    x.Mode,
+                    x.MapId,
+                    x.Team,
+                    x.Result,
+                    x.Kills,
+                    x.Deaths,
+                    x.Assists,
+                    x.Score,
+                    playerResult?.MatchResult?.ResultJson ?? "{}",
+                    ExtractWinnerTeam(playerResult?.MatchResult?.ResultJson),
+                    x.DurationSeconds,
+                    playerResult?.ExpDelta ?? 0,
+                    playerResult is null ? new Dictionary<string, object>() : ParseRewardJson(playerResult.RewardJson),
+                    x.PlayedAt);
+            })
+            .ToList();
 
         return Results.Ok(ApiResponse<MatchHistoryResponse>.Ok(new MatchHistoryResponse(matches, totalCount, page, pageSize)));
     }
 
+    private static string? ExtractWinnerTeam(string? resultJson)
+    {
+        if (string.IsNullOrWhiteSpace(resultJson))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var payload = JsonDocument.Parse(resultJson);
+            var root = payload.RootElement;
+            return TryGetNonEmptyString(root, "winnerTeam")
+                ?? TryGetNonEmptyString(root, "winner_team");
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static string? TryGetNonEmptyString(JsonElement root, string propertyName)
+    {
+        if (!root.TryGetProperty(propertyName, out var property) ||
+            property.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var value = property.GetString();
+        return string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim();
+    }
+
+    private static IReadOnlyDictionary<string, object> ParseRewardJson(string rewardJson)
+    {
+        if (string.IsNullOrWhiteSpace(rewardJson))
+        {
+            return new Dictionary<string, object>();
+        }
+
+        try
+        {
+            var rewards = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(rewardJson);
+            if (rewards is null)
+            {
+                return new Dictionary<string, object>();
+            }
+
+            return rewards.ToDictionary(
+                pair => pair.Key,
+                pair => NormalizeRewardValue(pair.Value));
+        }
+        catch (JsonException)
+        {
+            return new Dictionary<string, object>();
+        }
+    }
+
+    private static object NormalizeRewardValue(JsonElement value)
+    {
+        return value.ValueKind switch
+        {
+            JsonValueKind.Number when value.TryGetInt64(out var longValue) => longValue,
+            JsonValueKind.Number when value.TryGetDouble(out var doubleValue) => doubleValue,
+            JsonValueKind.String => value.GetString() ?? string.Empty,
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Null => string.Empty,
+            _ => value.GetRawText()
+        };
+    }
+
     // ==================== 举报系统 ====================
 
-    private static async Task<IResult> SubmitReport(SubmitReportRequest request, Guid playerId, GameDbContext db)
+    private static async Task<IResult> SubmitReport(SubmitReportRequest request, HttpContext ctx, GameDbContext db)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         var report = new Report
         {
-            ReporterId = playerId,
+            ReporterId = playerId.Value,
             ReportedPlayerId = request.ReportedPlayerId,
             ReportType = request.ReportType,
             Content = request.Content,
@@ -96,28 +216,40 @@ public static partial class GameFeatureEndpoints
 
     // ==================== 客服工单 ====================
 
-    private static async Task<IResult> GetMyTickets(Guid playerId, int page, int pageSize, GameDbContext db)
+    private static async Task<IResult> GetMyTickets(HttpContext ctx, GameDbContext db, int page = 1, int pageSize = 50)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         (page, pageSize) = NormalizePaging(page, pageSize);
 
-        var totalCount = await db.SupportTickets.CountAsync(x => x.PlayerId == playerId);
+        var totalCount = await db.SupportTickets.CountAsync(x => x.PlayerId == playerId.Value);
 
         var tickets = await db.SupportTickets
-            .Where(x => x.PlayerId == playerId)
+            .Where(x => x.PlayerId == playerId.Value)
             .OrderByDescending(x => x.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(x => new TicketDto(x.Id, x.TicketType, x.Subject, x.Status, x.Priority, x.CreatedAt))
             .ToListAsync();
 
-        return Results.Ok(ApiResponse<TicketListResponse>.Ok(new TicketListResponse(tickets, totalCount)));
+        return Results.Ok(ApiResponse<TicketListResponse>.Ok(new TicketListResponse(tickets, totalCount, page, pageSize)));
     }
 
-    private static async Task<IResult> CreateTicket(CreateTicketRequest request, Guid playerId, GameDbContext db)
+    private static async Task<IResult> CreateTicket(CreateTicketRequest request, HttpContext ctx, GameDbContext db)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         var ticket = new SupportTicket
         {
-            PlayerId = playerId,
+            PlayerId = playerId.Value,
             TicketType = request.TicketType,
             Subject = request.Subject,
             Content = request.Content,
@@ -130,11 +262,17 @@ public static partial class GameFeatureEndpoints
         return Results.Ok(ApiResponse<object>.Ok(new { TicketId = ticket.Id }));
     }
 
-    private static async Task<IResult> GetTicketDetail(Guid ticketId, Guid playerId, GameDbContext db)
+    private static async Task<IResult> GetTicketDetail(Guid ticketId, HttpContext ctx, GameDbContext db)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         var ticket = await db.SupportTickets
             .Include(x => x.Player)
-            .FirstOrDefaultAsync(x => x.Id == ticketId && x.PlayerId == playerId);
+            .FirstOrDefaultAsync(x => x.Id == ticketId && x.PlayerId == playerId.Value);
 
         if (ticket == null) return ErrorResponse.NotFound("工单不存在").ToProblem();
 
@@ -174,15 +312,21 @@ public static partial class GameFeatureEndpoints
         return Results.Ok(ApiResponse<TicketDetailDto>.Ok(detail));
     }
 
-    private static async Task<IResult> ReplyTicket(Guid ticketId, ReplyTicketRequest request, Guid playerId, GameDbContext db)
+    private static async Task<IResult> ReplyTicket(Guid ticketId, ReplyTicketRequest request, HttpContext ctx, GameDbContext db)
     {
-        var ticket = await db.SupportTickets.FirstOrDefaultAsync(x => x.Id == ticketId && x.PlayerId == playerId);
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
+        var ticket = await db.SupportTickets.FirstOrDefaultAsync(x => x.Id == ticketId && x.PlayerId == playerId.Value);
         if (ticket == null) return ErrorResponse.NotFound("工单不存在").ToProblem();
 
         var reply = new TicketReply
         {
             TicketId = ticketId,
-            PlayerId = playerId,
+            PlayerId = playerId.Value,
             Content = request.Content,
             IsInternal = false
         };

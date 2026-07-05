@@ -6,7 +6,7 @@
 
 **Architecture:** Add a focused world actor, `ADBACharacterPresentationActor`, that owns the preview mesh, lights, camera, and input-driven rotation. Character select/create widgets stop spawning `UViewport` and instead find or spawn the stage actor in the current world, update its zodiac, and rotate it from pointer/touch drag input.
 
-**Tech Stack:** Unreal Engine 5.7 C++, UUserWidget input overrides, AActor world presentation stage, existing DBA zodiac mesh/material assets.
+**Tech Stack:** Unreal Engine 5.8 C++, UUserWidget input overrides, AActor world presentation stage, existing DBA zodiac mesh/material assets.
 
 ---
 
@@ -44,8 +44,9 @@
 ### Task 4: Verify
 
 **Commands:**
-- Run: `E:\UnrealEngine-5.7.1-release\Engine\Build\BatchFiles\Build.bat DivineBeastsArenaEditor Win64 Development D:\DivineBeastsArenaPlatform\DBA_GameClient\DivineBeastsArena.uproject -WaitMutex -FromMsBuild`
+- Run: `D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat DivineBeastsArenaEditor Win64 Development D:\DivineBeastsArenaPlatform\DBA_GameClient\DivineBeastsArena.uproject -WaitMutex -FromMsBuild`
 - Expected: `Result: Succeeded`
 
 - [ ] Launch editor after compile and confirm it stays alive.
 - [ ] Manual PIE test: login -> character select -> create character; model should be in the actual world, not a UMG rectangle.
+

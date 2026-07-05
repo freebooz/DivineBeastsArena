@@ -51,7 +51,7 @@ public static class FeedbackEndpoints
         return Results.Ok(ApiResponse<FeedbackResponse>.Ok(ToResponse(feedback)));
     }
 
-    private static async Task<IResult> GetRecentFeedback(int page, int pageSize, GameDbContext db)
+    private static async Task<IResult> GetRecentFeedback(GameDbContext db, int page = 1, int pageSize = 50)
     {
         page = Math.Max(page, 1);
         pageSize = pageSize <= 0 ? 50 : Math.Clamp(pageSize, 1, 50);

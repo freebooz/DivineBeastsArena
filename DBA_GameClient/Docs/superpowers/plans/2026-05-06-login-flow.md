@@ -1,4 +1,4 @@
-# 登录闭环 Implementation Plan
+﻿# 登录闭环 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -6,7 +6,7 @@
 
 **Architecture:** 账号能力统一挂在 `UDBAAccountServiceBase` 下。新增 `UDBAOnlineAccountService` 负责 HTTP 后端协议和兜底调度，复用 `UDBAMockAccountService` 保障开发闭环；新增前台登录流程子系统协调自动登录、角色列表、角色创建和大厅状态。
 
-**Tech Stack:** Unreal Engine 5.7 C++、UGameInstanceSubsystem、HTTP Module、Json/JsonUtilities、UMG Blueprint 绑定、Unreal Automation Tests。
+**Tech Stack:** Unreal Engine 5.8 C++、UGameInstanceSubsystem、HTTP Module、Json/JsonUtilities、UMG Blueprint 绑定、Unreal Automation Tests。
 
 ---
 
@@ -1775,3 +1775,4 @@ Type consistency:
 - `FDBACharacterSummary` 新字段在 Task 2 定义，Task 3、Task 4、Task 5、Task 6 使用同名字段。
 - 登录流状态 `EDBALoginFlowState` 在 Task 5 定义，Task 6 只引用该类型。
 - 在线错误类型 `EDBAOnlineAccountError` 在 Task 3 定义，Task 4 使用同名枚举。
+

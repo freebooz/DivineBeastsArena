@@ -56,10 +56,16 @@ void UDBAMonsterAIComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 
 void UDBAMonsterAIComponent::MoveToLocation(FVector Destination)
 {
-	AAIController* AIController = Cast<AAIController>(GetOwner()->GetInstigatorController());
+	AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return;
+	}
+
+	AAIController* AIController = Cast<AAIController>(Owner->GetInstigatorController());
 	if (!AIController)
 	{
-		AIController = Cast<AAIController>(GetOwner()->GetOwner());
+		AIController = Cast<AAIController>(Owner->GetOwner());
 	}
 
 	if (AIController)
@@ -77,7 +83,7 @@ void UDBAMonsterAIComponent::MoveToLocation(FVector Destination)
 	// 濡傛灉娌℃湁 AIController锛屼娇鐢?CharacterMovement
 	if (!AIController)
 	{
-		if (ACharacter* Character = Cast<ACharacter>(GetOwner()))
+		if (ACharacter* Character = Cast<ACharacter>(Owner))
 		{
 			if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
 			{
@@ -97,15 +103,21 @@ void UDBAMonsterAIComponent::MoveToLocation(FVector Destination)
 
 void UDBAMonsterAIComponent::MoveToActor(AActor* Target)
 {
+	AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return;
+	}
+
 	if (!Target)
 	{
 		return;
 	}
 
-	AAIController* AIController = Cast<AAIController>(GetOwner()->GetInstigatorController());
+	AAIController* AIController = Cast<AAIController>(Owner->GetInstigatorController());
 	if (!AIController)
 	{
-		AIController = Cast<AAIController>(GetOwner()->GetOwner());
+		AIController = Cast<AAIController>(Owner->GetOwner());
 	}
 
 	if (AIController)
@@ -119,15 +131,21 @@ void UDBAMonsterAIComponent::MoveToActor(AActor* Target)
 
 void UDBAMonsterAIComponent::StopMovement()
 {
-	if (AAIController* AIController = Cast<AAIController>(GetOwner()->GetInstigatorController()))
+	AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return;
+	}
+
+	if (AAIController* AIController = Cast<AAIController>(Owner->GetInstigatorController()))
 	{
 		AIController->StopMovement();
 	}
-	else if (AAIController* AIController2 = Cast<AAIController>(GetOwner()->GetOwner()))
+	else if (AAIController* AIController2 = Cast<AAIController>(Owner->GetOwner()))
 	{
 		AIController2->StopMovement();
 	}
-	else if (ACharacter* Character = Cast<ACharacter>(GetOwner()))
+	else if (ACharacter* Character = Cast<ACharacter>(Owner))
 	{
 		if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
 		{
@@ -168,6 +186,12 @@ bool UDBAMonsterAIComponent::IsMoving() const
 
 void UDBAMonsterAIComponent::TransitionTo(EMonsterAIState NewState)
 {
+	const AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return;
+	}
+
 	if (CurrentState == NewState)
 	{
 		return;
@@ -195,6 +219,12 @@ void UDBAMonsterAIComponent::TransitionTo(EMonsterAIState NewState)
 
 void UDBAMonsterAIComponent::FindTarget()
 {
+	const AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return;
+	}
+
 	AActor* BestTarget = GetTopAggroTarget();
 	if (!BestTarget)
 	{
@@ -207,12 +237,24 @@ void UDBAMonsterAIComponent::FindTarget()
 
 void UDBAMonsterAIComponent::ClearTarget()
 {
+	const AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return;
+	}
+
 	CurrentTarget = nullptr;
 	TransitionTo(EMonsterAIState::Idle);
 }
 
 void UDBAMonsterAIComponent::AttackTarget()
 {
+	const AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return;
+	}
+
 	if (!CurrentTarget || !IsInAttackRange())
 	{
 		return;
@@ -234,6 +276,12 @@ bool UDBAMonsterAIComponent::IsInDetectionRange() const
 
 void UDBAMonsterAIComponent::AddAggro(AActor* Target, float Amount)
 {
+	const AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return;
+	}
+
 	if (!Target || Amount <= 0.0f)
 	{
 		return;
@@ -251,6 +299,12 @@ void UDBAMonsterAIComponent::AddAggro(AActor* Target, float Amount)
 
 void UDBAMonsterAIComponent::RemoveAggro(AActor* Target)
 {
+	const AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return;
+	}
+
 	AggroList.RemoveAll([Target](const FAggroInfo& Info) { return Info.Target == Target; });
 }
 
@@ -271,6 +325,12 @@ AActor* UDBAMonsterAIComponent::GetTopAggroTarget()
 
 void UDBAMonsterAIComponent::ClearAggroList()
 {
+	const AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return;
+	}
+
 	AggroList.Empty();
 }
 
@@ -286,6 +346,12 @@ FVector UDBAMonsterAIComponent::GetPatrolPoint(int32 Index) const
 
 FVector UDBAMonsterAIComponent::GetNextPatrolPoint()
 {
+	const AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return SpawnLocation;
+	}
+
 	if (PatrolPoints_CPP.Num() == 0)
 	{
 		return SpawnLocation;
@@ -295,8 +361,25 @@ FVector UDBAMonsterAIComponent::GetNextPatrolPoint()
 	return Result;
 }
 
+void UDBAMonsterAIComponent::SetSpawnLocation(FVector Location)
+{
+	const AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return;
+	}
+
+	SpawnLocation = Location;
+}
+
 void UDBAMonsterAIComponent::UpdateAggroList()
 {
+	const AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return;
+	}
+
 	AggroList.RemoveAll([](const FAggroInfo& Info) { return !Info.Target.IsValid() || Info.Threat <= 0.0f; });
 	LastAggroUpdateTime = GetWorld() ? GetWorld()->GetTimeSeconds() : LastAggroUpdateTime;
 }
@@ -327,6 +410,12 @@ TArray<AActor*> UDBAMonsterAIComponent::FindAllValidTargets() const
 
 void UDBAMonsterAIComponent::RefreshAggroTarget()
 {
+	const AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return;
+	}
+
 	CurrentTarget = GetTopAggroTarget();
 }
 
@@ -337,4 +426,3 @@ void UDBAMonsterAIComponent::OnRep_CurrentState(EMonsterAIState OldState)
 void UDBAMonsterAIComponent::OnRep_CurrentTarget(AActor* OldTarget)
 {
 }
-

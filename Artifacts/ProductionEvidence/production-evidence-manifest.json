@@ -1,0 +1,905 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "releaseId":  "local-launcher-evidence-support-files-gate-20260630",
+    "generatedAtUtc":  "2026-06-30T10:36:03.6841098Z",
+    "repoRoot":  "E:\\work\\Game\\DivineBeastsArena",
+    "gitCommit":  "a5a08469d8d6ada512972c4edfc9787a680be9a4",
+    "gitIsDirty":  true,
+    "evidenceRoot":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence",
+    "requirements":  [
+                         {
+                             "key":  "security.nuget",
+                             "description":  "NuGet vulnerable package report from security-ci or production-security-audit.",
+                             "status":  "present",
+                             "fileCount":  1,
+                             "files":  [
+                                           "security/vulnerability-report.txt"
+                                       ]
+                         },
+                         {
+                             "key":  "security.npm",
+                             "description":  "Production npm audit JSON for Admin, Website, and Launcher.",
+                             "status":  "present",
+                             "fileCount":  9,
+                             "files":  [
+                                           "security/npm-audit-admin-local-20260628T075336Z.json",
+                                           "security/npm-audit-admin-local-20260630T095827Z.json",
+                                           "security/npm-audit-admin-local-security-20260628T020000Z.json",
+                                           "security/npm-audit-launcher-local-20260628T075336Z.json",
+                                           "security/npm-audit-launcher-local-20260630T095827Z.json",
+                                           "security/npm-audit-launcher-local-security-20260628T020000Z.json",
+                                           "security/npm-audit-website-local-20260628T075336Z.json",
+                                           "security/npm-audit-website-local-20260630T095827Z.json",
+                                           "security/npm-audit-website-local-security-20260628T020000Z.json"
+                                       ]
+                         },
+                         {
+                             "key":  "security.trivy",
+                             "description":  "API and Worker container Trivy SARIF or scan report.",
+                             "status":  "present",
+                             "fileCount":  2,
+                             "files":  [
+                                           "security/trivy-api-local-security-20260628T020000Z.sarif",
+                                           "security/trivy-worker-local-security-20260628T020000Z.sarif"
+                                       ]
+                         },
+                         {
+                             "key":  "load.k6",
+                             "description":  "k6 login, matchmaking, or dedicated server orchestration load-test output.",
+                             "status":  "present",
+                             "fileCount":  4,
+                             "files":  [
+                                           "load/k6-login-local-k6-login-20260628T022527Z.json",
+                                           "load/k6-login-local-k6-login-20260628T022527Z.log",
+                                           "load/k6-matchmaking-local-k6-matchmaking-20260628T022812Z.json",
+                                           "load/k6-matchmaking-local-k6-matchmaking-20260628T022812Z.log"
+                                       ]
+                         },
+                         {
+                             "key":  "ops.backup_restore",
+                             "description":  "PostgreSQL backup and restore rehearsal evidence.",
+                             "status":  "present",
+                             "fileCount":  2,
+                             "files":  [
+                                           "ops/backup-restore-rehearsal-20260628T015502Z.json",
+                                           "ops/backup-restore-rehearsal-20260628T015502Z.log"
+                                       ]
+                         },
+                         {
+                             "key":  "ops.deploy_rollback",
+                             "description":  "Deployment, smoke test, and rollback evidence.",
+                             "status":  "present",
+                             "fileCount":  2,
+                             "files":  [
+                                           "ops/production-smoke-backend-local-smoke-20260628T021000Z.json",
+                                           "ops/production-smoke-backend-local-smoke-20260628T021000Z.log"
+                                       ]
+                         },
+                         {
+                             "key":  "unreal.online_validation",
+                             "description":  "UE packaged or editor online validation evidence for backend allocation, Dedicated Server startup, and client joins.",
+                             "status":  "present",
+                             "fileCount":  5,
+                             "files":  [
+                                           "unreal/ue-online-validation-packaged-ue-online-build-summary-20260628T040000Z.json",
+                                           "unreal/ue-online-validation-packaged-ue-online-build-summary-20260628T041000Z.json",
+                                           "unreal/ue-online-validation-packaged-ue-online-external-mode-20260628T062800Z.json",
+                                           "unreal/ue-online-validation-packaged-ue-online-url-decode-20260628T064000Z.json",
+                                           "unreal/ue-online-validation-packaged-ue-online-wrapper-full-20260628T061500Z.json"
+                                       ]
+                         },
+                         {
+                             "key":  "unreal.ai_showcase_automation",
+                             "description":  "AI_Showcase UI/VFX automation regression evidence for MCP-generated showcase assets.",
+                             "status":  "present",
+                             "fileCount":  6,
+                             "files":  [
+                                           "unreal/ai-showcase-automation-ai-showcase-editorcmd-20260629.json",
+                                           "unreal/ai-showcase-automation-ai-showcase-editorcmd-window-20260629.json",
+                                           "unreal/ai-showcase-automation-ai-showcase-loggate-20260629.json",
+                                           "unreal/ai-showcase-automation-ai-showcase-semantic-20260629.json",
+                                           "unreal/ai-showcase-automation-ai-showcase-widget-tree-20260630.json",
+                                           "unreal/ai-showcase-automation-ai-showcase-widget-tree-20260630b.json"
+                                       ]
+                         },
+                         {
+                             "key":  "client.release_prerequisites",
+                             "description":  "Client release input prerequisite evidence proving package root, production CDN URLs, and signing inputs are ready before release automation runs.",
+                             "status":  "incomplete",
+                             "fileCount":  1,
+                             "files":  [
+                                           "client/client-release-prerequisites-client-evidence-local-20260628T080212Z-example-url.json"
+                                       ]
+                         },
+                         {
+                             "key":  "client.package_launcher",
+                             "description":  "Client package, launcher manifest, SHA256 file list, and local install/update repair smoke evidence.",
+                             "status":  "incomplete",
+                             "fileCount":  16,
+                             "files":  [
+                                           "client/client-package-launcher-client-evidence-local-20260628T080212Z-package.json",
+                                           "client/client-package-launcher-client-package-launcher-copy-smoke-20260628T072000Z.json",
+                                           "client/client-package-launcher-client-package-launcher-local-20260628T071000Z.json",
+                                           "client/client-package-launcher-client-package-release-readiness-dev-20260628T073000Z.json",
+                                           "client/client-package-launcher-client-package-shipping-public-example-cdn-20260628T084000Z.json",
+                                           "client/client-package-launcher-client-package-shipping-release-ready-20260628T083000Z.json",
+                                           "client/client-package-launcher-client-release-bundle-final-verify-20260628T104500Z-package.json",
+                                           "client/client-package-launcher-client-release-bundle-local-20260628T103500Z-package.json",
+                                           "client/launcher-manifest-client-evidence-local-20260628T080212Z-package.json",
+                                           "client/launcher-manifest-client-package-launcher-copy-smoke-20260628T072000Z.json",
+                                           "client/launcher-manifest-client-package-launcher-local-20260628T071000Z.json",
+                                           "client/launcher-manifest-client-package-release-readiness-dev-20260628T073000Z.json",
+                                           "client/launcher-manifest-client-package-shipping-public-example-cdn-20260628T084000Z.json",
+                                           "client/launcher-manifest-client-package-shipping-release-ready-20260628T083000Z.json",
+                                           "client/launcher-manifest-client-release-bundle-final-verify-20260628T104500Z-package.json",
+                                           "client/launcher-manifest-client-release-bundle-local-20260628T103500Z-package.json"
+                                       ]
+                         },
+                         {
+                             "key":  "client.cdn_launcher_smoke",
+                             "description":  "Launcher CDN smoke evidence proving manifest fetch, package downloads, SHA256 verification, and local install version persistence.",
+                             "status":  "incomplete",
+                             "fileCount":  2,
+                             "files":  [
+                                           "client/launcher-cdn-smoke-client-evidence-local-20260628T080212Z-local-cdn-payload-smoke.json",
+                                           "client/launcher-cdn-smoke-launcher-cdn-local-http-smoke-20260628T090000Z.json"
+                                       ]
+                         },
+                         {
+                             "key":  "client.code_signing",
+                             "description":  "Windows Authenticode code-signing evidence proving public client executables and libraries are trusted signed.",
+                             "status":  "incomplete",
+                             "fileCount":  7,
+                             "files":  [
+                                           "client/code-signing-client-code-signing-final-require-signed-expected-fail-20260628T094500Z.json",
+                                           "client/code-signing-client-code-signing-final-verify-20260628T094500Z.json",
+                                           "client/code-signing-client-code-signing-require-signed-expected-fail-20260628T093000Z.json",
+                                           "client/code-signing-client-code-signing-unsigned-local-20260628T093000Z.json",
+                                           "client/code-signing-client-evidence-local-20260628T080212Z-signing.json",
+                                           "client/code-signing-client-release-bundle-final-verify-20260628T104500Z-signing.json",
+                                           "client/code-signing-client-release-bundle-local-20260628T103500Z-signing.json"
+                                       ]
+                         },
+                         {
+                             "key":  "client.launcher_install_update",
+                             "description":  "Launcher install/update smoke evidence proving manifest fetch, repair download, SHA256 verification, and version persistence.",
+                             "status":  "present",
+                             "fileCount":  10,
+                             "files":  [
+                                           "client/launcher-install-update-smoke-client-evidence-local-20260628T080212Z-launcher-install-update.json",
+                                           "client/launcher-install-update-smoke-client-evidence-local-20260628T080212Z-launcher-install-update.log",
+                                           "client/launcher-install-update-smoke-client-release-bundle-final-verify-20260628T104500Z-launcher-install-update.json",
+                                           "client/launcher-install-update-smoke-client-release-bundle-final-verify-20260628T104500Z-launcher-install-update.log",
+                                           "client/launcher-install-update-smoke-client-release-bundle-local-20260628T103500Z-launcher-install-update.json",
+                                           "client/launcher-install-update-smoke-client-release-bundle-local-20260628T103500Z-launcher-install-update.log",
+                                           "client/launcher-install-update-smoke-launcher-install-update-final-verify-20260628T102500Z.json",
+                                           "client/launcher-install-update-smoke-launcher-install-update-final-verify-20260628T102500Z.log",
+                                           "client/launcher-install-update-smoke-launcher-install-update-local-20260628T101500Z.json",
+                                           "client/launcher-install-update-smoke-launcher-install-update-local-20260628T101500Z.log"
+                                       ]
+                         },
+                         {
+                             "key":  "client.launcher_ui_visual",
+                             "description":  "Launcher UI visual evidence proving the player-facing launcher screen renders and exposes install/update actions.",
+                             "status":  "present",
+                             "fileCount":  5,
+                             "files":  [
+                                           "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.json",
+                                           "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.browser.log",
+                                           "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.build.log",
+                                           "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.png",
+                                           "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.preview.log"
+                                       ]
+                         }
+                     ],
+    "files":  [
+                  {
+                      "path":  "release-input-values-template-validation.json",
+                      "sizeBytes":  4201,
+                      "modifiedAtUtc":  "2026-06-29T11:45:24.1509260Z",
+                      "sha256":  "b3c1d4c7a688aa4c1e20685aab680030819713b8adbfbaba0f49ccc65b2c0995"
+                  },
+                  {
+                      "path":  "client/cdn-upload-manifest-client-evidence-local-20260628T080212Z-cdn-payload.json",
+                      "sizeBytes":  11989,
+                      "modifiedAtUtc":  "2026-06-28T08:02:42.3977293Z",
+                      "sha256":  "90222f86aae258077baaeda3735c41208efa42cf54804fa81be06808d58a967a"
+                  },
+                  {
+                      "path":  "client/client-package-launcher-client-evidence-local-20260628T080212Z-package.json",
+                      "sizeBytes":  1670,
+                      "modifiedAtUtc":  "2026-06-28T08:02:31.0789432Z",
+                      "sha256":  "b32bff017e22760c6f229749a3622f82e8b9f90ab2be9fda716393dd6f8d1556"
+                  },
+                  {
+                      "path":  "client/client-package-launcher-client-package-launcher-copy-smoke-20260628T072000Z.json",
+                      "sizeBytes":  1318,
+                      "modifiedAtUtc":  "2026-06-28T04:47:55.6354846Z",
+                      "sha256":  "47e41f4f4583e50675a6c974640324fbc22e922b68334bf8b9ef6523c3f808a3"
+                  },
+                  {
+                      "path":  "client/client-package-launcher-client-package-launcher-local-20260628T071000Z.json",
+                      "sizeBytes":  1309,
+                      "modifiedAtUtc":  "2026-06-28T04:46:32.3703772Z",
+                      "sha256":  "782399e24e4ed4d79490c78b7e4d2120521e18df42d88df2b2b2e0b0ec040f41"
+                  },
+                  {
+                      "path":  "client/client-package-launcher-client-package-release-readiness-dev-20260628T073000Z.json",
+                      "sizeBytes":  1866,
+                      "modifiedAtUtc":  "2026-06-28T04:50:46.0565961Z",
+                      "sha256":  "0bc60819a0923853d1ef6efcac6d013974578af640bdc3edf59db8707c889055"
+                  },
+                  {
+                      "path":  "client/client-package-launcher-client-package-shipping-public-example-cdn-20260628T084000Z.json",
+                      "sizeBytes":  1717,
+                      "modifiedAtUtc":  "2026-06-28T05:23:25.7611896Z",
+                      "sha256":  "7b922b659ff1f7c0e8580b06b093778ac01d1717704b57c831c6dbbe9c72d65e"
+                  },
+                  {
+                      "path":  "client/client-package-launcher-client-package-shipping-release-ready-20260628T083000Z.json",
+                      "sizeBytes":  1631,
+                      "modifiedAtUtc":  "2026-06-28T05:22:36.7287867Z",
+                      "sha256":  "bd7b9fb13b62ac6d7218870dbfe2f593f40d085225bb4f74f55202f094736213"
+                  },
+                  {
+                      "path":  "client/client-package-launcher-client-release-bundle-final-verify-20260628T104500Z-package.json",
+                      "sizeBytes":  1717,
+                      "modifiedAtUtc":  "2026-06-28T05:55:11.4952015Z",
+                      "sha256":  "1292fc75a2680a12c59edf24ca37e0f29201d37f1cb79b49cdfd5e10831752bb"
+                  },
+                  {
+                      "path":  "client/client-package-launcher-client-release-bundle-local-20260628T103500Z-package.json",
+                      "sizeBytes":  1696,
+                      "modifiedAtUtc":  "2026-06-28T05:53:53.9007791Z",
+                      "sha256":  "7d3235facb3a45da0e24fa7cc666c11409a5d0a75cc21cdd73c96c9eeeeec3a5"
+                  },
+                  {
+                      "path":  "client/client-release-evidence-client-evidence-local-20260628T080212Z.json",
+                      "sizeBytes":  2686,
+                      "modifiedAtUtc":  "2026-06-28T08:06:32.7286519Z",
+                      "sha256":  "5e41485a9162dce91ae7e4aa03b79a17c757bf3694a3942a4b2495c07c7a61a2"
+                  },
+                  {
+                      "path":  "client/client-release-evidence-client-release-bundle-final-verify-20260628T104500Z.json",
+                      "sizeBytes":  1772,
+                      "modifiedAtUtc":  "2026-06-28T05:55:14.1932044Z",
+                      "sha256":  "3b380a7df5972b7f7109474227941816be12487ec1da3f0e4b150010684d0933"
+                  },
+                  {
+                      "path":  "client/client-release-evidence-client-release-bundle-local-20260628T103500Z.json",
+                      "sizeBytes":  1744,
+                      "modifiedAtUtc":  "2026-06-28T05:53:56.5502578Z",
+                      "sha256":  "18e63b5355d43ff3584958a31102ad42a954f8767467c3f19dbeec2ca6987261"
+                  },
+                  {
+                      "path":  "client/client-release-package-client-evidence-local-20260628T080212Z.json",
+                      "sizeBytes":  14948,
+                      "modifiedAtUtc":  "2026-06-28T08:02:21.6232574Z",
+                      "sha256":  "a8b83d69ec6a03f7af46f9c217b7f75ade539ee44d8a6f55e3c38c3b0440cb17"
+                  },
+                  {
+                      "path":  "client/client-release-package-client-release-public-symbols-20260628T082500Z.json",
+                      "sizeBytes":  14972,
+                      "modifiedAtUtc":  "2026-06-28T05:22:23.5210607Z",
+                      "sha256":  "dd03c724f6b910c2b3218bb7614baf8b0ef489db0f38cd684653d4423aaa6369"
+                  },
+                  {
+                      "path":  "client/client-release-prerequisites-client-evidence-local-20260628T080212Z-example-url.json",
+                      "sizeBytes":  2614,
+                      "modifiedAtUtc":  "2026-06-28T08:14:46.0852956Z",
+                      "sha256":  "532a256aafbb21748caf908fbe306fc3053aebeaa14473720bae24275d47696c"
+                  },
+                  {
+                      "path":  "client/code-signing-client-code-signing-final-require-signed-expected-fail-20260628T094500Z.json",
+                      "sizeBytes":  16763,
+                      "modifiedAtUtc":  "2026-06-28T05:46:54.2692132Z",
+                      "sha256":  "01c5889111ed4ec6004b8d875dc032df2dfaf418ce254ba113c866ccb71b0448"
+                  },
+                  {
+                      "path":  "client/code-signing-client-code-signing-final-verify-20260628T094500Z.json",
+                      "sizeBytes":  16741,
+                      "modifiedAtUtc":  "2026-06-28T05:46:54.3639630Z",
+                      "sha256":  "fc230fc00b12899242ad75ee0f62d85423919dde59d6871a28f70adfda7b3382"
+                  },
+                  {
+                      "path":  "client/code-signing-client-code-signing-require-signed-expected-fail-20260628T093000Z.json",
+                      "sizeBytes":  16757,
+                      "modifiedAtUtc":  "2026-06-28T05:45:35.8904476Z",
+                      "sha256":  "9f01c219970a1073a847116e1c72175ee73ad97774cae63edefe6ada1a6aa7a8"
+                  },
+                  {
+                      "path":  "client/code-signing-client-code-signing-unsigned-local-20260628T093000Z.json",
+                      "sizeBytes":  16743,
+                      "modifiedAtUtc":  "2026-06-28T05:45:35.8909668Z",
+                      "sha256":  "a8f369f270bbbc5637580ba1c898e6811e9ad7830cfdba867e655024bde6897b"
+                  },
+                  {
+                      "path":  "client/code-signing-client-evidence-local-20260628T080212Z-signing.json",
+                      "sizeBytes":  16674,
+                      "modifiedAtUtc":  "2026-06-28T08:02:32.5713243Z",
+                      "sha256":  "7f2cf9ef15980bcbf58f01ad10582e232a620a067cf128d3f4c0197b3f1f6b27"
+                  },
+                  {
+                      "path":  "client/code-signing-client-release-bundle-final-verify-20260628T104500Z-signing.json",
+                      "sizeBytes":  16751,
+                      "modifiedAtUtc":  "2026-06-28T05:55:13.0115709Z",
+                      "sha256":  "6a05e6bc02c34d4a7e2f8e83da5ab64bbc9b1f281e4aa4c6a1bf67282a02766e"
+                  },
+                  {
+                      "path":  "client/code-signing-client-release-bundle-local-20260628T103500Z-signing.json",
+                      "sizeBytes":  16744,
+                      "modifiedAtUtc":  "2026-06-28T05:53:55.3728156Z",
+                      "sha256":  "e75e02630ee15b60bdc6f4924fec5881a966eb77936c03b9727d84b050615dd4"
+                  },
+                  {
+                      "path":  "client/launcher-cdn-smoke-client-evidence-local-20260628T080212Z-local-cdn-payload-smoke.json",
+                      "sizeBytes":  11848,
+                      "modifiedAtUtc":  "2026-06-28T08:06:32.6885103Z",
+                      "sha256":  "ec62eff1104ceb71ea2172ff2dbb3e1a0d47488d91d88f796035fc5777660fe4"
+                  },
+                  {
+                      "path":  "client/launcher-cdn-smoke-launcher-cdn-local-http-smoke-20260628T090000Z.json",
+                      "sizeBytes":  11832,
+                      "modifiedAtUtc":  "2026-06-28T05:33:33.9298290Z",
+                      "sha256":  "3059b28f46458b6e55961f785045463d1d2537f3e082467171844b9a65d1af8f"
+                  },
+                  {
+                      "path":  "client/launcher-install-update-smoke-client-evidence-local-20260628T080212Z-launcher-install-update.json",
+                      "sizeBytes":  1356,
+                      "modifiedAtUtc":  "2026-06-28T08:02:33.6862531Z",
+                      "sha256":  "bed2d4d37409cb95f738bc067d4efc7897fe78ddca36f911aad6b4626917d5a0"
+                  },
+                  {
+                      "path":  "client/launcher-install-update-smoke-client-evidence-local-20260628T080212Z-launcher-install-update.log",
+                      "sizeBytes":  302,
+                      "modifiedAtUtc":  "2026-06-28T08:02:33.0613253Z",
+                      "sha256":  "9e7adff755210c625f12430093182a6053334fb91f42199849044b97e3bc1bc7"
+                  },
+                  {
+                      "path":  "client/launcher-install-update-smoke-client-evidence-local-20260628T080212Z-launcher-install-update.stderr.log",
+                      "sizeBytes":  310,
+                      "modifiedAtUtc":  "2026-06-28T08:02:33.0469358Z",
+                      "sha256":  "7272e55a147840bccedb954e186c59fc004b900b9b42a4b2721dd4de02687f14"
+                  },
+                  {
+                      "path":  "client/launcher-install-update-smoke-client-release-bundle-final-verify-20260628T104500Z-launcher-install-update.json",
+                      "sizeBytes":  1395,
+                      "modifiedAtUtc":  "2026-06-28T05:55:14.1391557Z",
+                      "sha256":  "ff295568efcd73ea1c5ba41735c57c07bf1e8f7639e1053a62db414715246883"
+                  },
+                  {
+                      "path":  "client/launcher-install-update-smoke-client-release-bundle-final-verify-20260628T104500Z-launcher-install-update.log",
+                      "sizeBytes":  302,
+                      "modifiedAtUtc":  "2026-06-28T05:55:13.4287575Z",
+                      "sha256":  "9e7adff755210c625f12430093182a6053334fb91f42199849044b97e3bc1bc7"
+                  },
+                  {
+                      "path":  "client/launcher-install-update-smoke-client-release-bundle-final-verify-20260628T104500Z-launcher-install-update.stderr.log",
+                      "sizeBytes":  310,
+                      "modifiedAtUtc":  "2026-06-28T05:55:13.4220755Z",
+                      "sha256":  "98d4cb5b25a7b87eb5ab84b27d2e93eafc378f73b5b9214539ab24f1f5d088a0"
+                  },
+                  {
+                      "path":  "client/launcher-install-update-smoke-client-release-bundle-local-20260628T103500Z-launcher-install-update.json",
+                      "sizeBytes":  1374,
+                      "modifiedAtUtc":  "2026-06-28T05:53:56.5015609Z",
+                      "sha256":  "16e3e081c0015b9d188c785e9cf7bf62d4a5ae2c60527a89fa41dee0ec1ee887"
+                  },
+                  {
+                      "path":  "client/launcher-install-update-smoke-client-release-bundle-local-20260628T103500Z-launcher-install-update.log",
+                      "sizeBytes":  302,
+                      "modifiedAtUtc":  "2026-06-28T05:53:55.8239045Z",
+                      "sha256":  "9e7adff755210c625f12430093182a6053334fb91f42199849044b97e3bc1bc7"
+                  },
+                  {
+                      "path":  "client/launcher-install-update-smoke-client-release-bundle-local-20260628T103500Z-launcher-install-update.stderr.log",
+                      "sizeBytes":  310,
+                      "modifiedAtUtc":  "2026-06-28T05:53:55.8170970Z",
+                      "sha256":  "7272e55a147840bccedb954e186c59fc004b900b9b42a4b2721dd4de02687f14"
+                  },
+                  {
+                      "path":  "client/launcher-install-update-smoke-launcher-install-update-final-verify-20260628T102500Z.json",
+                      "sizeBytes":  1329,
+                      "modifiedAtUtc":  "2026-06-28T05:51:12.3752641Z",
+                      "sha256":  "78e5e276465476d10e6206df7379eaf27f373cd5de082edc2871564b24dfd8d7"
+                  },
+                  {
+                      "path":  "client/launcher-install-update-smoke-launcher-install-update-final-verify-20260628T102500Z.log",
+                      "sizeBytes":  302,
+                      "modifiedAtUtc":  "2026-06-28T05:51:11.6957308Z",
+                      "sha256":  "9e7adff755210c625f12430093182a6053334fb91f42199849044b97e3bc1bc7"
+                  },
+                  {
+                      "path":  "client/launcher-install-update-smoke-launcher-install-update-final-verify-20260628T102500Z.stderr.log",
+                      "sizeBytes":  310,
+                      "modifiedAtUtc":  "2026-06-28T05:51:11.6553707Z",
+                      "sha256":  "43775504eef516a14b228f612c2e38586d518e1b7cbd11c2369752d2bc712716"
+                  },
+                  {
+                      "path":  "client/launcher-install-update-smoke-launcher-install-update-local-20260628T101500Z.json",
+                      "sizeBytes":  1307,
+                      "modifiedAtUtc":  "2026-06-28T05:50:01.9904010Z",
+                      "sha256":  "e5031a2e10e6a3d3da951e79b362e5c1309fe2135add8224e1105afbeac5a19f"
+                  },
+                  {
+                      "path":  "client/launcher-install-update-smoke-launcher-install-update-local-20260628T101500Z.log",
+                      "sizeBytes":  302,
+                      "modifiedAtUtc":  "2026-06-28T05:50:01.5675096Z",
+                      "sha256":  "041a67083c9aa6445f2811c4d065f1e2e03713d14333f3a66aedbf51bf909802"
+                  },
+                  {
+                      "path":  "client/launcher-install-update-smoke-launcher-install-update-local-20260628T101500Z.stderr.log",
+                      "sizeBytes":  310,
+                      "modifiedAtUtc":  "2026-06-28T05:50:01.5160537Z",
+                      "sha256":  "5ecee1cd4bf6992437dac01a3891f5d60c9a1d037b94c19492af53895ed3c26c"
+                  },
+                  {
+                      "path":  "client/launcher-manifest-client-evidence-local-20260628T080212Z-package.json",
+                      "sizeBytes":  9294,
+                      "modifiedAtUtc":  "2026-06-28T08:02:29.8910905Z",
+                      "sha256":  "19d32088574e4c291d68f099fda69fe02c238ce77167839d4f4c887c3fdfcecf"
+                  },
+                  {
+                      "path":  "client/launcher-manifest-client-package-launcher-copy-smoke-20260628T072000Z.json",
+                      "sizeBytes":  14700,
+                      "modifiedAtUtc":  "2026-06-28T04:47:50.9790115Z",
+                      "sha256":  "4a639ea573d42f7a10b7ce1c1fe598854fc46f3cdaea068661dff3963adc249d"
+                  },
+                  {
+                      "path":  "client/launcher-manifest-client-package-launcher-local-20260628T071000Z.json",
+                      "sizeBytes":  14700,
+                      "modifiedAtUtc":  "2026-06-28T04:46:32.3532994Z",
+                      "sha256":  "4a639ea573d42f7a10b7ce1c1fe598854fc46f3cdaea068661dff3963adc249d"
+                  },
+                  {
+                      "path":  "client/launcher-manifest-client-package-release-readiness-dev-20260628T073000Z.json",
+                      "sizeBytes":  14700,
+                      "modifiedAtUtc":  "2026-06-28T04:50:46.0403411Z",
+                      "sha256":  "4a639ea573d42f7a10b7ce1c1fe598854fc46f3cdaea068661dff3963adc249d"
+                  },
+                  {
+                      "path":  "client/launcher-manifest-client-package-shipping-public-example-cdn-20260628T084000Z.json",
+                      "sizeBytes":  9294,
+                      "modifiedAtUtc":  "2026-06-28T05:23:24.4931702Z",
+                      "sha256":  "19d32088574e4c291d68f099fda69fe02c238ce77167839d4f4c887c3fdfcecf"
+                  },
+                  {
+                      "path":  "client/launcher-manifest-client-package-shipping-release-ready-20260628T083000Z.json",
+                      "sizeBytes":  9294,
+                      "modifiedAtUtc":  "2026-06-28T05:22:35.4848845Z",
+                      "sha256":  "19d32088574e4c291d68f099fda69fe02c238ce77167839d4f4c887c3fdfcecf"
+                  },
+                  {
+                      "path":  "client/launcher-manifest-client-release-bundle-final-verify-20260628T104500Z-package.json",
+                      "sizeBytes":  9550,
+                      "modifiedAtUtc":  "2026-06-28T05:55:10.2490626Z",
+                      "sha256":  "1e7207a80c9a6396b59ae4d34e85d566ece9590e2cdc40ab37fc71cff9f7b63b"
+                  },
+                  {
+                      "path":  "client/launcher-manifest-client-release-bundle-local-20260628T103500Z-package.json",
+                      "sizeBytes":  9550,
+                      "modifiedAtUtc":  "2026-06-28T05:53:52.6220099Z",
+                      "sha256":  "1e7207a80c9a6396b59ae4d34e85d566ece9590e2cdc40ab37fc71cff9f7b63b"
+                  },
+                  {
+                      "path":  "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.browser.log",
+                      "sizeBytes":  0,
+                      "modifiedAtUtc":  "2026-06-28T08:02:37.0722418Z",
+                      "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                  },
+                  {
+                      "path":  "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.browser.stderr.log",
+                      "sizeBytes":  0,
+                      "modifiedAtUtc":  "2026-06-28T08:02:38.0967833Z",
+                      "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                  },
+                  {
+                      "path":  "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.build.log",
+                      "sizeBytes":  436,
+                      "modifiedAtUtc":  "2026-06-28T08:02:35.0931248Z",
+                      "sha256":  "b46302ddaa0dbd166d943452d28a215ff74fd651134dde0e2ef66407785c490a"
+                  },
+                  {
+                      "path":  "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.build.stderr.log",
+                      "sizeBytes":  0,
+                      "modifiedAtUtc":  "2026-06-28T08:02:33.9145594Z",
+                      "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                  },
+                  {
+                      "path":  "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.dom.html",
+                      "sizeBytes":  2067,
+                      "modifiedAtUtc":  "2026-06-28T08:02:38.5411905Z",
+                      "sha256":  "c8d8fb33b2b740e37fdfd3802c20d6efc21c0c98cf190177c16ce93eeb2ca988"
+                  },
+                  {
+                      "path":  "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.json",
+                      "sizeBytes":  2789,
+                      "modifiedAtUtc":  "2026-06-28T08:02:39.9700208Z",
+                      "sha256":  "f17e66244b239dfa47ada50e67ac90d58b77e1cdddb2292e093b589dfd896ada"
+                  },
+                  {
+                      "path":  "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.png",
+                      "sizeBytes":  221746,
+                      "modifiedAtUtc":  "2026-06-28T08:02:37.6540010Z",
+                      "sha256":  "702ec90a81990d1815f7850664f2ef23a11e30a878bd073934460dd5db7a11fd"
+                  },
+                  {
+                      "path":  "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.preview.log",
+                      "sizeBytes":  172,
+                      "modifiedAtUtc":  "2026-06-28T08:02:36.6417732Z",
+                      "sha256":  "48668653aef7ccbbd0dd0217760d0803d7a5fa7cddf0c6759eb47daa6f023357"
+                  },
+                  {
+                      "path":  "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.preview.stderr.log",
+                      "sizeBytes":  0,
+                      "modifiedAtUtc":  "2026-06-28T08:02:35.9410333Z",
+                      "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                  },
+                  {
+                      "path":  "load/dedicated-server-orchestration-skipped-local-runner-docker-20260628T024513Z.txt",
+                      "sizeBytes":  87,
+                      "modifiedAtUtc":  "2026-06-28T02:45:30.0376723Z",
+                      "sha256":  "0d33b13c3dc8ddc028544398cd1ffc6e07f7d1e29ab73cf9623eb440ec624e56"
+                  },
+                  {
+                      "path":  "load/dedicated-server-orchestration-skipped-local-runner-docker-20260628T024614Z.txt",
+                      "sizeBytes":  87,
+                      "modifiedAtUtc":  "2026-06-28T02:46:31.0221589Z",
+                      "sha256":  "0d33b13c3dc8ddc028544398cd1ffc6e07f7d1e29ab73cf9623eb440ec624e56"
+                  },
+                  {
+                      "path":  "load/k6-login-20260628T024142Z.json",
+                      "sizeBytes":  3967,
+                      "modifiedAtUtc":  "2026-06-28T02:43:43.2743295Z",
+                      "sha256":  "d919461642bd4100aa6c4020ecc8d76291f8c1ccba3517b2402f82ed6dc254b8"
+                  },
+                  {
+                      "path":  "load/k6-login-20260628T024142Z.log",
+                      "sizeBytes":  16680,
+                      "modifiedAtUtc":  "2026-06-28T02:43:46.2686731Z",
+                      "sha256":  "ce615c6acb658080d98fd68e0b2f293a0938b2e1b63fe5b9bc9c8bc7395f4d12"
+                  },
+                  {
+                      "path":  "load/k6-login-20260628T024142Z.meta.txt",
+                      "sizeBytes":  229,
+                      "modifiedAtUtc":  "2026-06-28T02:41:42.6229181Z",
+                      "sha256":  "c153b2c80cea45bc3843e6af98726f09af26439a1bc9eafa0af42b014e527a98"
+                  },
+                  {
+                      "path":  "load/k6-login-local-k6-20260628T022038Z.json",
+                      "sizeBytes":  3956,
+                      "modifiedAtUtc":  "2026-06-28T02:22:39.0825385Z",
+                      "sha256":  "6ba8cfdd3686c3bff4efb335d3878ca11a439223d8c71d11e6e4c58e488cae10"
+                  },
+                  {
+                      "path":  "load/k6-login-local-k6-20260628T022038Z.log",
+                      "sizeBytes":  33910,
+                      "modifiedAtUtc":  "2026-06-28T02:22:39.0830949Z",
+                      "sha256":  "b3a2a99f35d7edc97f0c4215aeab113970aae6a3c5f2f4e8a4dc0aec7f4b0c46"
+                  },
+                  {
+                      "path":  "load/k6-login-local-k6-20260628T022038Z.meta.txt",
+                      "sizeBytes":  37,
+                      "modifiedAtUtc":  "2026-06-28T02:20:38.4473917Z",
+                      "sha256":  "1a1bfb6b1be9e272019b98bdc21d9626fd9f70878ccfe2e4cfd3edfc7479a777"
+                  },
+                  {
+                      "path":  "load/k6-login-local-k6-login-20260628T022527Z.json",
+                      "sizeBytes":  3843,
+                      "modifiedAtUtc":  "2026-06-28T02:25:50.1929094Z",
+                      "sha256":  "ee97246d62757bb6f2780b8975294baf21d5086c1cde672e3e77d70fbc3e27f9"
+                  },
+                  {
+                      "path":  "load/k6-login-local-k6-login-20260628T022527Z.log",
+                      "sizeBytes":  8462,
+                      "modifiedAtUtc":  "2026-06-28T02:25:50.2112241Z",
+                      "sha256":  "77194b65afa57e554e2590f3c45af5bbd7e3931eac34ad2c5665179272d0a111"
+                  },
+                  {
+                      "path":  "load/k6-login-local-k6-login-20260628T022527Z.meta.txt",
+                      "sizeBytes":  230,
+                      "modifiedAtUtc":  "2026-06-28T02:25:27.8738314Z",
+                      "sha256":  "fd74c3f8cc3043c1fc3b3a9c058de5bd5df511fc433f702535133a601d7114fb"
+                  },
+                  {
+                      "path":  "load/k6-login-local-runner-docker-20260628T024513Z.json",
+                      "sizeBytes":  3856,
+                      "modifiedAtUtc":  "2026-06-28T02:45:23.8479510Z",
+                      "sha256":  "f0701307640147f0fccb2ada69e939c0f048e6b1dfe099b7ad412626d7dcbb88"
+                  },
+                  {
+                      "path":  "load/k6-login-local-runner-docker-20260628T024513Z.log",
+                      "sizeBytes":  2759,
+                      "modifiedAtUtc":  "2026-06-28T02:45:23.8489868Z",
+                      "sha256":  "813946256da25c7677989c11a05b8ec1f7ecdac2ced636ba7de27a09a1114058"
+                  },
+                  {
+                      "path":  "load/k6-login-local-runner-docker-20260628T024513Z.meta.txt",
+                      "sizeBytes":  254,
+                      "modifiedAtUtc":  "2026-06-28T02:45:13.6372952Z",
+                      "sha256":  "38651fd13c1deeba61b7467c7b841d3112dca68fdf7b576068246fb11423d6fe"
+                  },
+                  {
+                      "path":  "load/k6-login-local-runner-docker-20260628T024614Z.json",
+                      "sizeBytes":  3817,
+                      "modifiedAtUtc":  "2026-06-28T02:46:24.8663339Z",
+                      "sha256":  "036edd1139f3d26bcd9cd0e73f3fa89f1462a51873c158f52610648a2b6a7a0d"
+                  },
+                  {
+                      "path":  "load/k6-login-local-runner-docker-20260628T024614Z.log",
+                      "sizeBytes":  2740,
+                      "modifiedAtUtc":  "2026-06-28T02:46:24.8674499Z",
+                      "sha256":  "5b04126ed00a08714fd49f5a9930650b951cf441da8ca2cb6bb3f13a7dde6d7c"
+                  },
+                  {
+                      "path":  "load/k6-login-local-runner-docker-20260628T024614Z.meta.txt",
+                      "sizeBytes":  254,
+                      "modifiedAtUtc":  "2026-06-28T02:46:14.6569968Z",
+                      "sha256":  "c02400f3af588eec6c5b3cf7df5b51a79e1c53d846327926816333b2965547e2"
+                  },
+                  {
+                      "path":  "load/k6-matchmaking-local-k6-matchmaking-20260628T022603Z.json",
+                      "sizeBytes":  4505,
+                      "modifiedAtUtc":  "2026-06-28T02:26:23.4728767Z",
+                      "sha256":  "64dd3ac75a60afb9294310af741c378abc5faaadecf83acbe13e94180974cd15"
+                  },
+                  {
+                      "path":  "load/k6-matchmaking-local-k6-matchmaking-20260628T022603Z.log",
+                      "sizeBytes":  8370,
+                      "modifiedAtUtc":  "2026-06-28T02:26:23.4855742Z",
+                      "sha256":  "d63aa2b368e036567834bbb0878825b291155d351d236ef1497d0c44ceefc129"
+                  },
+                  {
+                      "path":  "load/k6-matchmaking-local-k6-matchmaking-20260628T022603Z.meta.txt",
+                      "sizeBytes":  178,
+                      "modifiedAtUtc":  "2026-06-28T02:26:03.2924982Z",
+                      "sha256":  "6c0d9d3d9de6fee439a2a98da6210157230e6c95fb865a33f691d2384ff2c96c"
+                  },
+                  {
+                      "path":  "load/k6-matchmaking-local-k6-matchmaking-20260628T022812Z.json",
+                      "sizeBytes":  4397,
+                      "modifiedAtUtc":  "2026-06-28T02:28:32.8447702Z",
+                      "sha256":  "a7e529f9b0234765ce719d684dbc3cf62425a91d799dc174e9d720e8c9b2eb0b"
+                  },
+                  {
+                      "path":  "load/k6-matchmaking-local-k6-matchmaking-20260628T022812Z.log",
+                      "sizeBytes":  8078,
+                      "modifiedAtUtc":  "2026-06-28T02:28:32.8643306Z",
+                      "sha256":  "d5c8d4223cf9b7abc1167f858583276f1a5f21fed61cdfdace9eccd0e7670c9c"
+                  },
+                  {
+                      "path":  "load/k6-matchmaking-local-k6-matchmaking-20260628T022812Z.meta.txt",
+                      "sizeBytes":  178,
+                      "modifiedAtUtc":  "2026-06-28T02:28:12.5938939Z",
+                      "sha256":  "6d2e179d03472ae9b9f41ac65b79b06385eff4e80468595b880e435674e70aa3"
+                  },
+                  {
+                      "path":  "load/k6-matchmaking-local-runner-docker-20260628T024513Z.json",
+                      "sizeBytes":  4404,
+                      "modifiedAtUtc":  "2026-06-28T02:45:29.5523794Z",
+                      "sha256":  "5eec0fab16783f2db4542f9f14ac5774ed0fd3c9b3645207504b4212ad9e0282"
+                  },
+                  {
+                      "path":  "load/k6-matchmaking-local-runner-docker-20260628T024513Z.log",
+                      "sizeBytes":  2244,
+                      "modifiedAtUtc":  "2026-06-28T02:45:29.5535823Z",
+                      "sha256":  "634111e2bd390733f2c4272082fd917b9a681834087ec207bc6bf0395c0f9dcb"
+                  },
+                  {
+                      "path":  "load/k6-matchmaking-local-runner-docker-20260628T024513Z.meta.txt",
+                      "sizeBytes":  254,
+                      "modifiedAtUtc":  "2026-06-28T02:45:24.3192154Z",
+                      "sha256":  "38651fd13c1deeba61b7467c7b841d3112dca68fdf7b576068246fb11423d6fe"
+                  },
+                  {
+                      "path":  "load/k6-matchmaking-local-runner-docker-20260628T024614Z.json",
+                      "sizeBytes":  4379,
+                      "modifiedAtUtc":  "2026-06-28T02:46:30.5562665Z",
+                      "sha256":  "6894e4659b2822bce937e7187eb5b69d210c9ae2621139bd1b5b752b847e8a6b"
+                  },
+                  {
+                      "path":  "load/k6-matchmaking-local-runner-docker-20260628T024614Z.log",
+                      "sizeBytes":  2243,
+                      "modifiedAtUtc":  "2026-06-28T02:46:30.5573010Z",
+                      "sha256":  "af4e21c9af043442563b072ae832ec0588fd945145f36395102a816492d167e4"
+                  },
+                  {
+                      "path":  "load/k6-matchmaking-local-runner-docker-20260628T024614Z.meta.txt",
+                      "sizeBytes":  254,
+                      "modifiedAtUtc":  "2026-06-28T02:46:25.3610135Z",
+                      "sha256":  "c02400f3af588eec6c5b3cf7df5b51a79e1c53d846327926816333b2965547e2"
+                  },
+                  {
+                      "path":  "ops/backup-restore-rehearsal-20260628T015304Z.json",
+                      "sizeBytes":  484,
+                      "modifiedAtUtc":  "2026-06-28T01:53:05.9362025Z",
+                      "sha256":  "c5d605cff645a0e4827cc479ce1951b2295f974c3b99aa02614b2d53b62d6d09"
+                  },
+                  {
+                      "path":  "ops/backup-restore-rehearsal-20260628T015304Z.log",
+                      "sizeBytes":  562,
+                      "modifiedAtUtc":  "2026-06-28T01:53:05.9288936Z",
+                      "sha256":  "78238c82a6f35854a21b729ac09e68d542339972751e610379d9b0368e2f3cb7"
+                  },
+                  {
+                      "path":  "ops/backup-restore-rehearsal-20260628T015502Z.json",
+                      "sizeBytes":  530,
+                      "modifiedAtUtc":  "2026-06-28T01:55:03.8805565Z",
+                      "sha256":  "72e20c121e25a4194b1869ecc23a6039c4857d875a007bc322e32be476ce7f9a"
+                  },
+                  {
+                      "path":  "ops/backup-restore-rehearsal-20260628T015502Z.log",
+                      "sizeBytes":  562,
+                      "modifiedAtUtc":  "2026-06-28T01:55:03.8743196Z",
+                      "sha256":  "baaf30915112805ad6ffe3d12ad756d9fdf054e47109f2d1addf079163922d5b"
+                  },
+                  {
+                      "path":  "ops/production-smoke-backend-local-smoke-20260628T021000Z.json",
+                      "sizeBytes":  1560,
+                      "modifiedAtUtc":  "2026-06-28T02:12:50.9094078Z",
+                      "sha256":  "ca34d22ce99e86b242854546466ded6d0e4b038b6cd9dcd93b931fa4e9415952"
+                  },
+                  {
+                      "path":  "ops/production-smoke-backend-local-smoke-20260628T021000Z.log",
+                      "sizeBytes":  1724,
+                      "modifiedAtUtc":  "2026-06-28T02:12:50.9104079Z",
+                      "sha256":  "9d0210647e417a379e6247142912a62ee09415c46e775591a055a15eaeeee2a5"
+                  },
+                  {
+                      "path":  "security/npm-audit-admin-local-20260628T075336Z.json",
+                      "sizeBytes":  390,
+                      "modifiedAtUtc":  "2026-06-28T07:53:56.5341352Z",
+                      "sha256":  "79bcc53871a9f6ea2124785562cd58cce508900005e0370e610ea063920fd35c"
+                  },
+                  {
+                      "path":  "security/npm-audit-admin-local-20260630T095827Z.json",
+                      "sizeBytes":  390,
+                      "modifiedAtUtc":  "2026-06-30T09:58:48.0659953Z",
+                      "sha256":  "79bcc53871a9f6ea2124785562cd58cce508900005e0370e610ea063920fd35c"
+                  },
+                  {
+                      "path":  "security/npm-audit-admin-local-security-20260628T020000Z.json",
+                      "sizeBytes":  390,
+                      "modifiedAtUtc":  "2026-06-28T02:00:39.4994448Z",
+                      "sha256":  "79bcc53871a9f6ea2124785562cd58cce508900005e0370e610ea063920fd35c"
+                  },
+                  {
+                      "path":  "security/npm-audit-launcher-local-20260628T075336Z.json",
+                      "sizeBytes":  386,
+                      "modifiedAtUtc":  "2026-06-28T07:53:58.6883732Z",
+                      "sha256":  "bcb84495521f2b945c1e3d577b3ad4c38c127ba5680c05fe58d5d980a058ac4e"
+                  },
+                  {
+                      "path":  "security/npm-audit-launcher-local-20260630T095827Z.json",
+                      "sizeBytes":  386,
+                      "modifiedAtUtc":  "2026-06-30T09:58:50.3339290Z",
+                      "sha256":  "bcb84495521f2b945c1e3d577b3ad4c38c127ba5680c05fe58d5d980a058ac4e"
+                  },
+                  {
+                      "path":  "security/npm-audit-launcher-local-security-20260628T020000Z.json",
+                      "sizeBytes":  386,
+                      "modifiedAtUtc":  "2026-06-28T02:00:41.7223198Z",
+                      "sha256":  "bcb84495521f2b945c1e3d577b3ad4c38c127ba5680c05fe58d5d980a058ac4e"
+                  },
+                  {
+                      "path":  "security/npm-audit-website-local-20260628T075336Z.json",
+                      "sizeBytes":  389,
+                      "modifiedAtUtc":  "2026-06-28T07:53:57.6797604Z",
+                      "sha256":  "1303aed0dc4f924e2797849b9ca13d4a4ffd0c715879358ba523874ad03b2ac6"
+                  },
+                  {
+                      "path":  "security/npm-audit-website-local-20260630T095827Z.json",
+                      "sizeBytes":  389,
+                      "modifiedAtUtc":  "2026-06-30T09:58:49.2959983Z",
+                      "sha256":  "1303aed0dc4f924e2797849b9ca13d4a4ffd0c715879358ba523874ad03b2ac6"
+                  },
+                  {
+                      "path":  "security/npm-audit-website-local-security-20260628T020000Z.json",
+                      "sizeBytes":  389,
+                      "modifiedAtUtc":  "2026-06-28T02:00:40.6544469Z",
+                      "sha256":  "1303aed0dc4f924e2797849b9ca13d4a4ffd0c715879358ba523874ad03b2ac6"
+                  },
+                  {
+                      "path":  "security/trivy-api-local-security-20260628T020000Z.sarif",
+                      "sizeBytes":  867,
+                      "modifiedAtUtc":  "2026-06-28T02:04:24.7529318Z",
+                      "sha256":  "54950812c544ce5fbef91ee3e8d0f7e5199637e6c866d77457f81cf81d59e182"
+                  },
+                  {
+                      "path":  "security/trivy-worker-local-security-20260628T020000Z.sarif",
+                      "sizeBytes":  876,
+                      "modifiedAtUtc":  "2026-06-28T02:04:54.3015454Z",
+                      "sha256":  "67238d2fe838bf62296be36ff0fde9e356474e6f215908ed6e9ccd021f3fd3c1"
+                  },
+                  {
+                      "path":  "security/vulnerability-report.txt",
+                      "sizeBytes":  983,
+                      "modifiedAtUtc":  "2026-06-30T09:58:45.6330227Z",
+                      "sha256":  "6d6de3a61fbfcdf127a789b2d7260529545bfe816d8ce64d80180a4d3ccf54da"
+                  },
+                  {
+                      "path":  "unreal/ai-showcase-automation-ai-showcase-editorcmd-20260629.json",
+                      "sizeBytes":  1659,
+                      "modifiedAtUtc":  "2026-06-29T11:02:16.8585690Z",
+                      "sha256":  "7e16fdb15042bb9e6d9c274905140f06587a6b7456da56611123a63fff0b988a"
+                  },
+                  {
+                      "path":  "unreal/ai-showcase-automation-ai-showcase-editorcmd-window-20260629.json",
+                      "sizeBytes":  1678,
+                      "modifiedAtUtc":  "2026-06-29T11:03:39.8416525Z",
+                      "sha256":  "9df64cf7290d1ea7f0cf42f4fa89d4b718428c069942b4c18d104ff81db496d9"
+                  },
+                  {
+                      "path":  "unreal/ai-showcase-automation-ai-showcase-loggate-20260629.json",
+                      "sizeBytes":  1496,
+                      "modifiedAtUtc":  "2026-06-29T10:51:42.0950490Z",
+                      "sha256":  "5de459d030465fb51273f7cdebb86ee980e5a3642e28c0227f0acbc2ff4bdaac"
+                  },
+                  {
+                      "path":  "unreal/ai-showcase-automation-ai-showcase-semantic-20260629.json",
+                      "sizeBytes":  1382,
+                      "modifiedAtUtc":  "2026-06-29T03:37:39.7104658Z",
+                      "sha256":  "01c191f8466f81a5998b200d526f8b5ebc72c53734524c67314fdd6fbe091b6c"
+                  },
+                  {
+                      "path":  "unreal/ai-showcase-automation-ai-showcase-widget-tree-20260630.json",
+                      "sizeBytes":  1665,
+                      "modifiedAtUtc":  "2026-06-30T00:24:02.2609033Z",
+                      "sha256":  "ff5fccb8fc4e852e69d1c5658f5baed2f5f344f03e1f0d86addbed3dd5f99a85"
+                  },
+                  {
+                      "path":  "unreal/ai-showcase-automation-ai-showcase-widget-tree-20260630b.json",
+                      "sizeBytes":  1666,
+                      "modifiedAtUtc":  "2026-06-30T00:26:18.9175387Z",
+                      "sha256":  "df0b90c38e81a03bcb4402467fd0b6437ec91465efb7f649b0bb4a1ace387a74"
+                  },
+                  {
+                      "path":  "unreal/runner-diagnostic-packaged-ue-online-external-mode-20260628T062800Z.json",
+                      "sizeBytes":  4153,
+                      "modifiedAtUtc":  "2026-06-28T04:29:56.9449829Z",
+                      "sha256":  "b2dad7a96ecf252a2b538d8e3bb2bda888b3945f3e0fd93f3d14a1491dcc45b2"
+                  },
+                  {
+                      "path":  "unreal/runner-diagnostic-packaged-ue-online-url-decode-20260628T064000Z.json",
+                      "sizeBytes":  4153,
+                      "modifiedAtUtc":  "2026-06-28T04:38:11.2228494Z",
+                      "sha256":  "85c44f92da37a2d685f5793239c62ea049f6d3ab800621c21417b6786f5c91cb"
+                  },
+                  {
+                      "path":  "unreal/runner-diagnostic-packaged-ue-online-wrapper-full-20260628T061500Z.json",
+                      "sizeBytes":  4153,
+                      "modifiedAtUtc":  "2026-06-28T04:17:31.0910351Z",
+                      "sha256":  "715cbe0598baf71836fbcfaae572c1fc169f9f316bfb238bb21396454e337f46"
+                  },
+                  {
+                      "path":  "unreal/ue-online-validation-packaged-ue-online-build-summary-20260628T040000Z.json",
+                      "sizeBytes":  2412,
+                      "modifiedAtUtc":  "2026-06-28T03:46:18.9345416Z",
+                      "sha256":  "63d51b5bde3886997648d928dcc8cf2eee7109d053690d120f7478db9c6737dd"
+                  },
+                  {
+                      "path":  "unreal/ue-online-validation-packaged-ue-online-build-summary-20260628T041000Z.json",
+                      "sizeBytes":  2521,
+                      "modifiedAtUtc":  "2026-06-28T03:50:22.9706153Z",
+                      "sha256":  "a64fa24fa0d4d3ff09fc1e3fd0e0377db2f1b57893c52459657986b7ed567579"
+                  },
+                  {
+                      "path":  "unreal/ue-online-validation-packaged-ue-online-external-mode-20260628T062800Z.json",
+                      "sizeBytes":  2521,
+                      "modifiedAtUtc":  "2026-06-28T04:31:05.1271669Z",
+                      "sha256":  "568db20b46dc773cb10839905ac8ac198690eaa2490d9e920c067ea59b78f43f"
+                  },
+                  {
+                      "path":  "unreal/ue-online-validation-packaged-ue-online-url-decode-20260628T064000Z.json",
+                      "sizeBytes":  3213,
+                      "modifiedAtUtc":  "2026-06-28T04:39:24.8626225Z",
+                      "sha256":  "40f8dbb85fd9e33e0e34ec03d03ae696d5f63195642ba92a5ca45b493ab9b379"
+                  },
+                  {
+                      "path":  "unreal/ue-online-validation-packaged-ue-online-wrapper-full-20260628T061500Z.json",
+                      "sizeBytes":  2517,
+                      "modifiedAtUtc":  "2026-06-28T04:18:38.5498079Z",
+                      "sha256":  "f567a38d2673a27621ee8ebabf4b79d392fd068c7becb0a77fd23b9241f0b860"
+                  }
+              ]
+}

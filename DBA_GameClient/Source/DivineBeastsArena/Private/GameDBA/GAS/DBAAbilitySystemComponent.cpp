@@ -13,18 +13,59 @@
 #include "AbilitySystemGlobals.h"
 #include "Abilities/GameplayAbility.h"
 #include "Engine/World.h"
+#include "GameplayEffect.h"
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
-#include "GameDBA/Core/DBAInterfacesCore.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/GAS/Abilities/DBAElementAbilityBase.h"
 #include "GameDBA/GAS/Abilities/DBAElementSkillAbility_Generic.h"
 #include "GameDBA/GAS/Abilities/DBAZodiacPassiveAbility_Generic.h"
 #include "GameDBA/GAS/Abilities/DBAZodiacUltimateAbility_Generic.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
-#include "GameDBA/GAS/DBAAbilitySetLibrary.h"
 #include "GameMoba/GAS/DBAMobaGameplayAbilityBase.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
+
+namespace
+{
+	int32 MapAbilityInputIDToCooldownSkillSlot(int32 InputID)
+	{
+		switch (static_cast<EDBAAbilityInputID>(InputID))
+		{
+		case EDBAAbilityInputID::Skill01:
+			return 1;
+		case EDBAAbilityInputID::Skill02:
+			return 2;
+		case EDBAAbilityInputID::Skill03:
+			return 3;
+		case EDBAAbilityInputID::Skill04:
+			return 4;
+		case EDBAAbilityInputID::Ultimate:
+			return DBAConstants::ArenaCombatSkillSlotCount;
+		default:
+			return INDEX_NONE;
+		}
+	}
+
+	bool ResolveActorTeamIdForAbilityTargeting(const AActor* Actor, int32& OutTeamId)
+	{
+		OutTeamId = 0;
+
+		const ADBAZodiacCharacterBase* ZodiacCharacter = Cast<ADBAZodiacCharacterBase>(Actor);
+		if (!ZodiacCharacter)
+		{
+			return false;
+		}
+
+		const int32 ResolvedTeamId = ZodiacCharacter->GetTeamID();
+		if (ResolvedTeamId > 0)
+		{
+			OutTeamId = ResolvedTeamId;
+			return true;
+		}
+
+		return false;
+	}
+}
 
 UDBAAbilitySystemComponent::UDBAAbilitySystemComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -48,17 +89,21 @@ void UDBAAbilitySystemComponent::BeginPlay()
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(UltimateEnergyRegenTimerHandle, this, &UDBAAbilitySystemComponent::PassiveRegenUltimateEnergy, 1.0f, true);
-		World->GetTimerManager().SetTimer(CooldownSyncTimerHandle, this, &UDBAAbilitySystemComponent::SyncCooldownsToCharacter, CooldownSyncInterval, true);
 	}
+
+	OnActiveGameplayEffectAddedDelegateToSelf.AddUObject(this, &UDBAAbilitySystemComponent::HandleCooldownGameplayEffectAddedToSelf);
+	OnAnyGameplayEffectRemovedDelegate().AddUObject(this, &UDBAAbilitySystemComponent::HandleCooldownGameplayEffectRemoved);
 }
 
 void UDBAAbilitySystemComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	OnActiveGameplayEffectAddedDelegateToSelf.RemoveAll(this);
+	OnAnyGameplayEffectRemovedDelegate().RemoveAll(this);
+
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(UltimateEnergyRegenTimerHandle);
 		World->GetTimerManager().ClearTimer(ChainResetTimerHandle);
-		World->GetTimerManager().ClearTimer(CooldownSyncTimerHandle);
 	}
 
 	Super::EndPlay(EndPlayReason);
@@ -67,6 +112,20 @@ void UDBAAbilitySystemComponent::EndPlay(const EEndPlayReason::Type EndPlayReaso
 void UDBAAbilitySystemComponent::InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor)
 {
 	Super::InitAbilityActorInfo(InOwnerActor, InAvatarActor);
+}
+
+ADBAZodiacCharacterBase* UDBAAbilitySystemComponent::GetDBAAvatarCharacter() const
+{
+	const FGameplayAbilityActorInfo* ActorInfo = AbilityActorInfo.Get();
+	if (ActorInfo)
+	{
+		if (ADBAZodiacCharacterBase* AvatarCharacter = Cast<ADBAZodiacCharacterBase>(ActorInfo->AvatarActor.Get()))
+		{
+			return AvatarCharacter;
+		}
+	}
+
+	return Cast<ADBAZodiacCharacterBase>(GetOwner());
 }
 
 void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& FixedSkillGroupId)
@@ -79,7 +138,7 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 	RemoveAllGrantedAbilities();
 
 	UDBAFixedSkillGroupDataAsset* AbilitySet = UDBAFixedSkillGroupLibrary::GetFixedSkillGroupById(FixedSkillGroupId);
-	auto GrantAbility = [this](TSubclassOf<UGameplayAbility> AbilityClass, int32 InputID)
+	auto GrantAbility = [this](TSubclassOf<UGameplayAbility> AbilityClass, int32 InputID, const FDBAAbilityRuntimeConfig* RuntimeConfig = nullptr)
 	{
 		if (!AbilityClass)
 		{
@@ -90,6 +149,10 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 		const FGameplayAbilitySpecHandle Handle = GiveAbility(Spec);
 		GrantedAbilityHandles.Add(Handle);
 		AbilityClassToHandleMap.Add(AbilityClass.Get(), Handle);
+		if (RuntimeConfig && InputID != INDEX_NONE)
+		{
+			AbilityRuntimeConfigsByInputID.Add(InputID, *RuntimeConfig);
+		}
 	};
 
 	if (!AbilitySet)
@@ -124,7 +187,25 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 
 	for (int32 Index = 0; Index < ActiveSkills.Num(); ++Index)
 	{
-		GrantAbility(ActiveSkills[Index], SkillInputIDs[Index]);
+		const FDBAAbilityRuntimeConfig* RuntimeConfig = nullptr;
+		switch (static_cast<EDBAAbilityInputID>(SkillInputIDs[Index]))
+		{
+		case EDBAAbilityInputID::Skill01:
+			RuntimeConfig = &AbilitySet->Skill01RuntimeConfig;
+			break;
+		case EDBAAbilityInputID::Skill02:
+			RuntimeConfig = &AbilitySet->Skill02RuntimeConfig;
+			break;
+		case EDBAAbilityInputID::Skill03:
+			RuntimeConfig = &AbilitySet->Skill03RuntimeConfig;
+			break;
+		case EDBAAbilityInputID::Skill04:
+			RuntimeConfig = &AbilitySet->Skill04RuntimeConfig;
+			break;
+		default:
+			break;
+		}
+		GrantAbility(ActiveSkills[Index], SkillInputIDs[Index], RuntimeConfig);
 	}
 
 	GrantAbility(AbilitySet->ZodiacUltimateClass, static_cast<int32>(EDBAAbilityInputID::Ultimate));
@@ -157,19 +238,19 @@ void UDBAAbilitySystemComponent::GrantAbilitiesFromFixedSkillGroup(const FName& 
 
 int32 UDBAAbilitySystemComponent::CalculateResonanceLevel(int32 SameElementCount)
 {
-	if (SameElementCount >= 5)
+	if (SameElementCount >= DBAConstants::ResonanceLevel4_SkillCount)
 	{
-		return 4;
+		return DBAConstants::MaxResonanceLevel;
 	}
-	if (SameElementCount >= 4)
+	if (SameElementCount >= DBAConstants::ResonanceLevel3_SkillCount)
 	{
 		return 3;
 	}
-	if (SameElementCount >= 3)
+	if (SameElementCount >= DBAConstants::ResonanceLevel2_SkillCount)
 	{
 		return 2;
 	}
-	if (SameElementCount >= 2)
+	if (SameElementCount >= DBAConstants::ResonanceLevel1_SkillCount)
 	{
 		return 1;
 	}
@@ -190,13 +271,21 @@ void UDBAAbilitySystemComponent::RemoveAllGrantedAbilities()
 
 	GrantedAbilityHandles.Empty();
 	AbilityClassToHandleMap.Empty();
+	AbilityRuntimeConfigsByInputID.Empty();
 }
 
 void UDBAAbilitySystemComponent::AddUltimateEnergy(float Amount)
 {
-	if (GetOwnerRole() == ROLE_Authority)
+	if (GetOwnerRole() != ROLE_Authority)
 	{
-		UltimateEnergy = FMath::Clamp(UltimateEnergy + Amount, 0.0f, DBAConstants::MaxUltimateEnergy);
+		return;
+	}
+
+	const float PreviousUltimateEnergy = UltimateEnergy;
+	UltimateEnergy = FMath::Clamp(UltimateEnergy + Amount, 0.0f, DBAConstants::MaxUltimateEnergy);
+	if (!FMath::IsNearlyEqual(PreviousUltimateEnergy, UltimateEnergy, KINDA_SMALL_NUMBER))
+	{
+		BroadcastUltimateEnergyChanged();
 	}
 }
 
@@ -207,13 +296,48 @@ bool UDBAAbilitySystemComponent::ConsumeUltimateEnergy(float Amount)
 		return false;
 	}
 
-	UltimateEnergy -= Amount;
+	const float PreviousUltimateEnergy = UltimateEnergy;
+	UltimateEnergy = FMath::Clamp(UltimateEnergy - Amount, 0.0f, DBAConstants::MaxUltimateEnergy);
+	if (!FMath::IsNearlyEqual(PreviousUltimateEnergy, UltimateEnergy, KINDA_SMALL_NUMBER))
+	{
+		BroadcastUltimateEnergyChanged();
+	}
 	return true;
 }
 
 bool UDBAAbilitySystemComponent::HasEnoughUltimateEnergy(float Amount) const
 {
 	return UltimateEnergy >= Amount;
+}
+
+void UDBAAbilitySystemComponent::OnRep_UltimateEnergy()
+{
+	BroadcastUltimateEnergyChanged();
+}
+
+void UDBAAbilitySystemComponent::BroadcastUltimateEnergyChanged()
+{
+	OnUltimateEnergyChanged.Broadcast(UltimateEnergy, DBAConstants::MaxUltimateEnergy);
+}
+
+void UDBAAbilitySystemComponent::OnRep_ChainLevel()
+{
+	BroadcastChainLevelChanged();
+}
+
+void UDBAAbilitySystemComponent::BroadcastChainLevelChanged()
+{
+	OnChainLevelChanged.Broadcast(ChainLevel);
+}
+
+void UDBAAbilitySystemComponent::OnRep_ResonanceLevel()
+{
+	BroadcastResonanceLevelChanged();
+}
+
+void UDBAAbilitySystemComponent::BroadcastResonanceLevelChanged()
+{
+	OnResonanceLevelChanged.Broadcast(ResonanceLevel);
 }
 
 void UDBAAbilitySystemComponent::AddChainLevel(int32 Amount)
@@ -223,8 +347,13 @@ void UDBAAbilitySystemComponent::AddChainLevel(int32 Amount)
 		return;
 	}
 
+	const int32 PreviousChainLevel = ChainLevel;
 	ChainLevel = FMath::Clamp(ChainLevel + Amount, 0, DBAConstants::MaxChainLevel);
 	LastHitTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+	if (PreviousChainLevel != ChainLevel)
+	{
+		BroadcastChainLevelChanged();
+	}
 
 	if (UWorld* World = GetWorld())
 	{
@@ -240,7 +369,12 @@ void UDBAAbilitySystemComponent::ResetChainLevel()
 		return;
 	}
 
+	const int32 PreviousChainLevel = ChainLevel;
 	ChainLevel = 0;
+	if (PreviousChainLevel != ChainLevel)
+	{
+		BroadcastChainLevelChanged();
+	}
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(ChainResetTimerHandle);
@@ -254,9 +388,16 @@ bool UDBAAbilitySystemComponent::ShouldTriggerChainFinisher() const
 
 void UDBAAbilitySystemComponent::SetResonanceLevel(int32 Level)
 {
-	if (GetOwnerRole() == ROLE_Authority)
+	if (GetOwnerRole() != ROLE_Authority)
 	{
-		ResonanceLevel = FMath::Clamp(Level, 0, DBAConstants::MaxResonanceLevel);
+		return;
+	}
+
+	const int32 PreviousResonanceLevel = ResonanceLevel;
+	ResonanceLevel = FMath::Clamp(Level, 0, DBAConstants::MaxResonanceLevel);
+	if (PreviousResonanceLevel != ResonanceLevel)
+	{
+		BroadcastResonanceLevelChanged();
 	}
 }
 
@@ -289,6 +430,109 @@ bool UDBAAbilitySystemComponent::CanActivateAbility(TSubclassOf<UDBAMobaGameplay
 	return !Target || IsValidTarget(Target, true);
 }
 
+bool UDBAAbilitySystemComponent::TryActivateAbilityByInputID(int32 InputID, AActor* Target)
+{
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		return false;
+	}
+
+	if (Target && !IsValid(Target))
+	{
+		return false;
+	}
+
+	if (IsInputAbilityOnCooldown(InputID))
+	{
+		return false;
+	}
+
+	for (const FGameplayAbilitySpecHandle& Handle : GrantedAbilityHandles)
+	{
+		FGameplayAbilitySpec* Spec = FindAbilitySpecFromHandle(Handle);
+		if (!Spec)
+		{
+			continue;
+		}
+
+		if (Spec->InputID == InputID)
+		{
+			const bool bActivated = TryActivateAbility(Spec->Handle, false);
+			if (bActivated)
+			{
+				const FName SkillCueName = ResolveSkillCueNameForInputID(InputID);
+				OnSkillCueExecuted.Broadcast(SkillCueName, Target ? Target : GetDBAAvatarCharacter());
+				SyncCooldownsToCharacter();
+			}
+			return bActivated;
+		}
+	}
+
+	return false;
+}
+
+bool UDBAAbilitySystemComponent::IsInputAbilityOnCooldown(int32 InputID) const
+{
+	const ADBAZodiacCharacterBase* Character = GetDBAAvatarCharacter();
+	const int32 CooldownSkillSlot = MapAbilityInputIDToCooldownSkillSlot(InputID);
+	if (!Character || CooldownSkillSlot == INDEX_NONE)
+	{
+		return false;
+	}
+
+	for (const FDBAPlayableSkillRuntimeSpec& SkillSpec : Character->GetPlayableSkillSpecs())
+	{
+		if (SkillSpec.SkillSlot == CooldownSkillSlot)
+		{
+			return Character->IsAbilityOnCooldown(SkillSpec.SkillId);
+		}
+	}
+
+	return false;
+}
+
+FGameplayAbilitySpecHandle UDBAAbilitySystemComponent::FindAbilitySpecHandleByInputID(int32 InputID) const
+{
+	if (InputID == static_cast<int32>(EDBAAbilityInputID::None))
+	{
+		return FGameplayAbilitySpecHandle();
+	}
+
+	for (const FGameplayAbilitySpec& Spec : GetActivatableAbilities())
+	{
+		if (Spec.InputID == InputID && Spec.Handle.IsValid())
+		{
+			return Spec.Handle;
+		}
+	}
+
+	return FGameplayAbilitySpecHandle();
+}
+
+const FDBAAbilityRuntimeConfig* UDBAAbilitySystemComponent::FindAbilityRuntimeConfigByInputID(int32 InputID) const
+{
+	return AbilityRuntimeConfigsByInputID.Find(InputID);
+}
+
+FName UDBAAbilitySystemComponent::ResolveSkillCueNameForInputID(int32 InputID) const
+{
+	switch (static_cast<EDBAAbilityInputID>(InputID))
+	{
+	case EDBAAbilityInputID::Skill01:
+		return FName(TEXT("Skill01"));
+	case EDBAAbilityInputID::Skill02:
+		return FName(TEXT("Skill02"));
+	case EDBAAbilityInputID::Skill03:
+		return FName(TEXT("Skill03"));
+	case EDBAAbilityInputID::Skill04:
+		return FName(TEXT("Skill04"));
+	case EDBAAbilityInputID::Ultimate:
+		return FName(TEXT("Ultimate"));
+	default:
+		return NAME_None;
+	}
+}
+
 bool UDBAAbilitySystemComponent::IsValidTarget(AActor* Target, bool bRequireEnemy) const
 {
 	if (GetOwnerRole() != ROLE_Authority || !IsValid(Target))
@@ -312,15 +556,15 @@ bool UDBAAbilitySystemComponent::IsValidTarget(AActor* Target, bool bRequireEnem
 		return true;
 	}
 
-	AActor* SourceActor = GetOwner();
-	if (!SourceActor || !SourceActor->Implements<UDBATeamAgentInterface>() || !Target->Implements<UDBATeamAgentInterface>())
+	const AActor* SourceActor = GetDBAAvatarCharacter();
+	int32 SourceTeamId = 0;
+	int32 TargetTeamId = 0;
+	if (!ResolveActorTeamIdForAbilityTargeting(SourceActor, SourceTeamId) || !ResolveActorTeamIdForAbilityTargeting(Target, TargetTeamId))
 	{
 		return false;
 	}
 
-	const int32 SourceTeamId = IDBATeamAgentInterface::Execute_GetTeamId(SourceActor);
-	const int32 TargetTeamId = IDBATeamAgentInterface::Execute_GetTeamId(Target);
-	return TargetTeamId != -1 && SourceTeamId != TargetTeamId;
+	return SourceTeamId != TargetTeamId;
 }
 
 void UDBAAbilitySystemComponent::TriggerGameplayCue(const FGameplayTag& CueTag, AActor* Target)
@@ -332,7 +576,8 @@ void UDBAAbilitySystemComponent::TriggerGameplayCue(const FGameplayTag& CueTag, 
 	}
 
 	FGameplayCueParameters CueParams;
-	CueParams.Instigator = GetOwner();
+	ADBAZodiacCharacterBase* AvatarCharacter = GetDBAAvatarCharacter();
+	CueParams.Instigator = AvatarCharacter ? AvatarCharacter : GetOwner();
 	CueParams.EffectCauser = Target;
 	ExecuteGameplayCue(CueTag, CueParams);
 	OnSkillCueExecuted.Broadcast(CueTag.GetTagName(), Target);
@@ -340,7 +585,7 @@ void UDBAAbilitySystemComponent::TriggerGameplayCue(const FGameplayTag& CueTag, 
 
 void UDBAAbilitySystemComponent::PassiveRegenUltimateEnergy()
 {
-	AddUltimateEnergy(1.0f);
+	AddUltimateEnergy(DBAConstants::UltimateEnergy_PassiveRegen);
 }
 
 void UDBAAbilitySystemComponent::CheckChainReset()
@@ -359,8 +604,8 @@ void UDBAAbilitySystemComponent::CheckChainReset()
 
 void UDBAAbilitySystemComponent::GetSkillCooldowns(TArray<float>& OutCooldowns) const
 {
-	constexpr int32 ExpectedSlots = 5;
-	OutCooldowns.Init(0.0f, ExpectedSlots);
+	constexpr int32 CooldownSlotCount = DBAConstants::ArenaCombatSkillSlotCount;
+	OutCooldowns.Init(0.0f, CooldownSlotCount);
 
 	for (const FGameplayAbilitySpecHandle& Handle : GrantedAbilityHandles)
 	{
@@ -390,24 +635,57 @@ void UDBAAbilitySystemComponent::GetSkillCooldowns(TArray<float>& OutCooldowns) 
 		}
 		else if (Spec->InputID == static_cast<int32>(EDBAAbilityInputID::Ultimate))
 		{
-			SlotIndex = 4;
+			SlotIndex = DBAConstants::ActiveSkillCount;
 		}
 
 		if (OutCooldowns.IsValidIndex(SlotIndex))
 		{
-			OutCooldowns[SlotIndex] = Ability->GetCooldownTimeRemaining(AbilityActorInfo.Get());
+			float RemainingTime = 0.0f;
+			float TotalDuration = 0.0f;
+			Ability->GetCooldownTimeRemainingAndDuration(Spec->Handle, AbilityActorInfo.Get(), RemainingTime, TotalDuration);
+			OutCooldowns[SlotIndex] = RemainingTime;
 		}
 	}
 }
 
 void UDBAAbilitySystemComponent::NormalizeSkillCooldowns(const TArray<float>& InCooldowns, TArray<float>& OutNormalized)
 {
-	constexpr int32 ExpectedSlots = 5;
-	OutNormalized.Init(0.0f, ExpectedSlots);
+	constexpr int32 CooldownSlotCount = DBAConstants::ArenaCombatSkillSlotCount;
+	OutNormalized.Init(0.0f, CooldownSlotCount);
 
-	for (int32 Index = 0; Index < ExpectedSlots && Index < InCooldowns.Num(); ++Index)
+	for (int32 Index = 0; Index < CooldownSlotCount && Index < InCooldowns.Num(); ++Index)
 	{
 		OutNormalized[Index] = InCooldowns[Index];
+	}
+}
+
+void UDBAAbilitySystemComponent::HandleCooldownGameplayEffectAddedToSelf(UAbilitySystemComponent* TargetASC, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle)
+{
+	if (TargetASC != this || GetOwnerRole() != ROLE_Authority)
+	{
+		return;
+	}
+
+	FGameplayTagContainer GrantedTags;
+	SpecApplied.GetAllGrantedTags(GrantedTags);
+	if (GrantedTags.HasTag(FGameplayTag::RequestGameplayTag(FName(TEXT("Cooldown")), false)))
+	{
+		SyncCooldownsToCharacter();
+	}
+}
+
+void UDBAAbilitySystemComponent::HandleCooldownGameplayEffectRemoved(const FActiveGameplayEffect& ActiveEffect)
+{
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		return;
+	}
+
+	FGameplayTagContainer GrantedTags;
+	ActiveEffect.Spec.GetAllGrantedTags(GrantedTags);
+	if (GrantedTags.HasTag(FGameplayTag::RequestGameplayTag(FName(TEXT("Cooldown")), false)))
+	{
+		SyncCooldownsToCharacter();
 	}
 }
 
@@ -418,7 +696,7 @@ void UDBAAbilitySystemComponent::SyncCooldownsToCharacter()
 		return;
 	}
 
-	ADBAZodiacCharacterBase* Character = Cast<ADBAZodiacCharacterBase>(GetOwner());
+	ADBAZodiacCharacterBase* Character = GetDBAAvatarCharacter();
 	if (!Character)
 	{
 		return;

@@ -11,14 +11,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayEffectTypes.h"
 #include "GameMoba/GAS/DBAMobaAbilitySystemComponentBase.h"
 #include "GameDBA/Core/DBAEnumsCore.h"
 #include "GameDBA/Core/DBAConstants.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
+#include "GameDBA/GAS/DBAAbilitySetLibrary.h"
 #include "DBAAbilitySystemComponent.generated.h"
 
 class UDBAAbilitySetDataAsset;
+class ADBAZodiacCharacterBase;
 class UDBAMobaGameplayAbilityBase;
+struct FActiveGameplayEffect;
 
 /**
  * 《神兽竞技场》项目层 AbilitySystemComponent
@@ -40,6 +44,9 @@ class DIVINEBEASTSARENA_API UDBAAbilitySystemComponent : public UDBAMobaAbilityS
 
 public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSkillCueExecuted, FName, SkillId, AActor*, Target);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnUltimateEnergyChanged, float, CurrentEnergy, float, MaxEnergy);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnChainLevelChanged, int32, ChainLevel);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnResonanceLevelChanged, int32, ResonanceLevel);
 
 	UDBAAbilitySystemComponent(const FObjectInitializer& ObjectInitializer);
 
@@ -101,6 +108,15 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Ultimate")
 	bool HasEnoughUltimateEnergy(float Amount) const;
+
+	UPROPERTY(BlueprintAssignable, Category = "DBA|Ultimate")
+	FOnUltimateEnergyChanged OnUltimateEnergyChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "DBA|Chain")
+	FOnChainLevelChanged OnChainLevelChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "DBA|Resonance")
+	FOnResonanceLevelChanged OnResonanceLevelChanged;
 
 	// ========================================
 	// ChainLevel 管理
@@ -174,6 +190,27 @@ public:
 	bool CanActivateAbility(TSubclassOf<UDBAMobaGameplayAbilityBase> AbilityClass, AActor* Target) const;
 
 	/**
+	 * 服务端按输入 ID 激活已授予 Ability
+	 * 用于 Character / 输入层把 Skill01~04 / Ultimate 路由到 GAS 权威释放路径。
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Ability")
+	bool TryActivateAbilityByInputID(int32 InputID, AActor* Target);
+
+	/** 服务端按输入 ID 查询角色同步冷却缓存，供 RPC 与输入激活路径共享。 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Ability|Cooldown")
+	bool IsInputAbilityOnCooldown(int32 InputID) const;
+
+	/** 根据 GAS 输入 ID 查找已授予 Ability 的 SpecHandle，供本地预测 RPC 构造使用。 */
+	FGameplayAbilitySpecHandle FindAbilitySpecHandleByInputID(int32 InputID) const;
+
+	/** 根据 GAS 输入 ID 查找固定技能组 DataAsset 运行配置。 */
+	const FDBAAbilityRuntimeConfig* FindAbilityRuntimeConfigByInputID(int32 InputID) const;
+
+	/** 将 GAS 输入 ID 转换为稳定的技能反馈名称，供 HUD / VFX / 日志监听。 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Ability")
+	FName ResolveSkillCueNameForInputID(int32 InputID) const;
+
+	/**
 	 * 服务端校验目标是否合法
 	 * 检查：
 	 * - 目标是否存在
@@ -201,12 +238,27 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
+	/** 按当前 GAS OwnerActor/AvatarActor 约定解析角色上下文。 */
+	ADBAZodiacCharacterBase* GetDBAAvatarCharacter() const;
+
+	UFUNCTION()
+	void OnRep_UltimateEnergy();
+	void BroadcastUltimateEnergyChanged();
+
+	UFUNCTION()
+	void OnRep_ChainLevel();
+	void BroadcastChainLevelChanged();
+
+	UFUNCTION()
+	void OnRep_ResonanceLevel();
+	void BroadcastResonanceLevelChanged();
+
 	/**
 	 * 当前 UltimateEnergy
 	 * 范围 0~100
 	 * 服务端权威，复制到客户端
 	 */
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Ultimate")
+	UPROPERTY(ReplicatedUsing = OnRep_UltimateEnergy, BlueprintReadOnly, Category = "DBA|Ultimate")
 	float UltimateEnergy;
 
 	/**
@@ -214,7 +266,7 @@ protected:
 	 * 范围 0~10
 	 * 服务端权威，复制到客户端
 	 */
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Chain")
+	UPROPERTY(ReplicatedUsing = OnRep_ChainLevel, BlueprintReadOnly, Category = "DBA|Chain")
 	int32 ChainLevel;
 
 	/**
@@ -222,7 +274,7 @@ protected:
 	 * 范围 0~4
 	 * 服务端权威，复制到客户端
 	 */
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Resonance")
+	UPROPERTY(ReplicatedUsing = OnRep_ResonanceLevel, BlueprintReadOnly, Category = "DBA|Resonance")
 	int32 ResonanceLevel;
 
 	/**
@@ -311,12 +363,11 @@ public:
 	void NormalizeSkillCooldowns(const TArray<float>& InCooldowns, TArray<float>& OutNormalized);
 
 protected:
-	/** 冷却更新定时器 */
-	FTimerHandle CooldownSyncTimerHandle;
+	/** GAS 冷却效果添加时同步冷却镜像。 */
+	void HandleCooldownGameplayEffectAddedToSelf(UAbilitySystemComponent* TargetASC, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle);
 
-	/** 冷却同步间隔 (秒) */
-	UPROPERTY(EditDefaultsOnly, Category = "DBA|Ability|Cooldown")
-	float CooldownSyncInterval = 0.5f;
+	/** GAS 冷却效果移除或自然结束时同步冷却镜像。 */
+	void HandleCooldownGameplayEffectRemoved(const FActiveGameplayEffect& ActiveEffect);
 
 	/** 缓存的冷却数组 (用于检测变化) */
 	UPROPERTY(Transient)
@@ -329,4 +380,8 @@ protected:
 	 */
 	UPROPERTY(Transient)
 	TMap<int32, int32> SkillInputIDToSlotIndexMap;
+
+	/** 固定技能组 DataAsset 提供的运行配置，按 GAS InputID 缓存。 */
+	UPROPERTY(Transient)
+	TMap<int32, FDBAAbilityRuntimeConfig> AbilityRuntimeConfigsByInputID;
 };

@@ -96,6 +96,7 @@ void UDBAMainLobbyWidgetBase::NativeConstruct()
 	if (WidgetController)
 	{
 		HandlePlayerSummaryUpdated(WidgetController->GetPlayerSummary());
+		HandleRecentMatchSummaryUpdated(WidgetController->GetRecentMatchSummary());
 		HandleBackendStateChanged(WidgetController->GetBackendState());
 		WidgetController->InitializeBackendLobby();
 	}
@@ -112,6 +113,10 @@ void UDBAMainLobbyWidgetBase::NativeDestruct()
 	if (RefreshRoomsButton)
 	{
 		RefreshRoomsButton->OnClicked.RemoveDynamic(this, &UDBAMainLobbyWidgetBase::HandleRefreshRoomsClicked);
+	}
+	if (RefreshMatchHistoryButton)
+	{
+		RefreshMatchHistoryButton->OnClicked.RemoveDynamic(this, &UDBAMainLobbyWidgetBase::HandleRefreshMatchHistoryClicked);
 	}
 	if (JoinRoomButton)
 	{
@@ -253,6 +258,14 @@ void UDBAMainLobbyWidgetBase::BackendRefreshRoomList()
 	}
 }
 
+void UDBAMainLobbyWidgetBase::BackendRefreshMatchHistory()
+{
+	if (WidgetController)
+	{
+		WidgetController->RefreshMatchHistory();
+	}
+}
+
 void UDBAMainLobbyWidgetBase::BackendCreateRoom()
 {
 	if (WidgetController)
@@ -363,6 +376,11 @@ void UDBAMainLobbyWidgetBase::HandlePlayerSummaryUpdated(const FDBALobbyPlayerSu
 	UpdatePlayerSummaryText(Summary);
 }
 
+void UDBAMainLobbyWidgetBase::HandleRecentMatchSummaryUpdated(const FDBALobbyRecentMatchSummary& Summary)
+{
+	UpdateRecentMatchSummaryText(Summary);
+}
+
 void UDBAMainLobbyWidgetBase::HandleCreateRoomClicked()
 {
 	BackendCreateRoom();
@@ -371,6 +389,11 @@ void UDBAMainLobbyWidgetBase::HandleCreateRoomClicked()
 void UDBAMainLobbyWidgetBase::HandleRefreshRoomsClicked()
 {
 	BackendRefreshRoomList();
+}
+
+void UDBAMainLobbyWidgetBase::HandleRefreshMatchHistoryClicked()
+{
+	BackendRefreshMatchHistory();
 }
 
 void UDBAMainLobbyWidgetBase::HandleJoinRoomClicked()
@@ -415,6 +438,10 @@ void UDBAMainLobbyWidgetBase::BindBackendUiControls()
 	if (!RefreshRoomsButton)
 	{
 		RefreshRoomsButton = Cast<UButton>(FindLobbyWidgetByNames(WidgetTree, { TEXT("RefreshRoomsButton"), TEXT("BtnRefreshRooms"), TEXT("ButtonRefreshRooms") }));
+	}
+	if (!RefreshMatchHistoryButton)
+	{
+		RefreshMatchHistoryButton = Cast<UButton>(FindLobbyWidgetByNames(WidgetTree, { TEXT("RefreshMatchHistoryButton"), TEXT("BtnRefreshMatchHistory"), TEXT("ButtonRefreshMatchHistory"), TEXT("RefreshRecentMatchButton") }));
 	}
 	if (!JoinRoomButton)
 	{
@@ -470,6 +497,26 @@ void UDBAMainLobbyWidgetBase::BindBackendUiControls()
 	{
 		PlayerTicketsText = Cast<UTextBlock>(FindLobbyWidgetByNames(WidgetTree, { TEXT("PlayerTicketsText"), TEXT("TxtPlayerTickets"), TEXT("TextPlayerTickets") }));
 	}
+	if (!RecentMatchResultText)
+	{
+		RecentMatchResultText = Cast<UTextBlock>(FindLobbyWidgetByNames(WidgetTree, { TEXT("RecentMatchResultText"), TEXT("TxtRecentMatchResult"), TEXT("TextRecentMatchResult") }));
+	}
+	if (!RecentMatchMapText)
+	{
+		RecentMatchMapText = Cast<UTextBlock>(FindLobbyWidgetByNames(WidgetTree, { TEXT("RecentMatchMapText"), TEXT("TxtRecentMatchMap"), TEXT("TextRecentMatchMap") }));
+	}
+	if (!RecentMatchCombatText)
+	{
+		RecentMatchCombatText = Cast<UTextBlock>(FindLobbyWidgetByNames(WidgetTree, { TEXT("RecentMatchCombatText"), TEXT("TxtRecentMatchCombat"), TEXT("TextRecentMatchCombat") }));
+	}
+	if (!RecentMatchPlayedAtText)
+	{
+		RecentMatchPlayedAtText = Cast<UTextBlock>(FindLobbyWidgetByNames(WidgetTree, { TEXT("RecentMatchPlayedAtText"), TEXT("TxtRecentMatchPlayedAt"), TEXT("TextRecentMatchPlayedAt") }));
+	}
+	if (!RecentMatchRewardText)
+	{
+		RecentMatchRewardText = Cast<UTextBlock>(FindLobbyWidgetByNames(WidgetTree, { TEXT("RecentMatchRewardText"), TEXT("TxtRecentMatchReward"), TEXT("TextRecentMatchReward") }));
+	}
 	if (!BackendStateText)
 	{
 		BackendStateText = Cast<UTextBlock>(FindLobbyWidgetByNames(WidgetTree, { TEXT("BackendStateText"), TEXT("TxtBackendState"), TEXT("TextBackendState") }));
@@ -488,6 +535,11 @@ void UDBAMainLobbyWidgetBase::BindBackendUiControls()
 	{
 		RefreshRoomsButton->OnClicked.RemoveDynamic(this, &UDBAMainLobbyWidgetBase::HandleRefreshRoomsClicked);
 		RefreshRoomsButton->OnClicked.AddDynamic(this, &UDBAMainLobbyWidgetBase::HandleRefreshRoomsClicked);
+	}
+	if (RefreshMatchHistoryButton)
+	{
+		RefreshMatchHistoryButton->OnClicked.RemoveDynamic(this, &UDBAMainLobbyWidgetBase::HandleRefreshMatchHistoryClicked);
+		RefreshMatchHistoryButton->OnClicked.AddDynamic(this, &UDBAMainLobbyWidgetBase::HandleRefreshMatchHistoryClicked);
 	}
 	if (JoinRoomButton)
 	{
@@ -529,6 +581,8 @@ void UDBAMainLobbyWidgetBase::BindControllerDelegates()
 	WidgetController->OnBackendError.AddDynamic(this, &UDBAMainLobbyWidgetBase::HandleBackendError);
 	WidgetController->OnPlayerSummaryUpdated.RemoveDynamic(this, &UDBAMainLobbyWidgetBase::HandlePlayerSummaryUpdated);
 	WidgetController->OnPlayerSummaryUpdated.AddDynamic(this, &UDBAMainLobbyWidgetBase::HandlePlayerSummaryUpdated);
+	WidgetController->OnRecentMatchSummaryUpdated.RemoveDynamic(this, &UDBAMainLobbyWidgetBase::HandleRecentMatchSummaryUpdated);
+	WidgetController->OnRecentMatchSummaryUpdated.AddDynamic(this, &UDBAMainLobbyWidgetBase::HandleRecentMatchSummaryUpdated);
 }
 
 void UDBAMainLobbyWidgetBase::UnbindControllerDelegates()
@@ -541,6 +595,7 @@ void UDBAMainLobbyWidgetBase::UnbindControllerDelegates()
 	WidgetController->OnBackendStateChanged.RemoveDynamic(this, &UDBAMainLobbyWidgetBase::HandleBackendStateChanged);
 	WidgetController->OnBackendError.RemoveDynamic(this, &UDBAMainLobbyWidgetBase::HandleBackendError);
 	WidgetController->OnPlayerSummaryUpdated.RemoveDynamic(this, &UDBAMainLobbyWidgetBase::HandlePlayerSummaryUpdated);
+	WidgetController->OnRecentMatchSummaryUpdated.RemoveDynamic(this, &UDBAMainLobbyWidgetBase::HandleRecentMatchSummaryUpdated);
 }
 
 void UDBAMainLobbyWidgetBase::UpdateBackendStateText(EDBALobbyBackendState NewState)
@@ -615,5 +670,65 @@ void UDBAMainLobbyWidgetBase::UpdatePlayerSummaryText(const FDBALobbyPlayerSumma
 	if (PlayerTicketsText)
 	{
 		PlayerTicketsText->SetText(FText::AsNumber(Summary.Tickets));
+	}
+}
+
+void UDBAMainLobbyWidgetBase::UpdateRecentMatchSummaryText(const FDBALobbyRecentMatchSummary& Summary)
+{
+	if (!Summary.bHasMatch)
+	{
+		const FText EmptyText = NSLOCTEXT("DBAMainLobby", "RecentMatchEmpty", "暂无最近战绩");
+		if (RecentMatchResultText)
+		{
+			RecentMatchResultText->SetText(EmptyText);
+		}
+		if (RecentMatchMapText)
+		{
+			RecentMatchMapText->SetText(FText::GetEmpty());
+		}
+		if (RecentMatchCombatText)
+		{
+			RecentMatchCombatText->SetText(FText::GetEmpty());
+		}
+		if (RecentMatchPlayedAtText)
+		{
+			RecentMatchPlayedAtText->SetText(FText::GetEmpty());
+		}
+		if (RecentMatchRewardText)
+		{
+			RecentMatchRewardText->SetText(FText::GetEmpty());
+		}
+		return;
+	}
+
+	if (RecentMatchResultText)
+	{
+		const FString Result = Summary.Result.IsEmpty() ? TEXT("-") : Summary.Result;
+		const FString WinnerTeam = Summary.WinnerTeam.IsEmpty() ? TEXT("-") : Summary.WinnerTeam;
+		RecentMatchResultText->SetText(FText::FromString(FString::Printf(TEXT("%s / 胜方 %s / 得分 %d"), *Result, *WinnerTeam, Summary.Score)));
+	}
+	if (RecentMatchMapText)
+	{
+		const FString Mode = Summary.Mode.IsEmpty() ? TEXT("-") : Summary.Mode;
+		const FString MapId = Summary.MapId.IsEmpty() ? TEXT("-") : Summary.MapId;
+		RecentMatchMapText->SetText(FText::FromString(FString::Printf(TEXT("%s / %s"), *Mode, *MapId)));
+	}
+	if (RecentMatchCombatText)
+	{
+		const FString CombatText = Summary.CombatSummary.IsEmpty()
+			? FString::Printf(TEXT("KDA %d/%d/%d"), Summary.Kills, Summary.Deaths, Summary.Assists)
+			: Summary.CombatSummary;
+		RecentMatchCombatText->SetText(FText::FromString(CombatText));
+	}
+	if (RecentMatchPlayedAtText)
+	{
+		RecentMatchPlayedAtText->SetText(FText::FromString(Summary.PlayedAtUtc));
+	}
+	if (RecentMatchRewardText)
+	{
+		const FString RewardsText = Summary.RewardSummary.IsEmpty()
+			? FString::Printf(TEXT("金币 %+lld / 荣誉 %+lld"), Summary.CoinReward, Summary.HonorReward)
+			: Summary.RewardSummary;
+		RecentMatchRewardText->SetText(FText::FromString(FString::Printf(TEXT("EXP %+lld / %s"), Summary.ExpDelta, *RewardsText)));
 	}
 }

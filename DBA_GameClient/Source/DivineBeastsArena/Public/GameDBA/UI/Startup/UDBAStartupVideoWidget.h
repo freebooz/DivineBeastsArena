@@ -16,6 +16,10 @@
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
 #include "UMG.h"
+#include "UObject/StrongObjectPtr.h"
+#if !UE_SERVER
+#include "MediaPlayer.h"
+#endif
 #include "UDBAStartupVideoWidget.generated.h"
 
 class UMediaPlayer;
@@ -40,7 +44,7 @@ public:
 	 * 设置媒体播放器
 	 */
 	UFUNCTION(BlueprintCallable, Category = "StartupVideo")
-	void SetMediaPlayer(UMediaPlayer* InMediaPlayer);
+	void SetMediaPlayer(UObject* InMediaPlayer);
 
 protected:
 	virtual void NativeConstruct() override;
@@ -70,8 +74,9 @@ protected:
 
 private:
 	/** 媒体播放器 */
-	UPROPERTY(Transient)
-	TObjectPtr<UMediaPlayer> MediaPlayer;
+#if !UE_SERVER
+	TStrongObjectPtr<UMediaPlayer> MediaPlayer;
+#endif
 
 	/** 跳过提示文本 */
 	UPROPERTY(meta = (BindWidgetOptional))

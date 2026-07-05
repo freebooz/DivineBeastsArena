@@ -39,4 +39,10 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|PassivePanel", meta = (DisplayName = "On Resonance Level Updated"))
 	void BP_OnResonanceLevelUpdated(int32 Level);
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|PassivePanel")
+	int32 CachedResonanceLevel = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|PassivePanel")
+	TMap<int32, bool> CachedPassiveSkillStates;
 };

@@ -503,7 +503,7 @@ void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocat
 		MulticastPlayImpactFeedback(ImpactVFXPath, ImpactNiagaraVFXPath, ImpactSFXPath, HitLocation, GetActorRotation());
 	}
 
-	if (HitActor && HitActor != ProjectileOwner && Damage > 0.0f)
+	if (HasAuthority() && HitActor && HitActor != ProjectileOwner && Damage > 0.0f)
 	{
 		bool bIsCritical = false;
 		const EDBAElement EffectiveAttackElement = DamageElement == EDBAElement::None
@@ -538,8 +538,12 @@ void ADBASkillProjectileBase::OnProjectileHit(AActor* HitActor, FVector HitLocat
 		ProjectileLoopAudio->FadeOut(0.08f, 0.0f);
 	}
 
-	BP_OnProjectileHit(HitActor, HitLocation);
+	OnProjectileHitResolved(HitActor, HitLocation);
 	Destroy();
+}
+
+void ADBASkillProjectileBase::OnProjectileHitResolved(AActor* HitActor, FVector HitLocation)
+{
 }
 
 void ADBASkillProjectileBase::MulticastPlayImpactFeedback_Implementation(

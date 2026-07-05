@@ -64,4 +64,5 @@ protected:
 	void FallbackAutoLogin(FDBAOnLoginComplete OnComplete);
 	void FallbackCharacterList(FDBAOnCharacterListLoaded OnComplete);
 	void FallbackCreateCharacter(const FDBACharacterCreateRequest& Request, FDBAOnCharacterCreated OnComplete);
+	void FallbackSelectCharacter(const FDBACharacterId& CharacterId, FDBAOnCharacterSelected OnComplete);
 };

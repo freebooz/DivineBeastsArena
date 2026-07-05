@@ -143,6 +143,35 @@ namespace
 
 		return 0;
 	}
+
+	FString BuildRecentMatchRewardSummary(const TMap<FString, int64>& Rewards)
+	{
+		TArray<FString> Keys;
+		Rewards.GetKeys(Keys);
+		Keys.Sort();
+
+		TArray<FString> Parts;
+		for (const FString& Key : Keys)
+		{
+			if (Key.IsEmpty())
+			{
+				continue;
+			}
+
+			const int64 Quantity = Rewards.FindRef(Key);
+			Parts.Add(FString::Printf(TEXT("%s %+lld"), *Key, Quantity));
+		}
+
+		return FString::Join(Parts, TEXT(" / "));
+	}
+
+	FString BuildRecentMatchCombatSummary(int32 Kills, int32 Deaths, int32 Assists, int32 DurationSeconds)
+	{
+		const int32 ClampedDuration = FMath::Max(0, DurationSeconds);
+		const int32 Minutes = ClampedDuration / 60;
+		const int32 Seconds = ClampedDuration % 60;
+		return FString::Printf(TEXT("KDA %d/%d/%d / %02d:%02d"), Kills, Deaths, Assists, Minutes, Seconds);
+	}
 }
 
 UDBAMainLobbyWidgetController::UDBAMainLobbyWidgetController(const FObjectInitializer& ObjectInitializer)
@@ -160,22 +189,22 @@ void UDBAMainLobbyWidgetController::RequestPartyInfo()
 
 void UDBAMainLobbyWidgetController::RequestSwitchFiveCampTheme(uint8 FiveCamp)
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] Switch camp theme request: %d"), FiveCamp);
+	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] 请求切换五营主题：%d"), FiveCamp);
 }
 
 void UDBAMainLobbyWidgetController::RequestNavigateToNewbieVillage()
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] Navigate to newbie village requested."));
+	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] 请求导航到新手村"));
 }
 
 void UDBAMainLobbyWidgetController::RequestNavigateToPractice()
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] Navigate to practice requested."));
+	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] 请求导航到练习场"));
 }
 
 void UDBAMainLobbyWidgetController::RequestExitGame()
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] Exit game requested."));
+	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] 请求退出游戏"));
 }
 
 void UDBAMainLobbyWidgetController::InitializeBackendLobby()
@@ -189,6 +218,7 @@ void UDBAMainLobbyWidgetController::InitializeBackendLobby()
 	SetBackendState(EDBALobbyBackendState::Idle);
 
 	RefreshPlayerData();
+	RefreshMatchHistory();
 	RefreshRoomList();
 }
 
@@ -198,7 +228,7 @@ void UDBAMainLobbyWidgetController::RefreshPlayerData()
 	UDBA_GameBackendPlayerService* PlayerService = Backend ? Backend->GetPlayerService() : nullptr;
 	if (!PlayerService)
 	{
-		ReportBackendError(TEXT("Player service unavailable."));
+		ReportBackendError(TEXT("玩家服务不可用。"));
 		return;
 	}
 
@@ -211,13 +241,66 @@ void UDBAMainLobbyWidgetController::RefreshPlayerData()
 	PlayerService->GetMyProfile(Callback);
 }
 
+void UDBAMainLobbyWidgetController::RefreshMatchHistory()
+{
+	UDBA_GameBackendClientSubsystem* Backend = GetBackendSubsystem();
+	UDBA_GameBackendPlayerService* PlayerService = Backend ? Backend->GetPlayerService() : nullptr;
+	if (!PlayerService)
+	{
+		ReportBackendError(TEXT("玩家服务不可用。"));
+		return;
+	}
+
+	FDBA_GameBackendResponseDelegate Callback;
+	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAMainLobbyWidgetController, HandleGetMatchHistoryResponse));
+	PlayerService->GetMyMatches(Callback);
+}
+
+bool UDBAMainLobbyWidgetController::UpdateMatchHistoryFromJson(const FString& MatchHistoryJson)
+{
+	FDBA_GameBackendMatchHistoryPage MatchHistory;
+	FString ParseError;
+	if (!UDBA_GameBackendPlayerService::TryParseMatchHistoryData(MatchHistoryJson, MatchHistory, ParseError))
+	{
+		RecentMatchSummary = FDBALobbyRecentMatchSummary();
+		return false;
+	}
+
+	RecentMatchSummary = FDBALobbyRecentMatchSummary();
+	if (MatchHistory.Matches.Num() > 0)
+	{
+		const FDBA_GameBackendMatchHistoryEntry& Match = MatchHistory.Matches[0];
+		RecentMatchSummary.bHasMatch = true;
+		RecentMatchSummary.SessionId = Match.SessionId;
+		RecentMatchSummary.Mode = Match.Mode;
+		RecentMatchSummary.MapId = Match.MapId;
+		RecentMatchSummary.Team = Match.Team;
+		RecentMatchSummary.Result = Match.Result;
+		RecentMatchSummary.WinnerTeam = Match.WinnerTeam;
+		RecentMatchSummary.Score = Match.Score;
+		RecentMatchSummary.ExpDelta = Match.ExpDelta;
+		RecentMatchSummary.Kills = Match.Kills;
+		RecentMatchSummary.Deaths = Match.Deaths;
+		RecentMatchSummary.Assists = Match.Assists;
+		RecentMatchSummary.DurationSeconds = Match.DurationSeconds;
+		RecentMatchSummary.PlayedAtUtc = Match.PlayedAtUtc;
+		RecentMatchSummary.CoinReward = Match.Rewards.FindRef(TEXT("coin"));
+		RecentMatchSummary.HonorReward = Match.Rewards.FindRef(TEXT("honor"));
+		RecentMatchSummary.RewardSummary = BuildRecentMatchRewardSummary(Match.Rewards);
+		RecentMatchSummary.CombatSummary = BuildRecentMatchCombatSummary(Match.Kills, Match.Deaths, Match.Assists, Match.DurationSeconds);
+	}
+
+	OnRecentMatchSummaryUpdated.Broadcast(RecentMatchSummary);
+	return true;
+}
+
 void UDBAMainLobbyWidgetController::RefreshRoomList()
 {
 	UDBA_GameBackendClientSubsystem* Backend = GetBackendSubsystem();
 	UDBA_GameBackendRoomService* RoomService = Backend ? Backend->GetRoomService() : nullptr;
 	if (!RoomService)
 	{
-		ReportBackendError(TEXT("Room service unavailable."));
+		ReportBackendError(TEXT("房间服务不可用。"));
 		return;
 	}
 
@@ -233,7 +316,7 @@ void UDBAMainLobbyWidgetController::CreateRoom()
 	UDBA_GameBackendRoomService* RoomService = Backend ? Backend->GetRoomService() : nullptr;
 	if (!RoomService)
 	{
-		ReportBackendError(TEXT("Room service unavailable."));
+		ReportBackendError(TEXT("房间服务不可用。"));
 		return;
 	}
 
@@ -256,14 +339,14 @@ void UDBAMainLobbyWidgetController::JoinRoom(const FString& RoomId)
 	UDBA_GameBackendRoomService* RoomService = Backend ? Backend->GetRoomService() : nullptr;
 	if (!RoomService)
 	{
-		ReportBackendError(TEXT("Room service unavailable."));
+		ReportBackendError(TEXT("房间服务不可用。"));
 		return;
 	}
 
 	const FString SafeRoomId = RoomId.TrimStartAndEnd();
 	if (SafeRoomId.IsEmpty())
 	{
-		ReportBackendError(TEXT("RoomId is empty."));
+		ReportBackendError(TEXT("房间 ID 为空。"));
 		return;
 	}
 
@@ -281,7 +364,7 @@ void UDBAMainLobbyWidgetController::LeaveRoom()
 	UDBA_GameBackendRoomService* RoomService = Backend ? Backend->GetRoomService() : nullptr;
 	if (!RoomService)
 	{
-		ReportBackendError(TEXT("Room service unavailable."));
+		ReportBackendError(TEXT("房间服务不可用。"));
 		return;
 	}
 
@@ -303,13 +386,13 @@ void UDBAMainLobbyWidgetController::SetReady(bool bReady)
 	UDBA_GameBackendRoomService* RoomService = Backend ? Backend->GetRoomService() : nullptr;
 	if (!RoomService)
 	{
-		ReportBackendError(TEXT("Room service unavailable."));
+		ReportBackendError(TEXT("房间服务不可用。"));
 		return;
 	}
 
 	if (CurrentRoomId.IsEmpty())
 	{
-		ReportBackendError(TEXT("Not in room."));
+		ReportBackendError(TEXT("当前不在房间中。"));
 		return;
 	}
 
@@ -327,13 +410,13 @@ void UDBAMainLobbyWidgetController::StartRoom()
 	UDBA_GameBackendRoomService* RoomService = Backend ? Backend->GetRoomService() : nullptr;
 	if (!RoomService)
 	{
-		ReportBackendError(TEXT("Room service unavailable."));
+		ReportBackendError(TEXT("房间服务不可用。"));
 		return;
 	}
 
 	if (CurrentRoomId.IsEmpty())
 	{
-		ReportBackendError(TEXT("Not in room."));
+		ReportBackendError(TEXT("当前不在房间中。"));
 		return;
 	}
 
@@ -350,7 +433,7 @@ void UDBAMainLobbyWidgetController::StartMatchmaking(const FString& Mode, const 
 	UDBA_GameBackendMatchService* MatchService = Backend ? Backend->GetMatchService() : nullptr;
 	if (!MatchService)
 	{
-		ReportBackendError(TEXT("Match service unavailable."));
+		ReportBackendError(TEXT("匹配服务不可用。"));
 		return;
 	}
 
@@ -371,7 +454,7 @@ void UDBAMainLobbyWidgetController::CancelMatchmaking()
 	UDBA_GameBackendMatchService* MatchService = Backend ? Backend->GetMatchService() : nullptr;
 	if (!MatchService)
 	{
-		ReportBackendError(TEXT("Match service unavailable."));
+		ReportBackendError(TEXT("匹配服务不可用。"));
 		return;
 	}
 
@@ -390,6 +473,8 @@ void UDBAMainLobbyWidgetController::CancelMatchmaking()
 void UDBAMainLobbyWidgetController::NotifyMatchFinishedClientView()
 {
 	TrackTelemetry(TEXT("match_finished_client_view"), TMap<FString, FString>());
+	RefreshPlayerData();
+	RefreshMatchHistory();
 }
 
 void UDBAMainLobbyWidgetController::HandleGetProfileResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
@@ -408,7 +493,7 @@ void UDBAMainLobbyWidgetController::HandleGetProfileResponse(bool bSuccess, cons
 	UDBA_GameBackendPlayerService* PlayerService = Backend ? Backend->GetPlayerService() : nullptr;
 	if (!PlayerService)
 	{
-		ReportBackendError(TEXT("Player service unavailable."));
+		ReportBackendError(TEXT("玩家服务不可用。"));
 		return;
 	}
 
@@ -430,6 +515,21 @@ void UDBAMainLobbyWidgetController::HandleGetInventoryResponse(bool bSuccess, co
 	UpdatePlayerSummaryFromInventory(DataJson);
 	OnPlayerSummaryUpdated.Broadcast(PlayerSummary);
 	ResolveStateAfterBackgroundRefresh();
+}
+
+void UDBAMainLobbyWidgetController::HandleGetMatchHistoryResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
+{
+	if (!bSuccess)
+	{
+		ReportBackendError(ErrorMessage);
+		return;
+	}
+
+	OnMatchHistoryUpdated.Broadcast(DataJson);
+	if (!UpdateMatchHistoryFromJson(DataJson))
+	{
+		ReportBackendError(TEXT("比赛历史响应解析失败。"));
+	}
 }
 
 void UDBAMainLobbyWidgetController::HandleGetRoomsResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson)
@@ -539,7 +639,7 @@ void UDBAMainLobbyWidgetController::HandleCreateTicketResponse(bool bSuccess, co
 	CurrentTicketId = ExtractStringByKeys(DataJson, { TEXT("ticketId"), TEXT("ticket_id"), TEXT("id") });
 	if (CurrentTicketId.IsEmpty())
 	{
-		ReportBackendError(TEXT("Ticket created but ticket id is missing."));
+		ReportBackendError(TEXT("匹配票据已创建，但响应中缺少票据 ID。"));
 		return;
 	}
 
@@ -592,7 +692,7 @@ void UDBAMainLobbyWidgetController::HandleGetSessionResponse(bool bSuccess, cons
 	UDBA_GameBackendSessionService* SessionService = Backend ? Backend->GetSessionService() : nullptr;
 	if (!SessionService)
 	{
-		ReportBackendError(TEXT("Session service unavailable."));
+		ReportBackendError(TEXT("会话服务不可用。"));
 		return;
 	}
 
@@ -623,7 +723,7 @@ void UDBAMainLobbyWidgetController::HandleGetConnectionResponse(bool bSuccess, c
 	UDBA_GameBackendSessionService* SessionService = Backend ? Backend->GetSessionService() : nullptr;
 	if (!SessionService)
 	{
-		ReportBackendError(TEXT("Session service unavailable."));
+		ReportBackendError(TEXT("会话服务不可用。"));
 		return;
 	}
 
@@ -728,15 +828,15 @@ void UDBAMainLobbyWidgetController::SetBackendState(EDBALobbyBackendState NewSta
 
 	BackendState = NewState;
 	OnBackendStateChanged.Broadcast(NewState);
-	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] Backend state switched to %d"), static_cast<int32>(NewState));
+	UE_LOG(LogDBAUI, Log, TEXT("[MainLobby] 后端状态已切换为：%d"), static_cast<int32>(NewState));
 }
 
 void UDBAMainLobbyWidgetController::ReportBackendError(const FString& ErrorMessage)
 {
-	const FString SafeError = ErrorMessage.IsEmpty() ? TEXT("Backend request failed.") : ErrorMessage;
+	const FString SafeError = ErrorMessage.IsEmpty() ? TEXT("后端请求失败。") : ErrorMessage;
 	SetBackendState(EDBALobbyBackendState::Error);
 	OnBackendError.Broadcast(SafeError);
-	UE_LOG(LogDBAUI, Warning, TEXT("[MainLobby] Backend error: %s"), *SafeError);
+	UE_LOG(LogDBAUI, Warning, TEXT("[MainLobby] 后端错误：%s"), *SafeError);
 }
 
 void UDBAMainLobbyWidgetController::StartTicketPolling()
@@ -744,7 +844,7 @@ void UDBAMainLobbyWidgetController::StartTicketPolling()
 	UWorld* World = GetWorld();
 	if (!World)
 	{
-		ReportBackendError(TEXT("World context is invalid, cannot start ticket polling."));
+		ReportBackendError(TEXT("World 上下文无效，无法启动匹配票据轮询。"));
 		return;
 	}
 
@@ -795,7 +895,7 @@ void UDBAMainLobbyWidgetController::ResolveMatchAndConnect(const FString& Ticket
 	UDBA_GameBackendSessionService* SessionService = Backend ? Backend->GetSessionService() : nullptr;
 	if (!SessionService)
 	{
-		ReportBackendError(TEXT("Session service unavailable."));
+		ReportBackendError(TEXT("会话服务不可用。"));
 		return;
 	}
 

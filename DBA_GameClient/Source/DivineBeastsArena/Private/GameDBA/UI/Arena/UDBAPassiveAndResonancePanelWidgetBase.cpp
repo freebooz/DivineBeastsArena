@@ -9,6 +9,7 @@
 
 
 #include "GameDBA/UI/Arena/UDBAPassiveAndResonancePanelWidgetBase.h"
+#include "GameDBA/Core/DBAConstants.h"
 
 UDBAPassiveAndResonancePanelWidgetBase::UDBAPassiveAndResonancePanelWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -18,6 +19,12 @@ UDBAPassiveAndResonancePanelWidgetBase::UDBAPassiveAndResonancePanelWidgetBase(c
 void UDBAPassiveAndResonancePanelWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+	for (const TPair<int32, bool>& CachedPassiveSkill : CachedPassiveSkillStates)
+	{
+		BP_OnPassiveUpdated(CachedPassiveSkill.Key, CachedPassiveSkill.Value);
+	}
+
+	BP_OnResonanceLevelUpdated(CachedResonanceLevel);
 }
 
 void UDBAPassiveAndResonancePanelWidgetBase::NativeDestruct()
@@ -27,11 +34,14 @@ void UDBAPassiveAndResonancePanelWidgetBase::NativeDestruct()
 
 void UDBAPassiveAndResonancePanelWidgetBase::UpdatePassiveSkill(int32 SlotIndex, bool bActive)
 {
-	BP_OnPassiveUpdated(SlotIndex, bActive);
+	const int32 NormalizedSlotIndex = FMath::Clamp(SlotIndex, 0, DBAConstants::CoreCombatInputCount - 1);
+	CachedPassiveSkillStates.Add(NormalizedSlotIndex, bActive);
+	BP_OnPassiveUpdated(NormalizedSlotIndex, CachedPassiveSkillStates[NormalizedSlotIndex]);
 }
 
 void UDBAPassiveAndResonancePanelWidgetBase::UpdateResonanceLevel(int32 Level)
 {
-	BP_OnResonanceLevelUpdated(Level);
+	const int32 NormalizedResonanceLevel = FMath::Clamp(Level, 0, DBAConstants::MaxResonanceLevel);
+	CachedResonanceLevel = NormalizedResonanceLevel;
+	BP_OnResonanceLevelUpdated(CachedResonanceLevel);
 }
-

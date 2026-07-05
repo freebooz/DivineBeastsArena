@@ -65,10 +65,16 @@ public static partial class GameFeatureEndpoints
 
     // ==================== 好友系统 ====================
 
-    private static async Task<IResult> GetFriends(Guid playerId, GameDbContext db)
+    private static async Task<IResult> GetFriends(HttpContext ctx, GameDbContext db)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         var friends = await db.FriendRelations
-            .Where(x => x.PlayerId == playerId)
+            .Where(x => x.PlayerId == playerId.Value)
             .Join(db.PlayerProfiles, relation => relation.FriendId, profile => profile.PlayerId, (relation, profile) => profile)
             .Select(x => new FriendInfo(x.PlayerId, x.Nickname, x.Avatar, x.Level))
             .ToListAsync();
@@ -76,10 +82,16 @@ public static partial class GameFeatureEndpoints
         return Results.Ok(ApiResponse<FriendsResponse>.Ok(new FriendsResponse(friends)));
     }
 
-    private static async Task<IResult> GetFriendRequests(Guid playerId, GameDbContext db)
+    private static async Task<IResult> GetFriendRequests(HttpContext ctx, GameDbContext db)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         var requests = await db.FriendRequests
-            .Where(x => x.ReceiverId == playerId && x.Status == "PENDING")
+            .Where(x => x.ReceiverId == playerId.Value && x.Status == "PENDING")
             .Join(db.PlayerProfiles, fr => fr.SenderId, pp => pp.PlayerId, (fr, pp) => new { fr, pp })
             .Select(x => new FriendRequestResponse(x.fr.Id, x.fr.SenderId, x.pp.Nickname, x.fr.CreatedAt))
             .ToListAsync();
@@ -87,24 +99,36 @@ public static partial class GameFeatureEndpoints
         return Results.Ok(ApiResponse<object>.Ok(requests));
     }
 
-    private static async Task<IResult> SendFriendRequest(FriendRequestDto request, Guid playerId, GameDbContext db)
+    private static async Task<IResult> SendFriendRequest(FriendRequestDto request, HttpContext ctx, GameDbContext db)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         var exists = await db.FriendRequests
-            .AnyAsync(x => x.SenderId == playerId && x.ReceiverId == request.ReceiverId && x.Status == "PENDING");
+            .AnyAsync(x => x.SenderId == playerId.Value && x.ReceiverId == request.ReceiverId && x.Status == "PENDING");
         if (exists)
             return ErrorResponse.BadRequest("已发送过好友申请").ToProblem();
 
-        var friendRequest = new FriendRequest { SenderId = playerId, ReceiverId = request.ReceiverId };
+        var friendRequest = new FriendRequest { SenderId = playerId.Value, ReceiverId = request.ReceiverId };
         db.FriendRequests.Add(friendRequest);
         await db.SaveChangesAsync();
 
         return Results.Ok(ApiResponse<object>.Ok(new { RequestId = friendRequest.Id }));
     }
 
-    private static async Task<IResult> AcceptFriendRequest(Guid requestId, Guid playerId, GameDbContext db)
+    private static async Task<IResult> AcceptFriendRequest(Guid requestId, HttpContext ctx, GameDbContext db)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         var friendRequest = await db.FriendRequests
-            .FirstOrDefaultAsync(x => x.Id == requestId && x.ReceiverId == playerId && x.Status == "PENDING");
+            .FirstOrDefaultAsync(x => x.Id == requestId && x.ReceiverId == playerId.Value && x.Status == "PENDING");
 
         if (friendRequest == null)
             return ErrorResponse.NotFound("好友申请不存在").ToProblem();
@@ -112,17 +136,23 @@ public static partial class GameFeatureEndpoints
         friendRequest.Status = "ACCEPTED";
         friendRequest.RespondedAt = DateTimeOffset.UtcNow;
 
-        db.FriendRelations.Add(new FriendRelation { PlayerId = playerId, FriendId = friendRequest.SenderId });
-        db.FriendRelations.Add(new FriendRelation { PlayerId = friendRequest.SenderId, FriendId = playerId });
+        db.FriendRelations.Add(new FriendRelation { PlayerId = playerId.Value, FriendId = friendRequest.SenderId });
+        db.FriendRelations.Add(new FriendRelation { PlayerId = friendRequest.SenderId, FriendId = playerId.Value });
 
         await db.SaveChangesAsync();
         return Results.Ok(ApiResponse.Ok());
     }
 
-    private static async Task<IResult> RejectFriendRequest(Guid requestId, Guid playerId, GameDbContext db)
+    private static async Task<IResult> RejectFriendRequest(Guid requestId, HttpContext ctx, GameDbContext db)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         var friendRequest = await db.FriendRequests
-            .FirstOrDefaultAsync(x => x.Id == requestId && x.ReceiverId == playerId && x.Status == "PENDING");
+            .FirstOrDefaultAsync(x => x.Id == requestId && x.ReceiverId == playerId.Value && x.Status == "PENDING");
 
         if (friendRequest == null)
             return ErrorResponse.NotFound("好友申请不存在").ToProblem();
@@ -134,10 +164,16 @@ public static partial class GameFeatureEndpoints
         return Results.Ok(ApiResponse.Ok());
     }
 
-    private static async Task<IResult> RemoveFriend(Guid friendId, Guid playerId, GameDbContext db)
+    private static async Task<IResult> RemoveFriend(Guid friendId, HttpContext ctx, GameDbContext db)
     {
-        var rel1 = await db.FriendRelations.FirstOrDefaultAsync(x => x.PlayerId == playerId && x.FriendId == friendId);
-        var rel2 = await db.FriendRelations.FirstOrDefaultAsync(x => x.PlayerId == friendId && x.FriendId == playerId);
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
+        var rel1 = await db.FriendRelations.FirstOrDefaultAsync(x => x.PlayerId == playerId.Value && x.FriendId == friendId);
+        var rel2 = await db.FriendRelations.FirstOrDefaultAsync(x => x.PlayerId == friendId && x.FriendId == playerId.Value);
 
         if (rel1 != null) db.FriendRelations.Remove(rel1);
         if (rel2 != null) db.FriendRelations.Remove(rel2);
@@ -148,9 +184,15 @@ public static partial class GameFeatureEndpoints
 
     // ==================== 邮件系统 ====================
 
-    private static async Task<IResult> GetMails(Guid playerId, bool unreadOnly, GameDbContext db)
+    private static async Task<IResult> GetMails(HttpContext ctx, GameDbContext db, bool unreadOnly = false)
     {
-        var query = db.Mails.Where(x => x.ReceiverId == playerId && !x.IsDeleted);
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
+        var query = db.Mails.Where(x => x.ReceiverId == playerId.Value && !x.IsDeleted);
 
         if (unreadOnly)
             query = query.Where(x => !x.IsRead);
@@ -162,14 +204,20 @@ public static partial class GameFeatureEndpoints
                 x.AttachmentJson != "[]", x.CreatedAt))
             .ToListAsync();
 
-        var unreadCount = await db.Mails.CountAsync(x => x.ReceiverId == playerId && !x.IsRead && !x.IsDeleted);
+        var unreadCount = await db.Mails.CountAsync(x => x.ReceiverId == playerId.Value && !x.IsRead && !x.IsDeleted);
 
         return Results.Ok(ApiResponse<MailListResponse>.Ok(new MailListResponse(mails, unreadCount)));
     }
 
-    private static async Task<IResult> ReadMail(Guid mailId, Guid playerId, GameDbContext db)
+    private static async Task<IResult> ReadMail(Guid mailId, HttpContext ctx, GameDbContext db)
     {
-        var mail = await db.Mails.FirstOrDefaultAsync(x => x.Id == mailId && x.ReceiverId == playerId);
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
+        var mail = await db.Mails.FirstOrDefaultAsync(x => x.Id == mailId && x.ReceiverId == playerId.Value);
         if (mail == null) return ErrorResponse.NotFound("邮件不存在").ToProblem();
 
         mail.IsRead = true;
@@ -179,23 +227,29 @@ public static partial class GameFeatureEndpoints
         return Results.Ok(ApiResponse.Ok());
     }
 
-    private static async Task<IResult> ClaimAttachment(Guid mailId, Guid attachmentId, Guid playerId, GameDbContext db)
+    private static async Task<IResult> ClaimAttachment(Guid mailId, Guid attachmentId, HttpContext ctx, GameDbContext db)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         var attachment = await db.MailAttachments
             .Include(x => x.Mail)
             .FirstOrDefaultAsync(x => x.Id == attachmentId && x.MailId == mailId && !x.IsClaimed);
 
-        if (attachment?.Mail?.ReceiverId != playerId)
+        if (attachment?.Mail?.ReceiverId != playerId.Value)
             return ErrorResponse.NotFound("附件不存在").ToProblem();
 
         attachment.IsClaimed = true;
         attachment.ClaimedAt = DateTimeOffset.UtcNow;
 
         // 添加物品到背包
-        var item = await db.InventoryItems.FirstOrDefaultAsync(x => x.PlayerId == playerId && x.ItemId == attachment.ItemId);
+        var item = await db.InventoryItems.FirstOrDefaultAsync(x => x.PlayerId == playerId.Value && x.ItemId == attachment.ItemId);
         if (item == null)
         {
-            item = new InventoryItem { PlayerId = playerId, ItemId = attachment.ItemId, Quantity = attachment.Quantity };
+            item = new InventoryItem { PlayerId = playerId.Value, ItemId = attachment.ItemId, Quantity = attachment.Quantity };
             db.InventoryItems.Add(item);
         }
         else

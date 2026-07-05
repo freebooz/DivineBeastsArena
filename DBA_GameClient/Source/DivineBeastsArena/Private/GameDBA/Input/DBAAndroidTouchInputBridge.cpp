@@ -11,6 +11,15 @@
 #include "GameDBA/Input/DBAAndroidTouchInputBridge.h"
 #include "Engine/World.h"
 
+namespace
+{
+	bool IsTouchInputRuntimeAllowed(const UDBAAndroidTouchInputBridge* Bridge)
+	{
+		const UWorld* World = Bridge ? Bridge->GetWorld() : nullptr;
+		return World && World->GetNetMode() != NM_DedicatedServer;
+	}
+}
+
 UDBAAndroidTouchInputBridge::UDBAAndroidTouchInputBridge()
 {
 	PrimaryComponentTick.bCanEverTick = false;
@@ -25,6 +34,13 @@ void UDBAAndroidTouchInputBridge::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (!IsTouchInputRuntimeAllowed(this))
+	{
+		SetComponentTickEnabled(false);
+		Deactivate();
+		return;
+	}
+
 	// Android 平台外不执行逻辑
 #if !PLATFORM_ANDROID
 	SetComponentTickEnabled(false);
@@ -33,6 +49,11 @@ void UDBAAndroidTouchInputBridge::BeginPlay()
 
 void UDBAAndroidTouchInputBridge::OnSkillButtonLongPressStart(int32 SkillIndex, FVector2D TouchLocation)
 {
+	if (!IsTouchInputRuntimeAllowed(this))
+	{
+		return;
+	}
+
 	// 记录长按状态
 	CurrentLongPressSkillIndex = SkillIndex;
 	LongPressStartLocation = TouchLocation;
@@ -45,6 +66,11 @@ void UDBAAndroidTouchInputBridge::OnSkillButtonLongPressStart(int32 SkillIndex, 
 
 void UDBAAndroidTouchInputBridge::OnSkillButtonDrag(int32 SkillIndex, FVector2D DragDelta)
 {
+	if (!IsTouchInputRuntimeAllowed(this))
+	{
+		return;
+	}
+
 	if (CurrentLongPressSkillIndex != SkillIndex)
 	{
 		return;
@@ -63,6 +89,11 @@ void UDBAAndroidTouchInputBridge::OnSkillButtonDrag(int32 SkillIndex, FVector2D 
 
 void UDBAAndroidTouchInputBridge::OnSkillButtonRelease(int32 SkillIndex)
 {
+	if (!IsTouchInputRuntimeAllowed(this))
+	{
+		return;
+	}
+
 	if (CurrentLongPressSkillIndex != SkillIndex)
 	{
 		return;
@@ -85,6 +116,14 @@ void UDBAAndroidTouchInputBridge::OnSkillButtonRelease(int32 SkillIndex)
 
 void UDBAAndroidTouchInputBridge::UpdateUltimateButtonState(float UltimateEnergy, bool bIsReady)
 {
+	if (!IsTouchInputRuntimeAllowed(this))
+	{
+		return;
+	}
+
+	static_cast<void>(UltimateEnergy);
+	static_cast<void>(bIsReady);
+
 	// 此方法供 UI 层调用更新 Ultimate 按钮状态
 	// UI 层根据 bIsReady 决定是否闪烁
 	// 具体 UI 更新由蓝图实现

@@ -31,7 +31,7 @@ namespace
 	void ExecuteResponseDelegate(const FDBA_GameBackendResponseDelegate& Callback, const FDBA_GameBackendHttpResult& Result)
 	{
 		const bool bSuccess = Result.IsSuccessful();
-		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("Request failed.") : Result.Message);
+		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("请求失败。") : Result.Message);
 		Callback.ExecuteIfBound(bSuccess, ErrorMessage, Result.DataJson);
 	}
 
@@ -70,14 +70,14 @@ namespace
 		const FString BanReason = ReadStringByKeys(Root, { TEXT("banReason"), TEXT("reason"), TEXT("ban_reason") });
 		const FString UnbanTime = ReadStringByKeys(Root, { TEXT("unbanTimeUtc"), TEXT("unbanTime"), TEXT("unban_at"), TEXT("banExpiresAtUtc") });
 
-		FString Out = Message.IsEmpty() ? TEXT("Account is banned.") : Message;
+		FString Out = Message.IsEmpty() ? TEXT("账号已被封禁。") : Message;
 		if (!BanReason.IsEmpty())
 		{
-			Out += FString::Printf(TEXT("\nReason: %s"), *BanReason);
+			Out += FString::Printf(TEXT("\n原因：%s"), *BanReason);
 		}
 		if (!UnbanTime.IsEmpty())
 		{
-			Out += FString::Printf(TEXT("\nUnban Time (UTC): %s"), *UnbanTime);
+			Out += FString::Printf(TEXT("\n解封时间（UTC）：%s"), *UnbanTime);
 		}
 		return Out;
 	}
@@ -96,7 +96,7 @@ void UDBA_GameBackendAuthService::DevLogin(const FString& DisplayName, const FDB
 #else
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("HTTP client unavailable."), FString(), FString(), FString());
+		Callback.ExecuteIfBound(false, TEXT("HTTP 客户端不可用。"), FString(), FString(), FString());
 		return;
 	}
 
@@ -116,7 +116,7 @@ void UDBA_GameBackendAuthService::GuestLogin(const FDBA_GameBackendGuestLoginReq
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("HTTP client unavailable."), FString(), FString(), FString());
+		Callback.ExecuteIfBound(false, TEXT("HTTP 客户端不可用。"), FString(), FString(), FString());
 		return;
 	}
 
@@ -137,7 +137,7 @@ void UDBA_GameBackendAuthService::SteamLogin(const FString& SteamTicket, const F
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("HTTP client unavailable."), FString(), FString(), FString());
+		Callback.ExecuteIfBound(false, TEXT("HTTP 客户端不可用。"), FString(), FString(), FString());
 		return;
 	}
 
@@ -156,7 +156,7 @@ void UDBA_GameBackendAuthService::EosLogin(const FString& EosToken, const FDBA_G
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("HTTP client unavailable."), FString(), FString(), FString());
+		Callback.ExecuteIfBound(false, TEXT("HTTP 客户端不可用。"), FString(), FString(), FString());
 		return;
 	}
 
@@ -175,14 +175,14 @@ void UDBA_GameBackendAuthService::RefreshToken(const FDBA_GameBackendAuthRespons
 {
 	if (!HttpClient || !Subsystem.IsValid())
 	{
-		Callback.ExecuteIfBound(false, TEXT("Auth service unavailable."), FString(), FString(), FString());
+		Callback.ExecuteIfBound(false, TEXT("鉴权服务不可用。"), FString(), FString(), FString());
 		return;
 	}
 
 	const FString RefreshTokenValue = Subsystem->GetRefreshToken();
 	if (RefreshTokenValue.IsEmpty())
 	{
-		Callback.ExecuteIfBound(false, TEXT("Refresh token is empty."), FString(), FString(), FString());
+		Callback.ExecuteIfBound(false, TEXT("刷新令牌为空。"), FString(), FString(), FString());
 		return;
 	}
 
@@ -201,7 +201,7 @@ void UDBA_GameBackendAuthService::Logout(const FDBA_GameBackendResponseDelegate&
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("HTTP client unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("HTTP 客户端不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -222,7 +222,7 @@ void UDBA_GameBackendAuthService::GetMe(const FDBA_GameBackendResponseDelegate& 
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("HTTP client unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("HTTP 客户端不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -238,14 +238,14 @@ void UDBA_GameBackendAuthService::HandleAuthResponse(const FDBA_GameBackendHttpR
 	if (!bSuccess)
 	{
 		const FString ErrorMessage = BuildBanMessage(Result.Code, Result.Message, Result.DataJson);
-		Callback.ExecuteIfBound(false, ErrorMessage.IsEmpty() ? TEXT("Auth request failed.") : ErrorMessage, FString(), FString(), FString());
+		Callback.ExecuteIfBound(false, ErrorMessage.IsEmpty() ? TEXT("鉴权请求失败。") : ErrorMessage, FString(), FString(), FString());
 		return;
 	}
 
 	FDBA_GameBackendAuthTokens Tokens;
 	if (!TryExtractTokens(Result.DataJson, Tokens))
 	{
-		Callback.ExecuteIfBound(false, TEXT("Auth response missing token fields."), FString(), FString(), FString());
+		Callback.ExecuteIfBound(false, TEXT("鉴权响应缺少令牌字段。"), FString(), FString(), FString());
 		return;
 	}
 

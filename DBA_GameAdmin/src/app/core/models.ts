@@ -118,10 +118,13 @@ export interface MatchListItem {
   durationSeconds: number;
   playerCount: number;
   resultJson: string;
+  winnerTeam?: string | null;
   createdAt: string;
 }
 
 export interface MatchDetail extends MatchListItem {
+  winnerTeam?: string | null;
+  teamDistribution?: Record<string, number>;
   players: MatchPlayerItem[];
 }
 
@@ -134,6 +137,7 @@ export interface MatchPlayerItem {
   assists: number;
   score: number;
   expDelta: number;
+  rewards: Record<string, unknown>;
 }
 
 export interface AdminAuditLogItem {

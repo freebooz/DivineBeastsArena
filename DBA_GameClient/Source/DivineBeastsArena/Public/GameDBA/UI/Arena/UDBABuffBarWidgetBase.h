@@ -42,4 +42,10 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|BuffBar", meta = (DisplayName = "On Buff Removed"))
 	void BP_OnBuffRemoved(const FString& BuffId);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|BuffBar", meta = (DisplayName = "On Buffs Cleared"))
+	void BP_OnBuffsCleared();
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|BuffBar")
+	TMap<FString, float> CachedActiveBuffs;
 };

@@ -44,7 +44,12 @@
 | `GET` | `/api/players/me/settings` | 当前玩家设置。 | Bearer |
 | `PUT` | `/api/players/me/settings` | 更新当前玩家设置。 | Bearer |
 | `GET` | `/api/players/me/stats` | 当前玩家统计。 | Bearer |
+| `GET` | `/api/players/me/matches` | 当前玩家战绩列表。 | Bearer |
 | `GET` | `/api/players/{playerId}/public` | 玩家公开资料。 | 无 |
+
+### Player match history
+
+`GET /api/players/me/matches` 从当前 Bearer JWT 派生玩家身份，不接受客户端传入 `playerId` 覆盖。每条战绩包含 `sessionId`、`mode`、`mapId`、冻结队伍 `team`、规范化 `result`、KDA、`score`、`durationSeconds`、`playedAt`，并从权威 `MatchResult` / `MatchPlayerResult` 派生原始 `resultJson`、结构化 `winnerTeam`（兼容 `winnerTeam` / `winner_team`）、`expDelta` 与 `rewards` 字典，供玩家侧赛后面板、历史战绩和奖励提示复用。
 
 ## 运营后台 `/api/admin`
 
@@ -62,6 +67,14 @@
 | `GET` | `/api/admin/feedback` | 玩家反馈。 | Bearer |
 | `GET` | `/api/admin/support/tickets` | 客服工单。 | Bearer |
 | `GET` | `/api/admin/audit-logs` | 管理员审计日志。 | Bearer |
+
+### Admin match result diagnostics
+
+`GET /api/admin/matches` 的列表项包含结构化 `winnerTeam` 和原始 `resultJson`，用于运营快速查看 Dedicated Server 结算结果。当前 Admin 前端会优先读取列表项 `winnerTeam`，并兼容历史开发数据中的 `resultJson.winnerTeam` / `winner_team`，再与 `schema` 组合成列表摘要。
+
+Team outcome summary：`GET /api/admin/matches/{matchId}` 的详情响应包含结构化 `winnerTeam` 与 `teamDistribution` 字段，分别从 `resultJson.winnerTeam` / `winner_team` 和玩家结果项的 `team` 字段生成。Admin 前端优先消费这些结构化字段，并保留 `resultJson` / 玩家列表 fallback，便于运营核对 Dedicated Server 权威结算是否与 `PlayerSession.Team` 一致。
+
+`GET /api/admin/matches/{matchId}` 的玩家结果项包含 `rewards` 字典，展示本场结算写入的金币、荣誉、道具或其他整数奖励。该字段来自 Settlement 结果中的 `RewardJson`，为空时前端显示 `-`。
 
 ## 启动器和官网
 

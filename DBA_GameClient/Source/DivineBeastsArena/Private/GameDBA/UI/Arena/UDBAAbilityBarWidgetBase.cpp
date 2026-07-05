@@ -12,7 +12,11 @@
 
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
 #include "GameDBA/Combat/DBAPlayableSkillComponent.h"
+#include "GameDBA/Core/DBAConstants.h"
+#include "GameDBA/GAS/DBAAbilitySystemComponent.h"
 #include "GameDBA/UI/Arena/AbilityBar/DBAAbilitySlotWidget.h"
+#include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
+#include "Engine/Texture2D.h"
 #include "InputCoreTypes.h"
 
 UDBAAbilityBarWidgetBase::UDBAAbilityBarWidgetBase(const FObjectInitializer& ObjectInitializer)
@@ -24,6 +28,11 @@ void UDBAAbilityBarWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
 	CacheSkillSlotWidgets();
+	if (BoundCharacter.IsValid())
+	{
+		RefreshSkillCatalog();
+		RefreshCooldowns();
+	}
 	if (bAutoBindOwningPawn)
 	{
 		BindToCharacter(Cast<ADBAZodiacCharacterBase>(GetOwningPlayerPawn()));
@@ -32,6 +41,7 @@ void UDBAAbilityBarWidgetBase::NativeConstruct()
 
 void UDBAAbilityBarWidgetBase::NativeDestruct()
 {
+	UnbindFromCooldownEvents();
 	Super::NativeDestruct();
 }
 
@@ -50,22 +60,34 @@ void UDBAAbilityBarWidgetBase::NativeTick(const FGeometry& MyGeometry, float InD
 
 void UDBAAbilityBarWidgetBase::UpdateAbility(int32 SlotIndex, float Cooldown, float ManaCost)
 {
-	bool bOnCooldown = Cooldown > 0.0f;
+	if (SlotIndex < 1 || SlotIndex > DBAConstants::CoreCombatInputCount)
+	{
+		return;
+	}
+
+	const float ClampedCooldown = FMath::Max(0.0f, Cooldown);
+	const float ClampedManaCost = FMath::Max(0.0f, ManaCost);
+	bool bOnCooldown = ClampedCooldown > 0.0f;
 	if (SkillSlotWidgets.IsValidIndex(SlotIndex - 1))
 	{
 		const float TotalCooldown = CachedSkillSpecs.IsValidIndex(SlotIndex - 1)
-			? CachedSkillSpecs[SlotIndex - 1].Cooldown
-			: Cooldown;
+			? FMath::Max(0.0f, CachedSkillSpecs[SlotIndex - 1].Cooldown)
+			: ClampedCooldown;
 		if (UDBAAbilitySlotWidget* SlotWidget = SkillSlotWidgets[SlotIndex - 1])
 		{
-			SlotWidget->SetCooldown(Cooldown, TotalCooldown);
+			SlotWidget->SetCooldown(ClampedCooldown, TotalCooldown);
 		}
 	}
-	BP_OnAbilityUpdated(SlotIndex, Cooldown, ManaCost, bOnCooldown);
+	BP_OnAbilityUpdated(SlotIndex, ClampedCooldown, ClampedManaCost, bOnCooldown);
 }
 
 void UDBAAbilityBarWidgetBase::SetAbilityEnabled(int32 SlotIndex, bool bEnabled)
 {
+	if (SlotIndex < 1 || SlotIndex > DBAConstants::CoreCombatInputCount)
+	{
+		return;
+	}
+
 	if (SkillSlotWidgets.IsValidIndex(SlotIndex - 1))
 	{
 		if (UDBAAbilitySlotWidget* SlotWidget = SkillSlotWidgets[SlotIndex - 1])
@@ -80,10 +102,18 @@ void UDBAAbilityBarWidgetBase::BindToCharacter(ADBAZodiacCharacterBase* InCharac
 {
 	if (BoundCharacter.Get() == InCharacter)
 	{
+		RefreshSkillCatalog();
+		RefreshCooldowns();
 		return;
 	}
 
+	UnbindFromCooldownEvents();
 	BoundCharacter = InCharacter;
+	if (InCharacter)
+	{
+		InCharacter->OnSkillCooldownsChanged.AddDynamic(this, &UDBAAbilityBarWidgetBase::HandleSkillCooldownsChanged);
+		CooldownEventCharacter = InCharacter;
+	}
 	RefreshSkillCatalog();
 	RefreshCooldowns();
 }
@@ -112,8 +142,10 @@ void UDBAAbilityBarWidgetBase::RefreshSkillCatalog()
 		return Left.SkillSlot < Right.SkillSlot;
 	});
 
-	for (const FDBAPlayableSkillRuntimeSpec& SkillSpec : CachedSkillSpecs)
+	for (FDBAPlayableSkillRuntimeSpec& SkillSpec : CachedSkillSpecs)
 	{
+		ApplyRuntimeConfigToSkillSpec(SkillSpec);
+
 		const int32 SlotArrayIndex = SkillSpec.SkillSlot - 1;
 		if (!SkillSlotWidgets.IsValidIndex(SlotArrayIndex))
 		{
@@ -123,6 +155,7 @@ void UDBAAbilityBarWidgetBase::RefreshSkillCatalog()
 		if (UDBAAbilitySlotWidget* SlotWidget = SkillSlotWidgets[SlotArrayIndex])
 		{
 			SlotWidget->SetAbilityFromPlayableSkill(SkillSpec, ResolveHotkeyForSlot(SkillSpec.SkillSlot));
+			RequestSkillIconAsync(SlotWidget, SkillSpec);
 		}
 	}
 
@@ -142,9 +175,30 @@ void UDBAAbilityBarWidgetBase::RefreshCooldowns()
 	for (const FDBAPlayableSkillRuntimeSpec& SkillSpec : CachedSkillSpecs)
 	{
 		const int32 SkillSlot = SkillSpec.SkillSlot;
-		const float Remaining = Cooldowns.IsValidIndex(SkillSlot) ? Cooldowns[SkillSlot] : 0.0f;
+		const int32 CooldownArrayIndex = SkillSlot - 1;
+		const float Remaining = Cooldowns.IsValidIndex(CooldownArrayIndex) ? Cooldowns[CooldownArrayIndex] : 0.0f;
 		UpdateAbility(SkillSlot, Remaining, 0.0f);
 	}
+}
+
+void UDBAAbilityBarWidgetBase::HandleSkillCooldownsChanged(const TArray<float>& Cooldowns)
+{
+	for (const FDBAPlayableSkillRuntimeSpec& SkillSpec : CachedSkillSpecs)
+	{
+		const int32 SkillSlot = SkillSpec.SkillSlot;
+		const int32 CooldownArrayIndex = SkillSlot - 1;
+		const float Remaining = Cooldowns.IsValidIndex(CooldownArrayIndex) ? Cooldowns[CooldownArrayIndex] : 0.0f;
+		UpdateAbility(SkillSlot, Remaining, 0.0f);
+	}
+}
+
+void UDBAAbilityBarWidgetBase::UnbindFromCooldownEvents()
+{
+	if (ADBAZodiacCharacterBase* Character = CooldownEventCharacter.Get())
+	{
+		Character->OnSkillCooldownsChanged.RemoveDynamic(this, &UDBAAbilityBarWidgetBase::HandleSkillCooldownsChanged);
+	}
+	CooldownEventCharacter.Reset();
 }
 
 void UDBAAbilityBarWidgetBase::CacheSkillSlotWidgets()
@@ -156,6 +210,86 @@ void UDBAAbilityBarWidgetBase::CacheSkillSlotWidgets()
 	SkillSlotWidgets.Add(SkillSlot04);
 	SkillSlotWidgets.Add(SkillSlot05);
 	SkillSlotWidgets.Add(SkillSlot06);
+}
+
+void UDBAAbilityBarWidgetBase::ApplyRuntimeConfigToSkillSpec(FDBAPlayableSkillRuntimeSpec& InOutSkillSpec) const
+{
+	const ADBAZodiacCharacterBase* Character = BoundCharacter.Get();
+	if (!Character)
+	{
+		return;
+	}
+
+	const UDBAAbilitySystemComponent* DBAAbilitySystem = Cast<UDBAAbilitySystemComponent>(Character->GetAbilitySystemComponent());
+	if (!DBAAbilitySystem)
+	{
+		return;
+	}
+
+	const FDBAAbilityRuntimeConfig* RuntimeConfig = DBAAbilitySystem->FindAbilityRuntimeConfigByInputID(
+		MapSkillSlotToAbilityInputID(InOutSkillSpec.SkillSlot));
+	if (!RuntimeConfig)
+	{
+		return;
+	}
+
+	if (!RuntimeConfig->DisplayName.IsEmpty())
+	{
+		InOutSkillSpec.DisplayName = RuntimeConfig->DisplayName;
+	}
+
+	if (!RuntimeConfig->Icon.IsNull())
+	{
+		InOutSkillSpec.Icon = RuntimeConfig->Icon;
+	}
+
+	if (RuntimeConfig->CooldownDuration > 0.0f)
+	{
+		InOutSkillSpec.Cooldown = RuntimeConfig->CooldownDuration;
+	}
+}
+
+int32 UDBAAbilityBarWidgetBase::MapSkillSlotToAbilityInputID(int32 SkillSlot) const
+{
+	switch (SkillSlot)
+	{
+	case 1: return static_cast<int32>(EDBAAbilityInputID::Skill01);
+	case 2: return static_cast<int32>(EDBAAbilityInputID::Skill02);
+	case 3: return static_cast<int32>(EDBAAbilityInputID::Skill03);
+	case 4: return static_cast<int32>(EDBAAbilityInputID::Skill04);
+	case 5: return static_cast<int32>(EDBAAbilityInputID::Ultimate);
+	default: return static_cast<int32>(EDBAAbilityInputID::None);
+	}
+}
+
+void UDBAAbilityBarWidgetBase::RequestSkillIconAsync(UDBAAbilitySlotWidget* SlotWidget, const FDBAPlayableSkillRuntimeSpec& SkillSpec)
+{
+	if (!SlotWidget || SkillSpec.Icon.IsNull())
+	{
+		return;
+	}
+
+	if (UTexture2D* LoadedIcon = SkillSpec.Icon.Get())
+	{
+		FDBAAbilityInfo Info = SlotWidget->GetAbilityInfo();
+		Info.Icon = LoadedIcon;
+		SlotWidget->SetAbilityInfo(Info);
+		return;
+	}
+
+	TWeakObjectPtr<UDBAAbilitySlotWidget> WeakSlotWidget = SlotWidget;
+	DBAAsyncAssetLoader::RequestAsyncAsset<UTexture2D>(this, SkillSpec.Icon, [WeakSlotWidget](UTexture2D* LoadedIcon)
+	{
+		UDBAAbilitySlotWidget* LoadedSlotWidget = WeakSlotWidget.Get();
+		if (!LoadedSlotWidget || !LoadedIcon)
+		{
+			return;
+		}
+
+		FDBAAbilityInfo Info = LoadedSlotWidget->GetAbilityInfo();
+		Info.Icon = LoadedIcon;
+		LoadedSlotWidget->SetAbilityInfo(Info);
+	});
 }
 
 FKey UDBAAbilityBarWidgetBase::ResolveHotkeyForSlot(int32 SkillSlot) const

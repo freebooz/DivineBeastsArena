@@ -46,9 +46,16 @@ if (-not $Root) {
     }
 
     if (-not $EngineRoot) {
-        $InstalledEngine = Get-ItemProperty "HKLM:\SOFTWARE\EpicGames\Unreal Engine\5.7" -ErrorAction SilentlyContinue
+        $InstalledEngine = Get-ItemProperty "HKLM:\SOFTWARE\EpicGames\Unreal Engine\5.8" -ErrorAction SilentlyContinue
         if ($InstalledEngine) {
             $EngineRoot = $InstalledEngine.InstalledDirectory
+        }
+    }
+
+    if (-not $EngineRoot) {
+        $SourceEngineRoot = "D:\UnrealEngine-5.8.0-release"
+        if (Test-Path -LiteralPath (Join-Path $SourceEngineRoot "Engine\Binaries\Win64\UnrealEditor.exe")) {
+            $EngineRoot = $SourceEngineRoot
         }
     }
 
@@ -178,3 +185,4 @@ finally {
         $LockStream.Dispose()
     }
 }
+

@@ -1,0 +1,30 @@
+﻿{
+    "kind":  "ai-showcase-automation",
+    "runId":  "ai-showcase-loggate-20260629",
+    "generatedAtUtc":  "2026-06-29T10:51:42.0435247Z",
+    "automationReady":  false,
+    "logErrorCount":  16,
+    "logWarningCount":  7,
+    "requestedTestCount":  4,
+    "passedTestCount":  4,
+    "testFilter":  "DivineBeastsArena.Showcase.AIShowcase",
+    "platform":  "Win64",
+    "configuration":  "Development",
+    "projectPath":  "E:\\work\\Game\\DivineBeastsArena\\DBA_GameClient\\DivineBeastsArena.uproject",
+    "command":  {
+                    "filePath":  "D:\\UnrealEngine-5.8.0-release\\Engine\\Build\\BatchFiles\\RunUAT.bat",
+                    "workingDirectory":  "E:\\work\\Game\\DivineBeastsArena",
+                    "arguments":  [
+                                      "RunUnreal",
+                                      "-project=E:\\work\\Game\\DivineBeastsArena\\DBA_GameClient\\DivineBeastsArena.uproject",
+                                      "-platform=Win64",
+                                      "-configuration=Development",
+                                      "-build=editor",
+                                      "-test=UE.EditorAutomation",
+                                      "-RunTest=DivineBeastsArena.Showcase.AIShowcase",
+                                      "-unattended",
+                                      "-nullrhi",
+                                      "-log"
+                                  ]
+                }
+}

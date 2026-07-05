@@ -35,7 +35,7 @@ namespace
 	void ExecuteResponse(const FDBA_GameBackendResponseDelegate& Callback, const FDBA_GameBackendHttpResult& Result)
 	{
 		const bool bSuccess = Result.IsSuccessful();
-		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("Request failed.") : Result.Message);
+		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("请求失败。") : Result.Message);
 		Callback.ExecuteIfBound(bSuccess, ErrorMessage, Result.DataJson);
 	}
 }
@@ -50,7 +50,7 @@ void UDBA_GameBackendSessionService::GetSession(const FString& SessionId, const 
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Session service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("会话服务不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -61,7 +61,7 @@ void UDBA_GameBackendSessionService::GetConnection(const FString& SessionId, con
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Session service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("会话服务不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -72,7 +72,7 @@ void UDBA_GameBackendSessionService::RequestReconnectToken(const FString& Sessio
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Session service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("会话服务不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -83,7 +83,7 @@ void UDBA_GameBackendSessionService::ConnectToDedicatedServer(const FString& Ses
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Session service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("会话服务不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -92,7 +92,7 @@ void UDBA_GameBackendSessionService::ConnectToDedicatedServer(const FString& Ses
 		const bool bSuccess = Result.IsSuccessful();
 		if (!bSuccess)
 		{
-			Callback.ExecuteIfBound(false, Result.Message.IsEmpty() ? TEXT("Failed to get session connection.") : Result.Message, TEXT("{}"));
+			Callback.ExecuteIfBound(false, Result.Message.IsEmpty() ? TEXT("获取会话连接失败。") : Result.Message, TEXT("{}"));
 			return;
 		}
 
@@ -102,27 +102,28 @@ void UDBA_GameBackendSessionService::ConnectToDedicatedServer(const FString& Ses
 
 void UDBA_GameBackendSessionService::ConnectToDedicatedServer(const FString& SessionId, const FString& ConnectionDataJson, const FDBA_GameBackendResponseDelegate& Callback)
 {
-	FDBA_GameBackendSessionConnection Connection;
-	if (!ParseConnectionData(ConnectionDataJson, Connection))
+	FString TravelUrl;
+	if (!TryBuildTravelUrlFromConnectionData(ConnectionDataJson, SessionId, TravelUrl))
 	{
-		Callback.ExecuteIfBound(false, TEXT("Invalid connection data."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("连接数据无效。"), TEXT("{}"));
 		return;
 	}
 
-	FString TravelUrl = BuildTravelUrl(Connection.Ip, Connection.Port, SessionId.IsEmpty() ? Connection.SessionId : SessionId, Connection.PlayerSessionToken);
 	if (Subsystem.IsValid())
 	{
+		FDBA_GameBackendSessionConnection Connection;
+		ParseConnectionData(ConnectionDataJson, Connection);
 		AppendTravelOption(TravelUrl, TEXT("PlayerId"), Connection.PlayerId.IsEmpty() ? Subsystem->GetPlayerId() : Connection.PlayerId);
 	}
 	if (TravelUrl.IsEmpty())
 	{
-		Callback.ExecuteIfBound(false, TEXT("Failed to build travel url."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("构建跳转 URL 失败。"), TEXT("{}"));
 		return;
 	}
 
 	if (!Subsystem.IsValid() || !Subsystem->GetGameInstance())
 	{
-		Callback.ExecuteIfBound(false, TEXT("Game instance unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("GameInstance 不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -130,7 +131,7 @@ void UDBA_GameBackendSessionService::ConnectToDedicatedServer(const FString& Ses
 	APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr;
 	if (!PC)
 	{
-		Callback.ExecuteIfBound(false, TEXT("PlayerController unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("PlayerController 不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -152,7 +153,55 @@ FString UDBA_GameBackendSessionService::BuildTravelUrl(const FString& Ip, int32 
 	return Url;
 }
 
-bool UDBA_GameBackendSessionService::ParseConnectionData(const FString& DataJson, FDBA_GameBackendSessionConnection& OutConnection) const
+FString UDBA_GameBackendSessionService::BuildTravelUrl(
+	const FString& Ip,
+	int32 Port,
+	const FString& SessionId,
+	const FString& PlayerSessionToken,
+	int32 TeamId,
+	const FString& Zodiac,
+	const FString& PrimaryElement,
+	const FString& FiveCamp,
+	const FString& FixedSkillGroupId)
+{
+	FString Url = BuildTravelUrl(Ip, Port, SessionId, PlayerSessionToken);
+	if (TeamId > 0)
+	{
+		AppendTravelOption(Url, TEXT("DBATeamId"), FString::FromInt(TeamId));
+	}
+	AppendTravelOption(Url, TEXT("DBAZodiac"), Zodiac);
+	AppendTravelOption(Url, TEXT("DBAElement"), PrimaryElement);
+	AppendTravelOption(Url, TEXT("DBAFiveCamp"), FiveCamp);
+	AppendTravelOption(Url, TEXT("DBAFixedSkillGroupId"), FixedSkillGroupId);
+	return Url;
+}
+
+bool UDBA_GameBackendSessionService::TryBuildTravelUrlFromConnectionData(
+	const FString& ConnectionDataJson,
+	const FString& OverrideSessionId,
+	FString& OutTravelUrl)
+{
+	FDBA_GameBackendSessionConnection Connection;
+	if (!ParseConnectionData(ConnectionDataJson, Connection))
+	{
+		OutTravelUrl.Reset();
+		return false;
+	}
+
+	OutTravelUrl = BuildTravelUrl(
+		Connection.Ip,
+		Connection.Port,
+		OverrideSessionId.IsEmpty() ? Connection.SessionId : OverrideSessionId,
+		Connection.PlayerSessionToken,
+		Connection.TeamId,
+		Connection.Zodiac,
+		Connection.PrimaryElement,
+		Connection.FiveCamp,
+		Connection.FixedSkillGroupId);
+	return !OutTravelUrl.IsEmpty();
+}
+
+bool UDBA_GameBackendSessionService::ParseConnectionData(const FString& DataJson, FDBA_GameBackendSessionConnection& OutConnection)
 {
 	TSharedPtr<FJsonObject> Root;
 	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(DataJson);
@@ -161,28 +210,45 @@ bool UDBA_GameBackendSessionService::ParseConnectionData(const FString& DataJson
 		return false;
 	}
 
-	Root->TryGetStringField(TEXT("ip"), OutConnection.Ip);
-	Root->TryGetNumberField(TEXT("port"), OutConnection.Port);
-	Root->TryGetStringField(TEXT("sessionId"), OutConnection.SessionId);
-	Root->TryGetStringField(TEXT("playerSessionToken"), OutConnection.PlayerSessionToken);
-	Root->TryGetStringField(TEXT("playerId"), OutConnection.PlayerId);
+	TSharedPtr<FJsonObject> Payload = Root;
+	const TSharedPtr<FJsonObject>* DataObj = nullptr;
+	if (Root->TryGetObjectField(TEXT("data"), DataObj) && DataObj && DataObj->IsValid())
+	{
+		Payload = *DataObj;
+	}
+
+	Payload->TryGetStringField(TEXT("ip"), OutConnection.Ip);
+	Payload->TryGetNumberField(TEXT("port"), OutConnection.Port);
+	Payload->TryGetStringField(TEXT("sessionId"), OutConnection.SessionId);
+	Payload->TryGetStringField(TEXT("playerSessionToken"), OutConnection.PlayerSessionToken);
+	Payload->TryGetStringField(TEXT("playerId"), OutConnection.PlayerId);
+	Payload->TryGetNumberField(TEXT("teamId"), OutConnection.TeamId);
+
+	const TSharedPtr<FJsonObject>* BuildSummaryObj = nullptr;
+	if (Payload->TryGetObjectField(TEXT("characterBuildSummary"), BuildSummaryObj) && BuildSummaryObj && BuildSummaryObj->IsValid())
+	{
+		(*BuildSummaryObj)->TryGetStringField(TEXT("zodiac"), OutConnection.Zodiac);
+		(*BuildSummaryObj)->TryGetStringField(TEXT("primaryElement"), OutConnection.PrimaryElement);
+		(*BuildSummaryObj)->TryGetStringField(TEXT("fiveCamp"), OutConnection.FiveCamp);
+		(*BuildSummaryObj)->TryGetStringField(TEXT("fixedSkillGroupId"), OutConnection.FixedSkillGroupId);
+	}
 
 	if (OutConnection.Ip.IsEmpty())
 	{
-		Root->TryGetStringField(TEXT("serverIp"), OutConnection.Ip);
+		Payload->TryGetStringField(TEXT("serverIp"), OutConnection.Ip);
 	}
 	if (OutConnection.Port <= 0)
 	{
-		Root->TryGetNumberField(TEXT("serverPort"), OutConnection.Port);
+		Payload->TryGetNumberField(TEXT("serverPort"), OutConnection.Port);
 	}
 	if (OutConnection.PlayerSessionToken.IsEmpty())
 	{
-		Root->TryGetStringField(TEXT("sessionToken"), OutConnection.PlayerSessionToken);
+		Payload->TryGetStringField(TEXT("sessionToken"), OutConnection.PlayerSessionToken);
 	}
 
-	if (OutConnection.Ip.IsEmpty() && Root->HasTypedField<EJson::Object>(TEXT("connection")))
+	if (OutConnection.Ip.IsEmpty() && Payload->HasTypedField<EJson::Object>(TEXT("connection")))
 	{
-		const TSharedPtr<FJsonObject> ConnectionObj = Root->GetObjectField(TEXT("connection"));
+		const TSharedPtr<FJsonObject> ConnectionObj = Payload->GetObjectField(TEXT("connection"));
 		if (ConnectionObj.IsValid())
 		{
 			ConnectionObj->TryGetStringField(TEXT("ip"), OutConnection.Ip);
@@ -190,6 +256,28 @@ bool UDBA_GameBackendSessionService::ParseConnectionData(const FString& DataJson
 			ConnectionObj->TryGetStringField(TEXT("sessionId"), OutConnection.SessionId);
 			ConnectionObj->TryGetStringField(TEXT("playerSessionToken"), OutConnection.PlayerSessionToken);
 			ConnectionObj->TryGetStringField(TEXT("playerId"), OutConnection.PlayerId);
+			ConnectionObj->TryGetNumberField(TEXT("teamId"), OutConnection.TeamId);
+			if (OutConnection.Ip.IsEmpty())
+			{
+				ConnectionObj->TryGetStringField(TEXT("serverIp"), OutConnection.Ip);
+			}
+			if (OutConnection.Port <= 0)
+			{
+				ConnectionObj->TryGetNumberField(TEXT("serverPort"), OutConnection.Port);
+			}
+			if (OutConnection.PlayerSessionToken.IsEmpty())
+			{
+				ConnectionObj->TryGetStringField(TEXT("sessionToken"), OutConnection.PlayerSessionToken);
+			}
+
+			const TSharedPtr<FJsonObject>* NestedBuildSummaryObj = nullptr;
+			if (ConnectionObj->TryGetObjectField(TEXT("characterBuildSummary"), NestedBuildSummaryObj) && NestedBuildSummaryObj && NestedBuildSummaryObj->IsValid())
+			{
+				(*NestedBuildSummaryObj)->TryGetStringField(TEXT("zodiac"), OutConnection.Zodiac);
+				(*NestedBuildSummaryObj)->TryGetStringField(TEXT("primaryElement"), OutConnection.PrimaryElement);
+				(*NestedBuildSummaryObj)->TryGetStringField(TEXT("fiveCamp"), OutConnection.FiveCamp);
+				(*NestedBuildSummaryObj)->TryGetStringField(TEXT("fixedSkillGroupId"), OutConnection.FixedSkillGroupId);
+			}
 		}
 	}
 

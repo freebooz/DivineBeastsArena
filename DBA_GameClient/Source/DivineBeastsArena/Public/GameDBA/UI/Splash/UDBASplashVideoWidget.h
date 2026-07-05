@@ -15,14 +15,15 @@
 #include "Components/Image.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
+#include "UObject/StrongObjectPtr.h"
+#if !UE_SERVER
+#include "FileMediaSource.h"
 #include "MediaPlayer.h"
+#include "MediaSoundComponent.h"
 #include "MediaTexture.h"
+#endif
 #include "UDBASplashVideoWidget.generated.h"
 
-class UMediaPlayer;
-class UMediaTexture;
-class UFileMediaSource;
-class UMediaSoundComponent;
 class UAudioComponent;
 class USoundWaveProcedural;
 
@@ -80,19 +81,17 @@ private:
 	USoundWaveProcedural* CreateSoundWaveFromPcmWav(const FString& WavPath);
 
 private:
+#if !UE_SERVER
 	/** 媒体播放器 */
-	UPROPERTY(Transient)
-	TObjectPtr<UMediaPlayer> MediaPlayer;
+	TStrongObjectPtr<UMediaPlayer> MediaPlayer;
 
 	/** 媒体纹理 */
-	UPROPERTY(Transient)
-	TObjectPtr<UMediaTexture> MediaTexture;
+	TStrongObjectPtr<UMediaTexture> MediaTexture;
 
-	UPROPERTY(Transient)
-	TObjectPtr<UFileMediaSource> FileMediaSource;
+	TStrongObjectPtr<UFileMediaSource> FileMediaSource;
 
-	UPROPERTY(Transient)
-	TObjectPtr<UMediaSoundComponent> MediaSoundComponent;
+	TStrongObjectPtr<UMediaSoundComponent> MediaSoundComponent;
+#endif
 
 	UPROPERTY(Transient)
 	TObjectPtr<USoundWaveProcedural> FallbackAudioWave;

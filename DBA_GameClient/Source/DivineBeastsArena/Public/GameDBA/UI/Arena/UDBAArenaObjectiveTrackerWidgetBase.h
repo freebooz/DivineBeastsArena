@@ -39,4 +39,13 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|ObjectiveTracker", meta = (DisplayName = "On Objective Completed"))
 	void BP_OnObjectiveCompleted();
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ObjectiveTracker")
+	FText CachedObjectiveText;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ObjectiveTracker")
+	float CachedObjectiveProgress = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ObjectiveTracker")
+	bool bCachedObjectiveCompleted = false;
 };

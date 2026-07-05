@@ -50,6 +50,7 @@ private:
 	FDBA_GameBackendHttpClient* HttpClient = nullptr;
 	FTimerHandle FlushTimerHandle;
 	TArray<FDBA_GameBackendTelemetryEvent> EventQueue;
+	bool bShuttingDown = false;
 	bool bFlushing = false;
 	bool bTelemetryEnabled = true;
 	float FlushIntervalSeconds = 10.0f;

@@ -1,4 +1,4 @@
-# 各应用项目结构与代码审计
+﻿# 各应用项目结构与代码审计
 
 审计日期：2026-05-23
 
@@ -83,7 +83,7 @@
 后续建议：
 - 保持 `GameBackendClient` 插件独立，避免具体 UI 或玩法逻辑反向进入插件。
 - 避免提交 `Binaries`、`Intermediate`、`Saved` 等生成目录的新变更；需要时通过 `.gitignore` 和 CI 检查约束。
-- 继续用用户指定的 UE 路径 `E:\UnrealEngine-5.7.1-release` 做 Editor 与 Shipping 构建验证。
+- 继续用用户指定的 UE 路径 `D:\UnrealEngine-5.8.0-release` 做 Editor 与 Shipping 构建验证。
 
 ## 验证入口
 
@@ -91,4 +91,5 @@
 - Admin：`cd DBA_GameAdmin && npm ci && npm run build`
 - Website：`npm run build` in `DBA_GameWebsite`
 - Launcher：`npm run build` and `cargo check --manifest-path src-tauri/Cargo.toml` in `DBA_GameLauncher`
-- UE Client：使用 `E:\UnrealEngine-5.7.1-release\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe`
+- UE Client：使用 `D:\UnrealEngine-5.8.0-release\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe`
+

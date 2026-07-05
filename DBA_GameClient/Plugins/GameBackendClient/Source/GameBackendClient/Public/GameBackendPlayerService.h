@@ -50,6 +50,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Player")
 	void GetMyMatches(const FDBA_GameBackendResponseDelegate& Callback);
 
+	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Player")
+	static bool TryParseMatchHistoryData(const FString& DataJson, FDBA_GameBackendMatchHistoryPage& OutPage, FString& OutError);
+
 private:
 	TWeakObjectPtr<UDBA_GameBackendClientSubsystem> Subsystem;
 	FDBA_GameBackendHttpClient* HttpClient = nullptr;

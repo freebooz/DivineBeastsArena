@@ -21,7 +21,7 @@ namespace
 	void ExecuteResponse(const FDBA_GameBackendResponseDelegate& Callback, const FDBA_GameBackendHttpResult& Result)
 	{
 		const bool bSuccess = Result.bHttpRequestOk && Result.HttpStatus >= 200 && Result.HttpStatus < 300;
-		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("Request failed.") : Result.Message);
+		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("请求失败。") : Result.Message);
 		Callback.ExecuteIfBound(bSuccess, ErrorMessage, Result.DataJson);
 	}
 }
@@ -36,7 +36,7 @@ void UDBA_GameBackendConfigService::VersionCheck(const FDBA_GameBackendResponseD
 {
 	if (!HttpClient || !Subsystem.IsValid())
 	{
-		Callback.ExecuteIfBound(false, TEXT("Config service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("配置服务不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -55,7 +55,7 @@ void UDBA_GameBackendConfigService::GetMaintenanceStatus(const FDBA_GameBackendR
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Config service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("配置服务不可用。"), TEXT("{}"));
 		return;
 	}
 	HttpClient->Get(TEXT("/api/maintenance/status"), [Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); }, false);
@@ -65,7 +65,7 @@ void UDBA_GameBackendConfigService::GetAnnouncementsPopup(const FDBA_GameBackend
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Config service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("配置服务不可用。"), TEXT("{}"));
 		return;
 	}
 	HttpClient->Get(TEXT("/api/announcements/popup"), [Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); }, false);
@@ -75,7 +75,7 @@ void UDBA_GameBackendConfigService::GetConfigManifest(const FDBA_GameBackendResp
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Config service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("配置服务不可用。"), TEXT("{}"));
 		return;
 	}
 	HttpClient->Get(TEXT("/api/config/manifest"), [Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });
@@ -85,7 +85,7 @@ void UDBA_GameBackendConfigService::GetConfigBundle(const FDBA_GameBackendRespon
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Config service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("配置服务不可用。"), TEXT("{}"));
 		return;
 	}
 	HttpClient->Get(TEXT("/api/config/bundle"), [Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });
@@ -95,10 +95,9 @@ void UDBA_GameBackendConfigService::GetConfigByKey(const FString& ConfigKey, con
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Config service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("配置服务不可用。"), TEXT("{}"));
 		return;
 	}
 	const FString SafeKey = ConfigKey.TrimStartAndEnd();
 	HttpClient->Get(FString::Printf(TEXT("/api/config/%s"), *SafeKey), [Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });
 }
-

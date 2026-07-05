@@ -14,6 +14,10 @@
 #include "GameDBA/UI/Lobby/Login/DBACharacterPreviewActor.h"
 #include "GameDBA/Framework/DBAGameModeBase.h"
 #include "Animation/AnimSingleNodeInstance.h"
+#include "Components/DirectionalLightComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Components/PostProcessComponent.h"
+#include "Components/SkyLightComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "GameCore/Types/DBACommonEnums.h"
@@ -50,11 +54,98 @@ bool FDBACharacterPresentationStageSpecTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Presentation camera should use the reference FOV"), Spec.CameraFOV, 34.0f);
 	TestTrue(TEXT("Presentation camera should frame the full zodiac stage"), Spec.CameraLocation.X >= 500.0f);
 	TestTrue(TEXT("Presentation camera should sit above the character center"), Spec.CameraLocation.Z <= 150.0f);
-	TestEqual(TEXT("Key light should match the reference stage"), Spec.KeyLightIntensity, 65000.0f);
-	TestEqual(TEXT("Rim light should match the reference stage"), Spec.RimLightIntensity, 36000.0f);
+	TestEqual(TEXT("Key light should match the requested dark hall lux"), Spec.KeyLightIntensity, 0.35f);
+	TestEqual(TEXT("Character fill light should match requested blue fill lumens"), Spec.FaceLightIntensity, 120.0f);
+	TestEqual(TEXT("Sky light should match requested low intensity"), Spec.SkyLightIntensity, 0.06f);
+	TestEqual(TEXT("Pillar red lights should match requested lumens"), Spec.PillarRedLightIntensity, 800.0f);
 	TestEqual(TEXT("Stage should have a broad sanctuary floor"), Spec.GroundScale, FVector(7.5f, 7.5f, 1.0f));
 	TestTrue(TEXT("Stage should use atmospheric fog"), Spec.bUseAtmosphericFog);
 	TestTrue(TEXT("Stage should use an elevated pedestal"), Spec.bUsePedestal);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FDBACharacterPresentationHallLightingTest,
+	"DivineBeastsArena.UI.CharacterPresentation.HallLighting",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FDBACharacterPresentationHallLightingTest::RunTest(const FString& Parameters)
+{
+	const FString UniqueWorldName = FString::Printf(
+		TEXT("DBACharacterPresentationHallLightingTest_%s"),
+		*FGuid::NewGuid().ToString(EGuidFormats::Digits));
+	UPackage* WorldPackage = CreatePackage(*FString::Printf(TEXT("/Temp/%s"), *UniqueWorldName));
+	UWorld* World = UWorld::CreateWorld(EWorldType::Game, false, FName(*UniqueWorldName), WorldPackage, false);
+	TestNotNull(TEXT("Test world should be created"), World);
+	if (!World)
+	{
+		return false;
+	}
+
+	ADBACharacterPresentationActor* PresentationActor = World->SpawnActor<ADBACharacterPresentationActor>();
+	TestNotNull(TEXT("Presentation actor should spawn"), PresentationActor);
+	if (PresentationActor)
+	{
+		TArray<UDirectionalLightComponent*> DirectionalLights;
+		PresentationActor->GetComponents<UDirectionalLightComponent>(DirectionalLights);
+		TestTrue(TEXT("Presentation hall should include directional light components"), DirectionalLights.Num() > 0);
+		if (DirectionalLights.Num() > 0)
+		{
+			TestEqual(TEXT("Key directional light should use requested lux"), DirectionalLights[0]->Intensity, 0.35f);
+			TestEqual(TEXT("Key directional light should use requested temperature"), DirectionalLights[0]->Temperature, 10000.0f);
+			TestEqual(TEXT("Key directional light should use requested source angle"), DirectionalLights[0]->LightSourceAngle, 2.0f);
+			TestEqual(TEXT("Key directional light should use requested contact shadow length"), DirectionalLights[0]->ContactShadowLength, 0.2f);
+		}
+
+		TArray<UPointLightComponent*> PointLights;
+		PresentationActor->GetComponents<UPointLightComponent>(PointLights);
+		TestTrue(TEXT("Presentation hall should include blue fill and pillar red point lights"), PointLights.Num() >= 3);
+		if (PointLights.Num() >= 3)
+		{
+			TestEqual(TEXT("Character blue fill should use requested lumens"), PointLights[0]->Intensity, 120.0f);
+			TestEqual(TEXT("Character blue fill should use requested attenuation"), PointLights[0]->AttenuationRadius, 220.0f);
+			TestEqual(TEXT("Left pillar red light should use requested lumens"), PointLights[1]->Intensity, 800.0f);
+			TestEqual(TEXT("Right pillar red light should use requested lumens"), PointLights[2]->Intensity, 800.0f);
+		}
+
+		TArray<USkyLightComponent*> SkyLights;
+		PresentationActor->GetComponents<USkyLightComponent>(SkyLights);
+		TestTrue(TEXT("Presentation hall should include a sky light"), SkyLights.Num() > 0);
+		if (SkyLights.Num() > 0)
+		{
+			TestEqual(TEXT("Sky light should use requested intensity"), SkyLights[0]->Intensity, 0.06f);
+			TestTrue(TEXT("Sky light should use real time capture"), SkyLights[0]->IsRealTimeCaptureEnabled());
+		}
+
+		TArray<UPostProcessComponent*> PostProcesses;
+		PresentationActor->GetComponents<UPostProcessComponent>(PostProcesses);
+		TestTrue(TEXT("Presentation hall should include a post process volume"), PostProcesses.Num() > 0);
+		if (PostProcesses.Num() > 0)
+		{
+			TestTrue(TEXT("Post process should be infinite extent"), PostProcesses[0]->bUnbound);
+			TestEqual(TEXT("Post process min EV100 should be locked"), PostProcesses[0]->Settings.AutoExposureMinBrightness, -1.5f);
+			TestEqual(TEXT("Post process max EV100 should be locked"), PostProcesses[0]->Settings.AutoExposureMaxBrightness, -1.5f);
+			TestEqual(TEXT("Post process exposure compensation should match request"), PostProcesses[0]->Settings.AutoExposureBias, -0.8f);
+		}
+
+		PresentationActor->SetPreviewZodiac(EDBAZodiac::Dragon);
+		UPointLightComponent* FaceLight = nullptr;
+		for (UPointLightComponent* PointLight : PointLights)
+		{
+			if (PointLight && PointLight->GetFName() == FName(TEXT("FaceLight")))
+			{
+				FaceLight = PointLight;
+				break;
+			}
+		}
+		TestNotNull(TEXT("Presentation hall should keep a named face light after applying preview assets"), FaceLight);
+		if (FaceLight)
+		{
+			TestEqual(TEXT("Applying preview assets should preserve the requested face light intensity"), FaceLight->Intensity, ADBACharacterPresentationActor::GetReferenceStageSpec().FaceLightIntensity);
+		}
+	}
+
+	World->DestroyWorld(false);
 	return true;
 }
 

@@ -171,6 +171,10 @@ public class PlayerSessionConfiguration : IEntityTypeConfiguration<PlayerSession
         b.Property(x => x.PlayerId).HasColumnName("player_id").IsRequired();
         b.Property(x => x.Team).HasColumnName("team").HasMaxLength(32);
         b.Property(x => x.SlotIndex).HasColumnName("slot_index");
+        b.Property(x => x.Zodiac).HasColumnName("zodiac").HasMaxLength(32);
+        b.Property(x => x.PrimaryElement).HasColumnName("primary_element").HasMaxLength(32);
+        b.Property(x => x.FiveCamp).HasColumnName("five_camp").HasMaxLength(32);
+        b.Property(x => x.FixedSkillGroupId).HasColumnName("fixed_skill_group_id").HasMaxLength(64);
         b.Property(x => x.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
         b.Property(x => x.SessionTokenHash).HasColumnName("session_token_hash").HasMaxLength(256).IsRequired();
         b.Property(x => x.SessionTokenExpiresAt).HasColumnName("session_token_expires_at").IsRequired();

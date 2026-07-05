@@ -1,0 +1,28 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "client-release-evidence",
+    "runId":  "client-release-bundle-local-20260628T103500Z",
+    "generatedAtUtc":  "2026-06-28T05:53:56.5461099Z",
+    "packageRoot":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\client-release\\public\\client-release-public-symbols-20260628T082500Z",
+    "evidenceRoot":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence",
+    "version":  "0.1.0.0",
+    "buildConfiguration":  "Shipping",
+    "downloadUrl":  "https://cdn.example.com/releases/0.1.0.0/",
+    "manifestUrl":  "",
+    "releaseReady":  false,
+    "packageReleaseReady":  false,
+    "signingReady":  false,
+    "launcherInstallUpdateReady":  true,
+    "cdnReady":  false,
+    "evidence":  {
+                     "package":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\client\\client-package-launcher-client-release-bundle-local-20260628T103500Z-package.json",
+                     "signing":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\client\\code-signing-client-release-bundle-local-20260628T103500Z-signing.json",
+                     "launcherInstallUpdate":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\client\\launcher-install-update-smoke-client-release-bundle-local-20260628T103500Z-launcher-install-update.json",
+                     "cdnSmoke":  ""
+                 },
+    "notes":  [
+                  "Client package evidence is not release-ready; verify Shipping, no debug symbols, HTTPS, and non-example CDN URL.",
+                  "Code signing evidence is not release-ready.",
+                  "CDN smoke was skipped because ManifestUrl was not provided."
+              ]
+}

@@ -571,7 +571,7 @@ void UDBACharacterCreateFlowWidgetBase::Submit()
 			}
 		}
 		LoginFlow->SubmitCharacterCreation(Request);
-		UE_LOG(LogDBAUI, Log, TEXT("[CharacterCreateWidget] Submitted character creation: %s"), *CharacterName);
+		UE_LOG(LogDBAUI, Log, TEXT("[CharacterCreateWidget] 已提交角色创建：%s"), *CharacterName);
 	}
 	else
 	{
@@ -667,7 +667,7 @@ void UDBACharacterCreateFlowWidgetBase::EnsureNativeFallbackLayout()
 	CharacterPreviewViewport = WidgetTree->ConstructWidget<UViewport>(UViewport::StaticClass(), TEXT("CharacterPreviewViewport"));
 	RootBox->AddChildToVerticalBox(CharacterPreviewViewport);
 
-	UE_LOG(LogDBAUI, Log, TEXT("[CharacterCreateWidget] Native fallback layout created"));
+	UE_LOG(LogDBAUI, Log, TEXT("[CharacterCreateWidget] 已创建 C++ 原生兜底布局"));
 }
 
 void UDBACharacterCreateFlowWidgetBase::ResolveBoundWidgetsFromWidgetTree()
@@ -1000,11 +1000,11 @@ void UDBACharacterCreateFlowWidgetBase::InitializePreviewViewport()
 	{
 		PreviewActor->ActivatePresentationCamera(GetOwningPlayer());
 		PreviewActor->SetPreviewZodiac(SelectedZodiac);
-		UE_LOG(LogDBAUI, Log, TEXT("[CharacterCreateWidget] Using world 3D character presentation stage for zodiac %d."), static_cast<int32>(SelectedZodiac));
+		UE_LOG(LogDBAUI, Log, TEXT("[CharacterCreateWidget] 使用世界 3D 角色展示舞台：生肖=%d"), static_cast<int32>(SelectedZodiac));
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] Failed to spawn world 3D character presentation stage."));
+		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] 创建世界 3D 角色展示舞台失败。"));
 	}
 }
 
@@ -1103,7 +1103,7 @@ void UDBACharacterCreateFlowWidgetBase::InitializeAudioAssets()
 		ButtonClickSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/SFX/SFX_UI_ButtonClick.SFX_UI_ButtonClick"));
 		if (!ButtonClickSound)
 		{
-			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] Button click sound not found."));
+			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] 未找到按钮点击音效。"));
 		}
 	}
 
@@ -1112,7 +1112,7 @@ void UDBACharacterCreateFlowWidgetBase::InitializeAudioAssets()
 		BackgroundMusicSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/BGM/BGM_CharacterCreate_Loop.BGM_CharacterCreate_Loop"));
 		if (!BackgroundMusicSound)
 		{
-			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] BGM asset not found."));
+			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] 未找到背景音乐资源。"));
 		}
 	}
 }
@@ -1134,7 +1134,7 @@ void UDBACharacterCreateFlowWidgetBase::StartBackgroundMusic()
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] Failed to spawn BGM component."));
+		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterCreateWidget] 创建背景音乐组件失败。"));
 	}
 }
 

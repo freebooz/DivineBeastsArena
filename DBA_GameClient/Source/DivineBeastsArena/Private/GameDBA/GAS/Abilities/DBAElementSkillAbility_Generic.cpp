@@ -25,6 +25,13 @@ void UDBAElementSkillAbility_Generic::ActivateAbility(
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
+	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[UDBAElementSkillAbility_Generic] 激活元素技能失败：提交消耗或冷却失败，技能ID=%s"), *SkillID.ToString());
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+
 	UE_LOG(LogDBACombat, Log, TEXT("[UDBAElementSkillAbility_Generic] 激活元素技能：技能ID=%s"), *SkillID.ToString());
 
 	if (ActorInfo)
@@ -36,10 +43,8 @@ void UDBAElementSkillAbility_Generic::ActivateAbility(
 		}
 	}
 
-	// 调用蓝图事件
-	OnAbilityActivatedBP(SkillID);
+	OnAbilityActivated(SkillID);
 
-	// 调用 Native 事件 (用于 C++ 子类重写)
 	OnSkillConfigLoaded();
 }
 
@@ -52,15 +57,20 @@ void UDBAElementSkillAbility_Generic::EndAbility(
 {
 	UE_LOG(LogDBACombat, Log, TEXT("[UDBAElementSkillAbility_Generic] 结束元素技能：技能ID=%s 是否取消=%s"), *SkillID.ToString(), bWasCancelled ? TEXT("是") : TEXT("否"));
 
-	// 调用蓝图事件
-	OnAbilityEndedBP(SkillID, bWasCancelled);
+	OnAbilityEnded(SkillID, bWasCancelled);
 
 	// 调用基类 EndAbility
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UDBAElementSkillAbility_Generic::OnSkillConfigLoaded_Implementation()
+void UDBAElementSkillAbility_Generic::OnSkillConfigLoaded()
 {
-	// 默认实现为空
-	// 子类或蓝图可以重写此方法以加载技能配置
+}
+
+void UDBAElementSkillAbility_Generic::OnAbilityActivated(FName InSkillID)
+{
+}
+
+void UDBAElementSkillAbility_Generic::OnAbilityEnded(FName InSkillID, bool bWasCancelled)
+{
 }

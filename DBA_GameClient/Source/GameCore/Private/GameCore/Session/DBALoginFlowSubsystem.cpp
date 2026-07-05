@@ -197,7 +197,7 @@ void UDBALoginFlowSubsystem::SetFlowState(EDBALoginFlowState NewState)
 		return;
 	}
 
-	UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 流浪状态切换： %d -> %d"), static_cast<int32>(FlowState), static_cast<int32>(NewState));
+	UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 流程状态切换：%d -> %d"), static_cast<int32>(FlowState), static_cast<int32>(NewState));
 	FlowState = NewState;
 	OnFlowStateChanged.Broadcast(NewState);
 }
@@ -222,7 +222,7 @@ void UDBALoginFlowSubsystem::SubmitLogin(const FString& Email, const FString& Pa
 	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
 	if (!AccountService)
 	{
-		BroadcastErrorAndSetState(TEXT("Account service unavailable"), EDBALoginFlowState::LoginScreen);
+		BroadcastErrorAndSetState(TEXT("账号服务不可用。"), EDBALoginFlowState::LoginScreen);
 		return;
 	}
 
@@ -250,7 +250,7 @@ void UDBALoginFlowSubsystem::SubmitGuestLogin()
 	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
 	if (!AccountService)
 	{
-		BroadcastErrorAndSetState(TEXT("Account service unavailable"), EDBALoginFlowState::LoginScreen);
+		BroadcastErrorAndSetState(TEXT("账号服务不可用。"), EDBALoginFlowState::LoginScreen);
 		return;
 	}
 
@@ -278,7 +278,7 @@ void UDBALoginFlowSubsystem::SubmitDebugLogin(const FString& Username)
 	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
 	if (!AccountService)
 	{
-		BroadcastErrorAndSetState(TEXT("Account service unavailable"), EDBALoginFlowState::LoginScreen);
+		BroadcastErrorAndSetState(TEXT("账号服务不可用。"), EDBALoginFlowState::LoginScreen);
 		return;
 	}
 
@@ -307,7 +307,7 @@ void UDBALoginFlowSubsystem::LoadCharactersAfterLogin()
 	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
 	if (!AccountService)
 	{
-		BroadcastErrorAndSetState(TEXT("Account service unavailable"), EDBALoginFlowState::LoginScreen);
+		BroadcastErrorAndSetState(TEXT("账号服务不可用。"), EDBALoginFlowState::LoginScreen);
 		return;
 	}
 
@@ -417,14 +417,14 @@ void UDBALoginFlowSubsystem::SubmitCharacterSelection(const FDBACharacterId& Cha
 {
 	if (FlowState != EDBALoginFlowState::CharacterSelect && FlowState != EDBALoginFlowState::CharacterCreate)
 	{
-		BroadcastErrorAndSetState(TEXT("Character selection is not available in current state"), EDBALoginFlowState::LoginScreen);
+		BroadcastErrorAndSetState(TEXT("当前状态不允许选择角色。"), EDBALoginFlowState::LoginScreen);
 		return;
 	}
 
 	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
 	if (!AccountService)
 	{
-		BroadcastErrorAndSetState(TEXT("Account service unavailable"), EDBALoginFlowState::CharacterSelect);
+		BroadcastErrorAndSetState(TEXT("账号服务不可用。"), EDBALoginFlowState::CharacterSelect);
 		return;
 	}
 
@@ -442,7 +442,7 @@ void UDBALoginFlowSubsystem::SubmitCharacterSelection(const FDBACharacterId& Cha
 			return;
 		}
 
-		BroadcastErrorAndSetState(TEXT("Character selection failed"), EDBALoginFlowState::CharacterSelect);
+		BroadcastErrorAndSetState(TEXT("角色选择失败。"), EDBALoginFlowState::CharacterSelect);
 	}));
 }
 
@@ -450,14 +450,14 @@ void UDBALoginFlowSubsystem::SubmitCharacterCreation(const FDBACharacterCreateRe
 {
 	if (FlowState != EDBALoginFlowState::CharacterCreate)
 	{
-		BroadcastErrorAndSetState(TEXT("Character creation is not available in current state"), EDBALoginFlowState::LoginScreen);
+		BroadcastErrorAndSetState(TEXT("当前状态不允许创建角色。"), EDBALoginFlowState::LoginScreen);
 		return;
 	}
 
 	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
 	if (!AccountService)
 	{
-		BroadcastErrorAndSetState(TEXT("Account service unavailable"), EDBALoginFlowState::CharacterCreate);
+		BroadcastErrorAndSetState(TEXT("账号服务不可用。"), EDBALoginFlowState::CharacterCreate);
 		return;
 	}
 
@@ -536,7 +536,7 @@ void UDBALoginFlowSubsystem::EnterMainLobby()
 					}
 				}
 				AppendLobbyTravelOptions(LobbyServerAddress, LobbyZodiac);
-				UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 进入大厳，ClientTravel到共享大厳服务器 %s"), *LobbyServerAddress);
+				UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 进入大厅，ClientTravel 到共享大厅服务器：%s"), *LobbyServerAddress);
 				PC->ClientTravel(LobbyServerAddress, TRAVEL_Absolute);
 				return;
 			}
@@ -564,7 +564,7 @@ void UDBALoginFlowSubsystem::EnterMainLobby()
 
 		if (!CurrentLevelPath.Contains(TEXT("LobbyMap")))
 		{
-			UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 进入大厳，OpenLevel %s"), *MainLobbyMapPath);
+			UE_LOG(LogDBACore, Log, TEXT("[DBALoginFlowSubsystem] 进入大厅，OpenLevel：%s"), *MainLobbyMapPath);
 			UGameplayStatics::OpenLevel(World, FName(*MainLobbyMapPath));
 		}
 	}

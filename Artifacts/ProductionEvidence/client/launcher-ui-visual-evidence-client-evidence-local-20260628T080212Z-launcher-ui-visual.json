@@ -1,0 +1,40 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "launcher-ui-visual-evidence",
+    "runId":  "client-evidence-local-20260628T080212Z-launcher-ui-visual",
+    "generatedAtUtc":  "2026-06-28T08:02:39.9700208Z",
+    "launcherDir":  "E:\\work\\Game\\DivineBeastsArena\\DBA_GameLauncher",
+    "pageUrl":  "http://127.0.0.1:58076/",
+    "browserPath":  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "command":  "npm run build; npm run preview -- --host 127.0.0.1 --port 58076 --strictPort",
+    "buildExitCode":  0,
+    "previewStarted":  true,
+    "screenshotExitCode":  0,
+    "domExitCode":  0,
+    "screenshotReady":  true,
+    "uiMarkersReady":  true,
+    "uiEvidenceReady":  true,
+    "requiredMarkers":  [
+                            "Divine Beasts Arena",
+                            "launcher-shell",
+                            "action-bar",
+                            "primary"
+                        ],
+    "missingMarkers":  [
+
+                       ],
+    "startedAtUtc":  "2026-06-28T08:02:33.9110415Z",
+    "endedAtUtc":  "2026-06-28T08:02:39.9583701Z",
+    "durationSeconds":  6.047,
+    "screenshotPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\client\\launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.png",
+    "domPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\client\\launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.dom.html",
+    "buildStdoutPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\client\\launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.build.log",
+    "buildStderrPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\client\\launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.build.stderr.log",
+    "previewStdoutPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\client\\launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.preview.log",
+    "previewStderrPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\client\\launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.preview.stderr.log",
+    "browserStdoutPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\client\\launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.browser.log",
+    "browserStderrPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\client\\launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.browser.stderr.log",
+    "notes":  [
+
+              ]
+}

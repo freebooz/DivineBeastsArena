@@ -1,0 +1,22 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "launcher-install-update-smoke",
+    "runId":  "client-release-bundle-final-verify-20260628T104500Z-launcher-install-update",
+    "generatedAtUtc":  "2026-06-28T05:55:14.1188491Z",
+    "launcherDir":  "E:\\work\\Game\\DivineBeastsArena\\DBA_GameLauncher",
+    "cargoManifest":  "E:\\work\\Game\\DivineBeastsArena\\DBA_GameLauncher\\src-tauri\\Cargo.toml",
+    "command":  "cargo test --manifest-path E:\\work\\Game\\DivineBeastsArena\\DBA_GameLauncher\\src-tauri\\Cargo.toml repair_game_downloads_local_package_and_persists_version -- --nocapture",
+    "testName":  "repair_game_downloads_local_package_and_persists_version",
+    "exitCode":  0,
+    "startedAtUtc":  "2026-06-28T05:55:13.0464713Z",
+    "endedAtUtc":  "2026-06-28T05:55:14.0948308Z",
+    "durationSeconds":  1.048,
+    "installUpdateReady":  true,
+    "hashVerified":  true,
+    "versionPersisted":  true,
+    "stdoutPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\client\\launcher-install-update-smoke-client-release-bundle-final-verify-20260628T104500Z-launcher-install-update.log",
+    "stderrPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\client\\launcher-install-update-smoke-client-release-bundle-final-verify-20260628T104500Z-launcher-install-update.stderr.log",
+    "notes":  [
+
+              ]
+}

@@ -7,26 +7,27 @@
 - 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
 */
 
-// 鐢熻倴瑙掕壊妯″瀷鍩虹被
+// 生肖角色模型基类
 
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
 #include "GameDBA/Combat/DBABloomHealingSpell.h"
 #include "GameDBA/Combat/DBAChainLightningSpell.h"
-#include "GameDBA/Combat/DBAFireballProjectile.h"
-#include "GameDBA/Combat/DBAFrostShardProjectile.h"
 #include "GameDBA/Combat/DBAHolyShieldSpell.h"
 #include "GameDBA/Combat/DBAPlayableSkillComponent.h"
-#include "GameDBA/Combat/DBAProjectile_Generic.h"
-#include "GameDBA/Combat/DBAShadowBoltProjectile.h"
 #include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "GameDBA/Combat/DBASkillProjectileBase.h"
+#include "GameDBA/Core/DBAConstants.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/GAS/DBAAbilitySystemComponent.h"
 #include "GameDBA/GAS/Attributes/DBABattleAttributeSet.h"
+#include "GameDBA/GAS/Attributes/DBAHeroGrowthAttributeSet.h"
+#include "GameDBA/Player/DBAPlayerState.h"
 #include "GameDBA/RPC/DBARpcHandler.h"
 #include "GameDBA/Services/DBASkillGroupGeneratorSubsystem.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
+#include "GameDBA/UI/DBAGameUIManager.h"
 #include "Camera/CameraComponent.h"
+#include "GameplayEffectTypes.h"
 #include "GameplayTagContainer.h"
 #include "Animation/AnimationAsset.h"
 #include "Animation/Skeleton.h"
@@ -42,155 +43,91 @@
 #include "NiagaraSystem.h"
 #include "Net/UnrealNetwork.h"
 #include "Sound/SoundBase.h"
+#include "TimerManager.h"
 
 namespace
 {
-	struct FLobbyEquippedSkillCastSpec
-	{
-		int32 SkillSlot = 1;
-		FName FallbackSkillId = TEXT("Lobby.Skill01");
-		float Damage = 35.0f;
-		EDBAElement DamageElement = EDBAElement::Fire;
-		float Speed = 1450.0f;
-		float Radius = 42.0f;
-		float Cooldown = 3.0f;
-		float CastVFXScale = 1.0f;
-		const TCHAR* ProjectileCueTagName = nullptr;
-		const TCHAR* ImpactCueTagName = nullptr;
-		const TCHAR* CastNiagaraPath = nullptr;
-		const TCHAR* ProjectileNiagaraPath = nullptr;
-		const TCHAR* ImpactNiagaraPath = nullptr;
-		const TCHAR* CastSFXPath = nullptr;
-		const TCHAR* FlySFXPath = nullptr;
-		const TCHAR* ImpactSFXPath = nullptr;
-	};
-
-	const FLobbyEquippedSkillCastSpec& GetDefaultLobbySkillSpec(int32 SkillSlot)
-	{
-		static const FLobbyEquippedSkillCastSpec Skill01{
-			1,
-			TEXT("Lobby.Skill01.MageFireball"),
-			42.0f,
-			EDBAElement::Fire,
-			1580.0f,
-			46.0f,
-			3.0f,
-			1.12f,
-			TEXT("GameplayCue.DBA.Skill.Projectile"),
-			TEXT("GameplayCue.DBA.Skill.Impact"),
-			TEXT("/Game/DBA/VFX/Abilities/FireLion/NS_FireLion_Q_FlameClaw_Slash.NS_FireLion_Q_FlameClaw_Slash"),
-			TEXT("/Game/DBA/VFX/Fireball/NS_DBA_Fireball_Projectile.NS_DBA_Fireball_Projectile"),
-			TEXT("/Game/DBA/VFX/Fireball/NS_DBA_Fireball_Impact.NS_DBA_Fireball_Impact"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_MageFireball_PreCast.SFX_MageFireball_PreCast"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_MageFireball_Flight.SFX_MageFireball_Flight"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_MageFireball_Impact.SFX_MageFireball_Impact")
-		};
-		static const FLobbyEquippedSkillCastSpec Skill02{
-			2,
-			TEXT("Lobby.Skill02.FrostShard"),
-			32.0f,
-			EDBAElement::Water,
-			1840.0f,
-			38.0f,
-			4.5f,
-			1.15f,
-			TEXT("GameplayCue.DBA.Skill.Projectile"),
-			TEXT("GameplayCue.DBA.Skill.Impact"),
-			TEXT("/Game/ProjectileHitVFX/NS/NS_IceCrystal.NS_IceCrystal"),
-			TEXT("/Game/ProjectileHitVFX/NS/NS_IceDart.NS_IceDart"),
-			TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Ice_01.NS_Hit_Ice_01"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_FrostShard_PreCast.SFX_FrostShard_PreCast"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_FrostShard_Flight.SFX_FrostShard_Flight"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_FrostShard_Impact.SFX_FrostShard_Impact")
-		};
-		static const FLobbyEquippedSkillCastSpec Skill03{
-			3,
-			TEXT("Lobby.Skill03.BloomHealing"),
-			115.0f,
-			EDBAElement::Wood,
-			0.0f,
-			0.0f,
-			5.5f,
-			1.2f,
-			TEXT("GameplayCue.DBA.Skill.Projectile"),
-			TEXT("GameplayCue.DBA.Skill.Impact"),
-			TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingGrove_Area.NS_WoodCrane_Q_HealingGrove_Area"),
-			TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingSeed_Projectile.NS_WoodCrane_Q_HealingSeed_Projectile"),
-			TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingBurst_Impact.NS_WoodCrane_Q_HealingBurst_Impact"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_PreCast.SFX_BloomHealing_PreCast"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_Flight.SFX_BloomHealing_Flight"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_Impact.SFX_BloomHealing_Impact")
-		};
-		static const FLobbyEquippedSkillCastSpec Skill04{
-			4,
-			TEXT("Lobby.Skill04.ChainLightning"),
-			38.0f,
-			EDBAElement::Gold,
-			0.0f,
-			0.0f,
-			6.0f,
-			1.2f,
-			TEXT("GameplayCue.DBA.Skill.Projectile"),
-			TEXT("GameplayCue.DBA.Skill.Impact"),
-			TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Eletric_01.NS_Hit_Eletric_01"),
-			TEXT("/Game/ProjectileHitVFX/NS/NS_ThunderBolt.NS_ThunderBolt"),
-			TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Thunder.NS_Hit_Thunder"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_ChainLightning_PreCast.SFX_ChainLightning_PreCast"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_ChainLightning_Flight.SFX_ChainLightning_Flight"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_ChainLightning_Impact.SFX_ChainLightning_Impact")
-		};
-		static const FLobbyEquippedSkillCastSpec Ultimate{
-			5,
-			TEXT("Lobby.Skill05.PriestShield"),
-			0.0f,
-			EDBAElement::Wood,
-			0.0f,
-			0.0f,
-			8.0f,
-			1.22f,
-			TEXT("GameplayCue.DBA.Skill.Projectile"),
-			TEXT("GameplayCue.DBA.Skill.Impact"),
-			TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Bless.NS_Hit_Bless"),
-			TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy"),
-			TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_PreCast.SFX_PriestShield_PreCast"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_Flight.SFX_PriestShield_Flight"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_Impact.SFX_PriestShield_Impact")
-		};
-		static const FLobbyEquippedSkillCastSpec Skill06{
-			6,
-			TEXT("Lobby.Skill06.ShadowBolt"),
-			44.0f,
-			EDBAElement::Gold,
-			1580.0f,
-			40.0f,
-			4.8f,
-			1.10f,
-			TEXT("GameplayCue.DBA.Skill.Projectile"),
-			TEXT("GameplayCue.DBA.Skill.Impact"),
-			TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Magic.NS_Hit_Magic"),
-			TEXT("/Game/ProjectileHitVFX/NS/NS_PoisonSkullFish.NS_PoisonSkullFish"),
-			TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Poison.NS_Hit_Poison"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_ShadowBolt_PreCast.SFX_ShadowBolt_PreCast"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_ShadowBolt_Flight.SFX_ShadowBolt_Flight"),
-			TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_ShadowBolt_Impact.SFX_ShadowBolt_Impact")
-		};
-
-		switch (SkillSlot)
-		{
-		case 1: return Skill01;
-		case 2: return Skill02;
-		case 3: return Skill03;
-		case 4: return Skill04;
-		case 5: return Ultimate;
-		case 6: return Skill06;
-		default: return Skill01;
-		}
-	}
+	bool ResolvePlayableSkillSpec(const ADBAZodiacCharacterBase* Character, int32 SkillSlot, FDBAPlayableSkillRuntimeSpec& OutSpec);
 
 	bool IsLobbyEquippedSkillSlot(int32 SkillSlot)
 	{
 		return SkillSlot >= 1 && SkillSlot <= 6;
+	}
+
+	int32 MapEquippedSkillSlotToAbilityInputID(int32 SkillSlot)
+	{
+		switch (SkillSlot)
+		{
+		case 1: return static_cast<int32>(EDBAAbilityInputID::Skill01);
+		case 2: return static_cast<int32>(EDBAAbilityInputID::Skill02);
+		case 3: return static_cast<int32>(EDBAAbilityInputID::Skill03);
+		case 4: return static_cast<int32>(EDBAAbilityInputID::Skill04);
+		case 5: return static_cast<int32>(EDBAAbilityInputID::Ultimate);
+		default: return static_cast<int32>(EDBAAbilityInputID::None);
+		}
+	}
+
+	int32 MapArenaHUDSkillCueToAbilityInputID(FName SkillId)
+	{
+		if (SkillId == TEXT("Skill01"))
+		{
+			return static_cast<int32>(EDBAAbilityInputID::Skill01);
+		}
+		if (SkillId == TEXT("Skill02"))
+		{
+			return static_cast<int32>(EDBAAbilityInputID::Skill02);
+		}
+		if (SkillId == TEXT("Skill03"))
+		{
+			return static_cast<int32>(EDBAAbilityInputID::Skill03);
+		}
+		if (SkillId == TEXT("Skill04"))
+		{
+			return static_cast<int32>(EDBAAbilityInputID::Skill04);
+		}
+		if (SkillId == TEXT("Ultimate"))
+		{
+			return static_cast<int32>(EDBAAbilityInputID::Ultimate);
+		}
+		return static_cast<int32>(EDBAAbilityInputID::None);
+	}
+
+	int32 MapArenaHUDSkillCueToSkillSlot(FName SkillId)
+	{
+		switch (static_cast<EDBAAbilityInputID>(MapArenaHUDSkillCueToAbilityInputID(SkillId)))
+		{
+		case EDBAAbilityInputID::Skill01:
+			return 1;
+		case EDBAAbilityInputID::Skill02:
+			return 2;
+		case EDBAAbilityInputID::Skill03:
+			return 3;
+		case EDBAAbilityInputID::Skill04:
+			return 4;
+		case EDBAAbilityInputID::Ultimate:
+			return 5;
+		default:
+			return INDEX_NONE;
+		}
+	}
+
+	FText ResolveArenaHUDSkillCueFallbackDisplayName(FName SkillId)
+	{
+		switch (static_cast<EDBAAbilityInputID>(MapArenaHUDSkillCueToAbilityInputID(SkillId)))
+		{
+		case EDBAAbilityInputID::Skill01:
+			return NSLOCTEXT("DBAArenaHUD", "SkillCueFallbackSkill01", "技能一");
+		case EDBAAbilityInputID::Skill02:
+			return NSLOCTEXT("DBAArenaHUD", "SkillCueFallbackSkill02", "技能二");
+		case EDBAAbilityInputID::Skill03:
+			return NSLOCTEXT("DBAArenaHUD", "SkillCueFallbackSkill03", "技能三");
+		case EDBAAbilityInputID::Skill04:
+			return NSLOCTEXT("DBAArenaHUD", "SkillCueFallbackSkill04", "技能四");
+		case EDBAAbilityInputID::Ultimate:
+			return NSLOCTEXT("DBAArenaHUD", "SkillCueFallbackUltimate", "终极技能");
+		default:
+			return NSLOCTEXT("DBAArenaHUD", "SkillCueFallbackUnknown", "技能");
+		}
 	}
 
 	EDBAZodiac ToCommonZodiac(EDBAZodiacType ZodiacType)
@@ -242,10 +179,13 @@ namespace
 
 	FName ResolveEquippedLobbySkillId(const ADBAZodiacCharacterBase* Character, int32 SkillSlot)
 	{
-		const FLobbyEquippedSkillCastSpec& DefaultSpec = GetDefaultLobbySkillSpec(SkillSlot);
+		FDBAPlayableSkillRuntimeSpec PlayableSpec;
+		const FName DataAssetSkillId = ResolvePlayableSkillSpec(Character, SkillSlot, PlayableSpec)
+			? PlayableSpec.SkillId
+			: NAME_None;
 		if (!Character || !Character->GetWorld())
 		{
-			return DefaultSpec.FallbackSkillId;
+			return DataAssetSkillId;
 		}
 
 		UGameInstance* GameInstance = Character->GetWorld()->GetGameInstance();
@@ -254,50 +194,24 @@ namespace
 			: nullptr;
 		if (!SkillGroups)
 		{
-			return DefaultSpec.FallbackSkillId;
+			return DataAssetSkillId;
 		}
 
 		FDBAZodiacElementFixedSkillGroupRow SkillGroup;
 		if (!SkillGroups->GetSkillGroup(ToCommonZodiac(Character->GetZodiacType()), ToCommonElement(Character->GetElementType()), SkillGroup))
 		{
-			return DefaultSpec.FallbackSkillId;
+			return DataAssetSkillId;
 		}
 
 		switch (SkillSlot)
 		{
-		case 1: return SkillGroup.ElementSkill1Id.IsNone() ? DefaultSpec.FallbackSkillId : SkillGroup.ElementSkill1Id;
-		case 2: return SkillGroup.ElementSkill2Id.IsNone() ? DefaultSpec.FallbackSkillId : SkillGroup.ElementSkill2Id;
-		case 3: return SkillGroup.ElementSkill3Id.IsNone() ? DefaultSpec.FallbackSkillId : SkillGroup.ElementSkill3Id;
-		case 4: return SkillGroup.ElementSkill4Id.IsNone() ? DefaultSpec.FallbackSkillId : SkillGroup.ElementSkill4Id;
-		case 5: return SkillGroup.ZodiacUltimateSkillId.IsNone() ? DefaultSpec.FallbackSkillId : SkillGroup.ZodiacUltimateSkillId;
-		default: return DefaultSpec.FallbackSkillId;
+		case 1: return SkillGroup.ElementSkill1Id.IsNone() ? DataAssetSkillId : SkillGroup.ElementSkill1Id;
+		case 2: return SkillGroup.ElementSkill2Id.IsNone() ? DataAssetSkillId : SkillGroup.ElementSkill2Id;
+		case 3: return SkillGroup.ElementSkill3Id.IsNone() ? DataAssetSkillId : SkillGroup.ElementSkill3Id;
+		case 4: return SkillGroup.ElementSkill4Id.IsNone() ? DataAssetSkillId : SkillGroup.ElementSkill4Id;
+		case 5: return SkillGroup.ZodiacUltimateSkillId.IsNone() ? DataAssetSkillId : SkillGroup.ZodiacUltimateSkillId;
+		default: return DataAssetSkillId;
 		}
-	}
-
-	void SetSoftNiagaraAsset(TSoftObjectPtr<UNiagaraSystem>& OutAsset, const TCHAR* AssetPath)
-	{
-		if (AssetPath && FCString::Strlen(AssetPath) > 0)
-		{
-			OutAsset = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(AssetPath));
-		}
-	}
-
-	void SetSoftSoundAsset(TSoftObjectPtr<USoundBase>& OutAsset, const TCHAR* AssetPath)
-	{
-		if (AssetPath && FCString::Strlen(AssetPath) > 0)
-		{
-			OutAsset = TSoftObjectPtr<USoundBase>(FSoftObjectPath(AssetPath));
-		}
-	}
-
-	FGameplayTag ResolveOptionalGameplayCueTag(const TCHAR* TagName)
-	{
-		if (!TagName || FCString::Strlen(TagName) <= 0)
-		{
-			return FGameplayTag();
-		}
-
-		return FGameplayTag::RequestGameplayTag(FName(TagName), false);
 	}
 
 	bool ResolvePlayableSkillSpec(const ADBAZodiacCharacterBase* Character, int32 SkillSlot, FDBAPlayableSkillRuntimeSpec& OutSpec)
@@ -375,28 +289,51 @@ ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
-	LobbyFireballProjectileClass = ADBAFireballProjectile::StaticClass();
-	LobbyFrostShardProjectileClass = ADBAFrostShardProjectile::StaticClass();
-	LobbyBloomHealingSpellClass = ADBABloomHealingSpell::StaticClass();
-	LobbyChainLightningSpellClass = ADBAChainLightningSpell::StaticClass();
-	LobbyHolyShieldSpellClass = ADBAHolyShieldSpell::StaticClass();
-	LobbyShadowBoltProjectileClass = ADBAShadowBoltProjectile::StaticClass();
-	SkillCooldowns.Init(0.0f, 7);
-	SkillMaxCooldowns.Init(0.0f, 7);
-	for (int32 SkillSlot = 1; SkillSlot <= 5; ++SkillSlot)
+	SkillCooldowns.Init(0.0f, DBAConstants::PlayableSkillArraySize);
+	SkillMaxCooldowns.Init(0.0f, DBAConstants::PlayableSkillArraySize);
+}
+
+void ADBAZodiacCharacterBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	InitializeDBAAbilityActorInfo();
+}
+
+void ADBAZodiacCharacterBase::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	InitializeDBAAbilityActorInfo();
+}
+
+void ADBAZodiacCharacterBase::InitializeDBAAbilityActorInfo()
+{
+	ADBAPlayerState* DBAPlayerState = GetPlayerState<ADBAPlayerState>();
+	if (!DBAPlayerState)
 	{
-		FDBAPlayableSkillRuntimeSpec SkillSpec;
-		SkillMaxCooldowns[SkillSlot] = ResolvePlayableSkillSpec(this, SkillSlot, SkillSpec)
-			? SkillSpec.Cooldown
-			: GetDefaultLobbySkillSpec(SkillSlot).Cooldown;
+		UE_LOG(LogDBACombat, Verbose, TEXT("[生肖角色] 初始化 GAS 失败：PlayerState 尚未就绪。"));
+		return;
 	}
+
+	UDBAAbilitySystemComponent* DBAAbilitySystem = DBAPlayerState->GetDBAAbilitySystemComponent();
+	if (!DBAAbilitySystem)
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[生肖角色] 初始化 GAS 失败：PlayerState 未持有 DBAAbilitySystemComponent。"));
+		return;
+	}
+
+	DBAAbilitySystem->InitializeAbilities(DBAPlayerState, this);
+	BindArenaHUDAttributeDelegates();
+	SyncArenaHUDFromAttributes(true);
 }
 
 void ADBAZodiacCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	InitializeDBAAbilityActorInfo();
 	ApplyLobbyVisuals();
+	BindArenaHUDAttributeDelegates();
+	SyncArenaHUDFromAttributes(true);
 
 	// Spawn RPC Handler
 	if (HasAuthority() && RpcHandlerClass)
@@ -411,32 +348,15 @@ void ADBAZodiacCharacterBase::BeginPlay()
 	}
 }
 
+void ADBAZodiacCharacterBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UnbindArenaHUDAttributeDelegates();
+	Super::EndPlay(EndPlayReason);
+}
+
 void ADBAZodiacCharacterBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
-	if (HasAuthority())
-	{
-		for (float& Cooldown : SkillCooldowns)
-		{
-			if (Cooldown > 0.0f)
-			{
-				Cooldown = FMath::Max(0.0f, Cooldown - DeltaSeconds);
-			}
-		}
-		if (SkillMaxCooldowns.Num() < 7)
-		{
-			SkillMaxCooldowns.SetNumZeroed(7);
-		}
-		for (int32 SkillSlot = 1; SkillSlot <= 5; ++SkillSlot)
-		{
-			FDBAPlayableSkillRuntimeSpec SkillSpec;
-			const float DefaultCooldown = ResolvePlayableSkillSpec(this, SkillSlot, SkillSpec)
-				? SkillSpec.Cooldown
-				: (SkillSlot == 1 ? LobbyFireballCooldown : GetDefaultLobbySkillSpec(SkillSlot).Cooldown);
-			SkillMaxCooldowns[SkillSlot] = FMath::Max(SkillMaxCooldowns[SkillSlot], DefaultCooldown);
-		}
-	}
 
 	if (LobbyAttackAnimationTimeRemaining > 0.0f)
 	{
@@ -444,6 +364,11 @@ void ADBAZodiacCharacterBase::Tick(float DeltaSeconds)
 	}
 
 	UpdateLobbyLocomotionAnimation();
+	BindArenaHUDAttributeDelegates();
+	if (!bHasBoundArenaHUDAttributeDelegates)
+	{
+		SyncArenaHUDFromAttributes();
+	}
 }
 
 void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
@@ -513,7 +438,7 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 		else
 		{
 			MeshComponent->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-			UE_LOG(LogTemp, Warning, TEXT("[DBAZodiacCharacterBase] 网格没有骨骼，已跳过动画蓝图：%s"), *ResolvedMeshPath);
+			UE_LOG(LogDBAFrontend, Warning, TEXT("[DBAZodiacCharacterBase] 网格没有骨骼，已跳过动画蓝图：%s"), *ResolvedMeshPath);
 		}
 	}
 
@@ -525,7 +450,7 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 	MeshComponent->UpdateBounds();
 	ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(MeshComponent, CommonZodiac, this);
 
-	UE_LOG(LogTemp, Log, TEXT("[DBAZodiacCharacterBase] 大厅角色外观已应用：Actor=%s 生肖=%d 网格=%s 骨骼=%s 动画=%s 相对位置=%s 相对旋转=%s"),
+	UE_LOG(LogDBAFrontend, Log, TEXT("[DBAZodiacCharacterBase] 大厅角色外观已应用：Actor=%s 生肖=%d 网格=%s 骨骼=%s 动画=%s 相对位置=%s 相对旋转=%s"),
 		*GetName(),
 		static_cast<int32>(CommonZodiac),
 		ResolvedMeshPath.IsEmpty() ? TEXT("<unchanged>") : *ResolvedMeshPath,
@@ -564,6 +489,11 @@ void ADBAZodiacCharacterBase::CastEquippedSkill(int32 SkillSlot)
 		AimDirection = GetActorForwardVector();
 	}
 
+	if (!HasAuthority() && !IsLocallyControlled())
+	{
+		return;
+	}
+
 	if (!HasAuthority())
 	{
 		ServerCastEquippedSkill(SkillSlot, nullptr, AimDirection);
@@ -591,6 +521,11 @@ void ADBAZodiacCharacterBase::CastEquippedSkillAtTarget(int32 SkillSlot, AActor*
 		AimDirection = GetActorForwardVector();
 	}
 
+	if (!HasAuthority() && !IsLocallyControlled())
+	{
+		return;
+	}
+
 	if (!HasAuthority())
 	{
 		ServerCastEquippedSkill(SkillSlot, TargetActor, AimDirection);
@@ -600,18 +535,90 @@ void ADBAZodiacCharacterBase::CastEquippedSkillAtTarget(int32 SkillSlot, AActor*
 	CastEquippedSkillInternal(SkillSlot, AimDirection, TargetActor);
 }
 
+bool ADBAZodiacCharacterBase::ValidateServerEquippedSkillCast(int32 SkillSlot, AActor* TargetActor) const
+{
+	if (!HasAuthority())
+	{
+		return false;
+	}
+
+	if (!GetWorld())
+	{
+		return false;
+	}
+
+	if (!IsLobbyEquippedSkillSlot(SkillSlot))
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 服务端施法被拒绝：槽位无效，施法者=%s 槽位=%d"),
+			*GetName(),
+			SkillSlot);
+		return false;
+	}
+
+	if (IsDead())
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 服务端施法被拒绝：角色已死亡，施法者=%s 槽位=%d"),
+			*GetName(),
+			SkillSlot);
+		return false;
+	}
+
+	if (TargetActor && !IsValid(TargetActor))
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 服务端施法被拒绝：目标无效，施法者=%s 槽位=%d"),
+			*GetName(),
+			SkillSlot);
+		return false;
+	}
+
+	return true;
+}
+
+bool ADBAZodiacCharacterBase::ServerCastLobbyFireball_Validate(FVector_NetQuantizeNormal AimDirection)
+{
+	static_cast<void>(AimDirection);
+	return ValidateServerEquippedSkillCast(1, nullptr);
+}
+
 void ADBAZodiacCharacterBase::ServerCastLobbyFireball_Implementation(FVector_NetQuantizeNormal AimDirection)
 {
+	if (!ValidateServerEquippedSkillCast(1, nullptr))
+	{
+		return;
+	}
+
 	CastEquippedSkillInternal(1, FVector(AimDirection));
+}
+
+bool ADBAZodiacCharacterBase::ServerCastLobbyFireballAtTarget_Validate(AActor* TargetActor, FVector_NetQuantizeNormal FallbackAimDirection)
+{
+	static_cast<void>(FallbackAimDirection);
+	return ValidateServerEquippedSkillCast(1, TargetActor);
 }
 
 void ADBAZodiacCharacterBase::ServerCastLobbyFireballAtTarget_Implementation(AActor* TargetActor, FVector_NetQuantizeNormal FallbackAimDirection)
 {
+	if (!ValidateServerEquippedSkillCast(1, TargetActor))
+	{
+		return;
+	}
+
 	CastEquippedSkillInternal(1, FVector(FallbackAimDirection), TargetActor);
+}
+
+bool ADBAZodiacCharacterBase::ServerCastEquippedSkill_Validate(int32 SkillSlot, AActor* TargetActor, FVector_NetQuantizeNormal FallbackAimDirection)
+{
+	static_cast<void>(FallbackAimDirection);
+	return ValidateServerEquippedSkillCast(SkillSlot, TargetActor);
 }
 
 void ADBAZodiacCharacterBase::ServerCastEquippedSkill_Implementation(int32 SkillSlot, AActor* TargetActor, FVector_NetQuantizeNormal FallbackAimDirection)
 {
+	if (!ValidateServerEquippedSkillCast(SkillSlot, TargetActor))
+	{
+		return;
+	}
+
 	CastEquippedSkillInternal(SkillSlot, FVector(FallbackAimDirection), TargetActor);
 }
 
@@ -622,6 +629,11 @@ void ADBAZodiacCharacterBase::CastLobbyFireballInternal(const FVector& AimDirect
 
 void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const FVector& AimDirection, AActor* TargetActor)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	if (!GetWorld())
 	{
 		return;
@@ -635,6 +647,18 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		return;
 	}
 
+	const int32 AbilityInputID = MapEquippedSkillSlotToAbilityInputID(SkillSlot);
+	if (AbilityInputID != static_cast<int32>(EDBAAbilityInputID::None))
+	{
+		if (UDBAAbilitySystemComponent* ASC = GetDBAAbilitySystemComponent())
+		{
+			if (ASC->TryActivateAbilityByInputID(AbilityInputID, TargetActor))
+			{
+				return;
+			}
+		}
+	}
+
 	FDBAPlayableSkillRuntimeSpec Spec;
 	if (!ResolvePlayableSkillSpec(this, SkillSlot, Spec))
 	{
@@ -644,34 +668,41 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		return;
 	}
 
-	if (SkillSlot == 1)
+	if (SkillCooldowns.Num() < DBAConstants::PlayableSkillArraySize)
 	{
-		Spec.Magnitude = LobbyFireballDamage;
-		Spec.ProjectileSpeed = LobbyFireballSpeed;
-		Spec.ProjectileRadius = LobbyFireballRadius;
-		Spec.Cooldown = LobbyFireballCooldown;
-		Spec.NiagaraParameters.EffectRadius = FMath::Max(Spec.NiagaraParameters.EffectRadius, LobbyFireballRadius);
-		Spec.NiagaraParameters.Duration = FMath::Max(Spec.NiagaraParameters.Duration, LobbyFireballCooldown);
+		SkillCooldowns.SetNumZeroed(DBAConstants::PlayableSkillArraySize);
+	}
+	if (SkillMaxCooldowns.Num() < DBAConstants::PlayableSkillArraySize)
+	{
+		SkillMaxCooldowns.SetNumZeroed(DBAConstants::PlayableSkillArraySize);
+	}
+	const int32 CooldownArrayIndex = SkillSlot - 1;
+	if (!SkillCooldowns.IsValidIndex(CooldownArrayIndex) || !SkillMaxCooldowns.IsValidIndex(CooldownArrayIndex))
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 装配技能冷却索引无效：施法者=%s 槽位=%d 索引=%d"),
+			*GetName(),
+			SkillSlot,
+			CooldownArrayIndex);
+		return;
 	}
 
-	if (SkillCooldowns.Num() < 7)
-	{
-		SkillCooldowns.SetNumZeroed(7);
-	}
-	if (SkillMaxCooldowns.Num() < 7)
-	{
-		SkillMaxCooldowns.SetNumZeroed(7);
-	}
-	SkillMaxCooldowns[SkillSlot] = FMath::Max(SkillMaxCooldowns[SkillSlot], Spec.Cooldown);
-	if (SkillCooldowns.IsValidIndex(SkillSlot) && SkillCooldowns[SkillSlot] > 0.0f)
+	SkillMaxCooldowns[CooldownArrayIndex] = FMath::Max(SkillMaxCooldowns[CooldownArrayIndex], Spec.Cooldown);
+	if (SkillCooldowns.IsValidIndex(CooldownArrayIndex) && SkillCooldowns[CooldownArrayIndex] > 0.0f)
 	{
 		UE_LOG(LogDBACombat, Verbose, TEXT("[DBAZodiacCharacterBase] 装配技能被冷却阻止：施法者=%s 槽位=%d 技能=%s 剩余=%.2f"),
 			*GetName(),
 			SkillSlot,
 			*Spec.SkillId.ToString(),
-			SkillCooldowns[SkillSlot]);
+			SkillCooldowns[CooldownArrayIndex]);
 		return;
 	}
+
+	const auto ApplyLegacyCooldown = [this, CooldownArrayIndex, &Spec]()
+	{
+		SkillCooldowns[CooldownArrayIndex] = Spec.Cooldown;
+		SkillMaxCooldowns[CooldownArrayIndex] = Spec.Cooldown;
+		OnSkillCooldownsChanged.Broadcast(SkillCooldowns);
+	};
 
 	FVector SafeAimDirection = ResolveHorizontalAimDirection(AimDirection, GetActorForwardVector());
 	if (IsValid(TargetActor) && TargetActor != this)
@@ -688,10 +719,13 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 
 	if (Spec.EffectShape == EDBAPlayableSkillEffectShape::BloomHealing)
 	{
-		TSubclassOf<ADBABloomHealingSpell> BloomClass = Spec.BloomHealingClass ? Spec.BloomHealingClass : LobbyBloomHealingSpellClass;
+		TSubclassOf<ADBABloomHealingSpell> BloomClass = Spec.BloomHealingClass;
 		if (!BloomClass)
 		{
-			BloomClass = ADBABloomHealingSpell::StaticClass();
+			UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 绽放治疗技能缺少数据资产配置类：施法者=%s 技能=%s"),
+				*GetName(),
+				*Spec.SkillId.ToString());
+			return;
 		}
 
 		ADBABloomHealingSpell* BloomSpell = GetWorld()->SpawnActor<ADBABloomHealingSpell>(
@@ -712,8 +746,7 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		MulticastPlayLobbySkillCastFeedback(SkillSlot);
 		BloomSpell->ConfigureFromSkillSpec(Spec);
 		BloomSpell->CastBloomHealing(this, HealTarget);
-		SkillCooldowns[SkillSlot] = Spec.Cooldown;
-		SkillMaxCooldowns[SkillSlot] = Spec.Cooldown;
+		ApplyLegacyCooldown();
 		UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放绽放治疗：施法者=%s 技能=%s 目标=%s 法术=%s"),
 			*GetName(),
 			*Spec.SkillId.ToString(),
@@ -724,10 +757,13 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 
 	if (Spec.EffectShape == EDBAPlayableSkillEffectShape::ChainLightning)
 	{
-		TSubclassOf<ADBAChainLightningSpell> ChainClass = Spec.ChainLightningClass ? Spec.ChainLightningClass : LobbyChainLightningSpellClass;
+		TSubclassOf<ADBAChainLightningSpell> ChainClass = Spec.ChainLightningClass;
 		if (!ChainClass)
 		{
-			ChainClass = ADBAChainLightningSpell::StaticClass();
+			UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 链式闪电技能缺少数据资产配置类：施法者=%s 技能=%s"),
+				*GetName(),
+				*Spec.SkillId.ToString());
+			return;
 		}
 
 		ADBAChainLightningSpell* ChainSpell = GetWorld()->SpawnActor<ADBAChainLightningSpell>(
@@ -747,8 +783,7 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		MulticastPlayLobbySkillCastFeedback(SkillSlot);
 		ChainSpell->ConfigureFromSkillSpec(Spec);
 		ChainSpell->CastChainLightning(this, TargetActor);
-		SkillCooldowns[SkillSlot] = Spec.Cooldown;
-		SkillMaxCooldowns[SkillSlot] = Spec.Cooldown;
+		ApplyLegacyCooldown();
 		UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放链式闪电：施法者=%s 技能=%s 初始目标=%s 法术=%s"),
 			*GetName(),
 			*Spec.SkillId.ToString(),
@@ -759,10 +794,13 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 
 	if (Spec.EffectShape == EDBAPlayableSkillEffectShape::HolyShield)
 	{
-		TSubclassOf<ADBAHolyShieldSpell> ShieldClass = Spec.HolyShieldClass ? Spec.HolyShieldClass : LobbyHolyShieldSpellClass;
+		TSubclassOf<ADBAHolyShieldSpell> ShieldClass = Spec.HolyShieldClass;
 		if (!ShieldClass)
 		{
-			ShieldClass = ADBAHolyShieldSpell::StaticClass();
+			UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 牧师护盾技能缺少数据资产配置类：施法者=%s 技能=%s"),
+				*GetName(),
+				*Spec.SkillId.ToString());
+			return;
 		}
 
 		ADBAHolyShieldSpell* ShieldSpell = GetWorld()->SpawnActor<ADBAHolyShieldSpell>(
@@ -783,8 +821,7 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		MulticastPlayLobbySkillCastFeedback(SkillSlot);
 		ShieldSpell->ConfigureFromSkillSpec(Spec);
 		ShieldSpell->CastHolyShield(this, ShieldTarget);
-		SkillCooldowns[SkillSlot] = Spec.Cooldown;
-		SkillMaxCooldowns[SkillSlot] = Spec.Cooldown;
+		ApplyLegacyCooldown();
 		UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放牧师护盾：施法者=%s 技能=%s 目标=%s 法术=%s"),
 			*GetName(),
 			*Spec.SkillId.ToString(),
@@ -793,37 +830,14 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 		return;
 	}
 
-	TSubclassOf<ADBASkillProjectileBase> ProjectileClass = nullptr;
-	if (SkillSlot == 1)
+	TSubclassOf<ADBASkillProjectileBase> ProjectileClass = Spec.ProjectileClass;
+	if (!ProjectileClass)
 	{
-		ProjectileClass = Spec.ProjectileClass ? Spec.ProjectileClass : LobbyFireballProjectileClass;
-		if (!ProjectileClass)
-		{
-			ProjectileClass = ADBAFireballProjectile::StaticClass();
-		}
-	}
-	else
-	{
-		if (SkillSlot == 2)
-		{
-			ProjectileClass = Spec.ProjectileClass ? Spec.ProjectileClass : LobbyFrostShardProjectileClass;
-			if (!ProjectileClass)
-			{
-				ProjectileClass = ADBAFrostShardProjectile::StaticClass();
-			}
-		}
-		else if (SkillSlot == 6)
-		{
-			ProjectileClass = Spec.ProjectileClass ? Spec.ProjectileClass : LobbyShadowBoltProjectileClass;
-			if (!ProjectileClass)
-			{
-				ProjectileClass = ADBAShadowBoltProjectile::StaticClass();
-			}
-		}
-		else
-		{
-			ProjectileClass = ADBAProjectile_Generic::StaticClass();
-		}
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAZodiacCharacterBase] 投射物技能缺少数据资产配置类：施法者=%s 槽位=%d 技能=%s"),
+			*GetName(),
+			SkillSlot,
+			*Spec.SkillId.ToString());
+		return;
 	}
 
 	ADBASkillProjectileBase* Fireball = GetWorld()->SpawnActor<ADBASkillProjectileBase>(
@@ -844,8 +858,7 @@ void ADBAZodiacCharacterBase::CastEquippedSkillInternal(int32 SkillSlot, const F
 	MulticastPlayLobbySkillCastFeedback(SkillSlot);
 	Fireball->InitializeProjectile(Spec.SkillId, this, TargetActor, Spec.Magnitude, Spec.ProjectileSpeed, Spec.ProjectileRadius);
 	Fireball->LaunchProjectile(SafeAimDirection);
-	SkillCooldowns[SkillSlot] = Spec.Cooldown;
-	SkillMaxCooldowns[SkillSlot] = Spec.Cooldown;
+	ApplyLegacyCooldown();
 
 	UE_LOG(LogDBACombat, Log, TEXT("[DBAZodiacCharacterBase] 已施放装配技能：施法者=%s 槽位=%d 技能=%s 投射物=%s 类=%s 目标=%s 水平方向=%s"),
 		*GetName(),
@@ -1016,7 +1029,7 @@ UAnimationAsset* ADBAZodiacCharacterBase::LoadLobbyAnimation(const FString& Anim
 	UAnimationAsset* Animation = LoadObject<UAnimationAsset>(nullptr, *AnimationPath);
 	if (!Animation)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[DBAZodiacCharacterBase] 加载大厅动画失败：%s"), *AnimationPath);
+		UE_LOG(LogDBAFrontend, Warning, TEXT("[DBAZodiacCharacterBase] 加载大厅动画失败：%s"), *AnimationPath);
 	}
 	return Animation;
 }
@@ -1058,7 +1071,7 @@ void ADBAZodiacCharacterBase::UpdateLobbyLocomotionAnimation()
 	MeshComponent->Play(!bPlayingAttack);
 	CurrentLobbyAnimation = DesiredAnimation;
 
-	UE_LOG(LogTemp, Log, TEXT("[DBAZodiacCharacterBase] 已应用大厅单节点动画：Actor=%s 动画=%s 循环=%s 速度=%s"),
+	UE_LOG(LogDBAFrontend, Log, TEXT("[DBAZodiacCharacterBase] 已应用大厅单节点动画：Actor=%s 动画=%s 循环=%s 速度=%s"),
 		*GetName(),
 		*DesiredAnimation->GetPathName(),
 		bPlayingAttack ? TEXT("否") : TEXT("是"),
@@ -1067,7 +1080,16 @@ void ADBAZodiacCharacterBase::UpdateLobbyLocomotionAnimation()
 
 UDBAAbilitySystemComponent* ADBAZodiacCharacterBase::GetDBAAbilitySystemComponent() const
 {
-	// 浠庢嫢鏈夎€呰幏鍙朅bilitySystemComponent
+	if (ADBAPlayerState* DBAPlayerState = GetPlayerState<ADBAPlayerState>())
+	{
+		return DBAPlayerState->GetDBAAbilitySystemComponent();
+	}
+
+	if (UDBAAbilitySystemComponent* LocalASC = FindComponentByClass<UDBAAbilitySystemComponent>())
+	{
+		return LocalASC;
+	}
+
 	if (AActor* OwnerActor = GetOwner())
 	{
 		return Cast<UDBAAbilitySystemComponent>(OwnerActor->FindComponentByClass<UDBAAbilitySystemComponent>());
@@ -1109,35 +1131,380 @@ float ADBAZodiacCharacterBase::GetCurrentEnergy() const
 	return 0.0f;
 }
 
+int32 ADBAZodiacCharacterBase::GetHeroLevel() const
+{
+	if (UDBAAbilitySystemComponent* ASC = GetDBAAbilitySystemComponent())
+	{
+		return FMath::Max(1, FMath::RoundToInt(ASC->GetNumericAttributeBase(UDBAHeroGrowthAttributeSet::GetHeroLevelAttribute())));
+	}
+	return 1;
+}
+
+float ADBAZodiacCharacterBase::GetUltimateEnergy() const
+{
+	if (UDBAAbilitySystemComponent* ASC = GetDBAAbilitySystemComponent())
+	{
+		return ASC->GetUltimateEnergy();
+	}
+	return UltimateEnergy;
+}
+
+int32 ADBAZodiacCharacterBase::GetChainLevel() const
+{
+	if (UDBAAbilitySystemComponent* ASC = GetDBAAbilitySystemComponent())
+	{
+		return ASC->GetChainLevel();
+	}
+	return ChainLevel;
+}
+
+int32 ADBAZodiacCharacterBase::GetResonanceLevel() const
+{
+	if (UDBAAbilitySystemComponent* ASC = GetDBAAbilitySystemComponent())
+	{
+		return ASC->GetResonanceLevel();
+	}
+	return ResonanceLevel;
+}
+
+void ADBAZodiacCharacterBase::SyncArenaHUDFromAttributes(bool bForce)
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	UGameInstance* GameInstance = GetGameInstance();
+	if (!GameInstance)
+	{
+		return;
+	}
+
+	if (UDBAGameUIManager* UIManager = GameInstance->GetSubsystem<UDBAGameUIManager>())
+	{
+		UIManager->BindArenaHUDToCharacter(this);
+
+		const float CurrentHP = GetCurrentHealth();
+		const float MaxHP = GetMaxHealth();
+		const float CurrentEnergy = GetCurrentEnergy();
+		const float MaxEnergy = GetMaxEnergy();
+		const float CurrentUltimateEnergy = GetUltimateEnergy();
+		const float MaxUltimateEnergy = DBAConstants::MaxUltimateEnergy;
+		const int32 HeroLevel = GetHeroLevel();
+		const int32 CurrentChainLevel = GetChainLevel();
+		const int32 CurrentResonanceLevel = GetResonanceLevel();
+		const float HealthRatio = MaxHP > 0.0f ? CurrentHP / MaxHP : 0.0f;
+		const float EnergyRatio = MaxEnergy > 0.0f ? CurrentEnergy / MaxEnergy : 0.0f;
+		const bool bLowHP = HealthRatio <= ArenaHUDCriticalHealthRatioThreshold;
+		const bool bLowEnergy = EnergyRatio <= ArenaHUDCriticalEnergyRatioThreshold;
+		const bool bUltimateReady = CurrentUltimateEnergy >= MaxUltimateEnergy;
+		const bool bChainReady = CurrentChainLevel >= DBAConstants::MaxChainLevel;
+
+		const bool bVitalsChanged =
+			!FMath::IsNearlyEqual(CurrentHP, LastSyncedArenaHUDCurrentHP, KINDA_SMALL_NUMBER) ||
+			!FMath::IsNearlyEqual(MaxHP, LastSyncedArenaHUDMaxHP, KINDA_SMALL_NUMBER) ||
+			!FMath::IsNearlyEqual(CurrentEnergy, LastSyncedArenaHUDCurrentEnergy, KINDA_SMALL_NUMBER) ||
+			!FMath::IsNearlyEqual(MaxEnergy, LastSyncedArenaHUDMaxEnergy, KINDA_SMALL_NUMBER);
+		const bool bUltimateEnergyChanged =
+			!FMath::IsNearlyEqual(CurrentUltimateEnergy, LastSyncedArenaHUDUltimateEnergy, KINDA_SMALL_NUMBER) ||
+			!FMath::IsNearlyEqual(MaxUltimateEnergy, LastSyncedArenaHUDMaxUltimateEnergy, KINDA_SMALL_NUMBER);
+		const bool bLevelChanged = HeroLevel != LastSyncedArenaHUDHeroLevel;
+		const bool bCombatStateChanged =
+			CurrentChainLevel != LastSyncedArenaHUDChainLevel ||
+			CurrentResonanceLevel != LastSyncedArenaHUDResonanceLevel;
+		const bool bCriticalStateChanged =
+			bLowHP != LastSyncedArenaHUDBLowHP ||
+			bLowEnergy != LastSyncedArenaHUDBLowEnergy;
+		const bool bUltimateReadyPromptChanged =
+			bUltimateReady != bLastSyncedArenaHUDUltimateReady;
+
+		if (bForce || !bHasSyncedArenaHUDAttributes || bVitalsChanged)
+		{
+			UIManager->UpdateArenaHUDPlayerVitals(CurrentHP, MaxHP, CurrentEnergy, MaxEnergy);
+			LastSyncedArenaHUDCurrentHP = CurrentHP;
+			LastSyncedArenaHUDMaxHP = MaxHP;
+			LastSyncedArenaHUDCurrentEnergy = CurrentEnergy;
+			LastSyncedArenaHUDMaxEnergy = MaxEnergy;
+		}
+
+		if (bForce || !bHasSyncedArenaHUDAttributes || bUltimateEnergyChanged)
+		{
+			UIManager->UpdateArenaHUDUltimateEnergy(CurrentUltimateEnergy, MaxUltimateEnergy);
+			LastSyncedArenaHUDUltimateEnergy = CurrentUltimateEnergy;
+			LastSyncedArenaHUDMaxUltimateEnergy = MaxUltimateEnergy;
+		}
+
+		if (bForce || !bHasSyncedArenaHUDUltimateReadyPrompt || bUltimateReadyPromptChanged)
+		{
+			if (bUltimateReady)
+			{
+				UIManager->ShowArenaHUDUltimateReadyPrompt();
+			}
+			else
+			{
+				UIManager->HideArenaHUDUltimateReadyPrompt();
+			}
+			bLastSyncedArenaHUDUltimateReady = bUltimateReady;
+			bHasSyncedArenaHUDUltimateReadyPrompt = true;
+		}
+
+		if (bForce || !bHasSyncedArenaHUDAttributes || bLevelChanged)
+		{
+			UIManager->UpdateArenaHUDPlayerLevel(HeroLevel);
+			LastSyncedArenaHUDHeroLevel = HeroLevel;
+		}
+
+		if (bForce || !bHasSyncedArenaHUDAttributes || bCombatStateChanged)
+		{
+			UIManager->UpdateArenaHUDCombatState(CurrentChainLevel, CurrentResonanceLevel);
+			LastSyncedArenaHUDChainLevel = CurrentChainLevel;
+			LastSyncedArenaHUDResonanceLevel = CurrentResonanceLevel;
+		}
+
+		if (bChainReady && !bLastSyncedArenaHUDChainReady)
+		{
+			UIManager->ShowArenaHUDCombatAnnouncement(NSLOCTEXT("DBAArenaHUD", "ChainReadyAnnouncement", "连锁就绪"), ArenaHUDChainReadyAnnouncementDuration);
+		}
+		bLastSyncedArenaHUDChainReady = bChainReady;
+
+		if (bForce || !bHasSyncedArenaHUDCriticalState || bCriticalStateChanged)
+		{
+			UIManager->UpdateArenaHUDCriticalStateHints(bLowHP, bLowEnergy);
+			LastSyncedArenaHUDBLowHP = bLowHP;
+			LastSyncedArenaHUDBLowEnergy = bLowEnergy;
+			bHasSyncedArenaHUDCriticalState = true;
+		}
+
+		bHasSyncedArenaHUDAttributes = true;
+	}
+}
+
+void ADBAZodiacCharacterBase::BindArenaHUDAttributeDelegates()
+{
+	if (bHasBoundArenaHUDAttributeDelegates || !IsLocallyControlled())
+	{
+		return;
+	}
+
+	UDBAAbilitySystemComponent* ASC = GetDBAAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+
+	ArenaHUDAttributeDelegateASC = ASC;
+	ArenaHUDCurrentHealthChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(UDBABattleAttributeSet::GetCurrentHealthAttribute())
+		.AddUObject(this, &ADBAZodiacCharacterBase::HandleArenaHUDAttributeChanged);
+	ArenaHUDMaxHealthChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(UDBABattleAttributeSet::GetMaxHealthAttribute())
+		.AddUObject(this, &ADBAZodiacCharacterBase::HandleArenaHUDAttributeChanged);
+	ArenaHUDCurrentEnergyChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(UDBABattleAttributeSet::GetCurrentEnergyAttribute())
+		.AddUObject(this, &ADBAZodiacCharacterBase::HandleArenaHUDAttributeChanged);
+	ArenaHUDMaxEnergyChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(UDBABattleAttributeSet::GetMaxEnergyAttribute())
+		.AddUObject(this, &ADBAZodiacCharacterBase::HandleArenaHUDAttributeChanged);
+	ArenaHUDHeroLevelChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(UDBAHeroGrowthAttributeSet::GetHeroLevelAttribute())
+		.AddUObject(this, &ADBAZodiacCharacterBase::HandleArenaHUDAttributeChanged);
+	ASC->OnUltimateEnergyChanged.RemoveDynamic(this, &ADBAZodiacCharacterBase::HandleArenaHUDUltimateEnergyChanged);
+	ASC->OnUltimateEnergyChanged.AddDynamic(this, &ADBAZodiacCharacterBase::HandleArenaHUDUltimateEnergyChanged);
+	ASC->OnChainLevelChanged.RemoveDynamic(this, &ADBAZodiacCharacterBase::HandleArenaHUDChainLevelChanged);
+	ASC->OnChainLevelChanged.AddDynamic(this, &ADBAZodiacCharacterBase::HandleArenaHUDChainLevelChanged);
+	ASC->OnResonanceLevelChanged.RemoveDynamic(this, &ADBAZodiacCharacterBase::HandleArenaHUDResonanceLevelChanged);
+	ASC->OnResonanceLevelChanged.AddDynamic(this, &ADBAZodiacCharacterBase::HandleArenaHUDResonanceLevelChanged);
+	ASC->OnSkillCueExecuted.RemoveDynamic(this, &ADBAZodiacCharacterBase::HandleArenaHUDSkillCueExecuted);
+	ASC->OnSkillCueExecuted.AddDynamic(this, &ADBAZodiacCharacterBase::HandleArenaHUDSkillCueExecuted);
+	bHasBoundArenaHUDAttributeDelegates = true;
+}
+
+void ADBAZodiacCharacterBase::UnbindArenaHUDAttributeDelegates()
+{
+	UDBAAbilitySystemComponent* ASC = ArenaHUDAttributeDelegateASC.Get();
+	if (ASC)
+	{
+		if (ArenaHUDCurrentHealthChangedHandle.IsValid())
+		{
+			ASC->GetGameplayAttributeValueChangeDelegate(UDBABattleAttributeSet::GetCurrentHealthAttribute()).Remove(ArenaHUDCurrentHealthChangedHandle);
+		}
+		if (ArenaHUDMaxHealthChangedHandle.IsValid())
+		{
+			ASC->GetGameplayAttributeValueChangeDelegate(UDBABattleAttributeSet::GetMaxHealthAttribute()).Remove(ArenaHUDMaxHealthChangedHandle);
+		}
+		if (ArenaHUDCurrentEnergyChangedHandle.IsValid())
+		{
+			ASC->GetGameplayAttributeValueChangeDelegate(UDBABattleAttributeSet::GetCurrentEnergyAttribute()).Remove(ArenaHUDCurrentEnergyChangedHandle);
+		}
+		if (ArenaHUDMaxEnergyChangedHandle.IsValid())
+		{
+			ASC->GetGameplayAttributeValueChangeDelegate(UDBABattleAttributeSet::GetMaxEnergyAttribute()).Remove(ArenaHUDMaxEnergyChangedHandle);
+		}
+		if (ArenaHUDHeroLevelChangedHandle.IsValid())
+		{
+			ASC->GetGameplayAttributeValueChangeDelegate(UDBAHeroGrowthAttributeSet::GetHeroLevelAttribute()).Remove(ArenaHUDHeroLevelChangedHandle);
+		}
+		ASC->OnUltimateEnergyChanged.RemoveDynamic(this, &ADBAZodiacCharacterBase::HandleArenaHUDUltimateEnergyChanged);
+		ASC->OnChainLevelChanged.RemoveDynamic(this, &ADBAZodiacCharacterBase::HandleArenaHUDChainLevelChanged);
+		ASC->OnResonanceLevelChanged.RemoveDynamic(this, &ADBAZodiacCharacterBase::HandleArenaHUDResonanceLevelChanged);
+		ASC->OnSkillCueExecuted.RemoveDynamic(this, &ADBAZodiacCharacterBase::HandleArenaHUDSkillCueExecuted);
+	}
+
+	ArenaHUDCurrentHealthChangedHandle.Reset();
+	ArenaHUDMaxHealthChangedHandle.Reset();
+	ArenaHUDCurrentEnergyChangedHandle.Reset();
+	ArenaHUDMaxEnergyChangedHandle.Reset();
+	ArenaHUDHeroLevelChangedHandle.Reset();
+	ArenaHUDAttributeDelegateASC.Reset();
+	bHasBoundArenaHUDAttributeDelegates = false;
+}
+
+void ADBAZodiacCharacterBase::HandleArenaHUDAttributeChanged(const FOnAttributeChangeData& ChangeData)
+{
+	SyncArenaHUDFromAttributes();
+}
+
+void ADBAZodiacCharacterBase::HandleArenaHUDUltimateEnergyChanged(float CurrentEnergy, float MaxEnergy)
+{
+	SyncArenaHUDFromAttributes();
+}
+
+void ADBAZodiacCharacterBase::HandleArenaHUDChainLevelChanged(int32 InChainLevel)
+{
+	SyncArenaHUDFromAttributes();
+}
+
+void ADBAZodiacCharacterBase::HandleArenaHUDResonanceLevelChanged(int32 InResonanceLevel)
+{
+	SyncArenaHUDFromAttributes();
+}
+
+void ADBAZodiacCharacterBase::HandleArenaHUDSkillCueExecuted(FName SkillId, AActor* Target)
+{
+	(void)Target;
+
+	if (SkillId.IsNone())
+	{
+		return;
+	}
+
+	UGameInstance* GameInstance = GetGameInstance();
+	UDBAGameUIManager* UIManager = GameInstance ? GameInstance->GetSubsystem<UDBAGameUIManager>() : nullptr;
+	if (!UIManager)
+	{
+		return;
+	}
+
+	const FText AnnouncementText = FText::Format(
+		NSLOCTEXT("DBAArenaHUD", "SkillCueAnnouncement", "{0} 已释放"),
+		ResolveArenaHUDSkillCueDisplayName(SkillId));
+	UIManager->ShowArenaHUDCombatAnnouncement(AnnouncementText, ArenaHUDSkillCueAnnouncementDuration);
+	UIManager->AddArenaHUDEventFeedEntry(AnnouncementText, ArenaHUDSkillCueAnnouncementDuration);
+}
+
+FText ADBAZodiacCharacterBase::ResolveArenaHUDSkillCueDisplayName(FName SkillId) const
+{
+	const int32 AbilityInputID = MapArenaHUDSkillCueToAbilityInputID(SkillId);
+	if (const UDBAAbilitySystemComponent* ASC = GetDBAAbilitySystemComponent())
+	{
+		if (const FDBAAbilityRuntimeConfig* RuntimeConfig = ASC->FindAbilityRuntimeConfigByInputID(AbilityInputID))
+		{
+			if (!RuntimeConfig->DisplayName.IsEmpty())
+			{
+				return RuntimeConfig->DisplayName;
+			}
+		}
+	}
+
+	const int32 SkillSlot = MapArenaHUDSkillCueToSkillSlot(SkillId);
+	if (SkillSlot != INDEX_NONE)
+	{
+		for (const FDBAPlayableSkillRuntimeSpec& SkillSpec : GetPlayableSkillSpecs())
+		{
+			if (SkillSpec.SkillSlot == SkillSlot && !SkillSpec.DisplayName.IsEmpty())
+			{
+				return SkillSpec.DisplayName;
+			}
+		}
+	}
+
+	return ResolveArenaHUDSkillCueFallbackDisplayName(SkillId);
+}
+
 void ADBAZodiacCharacterBase::SetUltimateEnergy(float Value)
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		UltimateEnergy = FMath::Clamp(Value, 0.0f, 100.0f);
+		return;
+	}
+
+	UDBAAbilitySystemComponent* ASC = GetDBAAbilitySystemComponent();
+	if (!ASC)
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[生肖角色] 设置终极能量失败：能力系统组件不可用。"));
+		return;
+	}
+
+	const float TargetEnergy = FMath::Clamp(Value, 0.0f, DBAConstants::MaxUltimateEnergy);
+	const float DeltaEnergy = TargetEnergy - ASC->GetUltimateEnergy();
+	if (DeltaEnergy > KINDA_SMALL_NUMBER)
+	{
+		ASC->AddUltimateEnergy(DeltaEnergy);
+	}
+	else if (DeltaEnergy < -KINDA_SMALL_NUMBER)
+	{
+		ASC->ConsumeUltimateEnergy(-DeltaEnergy);
 	}
 }
 
 void ADBAZodiacCharacterBase::AddUltimateEnergy(float Delta)
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		UltimateEnergy = FMath::Clamp(UltimateEnergy + Delta, 0.0f, 100.0f);
+		return;
 	}
+
+	if (UDBAAbilitySystemComponent* ASC = GetDBAAbilitySystemComponent())
+	{
+		ASC->AddUltimateEnergy(Delta);
+	}
+	else
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[生肖角色] 增加终极能量失败：能力系统组件不可用。"));
+	}
+}
+
+bool ADBAZodiacCharacterBase::IsUltimateReady() const
+{
+	return GetUltimateEnergy() >= DBAConstants::MaxUltimateEnergy;
 }
 
 void ADBAZodiacCharacterBase::AddChainLevel(int32 Delta)
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		ChainLevel = FMath::Clamp(ChainLevel + Delta, 0, 10);
+		return;
+	}
+
+	if (UDBAAbilitySystemComponent* ASC = GetDBAAbilitySystemComponent())
+	{
+		ASC->AddChainLevel(Delta);
+	}
+	else
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[生肖角色] 增加连锁等级失败：能力系统组件不可用。"));
 	}
 }
 
 void ADBAZodiacCharacterBase::ResetChainLevel()
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		ChainLevel = 0;
+		return;
+	}
+
+	if (UDBAAbilitySystemComponent* ASC = GetDBAAbilitySystemComponent())
+	{
+		ASC->ResetChainLevel();
+	}
+	else
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[生肖角色] 重置连锁等级失败：能力系统组件不可用。"));
 	}
 }
 void ADBAZodiacCharacterBase::PlayAttackAnimation()
@@ -1176,47 +1543,83 @@ void ADBAZodiacCharacterBase::SetAnimMoveSpeed(float Speed)
 
 void ADBAZodiacCharacterBase::OnDeath()
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		DeathState = EDADeathState::Dying;
-		PlayDeathAnimation();
+		return;
+	}
 
-		// 寤惰繜璁剧疆涓篋ead鐘舵€侊紝绛夊緟姝讳骸鍔ㄧ敾鎾斁
-		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+	if (IsDead())
+	{
+		return;
+	}
+
+	DeathState = EDADeathState::Dying;
+	PlayDeathAnimation();
+
+	// 寤惰繜璁剧疆涓篋ead鐘舵€侊紝绛夊緟姝讳骸鍔ㄧ敾鎾斁
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(DeathStateFinalizeTimerHandle);
+		DeathStateFinalizeTimerHandle = World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
+			if (!HasAuthority() || DeathState != EDADeathState::Dying)
+			{
+				return;
+			}
+
 			DeathState = EDADeathState::Dead;
-		});
+		}));
+	}
+	else
+	{
+		DeathState = EDADeathState::Dead;
 	}
 }
 
 void ADBAZodiacCharacterBase::OnRevive()
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		DeathState = EDADeathState::Alive;
-		// Revive health is controlled by the caller.
+		return;
 	}
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(DeathStateFinalizeTimerHandle);
+	}
+
+	DeathState = EDADeathState::Alive;
+	// Revive health is controlled by the caller.
 }
 
 void ADBAZodiacCharacterBase::UpdateSkillCooldowns(const TArray<float>& NewCooldowns)
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		SkillCooldowns = NewCooldowns;
+		return;
+	}
 
-		// 鏇存柊鏈€澶у喎鍗存暟缁?(濡傛灉姣斿綋鍓嶈褰曠殑鏇村ぇ)
-		for (int32 i = 0; i < NewCooldowns.Num(); ++i)
+	SkillCooldowns = NewCooldowns;
+
+	// 鏇存柊鏈€澶у喎鍗存暟缁?(濡傛灉姣斿綋鍓嶈褰曠殑鏇村ぇ)
+	for (int32 i = 0; i < NewCooldowns.Num(); ++i)
+	{
+		if (i >= SkillMaxCooldowns.Num())
 		{
-			if (i >= SkillMaxCooldowns.Num())
-			{
-				SkillMaxCooldowns.Add(NewCooldowns[i]);
-			}
-			else if (NewCooldowns[i] > SkillMaxCooldowns[i])
-			{
-				SkillMaxCooldowns[i] = NewCooldowns[i];
-			}
+			SkillMaxCooldowns.Add(NewCooldowns[i]);
+		}
+		else if (NewCooldowns[i] > SkillMaxCooldowns[i])
+		{
+			SkillMaxCooldowns[i] = NewCooldowns[i];
 		}
 	}
+
+	OnSkillCooldownsChanged.Broadcast(SkillCooldowns);
+}
+
+void ADBAZodiacCharacterBase::OnRep_SkillCooldowns()
+{
+	OnSkillCooldownsChanged.Broadcast(SkillCooldowns);
 }
 
 void ADBAZodiacCharacterBase::GetSpectatorData(FDBAObserverViewTarget& OutData) const
@@ -1229,7 +1632,7 @@ void ADBAZodiacCharacterBase::GetSpectatorData(FDBAObserverViewTarget& OutData) 
 	OutData.MaxHP = GetMaxHealth();
 	OutData.CurrentEnergy = GetCurrentEnergy();
 	OutData.MaxEnergy = 100.0f; // Set ultimate energy data.
-	OutData.UltimateEnergy = UltimateEnergy;
+	OutData.UltimateEnergy = GetUltimateEnergy();
 	OutData.bUltimateReady = IsUltimateReady();
 	OutData.SkillCooldowns = SkillCooldowns;
 	OutData.SkillMaxCooldowns = SkillMaxCooldowns;
@@ -1237,10 +1640,12 @@ void ADBAZodiacCharacterBase::GetSpectatorData(FDBAObserverViewTarget& OutData) 
 
 void ADBAZodiacCharacterBase::SetTeamID(int32 NewTeamID)
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		TeamID = NewTeamID;
+		return;
 	}
+
+	TeamID = FMath::Max(0, NewTeamID);
 }
 
 bool ADBAZodiacCharacterBase::IsTeammate(const ADBAZodiacCharacterBase* Other) const
@@ -1272,8 +1677,21 @@ float ADBAZodiacCharacterBase::GetMaxEnergy() const
 
 bool ADBAZodiacCharacterBase::IsAbilityOnCooldown(FName SkillId) const
 {
-	// 简化实现：检查技能冷却数组
-	// 实际实现应该通过 GAS AbilitySystemComponent 查询冷却
+	if (SkillId.IsNone())
+	{
+		return false;
+	}
+
+	const TArray<FDBAPlayableSkillRuntimeSpec> PlayableSkillSpecs = GetPlayableSkillSpecs();
+	for (const FDBAPlayableSkillRuntimeSpec& SkillSpec : PlayableSkillSpecs)
+	{
+		if (SkillSpec.SkillId == SkillId)
+		{
+			const int32 CooldownArrayIndex = SkillSpec.SkillSlot - 1;
+			return SkillCooldowns.IsValidIndex(CooldownArrayIndex) && SkillCooldowns[CooldownArrayIndex] > 0.0f;
+		}
+	}
+
 	return false;
 }
 

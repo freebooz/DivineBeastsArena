@@ -159,8 +159,8 @@ void UDBAGameInstance::OnWorldChanged(UWorld* OldWorld, UWorld* NewWorld)
 	Super::OnWorldChanged(OldWorld, NewWorld);
 
 	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 世界切换: %s -> %s"),
-		OldWorld ? *OldWorld->GetName() : TEXT("None"),
-		NewWorld ? *NewWorld->GetName() : TEXT("None"));
+		OldWorld ? *OldWorld->GetName() : TEXT("无"),
+		NewWorld ? *NewWorld->GetName() : TEXT("无"));
 
 	if (IsDedicatedServerInstance() || IsServerRuntime(NewWorld))
 	{
@@ -305,7 +305,7 @@ void UDBAGameInstance::ContinueAutoLobbyFlow(EDBALoginFlowState FlowState)
 		Request.Zodiac = ResolveAutoLobbyZodiac(Request.CharacterName);
 		Request.PrimaryElement = EDBAElement::Water;
 		Request.FiveCamp = EDBAFiveCamp::East;
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 自动大厅流程：创建角色 %s zodiac=%d。"), *Request.CharacterName, static_cast<int32>(Request.Zodiac));
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 自动大厅流程：创建角色=%s 生肖=%d。"), *Request.CharacterName, static_cast<int32>(Request.Zodiac));
 		LoginFlow->SubmitCharacterCreation(Request);
 		break;
 	}
@@ -351,7 +351,7 @@ void UDBAGameInstance::RunAutoPartyStep()
 			return;
 		}
 
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 自动大厅流程：队伍创建成功 %s, 成员=%d。"),
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 自动大厅流程：队伍创建成功，队伍=%s 成员=%d。"),
 			*PartyInfo.PartyId.ToString(), PartyInfo.Members.Num());
 
 		FString InviteAccountId;
@@ -368,9 +368,9 @@ void UDBAGameInstance::RunAutoPartyStep()
 		PartyService->InvitePlayer(FDBAAccountId(InviteAccountId), FDBAOnPartyOperationComplete::CreateWeakLambda(this, [PartyService, InviteAccountId](bool bSuccess, const FString& ErrorMessage)
 		{
 			const FDBAPartyInfo& UpdatedParty = PartyService->GetCurrentPartyInfo();
-			UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 自动大厅流程：邀请 %s success=%s error=%s members=%d。"),
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 自动大厅流程：邀请=%s 成功=%s 错误=%s 成员=%d。"),
 				*InviteAccountId,
-				bSuccess ? TEXT("true") : TEXT("false"),
+				bSuccess ? TEXT("是") : TEXT("否"),
 				*ErrorMessage,
 				UpdatedParty.Members.Num());
 		}));

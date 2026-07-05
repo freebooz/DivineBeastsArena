@@ -39,4 +39,7 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|ChainUltimatePanel", meta = (DisplayName = "On Chain Ready"))
 	void BP_OnChainReady();
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ChainUltimatePanel")
+	int32 CachedChainCount = 0;
 };

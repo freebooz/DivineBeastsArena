@@ -185,7 +185,11 @@ public record MatchHistoryDto(
     int Deaths,
     int Assists,
     int Score,
+    string ResultJson,
+    string? WinnerTeam,
     int DurationSeconds,
+    long ExpDelta,
+    IReadOnlyDictionary<string, object> Rewards,
     DateTimeOffset PlayedAt);
 
 // ==================== 举报系统 / Report ====================
@@ -206,7 +210,9 @@ public record CreateTicketRequest(
 
 public record TicketListResponse(
     IReadOnlyList<TicketDto> Tickets,
-    int TotalCount);
+    int TotalCount,
+    int Page,
+    int PageSize);
 
 public record TicketDto(
     Guid Id,

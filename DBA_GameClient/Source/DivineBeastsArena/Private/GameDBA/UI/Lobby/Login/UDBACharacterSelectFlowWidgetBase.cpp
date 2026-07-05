@@ -502,7 +502,7 @@ void UDBACharacterSelectFlowWidgetBase::UpdateCharacters(const TArray<FDBACharac
 	RefreshCharacterText();
 	UpdateCharacterPreviewById(SelectedCharacterId);
 	BP_OnCharactersUpdated(Characters);
-	UE_LOG(LogDBAUI, Log, TEXT("[CharacterSelectWidget] Characters updated: %d"), Characters.Num());
+	UE_LOG(LogDBAUI, Log, TEXT("[CharacterSelectWidget] 角色列表已更新：%d"), Characters.Num());
 }
 
 void UDBACharacterSelectFlowWidgetBase::SelectCharacter(const FDBACharacterId& CharacterId)
@@ -511,7 +511,7 @@ void UDBACharacterSelectFlowWidgetBase::SelectCharacter(const FDBACharacterId& C
 	BP_OnCharacterSelected(CharacterId);
 	RefreshCharacterText();
 	UpdateCharacterPreviewById(CharacterId);
-	UE_LOG(LogDBAUI, Log, TEXT("[CharacterSelectWidget] Selected character: %s"), *CharacterId.ToString());
+	UE_LOG(LogDBAUI, Log, TEXT("[CharacterSelectWidget] 已选择角色：%s"), *CharacterId.ToString());
 }
 
 void UDBACharacterSelectFlowWidgetBase::ConfirmSelectedCharacter()
@@ -632,7 +632,7 @@ void UDBACharacterSelectFlowWidgetBase::EnsureNativeFallbackLayout()
 	CharacterPreviewViewport = WidgetTree->ConstructWidget<UViewport>(UViewport::StaticClass(), TEXT("CharacterPreviewViewport"));
 	RootBox->AddChildToVerticalBox(CharacterPreviewViewport);
 
-	UE_LOG(LogDBAUI, Log, TEXT("[CharacterSelectWidget] Native fallback layout created"));
+	UE_LOG(LogDBAUI, Log, TEXT("[CharacterSelectWidget] 已创建 C++ 原生兜底布局"));
 }
 
 void UDBACharacterSelectFlowWidgetBase::ResolveBoundWidgetsFromWidgetTree()
@@ -843,7 +843,7 @@ void UDBACharacterSelectFlowWidgetBase::InitializePreviewViewport()
 	{
 		PreviewActor->ActivatePresentationCamera(GetOwningPlayer());
 		UpdateCharacterPreviewById(SelectedCharacterId);
-		UE_LOG(LogDBAUI, Log, TEXT("[CharacterSelectWidget] Using world 3D character presentation stage."));
+		UE_LOG(LogDBAUI, Log, TEXT("[CharacterSelectWidget] 使用世界 3D 角色展示舞台"));
 	}
 }
 
@@ -953,7 +953,7 @@ void UDBACharacterSelectFlowWidgetBase::InitializeAudioAssets()
 		ButtonClickSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/SFX/SFX_UI_ButtonClick.SFX_UI_ButtonClick"));
 		if (!ButtonClickSound)
 		{
-			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterSelectWidget] Button click sound not found."));
+			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterSelectWidget] 未找到按钮点击音效。"));
 		}
 	}
 
@@ -962,7 +962,7 @@ void UDBACharacterSelectFlowWidgetBase::InitializeAudioAssets()
 		BackgroundMusicSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/DBA/Audio/UI/BGM/BGM_CharacterSelect_Loop.BGM_CharacterSelect_Loop"));
 		if (!BackgroundMusicSound)
 		{
-			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterSelectWidget] BGM asset not found."));
+			UE_LOG(LogDBAUI, Warning, TEXT("[CharacterSelectWidget] 未找到背景音乐资源。"));
 		}
 	}
 }
@@ -984,7 +984,7 @@ void UDBACharacterSelectFlowWidgetBase::StartBackgroundMusic()
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterSelectWidget] Failed to spawn BGM component."));
+		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterSelectWidget] 创建背景音乐组件失败。"));
 	}
 }
 

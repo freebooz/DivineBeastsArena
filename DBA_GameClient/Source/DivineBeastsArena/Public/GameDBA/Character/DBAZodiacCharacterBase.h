@@ -13,6 +13,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "GameDBA/Core/DBAConstants.h"
 #include "GameDBA/Core/DBAEnumsCore.h"
 #include "GameDBA/Combat/DBACombatTypes.h"
 #include "GameDBA/Combat/DBAPlayableSkillTypes.h"
@@ -26,12 +27,11 @@ class UAnimationAsset;
 class UCameraComponent;
 class USpringArmComponent;
 class ADBARpcHandler;
-class ADBABloomHealingSpell;
-class ADBAChainLightningSpell;
-class ADBAHolyShieldSpell;
-class ADBASkillProjectileBase;
 class UDBAPlayableSkillComponent;
 struct FDBAPlayableSkillRuntimeSpec;
+struct FOnAttributeChangeData;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillCooldownsChanged, const TArray<float>&, Cooldowns);
 
 /**
  * DBAZodiacCharacterBase
@@ -49,9 +49,13 @@ public:
 	ADBAZodiacCharacterBase();
 
 protected:
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	void InitializeDBAAbilityActorInfo();
 	void ApplyLobbyVisuals();
 
 public:
@@ -111,17 +115,21 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
 	float GetCurrentEnergy() const;
 
+	/** 获取英雄等级 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
+	int32 GetHeroLevel() const;
+
 	/** 获取终极能量 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
-	float GetUltimateEnergy() const { return UltimateEnergy; }
+	float GetUltimateEnergy() const;
 
 	/** 获取连锁等级 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
-	int32 GetChainLevel() const { return ChainLevel; }
+	int32 GetChainLevel() const;
 
 	/** 获取共鸣等级 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Attribute")
-	int32 GetResonanceLevel() const { return ResonanceLevel; }
+	int32 GetResonanceLevel() const;
 
 public:
 	// ==================== IDBACharacterRef 接口实现 ====================
@@ -188,6 +196,26 @@ public:
 	void SetAnimMoveSpeed(float Speed);
 
 protected:
+	void SyncArenaHUDFromAttributes(bool bForce = false);
+	void BindArenaHUDAttributeDelegates();
+	void UnbindArenaHUDAttributeDelegates();
+	void HandleArenaHUDAttributeChanged(const FOnAttributeChangeData& ChangeData);
+
+	UFUNCTION()
+	void HandleArenaHUDUltimateEnergyChanged(float CurrentEnergy, float MaxEnergy);
+
+	UFUNCTION()
+	void HandleArenaHUDChainLevelChanged(int32 ChainLevel);
+
+	UFUNCTION()
+	void HandleArenaHUDResonanceLevelChanged(int32 ResonanceLevel);
+
+	UFUNCTION()
+	void HandleArenaHUDSkillCueExecuted(FName SkillId, AActor* Target);
+
+	FText ResolveArenaHUDSkillCueDisplayName(FName SkillId) const;
+
+protected:
 	// ==================== 配置 ====================
 
 	/** 角色生肖类型 */
@@ -198,43 +226,25 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Config")
 	EDBAElementType ElementType = EDBAElementType::None;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell")
-	TSubclassOf<ADBASkillProjectileBase> LobbyFireballProjectileClass;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float ArenaHUDCriticalHealthRatioThreshold = 0.25f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell")
-	TSubclassOf<ADBASkillProjectileBase> LobbyFrostShardProjectileClass;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float ArenaHUDCriticalEnergyRatioThreshold = 0.15f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell")
-	TSubclassOf<ADBABloomHealingSpell> LobbyBloomHealingSpellClass;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (ClampMin = "0.0"))
+	float ArenaHUDChainReadyAnnouncementDuration = 2.0f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell")
-	TSubclassOf<ADBAChainLightningSpell> LobbyChainLightningSpellClass;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (ClampMin = "0.0"))
+	float ArenaHUDSkillCueAnnouncementDuration = 1.5f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell")
-	TSubclassOf<ADBAHolyShieldSpell> LobbyHolyShieldSpellClass;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell")
-	TSubclassOf<ADBASkillProjectileBase> LobbyShadowBoltProjectileClass;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell", meta = (ClampMin = "100.0"))
-	float LobbyFireballSpeed = 1580.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell", meta = (ClampMin = "1.0"))
-	float LobbyFireballRadius = 46.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell", meta = (ClampMin = "0.0"))
-	float LobbyFireballDamage = 42.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|Lobby|Spell", meta = (ClampMin = "0.1"))
-	float LobbyFireballCooldown = 3.0f;
-
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerCastLobbyFireball(FVector_NetQuantizeNormal AimDirection);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerCastLobbyFireballAtTarget(AActor* TargetActor, FVector_NetQuantizeNormal FallbackAimDirection);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerCastEquippedSkill(int32 SkillSlot, AActor* TargetActor, FVector_NetQuantizeNormal FallbackAimDirection);
 
 	UFUNCTION(NetMulticast, Unreliable)
@@ -242,6 +252,7 @@ protected:
 
 	void CastLobbyFireballInternal(const FVector& AimDirection, AActor* TargetActor = nullptr);
 	void CastEquippedSkillInternal(int32 SkillSlot, const FVector& AimDirection, AActor* TargetActor = nullptr);
+	bool ValidateServerEquippedSkillCast(int32 SkillSlot, AActor* TargetActor) const;
 	void PlayLobbySkillCastFeedbackLocal(int32 SkillSlot);
 	void UpdateLobbyLocomotionAnimation();
 	UAnimationAsset* LoadLobbyAnimation(const FString& AnimationPath);
@@ -302,6 +313,32 @@ protected:
 
 	float LobbyAttackAnimationTimeRemaining = 0.0f;
 	bool bUseLobbySingleNodeLocomotion = false;
+
+	bool bHasSyncedArenaHUDAttributes = false;
+	bool bHasBoundArenaHUDAttributeDelegates = false;
+	TWeakObjectPtr<UDBAAbilitySystemComponent> ArenaHUDAttributeDelegateASC;
+	FDelegateHandle ArenaHUDCurrentHealthChangedHandle;
+	FDelegateHandle ArenaHUDMaxHealthChangedHandle;
+	FDelegateHandle ArenaHUDCurrentEnergyChangedHandle;
+	FDelegateHandle ArenaHUDMaxEnergyChangedHandle;
+	FDelegateHandle ArenaHUDHeroLevelChangedHandle;
+	float LastSyncedArenaHUDCurrentHP = 0.0f;
+	float LastSyncedArenaHUDMaxHP = 0.0f;
+	float LastSyncedArenaHUDCurrentEnergy = 0.0f;
+	float LastSyncedArenaHUDMaxEnergy = 0.0f;
+	float LastSyncedArenaHUDUltimateEnergy = 0.0f;
+	float LastSyncedArenaHUDMaxUltimateEnergy = DBAConstants::MaxUltimateEnergy;
+	int32 LastSyncedArenaHUDHeroLevel = 1;
+	int32 LastSyncedArenaHUDChainLevel = 0;
+	int32 LastSyncedArenaHUDResonanceLevel = 0;
+	bool bHasSyncedArenaHUDCriticalState = false;
+	bool LastSyncedArenaHUDBLowHP = false;
+	bool LastSyncedArenaHUDBLowEnergy = false;
+	bool bLastSyncedArenaHUDChainReady = false;
+	bool bHasSyncedArenaHUDUltimateReadyPrompt = false;
+	bool bLastSyncedArenaHUDUltimateReady = false;
+
+	FTimerHandle DeathStateFinalizeTimerHandle;
 
 public:
 	// ==================== 死亡状态 ====================
@@ -382,19 +419,26 @@ public:
 
 	/** 是否终极技能就绪 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Spectator")
-	bool IsUltimateReady() const { return UltimateEnergy >= 100.0f; }
+	bool IsUltimateReady() const;
 
 public:
 	/** 技能冷却数组 (观战用) */
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Spectator")
+	UPROPERTY(ReplicatedUsing = OnRep_SkillCooldowns, BlueprintReadOnly, Category = "DBA|Spectator")
 	TArray<float> SkillCooldowns;
 
 	/** 技能最大冷却数组 (观战用) */
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "DBA|Spectator")
 	TArray<float> SkillMaxCooldowns;
 
+	UPROPERTY(BlueprintAssignable, Category = "DBA|Character|Spectator")
+	FOnSkillCooldownsChanged OnSkillCooldownsChanged;
+
 public:
 	/** 更新技能冷却 (服务端调用) */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Spectator")
 	void UpdateSkillCooldowns(const TArray<float>& NewCooldowns);
+
+protected:
+	UFUNCTION()
+	void OnRep_SkillCooldowns();
 };

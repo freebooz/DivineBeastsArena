@@ -63,19 +63,16 @@ public:
 	TObjectPtr<UDataTable> AbilityTable;
 
 protected:
-	// ==================== 可被子类重写的方法 ====================
+	// ==================== C++ 生命周期扩展点 ====================
 
-	/** 从 DataTable 获取配置数据 (可重写) */
-	UFUNCTION(BlueprintNativeEvent, Category = "DBA|Config")
-	void OnSkillConfigLoaded();
+	/** 从 DataTable 获取配置数据，运行时逻辑必须由 C++ 子类承载。 */
+	virtual void OnSkillConfigLoaded();
 
-	/** 技能激活时调用 (可重写) */
-	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|Gameplay")
-	void OnAbilityActivatedBP(FName InSkillID);
+	/** 技能激活时调用，运行时逻辑必须由 C++ 子类承载。 */
+	virtual void OnAbilityActivated(FName InSkillID);
 
-	/** 技能结束时调用 (可重写) */
-	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|Gameplay")
-	void OnAbilityEndedBP(FName InSkillID, bool bWasCancelled);
+	/** 技能结束时调用，运行时逻辑必须由 C++ 子类承载。 */
+	virtual void OnAbilityEnded(FName InSkillID, bool bWasCancelled);
 
 public:
 	// ==================== 辅助方法 ====================

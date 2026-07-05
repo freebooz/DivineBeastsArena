@@ -16,10 +16,10 @@
 UDBAAccountSaveGame::UDBAAccountSaveGame()
 	: SchemaVersion(DBASaveGameVersions::SCHEMA_VERSION)
 	, DataVersion(DBASaveGameVersions::DATA_VERSION)
-	, LastSaveTime(0)
-	, DataChecksum(0)
 	, SessionToken()
 	, RefreshToken()
+	, LastSaveTime(0)
+	, DataChecksum(0)
 {
 }
 

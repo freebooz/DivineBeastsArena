@@ -9,6 +9,16 @@
 
 
 #include "GameDBA/UI/Arena/UDBADebuffBarWidgetBase.h"
+#include "Math/UnrealMathUtility.h"
+
+namespace
+{
+bool NormalizeStatusWidgetId(const FString& EffectId, FString& OutEffectId)
+{
+	OutEffectId = EffectId.TrimStartAndEnd();
+	return !OutEffectId.IsEmpty();
+}
+}
 
 UDBADebuffBarWidgetBase::UDBADebuffBarWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -18,6 +28,12 @@ UDBADebuffBarWidgetBase::UDBADebuffBarWidgetBase(const FObjectInitializer& Objec
 void UDBADebuffBarWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	BP_OnDebuffsCleared();
+	for (const TPair<FString, float>& CachedDebuff : CachedActiveDebuffs)
+	{
+		BP_OnDebuffAdded(CachedDebuff.Key, CachedDebuff.Value);
+	}
 }
 
 void UDBADebuffBarWidgetBase::NativeDestruct()
@@ -27,15 +43,30 @@ void UDBADebuffBarWidgetBase::NativeDestruct()
 
 void UDBADebuffBarWidgetBase::AddDebuff(const FString& DebuffId, float Duration)
 {
-	BP_OnDebuffAdded(DebuffId, Duration);
+	FString NormalizedDebuffId;
+	if (!NormalizeStatusWidgetId(DebuffId, NormalizedDebuffId))
+	{
+		return;
+	}
+
+	CachedActiveDebuffs.Add(NormalizedDebuffId, FMath::Max(0.0f, Duration));
+	BP_OnDebuffAdded(NormalizedDebuffId, CachedActiveDebuffs[NormalizedDebuffId]);
 }
 
 void UDBADebuffBarWidgetBase::RemoveDebuff(const FString& DebuffId)
 {
-	BP_OnDebuffRemoved(DebuffId);
+	FString NormalizedDebuffId;
+	if (!NormalizeStatusWidgetId(DebuffId, NormalizedDebuffId))
+	{
+		return;
+	}
+
+	CachedActiveDebuffs.Remove(NormalizedDebuffId);
+	BP_OnDebuffRemoved(NormalizedDebuffId);
 }
 
 void UDBADebuffBarWidgetBase::ClearAllDebuffs()
 {
+	CachedActiveDebuffs.Reset();
+	BP_OnDebuffsCleared();
 }
-

@@ -47,6 +47,14 @@ public:
 	UDBAZodiacHeroDataAsset();
 
 	/**
+	 * 构建固定技能组数据表行名。
+	 *
+	 * 必须与后端 CharacterBuildRules、GameCore DBACharacterBuild 和 Dedicated Server URL admission 使用同一规则：
+	 * Zodiac + Element -> FixedSkillGroupId，例如 Rat_Water。
+	 */
+	static FName BuildFixedSkillGroupRowName(EDBAZodiac Zodiac, EDBAElement Element);
+
+	/**
 	 * 生肖英雄显示数据表
 	 * 包含 12 个生肖英雄的显示信息
 	 */

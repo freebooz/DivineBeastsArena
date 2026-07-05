@@ -9,7 +9,9 @@
 using Game.Shared.Contracts.Settlement;
 using Game.Shared.Common;
 using Game.Api.Extensions;
+using Game.Infrastructure.Database.Entities;
 using Game.Shared.Errors;
+using System.Text.Json;
 
 namespace Game.Api.Endpoints.Settlement;
 
@@ -61,50 +63,116 @@ public static class SettlementEndpoints
 **调用方式：**
 GET /internal/settlement/matches/results/{matchResultId}
 ");
+
+        internalGroup.MapGet("/sessions/{sessionId}/matches/results", GetSessionResults)
+            .WithSummary("获取对局结算结果列表")
+            .WithDescription(@"
+根据对局 Session ID 获取该对局的结算结果列表。结果按创建时间倒序返回，并包含玩家结算明细。
+
+**调用方式：**
+GET /internal/settlement/sessions/{sessionId}/matches/results
+");
     }
 
-    private static async Task<IResult> SubmitResult(SubmitMatchResultRequest request, Services.Settlement.ISettlementService svc)
+    private static async Task<IResult> SubmitResult(
+        SubmitMatchResultRequest request,
+        Services.Settlement.ISettlementService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var result = await svc.SubmitMatchResultAsync(request);
         return result == null
             ? ErrorResponse.BadRequest("Failed to submit match result").ToProblem()
-            : Results.Ok(ApiResponse<MatchResultResponse>.Ok(new MatchResultResponse(
-                result.Id, result.SessionId, result.Mode, result.MapId, result.DurationSeconds,
-                result.CreatedAt, new List<MatchPlayerResultResponse>())));
+            : Results.Ok(ApiResponse<MatchResultResponse>.Ok(ToResponse(result)));
     }
 
-    private static async Task<IResult> GetResult(Guid matchResultId, Services.Settlement.ISettlementService svc)
+    private static async Task<IResult> GetResult(
+        Guid matchResultId,
+        Services.Settlement.ISettlementService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var result = await svc.GetMatchResultAsync(matchResultId);
         return result == null
             ? ErrorResponse.NotFound(ErrorCodes.MatchResultNotFound).ToProblem()
-            : Results.Ok(ApiResponse<MatchResultResponse>.Ok(new MatchResultResponse(
-                result.Id, result.SessionId, result.Mode, result.MapId, result.DurationSeconds,
-                result.CreatedAt, new List<MatchPlayerResultResponse>())));
+            : Results.Ok(ApiResponse<MatchResultResponse>.Ok(ToResponse(result)));
+    }
+
+    private static async Task<IResult> GetSessionResults(
+        Guid sessionId,
+        Services.Settlement.ISettlementService svc,
+        HttpContext httpContext)
+    {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
+        var results = await svc.GetSessionResultsAsync(sessionId);
+        return Results.Ok(ApiResponse<IReadOnlyList<MatchResultResponse>>.Ok(
+            results.Select(ToResponse).ToList()));
+    }
+
+    private static MatchResultResponse ToResponse(MatchResult result)
+    {
+        return new MatchResultResponse(
+            result.Id,
+            result.SessionId,
+            result.Mode,
+            result.MapId,
+            result.DurationSeconds,
+            result.ResultJson,
+            result.CreatedAt,
+            result.PlayerResults.Select(player => new MatchPlayerResultDto(
+                player.PlayerId,
+                player.Team,
+                player.Result,
+                player.Kills,
+                player.Deaths,
+                player.Assists,
+                player.Score,
+                player.ExpDelta,
+                ParseRewardJson(player.RewardJson))).ToList());
+    }
+
+    private static IReadOnlyDictionary<string, object> ParseRewardJson(string rewardJson)
+    {
+        if (string.IsNullOrWhiteSpace(rewardJson))
+        {
+            return new Dictionary<string, object>();
+        }
+
+        try
+        {
+            var rewards = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(rewardJson);
+            if (rewards is null)
+            {
+                return new Dictionary<string, object>();
+            }
+
+            return rewards.ToDictionary(
+                pair => pair.Key,
+                pair => NormalizeRewardValue(pair.Value));
+        }
+        catch (JsonException)
+        {
+            return new Dictionary<string, object>();
+        }
+    }
+
+    private static object NormalizeRewardValue(JsonElement value)
+    {
+        return value.ValueKind switch
+        {
+            JsonValueKind.Number when value.TryGetInt64(out var longValue) => longValue,
+            JsonValueKind.Number when value.TryGetDouble(out var doubleValue) => doubleValue,
+            JsonValueKind.String => value.GetString() ?? string.Empty,
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Null => string.Empty,
+            _ => value.GetRawText()
+        };
     }
 }
-
-/// <summary>
-/// 比赛结果响应 / Match Result Response
-/// </summary>
-public record MatchResultResponse(
-    Guid Id,
-    Guid SessionId,
-    string Mode,
-    string MapId,
-    int DurationSeconds,
-    DateTimeOffset CreatedAt,
-    IReadOnlyList<MatchPlayerResultResponse> Players);
-
-/// <summary>
-/// 比赛中玩家结果 / Match Player Result
-/// </summary>
-public record MatchPlayerResultResponse(
-    Guid PlayerId,
-    string? Team,
-    string Result,
-    int Kills,
-    int Deaths,
-    int Assists,
-    int Score,
-    long ExpDelta);

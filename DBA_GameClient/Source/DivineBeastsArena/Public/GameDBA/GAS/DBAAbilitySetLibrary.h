@@ -11,6 +11,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Engine/DataAsset.h"
 #include "GameDBA/GAS/Abilities/DBAZodiacAbilityBase.h"
@@ -21,6 +22,52 @@
 #include "DBAAbilitySetLibrary.generated.h"
 
 class UDataTable;
+class UGameplayEffect;
+class UTexture2D;
+
+/**
+ * 固定技能组中单个可施放技能的运行配置。
+ *
+ * 说明：
+ * - C++ 读取、校验并应用该配置。
+ * - DataAsset / Blueprint 只填写参数与资源引用。
+ * - 不在 Ability CDO 中写死消耗、冷却或 UI 文案。
+ */
+USTRUCT(BlueprintType)
+struct DIVINEBEASTSARENA_API FDBAAbilityRuntimeConfig
+{
+	GENERATED_BODY()
+
+	/** 技能显示名称，用于 HUD、事件流和调试展示 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|AbilityRuntime")
+	FText DisplayName;
+
+	/** 技能图标，用于 HUD 技能槽 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|AbilityRuntime")
+	TSoftObjectPtr<UTexture2D> Icon;
+
+	/** 普通能量消耗；具体扣减由 C++ GAS 流程执行 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|AbilityRuntime", meta = (ClampMin = "0.0"))
+	float EnergyCost = 0.0f;
+
+	/** 可选消耗 GameplayEffect；未配置时走项目默认能量扣减路径 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|AbilityRuntime")
+	TSubclassOf<UGameplayEffect> CostGameplayEffectClass;
+
+	/** 冷却时长；由 C++ 创建或应用 Cooldown GE */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|AbilityRuntime|Cooldown", meta = (ClampMin = "0.0"))
+	float CooldownDuration = 0.0f;
+
+	/** 可选专用冷却 GameplayEffect；未配置时走项目默认 UDBAGE_Cooldown 路径 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|AbilityRuntime|Cooldown")
+	TSubclassOf<UGameplayEffect> CooldownGameplayEffectClass;
+
+	/** 冷却标签；用于 GAS 查询和 HUD 事件镜像 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|AbilityRuntime|Cooldown", meta = (Categories = "Cooldown"))
+	FGameplayTag CooldownTag;
+
+	bool Validate(FStringView SlotName, TArray<FString>& OutErrors) const;
+};
 
 /**
  * 技能组资源配置
@@ -56,6 +103,18 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "DBA|FixedSkillGroup")
 	TSubclassOf<UDBAResonanceAbilityBase> ResonanceAbilityClass;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|FixedSkillGroup|Runtime")
+	FDBAAbilityRuntimeConfig Skill01RuntimeConfig;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|FixedSkillGroup|Runtime")
+	FDBAAbilityRuntimeConfig Skill02RuntimeConfig;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|FixedSkillGroup|Runtime")
+	FDBAAbilityRuntimeConfig Skill03RuntimeConfig;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DBA|FixedSkillGroup|Runtime")
+	FDBAAbilityRuntimeConfig Skill04RuntimeConfig;
+
 	UPROPERTY(EditDefaultsOnly, Category = "DBA|FixedSkillGroup|Input")
 	FKey PassiveInputKey = EKeys::Invalid;
 
@@ -76,6 +135,8 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "DBA|FixedSkillGroup|Input")
 	FKey ResonanceInputKey = EKeys::Invalid;
+
+	bool ValidateRuntimeAbilityConfigs(TArray<FString>& OutErrors) const;
 };
 
 /**

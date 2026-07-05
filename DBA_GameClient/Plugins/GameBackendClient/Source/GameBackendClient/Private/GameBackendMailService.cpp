@@ -18,7 +18,7 @@ namespace
 	void ExecuteResponse(const FDBA_GameBackendResponseDelegate& Callback, const FDBA_GameBackendHttpResult& Result)
 	{
 		const bool bSuccess = Result.IsSuccessful();
-		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("Request failed.") : Result.Message);
+		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("请求失败。") : Result.Message);
 		Callback.ExecuteIfBound(bSuccess, ErrorMessage, Result.DataJson);
 	}
 }
@@ -33,7 +33,7 @@ void UDBA_GameBackendMailService::GetMyMails(const FDBA_GameBackendResponseDeleg
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Mail service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("邮件服务不可用。"), TEXT("{}"));
 		return;
 	}
 	HttpClient->Get(TEXT("/api/players/me/mails"), [Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });
@@ -43,7 +43,7 @@ void UDBA_GameBackendMailService::GetMailDetail(const FString& MailId, const FDB
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Mail service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("邮件服务不可用。"), TEXT("{}"));
 		return;
 	}
 	HttpClient->Get(FString::Printf(TEXT("/api/players/me/mails/%s"), *MailId), [Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });
@@ -53,7 +53,7 @@ void UDBA_GameBackendMailService::MarkRead(const FString& MailId, const FDBA_Gam
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Mail service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("邮件服务不可用。"), TEXT("{}"));
 		return;
 	}
 	HttpClient->Post(FString::Printf(TEXT("/api/players/me/mails/%s/read"), *MailId), TEXT("{}"), [Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });
@@ -63,7 +63,7 @@ void UDBA_GameBackendMailService::ClaimMail(const FString& MailId, const FDBA_Ga
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Mail service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("邮件服务不可用。"), TEXT("{}"));
 		return;
 	}
 	HttpClient->Post(FString::Printf(TEXT("/api/players/me/mails/%s/claim"), *MailId), TEXT("{}"), [Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });
@@ -73,7 +73,7 @@ void UDBA_GameBackendMailService::ClaimAll(const FDBA_GameBackendResponseDelegat
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Mail service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("邮件服务不可用。"), TEXT("{}"));
 		return;
 	}
 	HttpClient->Post(TEXT("/api/players/me/mails/claim-all"), TEXT("{}"), [Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });

@@ -19,6 +19,65 @@ class FDBA_GameBackendHttpClient;
 class FJsonObject;
 struct FDBA_GameBackendHttpResult;
 
+USTRUCT(BlueprintType)
+struct GAMEBACKENDCLIENT_API FDBA_GameBackendRuntimePlayerBuildSummary
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA_GameBackend|Runtime")
+	FString Zodiac;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA_GameBackend|Runtime")
+	FString PrimaryElement;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA_GameBackend|Runtime")
+	FString FiveCamp;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA_GameBackend|Runtime")
+	FString FixedSkillGroupId;
+
+	bool HasAnyValue() const
+	{
+		return !Zodiac.IsEmpty()
+			|| !PrimaryElement.IsEmpty()
+			|| !FiveCamp.IsEmpty()
+			|| !FixedSkillGroupId.IsEmpty();
+	}
+};
+
+USTRUCT(BlueprintType)
+struct GAMEBACKENDCLIENT_API FDBA_GameBackendRuntimePlayerResult
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA_GameBackend|Runtime")
+	FString PlayerId;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA_GameBackend|Runtime")
+	FString Team;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA_GameBackend|Runtime")
+	FString Result;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA_GameBackend|Runtime")
+	int32 Kills = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA_GameBackend|Runtime")
+	int32 Deaths = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA_GameBackend|Runtime")
+	int32 Assists = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA_GameBackend|Runtime")
+	int32 Score = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA_GameBackend|Runtime")
+	int64 ExpDelta = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA_GameBackend|Runtime")
+	TMap<FString, int32> Rewards;
+};
+
 UCLASS(BlueprintType)
 class GAMEBACKENDCLIENT_API UDBA_GameBackendRuntimeService : public UObject
 {
@@ -49,7 +108,7 @@ public:
 	void SendHeartbeat(const FDBA_GameBackendResponseDelegate& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Runtime")
-	void NotifyPlayerJoined(const FString& PlayerId, const FString& PlayerSessionToken, const FString& Team, int32 SlotIndex, const FDBA_GameBackendResponseDelegate& Callback);
+	void NotifyPlayerJoined(const FString& PlayerId, const FString& PlayerSessionToken, const FString& Team, int32 SlotIndex, const FDBA_GameBackendRuntimePlayerBuildSummary& BuildSummary, const FDBA_GameBackendResponseDelegate& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Runtime")
 	void NotifyPlayerLeft(const FString& PlayerId, const FDBA_GameBackendResponseDelegate& Callback);
@@ -59,6 +118,17 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Runtime")
 	void NotifyMatchEnded(const FDBA_GameBackendResponseDelegate& Callback);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Runtime")
+	void NotifyMatchResults(const FString& IdempotencyKey, const FString& ResultJson, const TArray<FDBA_GameBackendRuntimePlayerResult>& Players, const FDBA_GameBackendResponseDelegate& Callback);
+
+	static FString BuildMatchResultsPayload(
+		const FString& ServerId,
+		const FString& SessionId,
+		const FString& RuntimeToken,
+		const FString& IdempotencyKey,
+		const FString& ResultJson,
+		const TArray<FDBA_GameBackendRuntimePlayerResult>& Players);
 
 private:
 	FString BuildRuntimePayload(const TFunction<void(TSharedRef<FJsonObject>)>& Fill) const;

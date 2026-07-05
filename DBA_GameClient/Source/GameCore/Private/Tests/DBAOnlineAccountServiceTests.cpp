@@ -23,13 +23,13 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FDBAOnlineAccountFallbackPolicyTest::RunTest(const FString& Parameters)
 {
-	TestTrue(TEXT("NetworkUnavailable can fallback"), UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError::NetworkUnavailable));
-	TestTrue(TEXT("Timeout can fallback"), UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError::Timeout));
-	TestTrue(TEXT("EndpointMissing can fallback"), UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError::EndpointMissing));
-	TestTrue(TEXT("ServiceUnavailable can fallback"), UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError::ServiceUnavailable));
-	TestFalse(TEXT("InvalidCredentials cannot fallback"), UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError::InvalidCredentials));
-	TestFalse(TEXT("AccountUnavailable cannot fallback"), UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError::AccountUnavailable));
-	TestFalse(TEXT("ValidationFailed cannot fallback"), UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError::ValidationFailed));
+	TestTrue(TEXT("网络不可用应允许兜底"), UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError::NetworkUnavailable));
+	TestTrue(TEXT("超时应允许兜底"), UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError::Timeout));
+	TestFalse(TEXT("端点缺失应暴露后端契约漂移而不是兜底"), UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError::EndpointMissing));
+	TestTrue(TEXT("服务不可用应允许兜底"), UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError::ServiceUnavailable));
+	TestFalse(TEXT("凭据无效不应兜底"), UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError::InvalidCredentials));
+	TestFalse(TEXT("账号不可用不应兜底"), UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError::AccountUnavailable));
+	TestFalse(TEXT("校验失败不应兜底"), UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError::ValidationFailed));
 	return true;
 }
 
@@ -44,11 +44,11 @@ bool FDBAAccountScopedSaveSlotNameTest::RunTest(const FString& Parameters)
 	FCommandLine::Set(TEXT("-DBASaveSlotSuffix=ClientA"));
 
 	TestEqual(
-		TEXT("Account slot should include command line suffix"),
+		TEXT("账号存档槽应包含命令行后缀"),
 		UDBAAccountServiceBase::BuildScopedSaveSlotName(DBASaveGameVersions::SlotNames::ACCOUNT_SLOT),
 		FString(DBASaveGameVersions::SlotNames::ACCOUNT_SLOT) + TEXT("_ClientA"));
 	TestEqual(
-		TEXT("Profile slot should include command line suffix"),
+		TEXT("档案存档槽应包含命令行后缀"),
 		UDBAAccountServiceBase::BuildScopedSaveSlotName(DBASaveGameVersions::SlotNames::PROFILE_SLOT),
 		FString(DBASaveGameVersions::SlotNames::PROFILE_SLOT) + TEXT("_ClientA"));
 
@@ -67,10 +67,10 @@ bool FDBAAccountCommandLineGuestIdentityTest::RunTest(const FString& Parameters)
 	FCommandLine::Set(TEXT("-DBAGuestAccountId=LobbyClientB -DBAGuestDisplayName=LobbyBuddy"));
 
 	FDBAAccountInfo AccountInfo = UDBAAccountServiceBase::BuildCommandLineGuestAccountInfo();
-	TestEqual(TEXT("Account id should come from command line"), AccountInfo.AccountId.ToString(), FString(TEXT("LobbyClientB")));
-	TestEqual(TEXT("Display name should come from command line"), AccountInfo.DisplayName, FString(TEXT("LobbyBuddy")));
-	TestEqual(TEXT("Login type should remain Guest"), AccountInfo.LoginType, EDBALoginType::Guest);
-	TestTrue(TEXT("Command line guest account should be valid"), AccountInfo.IsValid());
+	TestEqual(TEXT("账号标识应来自命令行"), AccountInfo.AccountId.ToString(), FString(TEXT("LobbyClientB")));
+	TestEqual(TEXT("显示名称应来自命令行"), AccountInfo.DisplayName, FString(TEXT("LobbyBuddy")));
+	TestEqual(TEXT("登录类型应保持游客"), AccountInfo.LoginType, EDBALoginType::Guest);
+	TestTrue(TEXT("命令行游客账号应有效"), AccountInfo.IsValid());
 
 	FCommandLine::Set(*OriginalCommandLine);
 	return true;

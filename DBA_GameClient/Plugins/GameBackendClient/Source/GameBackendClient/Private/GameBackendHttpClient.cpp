@@ -122,7 +122,7 @@ void FDBA_GameBackendHttpClient::Send(FPendingRequest Request)
 	{
 		FDBA_GameBackendHttpResult Result;
 		Result.bHttpRequestOk = false;
-		Result.Message = TEXT("Backend subsystem invalid.");
+		Result.Message = TEXT("后端客户端子系统无效。");
 		Finish(Request, Result);
 		return;
 	}

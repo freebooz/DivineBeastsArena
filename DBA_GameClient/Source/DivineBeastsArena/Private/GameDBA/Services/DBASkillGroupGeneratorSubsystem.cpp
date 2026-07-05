@@ -12,6 +12,7 @@
 
 #include "Engine/DataTable.h"
 #include "Engine/AssetManager.h"
+#include "GameCore/Character/DBACharacterBuildTypes.h"
 #include "GameDBA/Core/DBAConstants.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "Misc/PackageName.h"
@@ -30,10 +31,14 @@ namespace
 
 	FName MakeSkillGroupRowName(EDBAZodiac Zodiac, EDBAElement Element)
 	{
-		return FName(*FString::Printf(
-			TEXT("%s_%s"),
-			*GetEnumValueName(StaticEnum<EDBAZodiac>(), static_cast<int64>(Zodiac)),
-			*GetEnumValueName(StaticEnum<EDBAElement>(), static_cast<int64>(Element))));
+		return DBACharacterBuild::MakeFixedSkillGroupId(Zodiac, Element);
+	}
+
+	bool HasValidSkillGroupIdentity(EDBAZodiac Zodiac, EDBAElement Element)
+	{
+		return Zodiac != EDBAZodiac::None
+			&& Element != EDBAElement::None
+			&& !MakeSkillGroupRowName(Zodiac, Element).IsNone();
 	}
 
 	bool DoesTablePackageExist(const TCHAR* PackagePath)
@@ -156,6 +161,12 @@ void UDBASkillGroupGeneratorSubsystem::LoadSkillGroupSummaryDataTable()
 
 bool UDBASkillGroupGeneratorSubsystem::GetSkillGroup(EDBAZodiac Zodiac, EDBAElement Element, FDBAZodiacElementFixedSkillGroupRow& OutSkillGroup) const
 {
+	if (!HasValidSkillGroupIdentity(Zodiac, Element))
+	{
+		OutSkillGroup = FDBAZodiacElementFixedSkillGroupRow();
+		return false;
+	}
+
 	const FName RowName = MakeSkillGroupRowName(Zodiac, Element);
 	if (LoadedSkillGroupDataTable && FindSkillGroupByRowName(RowName, OutSkillGroup))
 	{
@@ -168,6 +179,12 @@ bool UDBASkillGroupGeneratorSubsystem::GetSkillGroup(EDBAZodiac Zodiac, EDBAElem
 
 bool UDBASkillGroupGeneratorSubsystem::GetSkillGroupSummary(EDBAZodiac Zodiac, FDBAZodiacHeroAbilitySetSummaryRow& OutSummary) const
 {
+	if (Zodiac == EDBAZodiac::None)
+	{
+		OutSummary = FDBAZodiacHeroAbilitySetSummaryRow();
+		return false;
+	}
+
 	if (LoadedSkillGroupSummaryDataTable)
 	{
 		const FName RowName(*GetEnumValueName(StaticEnum<EDBAZodiac>(), static_cast<int64>(Zodiac)));
@@ -294,6 +311,12 @@ bool UDBASkillGroupGeneratorSubsystem::FindSkillGroupByRowName(const FName& RowN
 	const FDBAZodiacElementFixedSkillGroupRow* FoundRow = LoadedSkillGroupDataTable->FindRow<FDBAZodiacElementFixedSkillGroupRow>(RowName, TEXT(""));
 	if (!FoundRow)
 	{
+		return false;
+	}
+
+	if (!FoundRow->HasValidIdentity())
+	{
+		UE_LOG(LogDBAData, Warning, TEXT("[DBASkillGroupGeneratorSubsystem] 固定技能组数据表行身份无效：%s"), *RowName.ToString());
 		return false;
 	}
 

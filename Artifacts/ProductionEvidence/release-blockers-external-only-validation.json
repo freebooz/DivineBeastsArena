@@ -1,0 +1,30 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "release-blockers-external-only-validation",
+    "generatedAtUtc":  "2026-06-30T13:39:47.1987735Z",
+    "actionReportPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\release-blocker-actions.json",
+    "releaseId":  "local-launcher-evidence-support-files-gate-20260630",
+    "blockerCount":  4,
+    "reportedBlockerCount":  4,
+    "blockerCountMatchesActions":  true,
+    "externalOnly":  true,
+    "externalBlockerCount":  4,
+    "externalBlockers":  [
+                             "client.release_prerequisites",
+                             "client.package_launcher",
+                             "client.cdn_launcher_smoke",
+                             "client.code_signing"
+                         ],
+    "localAutomationBlockerCount":  0,
+    "localAutomationBlockers":  [
+
+                                ],
+    "emptyExternalInputBlockerCount":  0,
+    "emptyExternalInputBlockers":  [
+
+                                   ],
+    "duplicateActionKeyCount":  0,
+    "duplicateActionKeys":  [
+
+                            ]
+}

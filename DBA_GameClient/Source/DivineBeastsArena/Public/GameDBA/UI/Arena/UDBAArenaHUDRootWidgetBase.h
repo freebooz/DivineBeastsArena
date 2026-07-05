@@ -25,11 +25,14 @@ class UDBAMomentumPanelWidgetBase;
 class UDBAChainUltimatePanelWidgetBase;
 class UDBACombatAnnouncementWidgetBase;
 class UDBACriticalStateHintWidgetBase;
+class UDBAArenaEventFeedWidgetBase;
 class UDBAAuraSummaryPanelWidgetBase;
 class UDBAUltimateReadyPromptWidgetBase;
 class UDBAConnectionWarningWidgetBase;
 class UDBAArenaObjectiveTrackerWidgetBase;
 class UDBAArenaHUDWidgetController;
+class UDBAPlayerUnitFrameWidgetController;
+class ADBAZodiacCharacterBase;
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBAArenaHUDRootWidgetBase : public UDBAMobaUserWidgetBase
@@ -51,6 +54,12 @@ public:
 	void SetWidgetController(UDBAArenaHUDWidgetController* InController);
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|ArenaHUD")
+	void SetPlayerUnitFrameWidgetController(UDBAPlayerUnitFrameWidgetController* InController);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|ArenaHUD")
+	void BindArenaHUDToCharacter(ADBAZodiacCharacterBase* InCharacter);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|ArenaHUD")
 	void SetHUDVisible(bool bVisible);
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|ArenaHUD")
@@ -62,6 +71,72 @@ public:
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|ArenaHUD", meta = (DisplayName = "On Apply FiveCamp Theme"))
 	void BP_OnApplyFiveCampTheme(uint8 FiveCamp);
+
+	UFUNCTION()
+	void HandleControllerUltimateEnergyUpdated(float CurrentEnergy, float MaxEnergy);
+
+	UFUNCTION()
+	void HandleControllerChainLevelUpdated(int32 ChainLevel);
+
+	UFUNCTION()
+	void HandleControllerResonanceLevelUpdated(int32 ResonanceLevel);
+
+	UFUNCTION()
+	void HandleControllerMomentumUpdated(int32 MomentumLevel, float MomentumProgress);
+
+	UFUNCTION()
+	void HandleControllerStatusBuffAdded(const FString& BuffId, float Duration);
+
+	UFUNCTION()
+	void HandleControllerStatusBuffRemoved(const FString& BuffId);
+
+	UFUNCTION()
+	void HandleControllerStatusBuffsCleared();
+
+	UFUNCTION()
+	void HandleControllerStatusDebuffAdded(const FString& DebuffId, float Duration);
+
+	UFUNCTION()
+	void HandleControllerStatusDebuffRemoved(const FString& DebuffId);
+
+	UFUNCTION()
+	void HandleControllerStatusDebuffsCleared();
+
+	UFUNCTION()
+	void HandleControllerStatusCCEffectAdded(const FString& CCId, float Duration);
+
+	UFUNCTION()
+	void HandleControllerStatusCCEffectRemoved(const FString& CCId);
+
+	UFUNCTION()
+	void HandleControllerStatusCCEffectsCleared();
+
+	UFUNCTION()
+	void HandleControllerCombatAnnouncementShown(const FText& Text, float Duration);
+
+	UFUNCTION()
+	void HandleControllerCombatAnnouncementCleared();
+
+	UFUNCTION()
+	void HandleControllerCriticalStateHintsChanged(bool bLowHP, bool bLowEnergy);
+
+	UFUNCTION()
+	void HandleControllerArenaObjectiveUpdated(const FText& ObjectiveText, float Progress);
+
+	UFUNCTION()
+	void HandleControllerArenaObjectiveCompleted();
+
+	UFUNCTION()
+	void HandleControllerEventFeedEntryAdded(const FText& Text, float Duration);
+
+	UFUNCTION()
+	void HandleControllerEventFeedCleared();
+
+	UFUNCTION()
+	void HandleControllerUltimateReadyPromptShown();
+
+	UFUNCTION()
+	void HandleControllerUltimateReadyPromptHidden();
 
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
@@ -106,8 +181,17 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
 	TObjectPtr<UDBAArenaObjectiveTrackerWidgetBase> ObjectiveTracker;
 
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD", meta = (BindWidgetOptional))
+	TObjectPtr<UDBAArenaEventFeedWidgetBase> EventFeed;
+
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD")
 	TObjectPtr<UDBAArenaHUDWidgetController> WidgetController;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD")
+	TObjectPtr<UDBAPlayerUnitFrameWidgetController> PlayerUnitFrameWidgetController;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD")
+	TWeakObjectPtr<ADBAZodiacCharacterBase> BoundArenaHUDCharacter;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ArenaHUD")
 	bool bIsEditMode;

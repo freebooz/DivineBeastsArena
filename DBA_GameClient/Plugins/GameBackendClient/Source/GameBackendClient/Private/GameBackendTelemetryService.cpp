@@ -68,6 +68,7 @@ void UDBA_GameBackendTelemetryService::Initialize(UDBA_GameBackendClientSubsyste
 {
 	Subsystem = InSubsystem;
 	HttpClient = InHttpClient;
+	bShuttingDown = false;
 
 	const UDBA_GameBackendClientSettings* Settings = GetDefault<UDBA_GameBackendClientSettings>();
 	FlushIntervalSeconds = FMath::Max(1.0f, Settings->TelemetryFlushIntervalSeconds);
@@ -82,8 +83,12 @@ void UDBA_GameBackendTelemetryService::Initialize(UDBA_GameBackendClientSubsyste
 
 void UDBA_GameBackendTelemetryService::Shutdown()
 {
+	bShuttingDown = true;
 	StopFlushTimer();
-	FlushInternal(true);
+	bFlushing = false;
+	bTelemetryEnabled = false;
+	HttpClient = nullptr;
+	EventQueue.Reset();
 }
 
 void UDBA_GameBackendTelemetryService::TrackEvent(const FString& EventName, const TMap<FString, FString>& Properties)
@@ -188,22 +193,34 @@ void UDBA_GameBackendTelemetryService::StopFlushTimer()
 
 void UDBA_GameBackendTelemetryService::FlushInternal(bool bForce)
 {
-	if (!bTelemetryEnabled || !HttpClient || bFlushing || EventQueue.IsEmpty())
+	if (bShuttingDown || !bTelemetryEnabled || !HttpClient || bFlushing || EventQueue.IsEmpty())
 	{
 		return;
 	}
 
 	TArray<FDBA_GameBackendTelemetryEvent> UploadEvents = EventQueue;
 	const FString Payload = BuildBatchPayload(UploadEvents);
+	const int32 UploadEventCount = UploadEvents.Num();
+	TWeakObjectPtr<UDBA_GameBackendTelemetryService> WeakThis(this);
 	bFlushing = true;
 
-	HttpClient->Post(TEXT("/api/telemetry/batch"), Payload, [this, UploadEvents, bForce](const FDBA_GameBackendHttpResult& Result)
+	HttpClient->Post(TEXT("/api/telemetry/batch"), Payload, [WeakThis, UploadEventCount, bForce](const FDBA_GameBackendHttpResult& Result)
 	{
-		bFlushing = false;
+		UDBA_GameBackendTelemetryService* Service = WeakThis.Get();
+		if (!Service || Service->bShuttingDown)
+		{
+			return;
+		}
+
+		Service->bFlushing = false;
 		const bool bSuccess = Result.IsSuccessful();
 		if (bSuccess)
 		{
-			EventQueue.RemoveAt(0, UploadEvents.Num(), EAllowShrinking::No);
+			const int32 RemoveCount = FMath::Min(UploadEventCount, Service->EventQueue.Num());
+			if (RemoveCount > 0)
+			{
+				Service->EventQueue.RemoveAt(0, RemoveCount, EAllowShrinking::No);
+			}
 			return;
 		}
 

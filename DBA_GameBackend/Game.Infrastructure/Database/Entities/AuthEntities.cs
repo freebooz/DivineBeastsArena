@@ -158,7 +158,7 @@ public class PlayerCharacter
     public string Zodiac { get; set; } = "Rat";
     public string PrimaryElement { get; set; } = "Water";
     public string FiveCamp { get; set; } = "East";
-    public string FixedSkillGroupId { get; set; } = "Rat_Water_Default";
+    public string FixedSkillGroupId { get; set; } = "Rat_Water";
     public string CoreAttributesJson { get; set; } = "{}";
     public int Level { get; set; } = 1;
     public bool IsSelected { get; set; }

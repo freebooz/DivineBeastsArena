@@ -120,6 +120,7 @@ public record AdminMatchListItem(
     int DurationSeconds,
     int PlayerCount,
     string ResultJson,
+    string? WinnerTeam,
     DateTimeOffset CreatedAt);
 
 public record AdminMatchDetailResponse(
@@ -129,6 +130,8 @@ public record AdminMatchDetailResponse(
     string MapId,
     int DurationSeconds,
     string ResultJson,
+    string? WinnerTeam,
+    IReadOnlyDictionary<string, int> TeamDistribution,
     DateTimeOffset CreatedAt,
     IReadOnlyList<AdminMatchPlayerItem> Players);
 
@@ -140,7 +143,8 @@ public record AdminMatchPlayerItem(
     int Deaths,
     int Assists,
     int Score,
-    long ExpDelta);
+    long ExpDelta,
+    IReadOnlyDictionary<string, object> Rewards);
 
 public record AdminClientVersionListResponse(
     IReadOnlyList<AdminClientVersionItem> Items,

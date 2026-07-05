@@ -12,6 +12,9 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#if WITH_EDITOR
+#include "Misc/DataValidation.h"
+#endif
 #include "DBAStaticDataAsset.generated.h"
 
 class UDataTable;
@@ -105,6 +108,6 @@ public:
 	 * 编辑器下验证数据完整性
 	 * 检查所有表引用是否有效、行数据是否符合规范
 	 */
-	virtual EDataValidationResult IsDataValid(TArray<FText>& ValidationErrors) override;
+	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override;
 #endif
 };

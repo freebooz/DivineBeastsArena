@@ -10,7 +10,7 @@
 
 #include "GameCore/Party/DBAPartyServiceBase.h"
 
-#include "GameCore/Account/DBAAccountServiceBase.h"
+#include "GameCore/Account/DBAOnlineAccountService.h"
 #include "GameCore/Session/DBAFrontendSessionSubsystem.h"
 #include "Misc/DateTime.h"
 #include "Misc/Guid.h"
@@ -22,13 +22,13 @@ UDBAPartyServiceBase::UDBAPartyServiceBase()
 void UDBAPartyServiceBase::OnSubsystemInitialize()
 {
 	Super::OnSubsystemInitialize();
-	LogSubsystemInfo(TEXT("Party service initialized"));
+	LogSubsystemInfo(TEXT("组队服务已初始化。"));
 	bIsInitialized = true;
 }
 
 void UDBAPartyServiceBase::OnSubsystemDeinitialize()
 {
-	LogSubsystemInfo(TEXT("Party service deinitialized"));
+	LogSubsystemInfo(TEXT("组队服务已反初始化。"));
 	Super::OnSubsystemDeinitialize();
 }
 
@@ -49,10 +49,10 @@ void UDBAPartyServiceBase::CreateParty(FDBAOnPartyCreated OnComplete)
 		return;
 	}
 
-	UDBAAccountServiceBase* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAAccountServiceBase>() : nullptr;
+	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
 	if (!AccountService || !AccountService->IsLoggedIn())
 	{
-		LogSubsystemError(TEXT("CreateParty failed: account not logged in"));
+		LogSubsystemError(TEXT("创建队伍失败：账号未登录。"));
 		FDBAPartyInfo EmptyParty;
 		OnComplete.ExecuteIfBound(EmptyParty);
 		return;
@@ -93,13 +93,13 @@ void UDBAPartyServiceBase::InvitePlayer(const FDBAAccountId& AccountId, FDBAOnPa
 
 	if (!IsInParty())
 	{
-		OnComplete.ExecuteIfBound(false, TEXT("Party not created"));
+		OnComplete.ExecuteIfBound(false, TEXT("队伍尚未创建。"));
 		return;
 	}
 
 	if (CurrentPartyInfo.IsFull())
 	{
-		OnComplete.ExecuteIfBound(false, TEXT("Party is full"));
+		OnComplete.ExecuteIfBound(false, TEXT("队伍已满。"));
 		return;
 	}
 
@@ -144,7 +144,7 @@ void UDBAPartyServiceBase::AcceptInvite(const FDBAPartyInvite& Invite, FDBAOnPar
 	LeaderMember.JoinTime = FDateTime::UtcNow().ToUnixTimestamp();
 	CurrentPartyInfo.Members.Add(LeaderMember);
 
-	if (UDBAAccountServiceBase* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAAccountServiceBase>() : nullptr)
+	if (UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr)
 	{
 		const FDBAAccountInfo& AccountInfo = AccountService->GetCurrentAccountInfo();
 		if (AccountInfo.AccountId != Invite.InviterAccountId && AccountInfo.AccountId.IsValid())
@@ -178,7 +178,7 @@ void UDBAPartyServiceBase::DeclineInvite(const FDBAPartyInvite& Invite, FDBAOnPa
 
 	if (!Invite.IsValid())
 	{
-		OnComplete.ExecuteIfBound(false, TEXT("Invalid invite"));
+		OnComplete.ExecuteIfBound(false, TEXT("邀请无效。"));
 		return;
 	}
 
@@ -199,7 +199,7 @@ void UDBAPartyServiceBase::LeaveParty(FDBAOnPartyLeft OnComplete)
 		FrontendSession->SetState(EDBAFrontendSessionState::MainLobby);
 	}
 
-	LogSubsystemInfo(TEXT("LeaveParty succeeded"));
+	LogSubsystemInfo(TEXT("离开队伍成功。"));
 	OnComplete.ExecuteIfBound();
 }
 
@@ -222,7 +222,7 @@ void UDBAPartyServiceBase::KickMember(const FDBAAccountId& AccountId, FDBAOnPart
 		return;
 	}
 
-	OnComplete.ExecuteIfBound(false, TEXT("Member not found or is leader"));
+	OnComplete.ExecuteIfBound(false, TEXT("未找到成员或目标是队长。"));
 }
 
 void UDBAPartyServiceBase::PromoteLeader(const FDBAAccountId& AccountId, FDBAOnPartyOperationComplete OnComplete)
@@ -235,7 +235,7 @@ void UDBAPartyServiceBase::PromoteLeader(const FDBAAccountId& AccountId, FDBAOnP
 	FDBAPartyMember* NewLeader = CurrentPartyInfo.FindMember(AccountId);
 	if (!NewLeader)
 	{
-		OnComplete.ExecuteIfBound(false, TEXT("Member not found"));
+		OnComplete.ExecuteIfBound(false, TEXT("未找到成员。"));
 		return;
 	}
 
@@ -256,7 +256,7 @@ bool UDBAPartyServiceBase::IsLeader() const
 		return false;
 	}
 
-	UDBAAccountServiceBase* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAAccountServiceBase>() : nullptr;
+	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
 	if (!AccountService)
 	{
 		return false;
@@ -270,4 +270,3 @@ FDBAPartyId UDBAPartyServiceBase::GeneratePartyId()
 {
 	return FDBAPartyId(FGuid::NewGuid().ToString());
 }
-

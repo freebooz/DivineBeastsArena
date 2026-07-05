@@ -1,0 +1,57 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "release-blocker-action-validation",
+    "generatedAtUtc":  "2026-06-30T13:39:47.1131260Z",
+    "releaseId":  "local-launcher-evidence-support-files-gate-20260630",
+    "actionReportPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\release-blocker-actions.json",
+    "reportKind":  "release-blocker-actions",
+    "kindIsValid":  true,
+    "linkedReportPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\release-readiness-report.json",
+    "reportPathIsPresent":  true,
+    "reportPathExists":  true,
+    "linkedReportKind":  "release-readiness-report",
+    "reportKindIsValid":  true,
+    "reportReleaseId":  "local-launcher-evidence-support-files-gate-20260630",
+    "reportReleaseIdMatches":  true,
+    "reportReadError":  "",
+    "isValid":  true,
+    "actionCount":  4,
+    "blockerCountIsPresent":  true,
+    "reportedBlockerCount":  4,
+    "blockerCountMatchesActions":  true,
+    "scriptCount":  4,
+    "manualActionCount":  0,
+    "placeholderCount":  9,
+    "declaredPlaceholderCount":  9,
+    "missingActionKeyCount":  0,
+    "missingActionCommandCount":  0,
+    "duplicateActionKeyCount":  0,
+    "missingPlaceholderCount":  0,
+    "missingScriptCount":  0,
+    "invalidParameterCount":  0,
+    "scriptMismatchCount":  0,
+    "manualActions":  [
+
+                      ],
+    "missingActionKeys":  [
+
+                          ],
+    "missingActionCommands":  [
+
+                              ],
+    "duplicateActionKeys":  [
+
+                            ],
+    "missingPlaceholders":  [
+
+                            ],
+    "missingScripts":  [
+
+                       ],
+    "invalidParameters":  [
+
+                          ],
+    "scriptMismatches":  [
+
+                         ]
+}

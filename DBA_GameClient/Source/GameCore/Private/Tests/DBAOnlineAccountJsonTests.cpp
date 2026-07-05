@@ -11,7 +11,10 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "Misc/AutomationTest.h"
+#include "Dom/JsonObject.h"
 #include "GameCore/Account/DBAOnlineAccountJson.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FDBAOnlineAccountJsonLoginTest,
@@ -35,15 +38,96 @@ bool FDBAOnlineAccountJsonLoginTest::RunTest(const FString& Parameters)
 
 	FDBALoginResponse Response;
 	FString Error;
-	TestTrue(TEXT("Login response should parse"), FDBAOnlineAccountJson::ParseLoginResponse(Json, Response, Error));
-	TestTrue(TEXT("Login should succeed"), Response.bSuccess);
-	TestEqual(TEXT("Token should parse"), Response.SessionToken, FString(TEXT("session-token")));
-	TestEqual(TEXT("AccountId should parse"), Response.AccountInfo.AccountId.ToString(), FString(TEXT("account_001")));
-	TestEqual(TEXT("DisplayName should parse"), Response.AccountInfo.DisplayName, FString(TEXT("Player001")));
-	TestEqual(TEXT("LoginType should parse"), Response.AccountInfo.LoginType, EDBALoginType::Email);
-	TestEqual(TEXT("Status should parse"), Response.AccountInfo.Status, EDBAAccountStatus::Normal);
-	TestEqual(TEXT("Level should parse"), Response.AccountInfo.Level, 7);
-	TestEqual(TEXT("Experience should parse"), Response.AccountInfo.Experience, 120);
+	TestTrue(TEXT("登录响应应能解析"), FDBAOnlineAccountJson::ParseLoginResponse(Json, Response, Error));
+	TestTrue(TEXT("登录应成功"), Response.bSuccess);
+	TestEqual(TEXT("会话令牌应能解析"), Response.SessionToken, FString(TEXT("session-token")));
+	TestEqual(TEXT("账号标识应能解析"), Response.AccountInfo.AccountId.ToString(), FString(TEXT("account_001")));
+	TestEqual(TEXT("显示名称应能解析"), Response.AccountInfo.DisplayName, FString(TEXT("Player001")));
+	TestEqual(TEXT("登录类型应能解析"), Response.AccountInfo.LoginType, EDBALoginType::Email);
+	TestEqual(TEXT("账号状态应能解析"), Response.AccountInfo.Status, EDBAAccountStatus::Normal);
+	TestEqual(TEXT("等级应能解析"), Response.AccountInfo.Level, 7);
+	TestEqual(TEXT("经验应能解析"), Response.AccountInfo.Experience, 120);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FDBAOnlineAccountJsonGuestRequestTest,
+	"DivineBeastsArena.GameCore.Account.OnlineJson.BuildGuestLoginRequest",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FDBAOnlineAccountJsonGuestRequestTest::RunTest(const FString& Parameters)
+{
+	const FString Json = FDBAOnlineAccountJson::BuildGuestLoginRequest(TEXT("device_001"), TEXT("UnrealClient"), TEXT("Windows"));
+
+	TSharedPtr<FJsonObject> Object;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Json);
+	TestTrue(TEXT("游客请求 JSON 应能解析"), FJsonSerializer::Deserialize(Reader, Object));
+	TestTrue(TEXT("游客请求对象应有效"), Object.IsValid());
+	if (Object.IsValid())
+	{
+		TestEqual(TEXT("游客请求应包含 deviceId"), Object->GetStringField(TEXT("deviceId")), FString(TEXT("device_001")));
+		TestEqual(TEXT("游客请求应包含 deviceName"), Object->GetStringField(TEXT("deviceName")), FString(TEXT("UnrealClient")));
+		TestEqual(TEXT("游客请求应包含 platform"), Object->GetStringField(TEXT("platform")), FString(TEXT("Windows")));
+		TestFalse(TEXT("游客请求不应发送账号登录类型"), Object->HasField(TEXT("loginType")));
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FDBAOnlineAccountJsonWrappedTokenDisplayNameTest,
+	"DivineBeastsArena.GameCore.Account.OnlineJson.ParseWrappedTokenDisplayName",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FDBAOnlineAccountJsonWrappedTokenDisplayNameTest::RunTest(const FString& Parameters)
+{
+	const FString Json = TEXT(R"({
+		"success": true,
+		"data": {
+			"accessToken": "guest-access-token",
+			"refreshToken": "guest-refresh-token",
+			"playerId": "guest_001",
+			"displayName": "AzureGuest",
+			"expiresIn": 3600
+		}
+	})");
+
+	FDBALoginResponse Response;
+	FString Error;
+	TestTrue(TEXT("游客登录响应应能解析"), FDBAOnlineAccountJson::ParseLoginResponse(Json, Response, Error));
+	TestTrue(TEXT("游客登录应成功"), Response.bSuccess);
+	TestEqual(TEXT("游客访问令牌应能解析"), Response.SessionToken, FString(TEXT("guest-access-token")));
+	TestEqual(TEXT("游客刷新令牌应能解析"), Response.RefreshToken, FString(TEXT("guest-refresh-token")));
+	TestEqual(TEXT("游客玩家标识应能解析"), Response.PlayerId, FString(TEXT("guest_001")));
+	TestEqual(TEXT("游客显示名称应使用后端 displayName"), Response.AccountInfo.DisplayName, FString(TEXT("AzureGuest")));
+	TestEqual(TEXT("游客账号标识应能解析"), Response.AccountInfo.AccountId.ToString(), FString(TEXT("guest_001")));
+	TestEqual(TEXT("包裹令牌响应不应推断端点专属登录类型"), Response.AccountInfo.LoginType, EDBALoginType::None);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FDBAOnlineAccountJsonRefreshTypeTest,
+	"DivineBeastsArena.GameCore.Account.OnlineJson.ParseRefreshDoesNotAssumeGuest",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FDBAOnlineAccountJsonRefreshTypeTest::RunTest(const FString& Parameters)
+{
+	const FString Json = TEXT(R"({
+		"success": true,
+		"data": {
+			"accessToken": "refreshed-access-token",
+			"refreshToken": "refreshed-refresh-token",
+			"playerId": "email_player_001",
+			"nickname": "EmailPlayer"
+		}
+	})");
+
+	FDBALoginResponse Response;
+	FString Error;
+	TestTrue(TEXT("刷新令牌响应应能解析"), FDBAOnlineAccountJson::ParseLoginResponse(Json, Response, Error));
+	TestTrue(TEXT("刷新令牌响应应成功"), Response.bSuccess);
+	TestEqual(TEXT("刷新令牌响应应解析玩家标识"), Response.PlayerId, FString(TEXT("email_player_001")));
+	TestEqual(TEXT("刷新令牌响应应解析显示名称"), Response.AccountInfo.DisplayName, FString(TEXT("EmailPlayer")));
+	TestEqual(TEXT("刷新令牌响应不应仅凭 JSON 形状归类为游客"), Response.AccountInfo.LoginType, EDBALoginType::None);
 	return true;
 }
 
@@ -81,19 +165,19 @@ bool FDBAOnlineAccountJsonCharactersTest::RunTest(const FString& Parameters)
 
 	TArray<FDBACharacterSummary> Characters;
 	FString Error;
-	TestTrue(TEXT("Characters should parse"), FDBAOnlineAccountJson::ParseCharacterListResponse(Json, Characters, Error));
-	TestEqual(TEXT("Character count"), Characters.Num(), 1);
+	TestTrue(TEXT("角色列表应能解析"), FDBAOnlineAccountJson::ParseCharacterListResponse(Json, Characters, Error));
+	TestEqual(TEXT("角色数量应匹配"), Characters.Num(), 1);
 	if (Characters.Num() == 1)
 	{
-		TestEqual(TEXT("CharacterId"), Characters[0].CharacterId.ToString(), FString(TEXT("char_001")));
-		TestEqual(TEXT("CharacterName"), Characters[0].CharacterName, FString(TEXT("WaterRat")));
-		TestEqual(TEXT("Zodiac"), Characters[0].Zodiac, EDBAZodiac::Rat);
-		TestEqual(TEXT("PrimaryElement"), Characters[0].PrimaryElement, EDBAElement::Water);
-		TestEqual(TEXT("FiveCamp"), Characters[0].FiveCamp, EDBAFiveCamp::West);
-		TestEqual(TEXT("FixedSkillGroupId"), Characters[0].FixedSkillGroupId, FName(TEXT("Rat_Water")));
-		TestEqual(TEXT("MaxHealth"), Characters[0].CoreAttributes.MaxHealth, 2070.0f);
-		TestEqual(TEXT("Defense"), Characters[0].CoreAttributes.Defense, 44.0f);
-		TestEqual(TEXT("EnergyRegen"), Characters[0].CoreAttributes.EnergyRegen, 12.0f);
+		TestEqual(TEXT("角色标识应能解析"), Characters[0].CharacterId.ToString(), FString(TEXT("char_001")));
+		TestEqual(TEXT("角色名称应能解析"), Characters[0].CharacterName, FString(TEXT("WaterRat")));
+		TestEqual(TEXT("生肖应能解析"), Characters[0].Zodiac, EDBAZodiac::Rat);
+		TestEqual(TEXT("主元素应能解析"), Characters[0].PrimaryElement, EDBAElement::Water);
+		TestEqual(TEXT("五营应能解析"), Characters[0].FiveCamp, EDBAFiveCamp::West);
+		TestEqual(TEXT("固定技能组标识应能解析"), Characters[0].FixedSkillGroupId, FName(TEXT("Rat_Water")));
+		TestEqual(TEXT("最大生命应能解析"), Characters[0].CoreAttributes.MaxHealth, 2070.0f);
+		TestEqual(TEXT("防御应能解析"), Characters[0].CoreAttributes.Defense, 44.0f);
+		TestEqual(TEXT("能量回复应能解析"), Characters[0].CoreAttributes.EnergyRegen, 12.0f);
 	}
 	return true;
 }
@@ -125,13 +209,13 @@ bool FDBAOnlineAccountJsonWrappedCharactersTest::RunTest(const FString& Paramete
 
 	TArray<FDBACharacterSummary> Characters;
 	FString Error;
-	TestTrue(TEXT("Wrapped characters should parse"), FDBAOnlineAccountJson::ParseCharacterListResponse(Json, Characters, Error));
-	TestEqual(TEXT("Wrapped character count"), Characters.Num(), 1);
+	TestTrue(TEXT("包裹角色列表应能解析"), FDBAOnlineAccountJson::ParseCharacterListResponse(Json, Characters, Error));
+	TestEqual(TEXT("包裹角色数量应匹配"), Characters.Num(), 1);
 	if (Characters.Num() == 1)
 	{
-		TestEqual(TEXT("Wrapped character id"), Characters[0].CharacterId.ToString(), FString(TEXT("char_002")));
-		TestEqual(TEXT("Wrapped character zodiac"), Characters[0].Zodiac, EDBAZodiac::Tiger);
-		TestEqual(TEXT("Wrapped character element"), Characters[0].PrimaryElement, EDBAElement::Fire);
+		TestEqual(TEXT("包裹角色标识应能解析"), Characters[0].CharacterId.ToString(), FString(TEXT("char_002")));
+		TestEqual(TEXT("包裹角色生肖应能解析"), Characters[0].Zodiac, EDBAZodiac::Tiger);
+		TestEqual(TEXT("包裹角色元素应能解析"), Characters[0].PrimaryElement, EDBAElement::Fire);
 	}
 	return true;
 }

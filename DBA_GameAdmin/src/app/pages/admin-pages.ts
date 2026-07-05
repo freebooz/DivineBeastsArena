@@ -243,7 +243,7 @@ export class ServersPageComponent {
     <section class="page">
       <div class="section-title"><div><span class="eyebrow">Matches</span><h2>对局记录</h2></div></div>
       <table>
-        <thead><tr><th>对局</th><th>模式</th><th>地图</th><th>玩家</th><th>时长</th><th>创建时间</th></tr></thead>
+        <thead><tr><th>对局</th><th>模式</th><th>地图</th><th>玩家</th><th>时长</th><th>结果</th><th>创建时间</th></tr></thead>
         <tbody>
           <tr *ngFor="let match of matches">
             <td><a [routerLink]="['/matches', match.id]" class="mono">{{ match.id }}</a></td>
@@ -251,6 +251,7 @@ export class ServersPageComponent {
             <td>{{ match.mapId }}</td>
             <td>{{ match.playerCount }}</td>
             <td>{{ match.durationSeconds }}s</td>
+            <td>{{ formatResultSummary(match) }}</td>
             <td>{{ match.createdAt | date:'yyyy-MM-dd HH:mm' }}</td>
           </tr>
         </tbody>
@@ -265,6 +266,31 @@ export class MatchesPageComponent {
   constructor() {
     this.api.matches().subscribe((page) => this.matches = page.items);
   }
+
+  formatResultSummary(match: MatchListItem): string {
+    const resultJson = match.resultJson;
+    let winnerTeam = match.winnerTeam?.trim() || '-';
+    let schema = '';
+
+    try {
+      const parsed = JSON.parse(resultJson) as { winnerTeam?: unknown; winner_team?: unknown; schema?: unknown };
+      if (winnerTeam === '-') {
+        const rawWinnerTeam = typeof parsed.winnerTeam === 'string' && parsed.winnerTeam.trim().length > 0
+          ? parsed.winnerTeam
+          : parsed.winner_team;
+        winnerTeam = typeof rawWinnerTeam === 'string' && rawWinnerTeam.trim().length > 0
+          ? rawWinnerTeam.trim()
+          : '-';
+      }
+      schema = typeof parsed.schema === 'string' && parsed.schema.trim().length > 0
+        ? parsed.schema.trim()
+        : '';
+    } catch {
+      return winnerTeam;
+    }
+
+    return schema ? `${winnerTeam} (${schema})` : winnerTeam;
+  }
 }
 
 @Component({
@@ -274,10 +300,18 @@ export class MatchesPageComponent {
   template: `
     <section class="page" *ngIf="match">
       <div class="section-title"><div><span class="eyebrow">Match</span><h2>{{ match.mode }} / {{ match.mapId }}</h2></div></div>
+      <div class="metrics compact">
+        <article><span>对局</span><strong class="mono">{{ match.id }}</strong></article>
+        <article><span>会话</span><strong class="mono">{{ match.sessionId }}</strong></article>
+        <article class="team-outcome-winner"><span>胜方队伍</span><strong>{{ formatTeamOutcome(match) }}</strong></article>
+        <article class="team-outcome-distribution"><span>队伍分布</span><strong>{{ formatTeamDistribution(match.players, match.teamDistribution) }}</strong></article>
+        <article><span>时长</span><strong>{{ match.durationSeconds }}s</strong></article>
+        <article><span>创建时间</span><strong>{{ match.createdAt | date:'yyyy-MM-dd HH:mm' }}</strong></article>
+      </div>
       <div class="panel">
         <h3>玩家结果</h3>
         <table>
-          <thead><tr><th>玩家</th><th>队伍</th><th>结果</th><th>K/D/A</th><th>分数</th><th>经验</th></tr></thead>
+          <thead><tr><th>玩家</th><th>队伍</th><th>结果</th><th>K/D/A</th><th>分数</th><th>经验</th><th>奖励</th></tr></thead>
           <tbody>
             <tr *ngFor="let player of match.players">
               <td class="mono">{{ player.playerId }}</td>
@@ -286,6 +320,7 @@ export class MatchesPageComponent {
               <td>{{ player.kills }}/{{ player.deaths }}/{{ player.assists }}</td>
               <td>{{ player.score }}</td>
               <td>{{ player.expDelta }}</td>
+              <td>{{ formatRewards(player.rewards) }}</td>
             </tr>
           </tbody>
         </table>
@@ -307,6 +342,61 @@ export class MatchDetailPageComponent {
         this.match = match;
         this.prettyResult = prettyJson(match.resultJson);
       });
+    }
+  }
+
+  formatRewards(rewards: Record<string, unknown> | null | undefined): string {
+    const entries = Object.entries(rewards ?? {});
+    if (entries.length === 0) {
+      return '-';
+    }
+
+    return entries
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, value]) => `${key}: ${String(value)}`)
+      .join(', ');
+  }
+
+  formatTeamOutcome(match: MatchDetail): string {
+    return match.winnerTeam?.trim() || this.extractWinnerTeam(match.resultJson);
+  }
+
+  formatTeamDistribution(players: MatchDetail['players'], teamDistribution?: Record<string, number> | null): string {
+    const distributionEntries = Object.entries(teamDistribution ?? {});
+    if (distributionEntries.length > 0) {
+      return distributionEntries
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([team, count]) => `${team}: ${count}`)
+        .join(', ');
+    }
+
+    const counts = new Map<string, number>();
+    for (const player of players) {
+      const team = player.team?.trim() || '-';
+      counts.set(team, (counts.get(team) ?? 0) + 1);
+    }
+
+    return Array.from(counts.entries())
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([team, count]) => `${team}: ${count}`)
+      .join(', ') || '-';
+  }
+
+  extractWinnerTeam(resultJson: string | null | undefined): string {
+    if (!resultJson) {
+      return '-';
+    }
+
+    try {
+      const parsed = JSON.parse(resultJson) as { winnerTeam?: unknown; winner_team?: unknown };
+      const rawWinnerTeam = typeof parsed.winnerTeam === 'string' && parsed.winnerTeam.trim().length > 0
+        ? parsed.winnerTeam
+        : parsed.winner_team;
+      return typeof rawWinnerTeam === 'string' && rawWinnerTeam.trim().length > 0
+        ? rawWinnerTeam.trim()
+        : '-';
+    } catch {
+      return '-';
     }
   }
 }

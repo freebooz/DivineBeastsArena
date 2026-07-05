@@ -23,8 +23,7 @@ void UDBAZodiacPassiveAbility_Generic::ActivateAbility(
 {
 	UE_LOG(LogDBACombat, Log, TEXT("[UDBAZodiacPassiveAbility_Generic] 激活生肖被动技能：技能ID=%s"), *PassiveSkillID.ToString());
 
-	// 调用蓝图事件
-	OnPassiveActivatedBP(PassiveSkillID);
+	OnPassiveActivated(PassiveSkillID);
 
 	// 调用基类 ActivateAbility
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
@@ -39,9 +38,16 @@ void UDBAZodiacPassiveAbility_Generic::EndAbility(
 {
 	UE_LOG(LogDBACombat, Log, TEXT("[UDBAZodiacPassiveAbility_Generic] 结束生肖被动技能：技能ID=%s 是否取消=%s"), *PassiveSkillID.ToString(), bWasCancelled ? TEXT("是") : TEXT("否"));
 
-	// 调用蓝图事件
-	OnPassiveRemovedBP(PassiveSkillID);
+	OnPassiveRemoved(PassiveSkillID);
 
 	// 调用基类 EndAbility
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+void UDBAZodiacPassiveAbility_Generic::OnPassiveActivated(FName InSkillID)
+{
+}
+
+void UDBAZodiacPassiveAbility_Generic::OnPassiveRemoved(FName InSkillID)
+{
 }

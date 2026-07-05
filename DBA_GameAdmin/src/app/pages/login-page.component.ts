@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AdminApiService } from '../core/admin-api.service';
 import { AuthService } from '../core/auth.service';
 
@@ -32,6 +32,7 @@ export class LoginPageComponent {
   private readonly api = inject(AdminApiService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   username = '';
   password = '';
@@ -49,12 +50,19 @@ export class LoginPageComponent {
     this.api.login({ username: this.username.trim(), password: this.password }).subscribe({
       next: (login) => {
         this.auth.signIn(login);
-        void this.router.navigate(['/dashboard']);
+        void this.router.navigateByUrl(this.safeReturnUrl());
       },
       error: () => {
         this.error = '登录失败，请检查账号、密码或后台服务状态';
         this.loading = false;
       }
     });
+  }
+
+  private safeReturnUrl(): string {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/dashboard';
+    return returnUrl.startsWith('/') && !returnUrl.startsWith('//')
+      ? returnUrl
+      : '/dashboard';
   }
 }

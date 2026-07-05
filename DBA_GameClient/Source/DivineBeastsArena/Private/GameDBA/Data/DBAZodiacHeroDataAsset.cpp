@@ -10,9 +10,16 @@
 
 #include "GameDBA/Data/DBAZodiacHeroDataAsset.h"
 #include "Engine/DataTable.h"
+#include "GameCore/Character/DBACharacterBuildTypes.h"
+#include "GameDBA/Core/DBAConstants.h"
 
 UDBAZodiacHeroDataAsset::UDBAZodiacHeroDataAsset()
 {
+}
+
+FName UDBAZodiacHeroDataAsset::BuildFixedSkillGroupRowName(EDBAZodiac Zodiac, EDBAElement Element)
+{
+	return DBACharacterBuild::MakeFixedSkillGroupId(Zodiac, Element);
 }
 
 bool UDBAZodiacHeroDataAsset::GetZodiacHeroDisplayData(EDBAZodiac Zodiac, FDBAZodiacHeroDisplayRow& OutRow) const
@@ -161,7 +168,7 @@ bool UDBAZodiacHeroDataAsset::ValidateDataIntegrity(TArray<FString>& OutErrors) 
 	if (DisplayTable)
 	{
 		TArray<FName> RowNames = DisplayTable->GetRowNames();
-		if (RowNames.Num() != 12)
+		if (RowNames.Num() != DBAConstants::ZodiacCount)
 		{
 			OutErrors.Add(FString::Printf(TEXT("ZodiacHeroDisplayTable 应包含 12 行数据，实际 %d 行"), RowNames.Num()));
 			bIsValid = false;
@@ -172,7 +179,7 @@ bool UDBAZodiacHeroDataAsset::ValidateDataIntegrity(TArray<FString>& OutErrors) 
 	if (SkillGroupTable)
 	{
 		TArray<FName> RowNames = SkillGroupTable->GetRowNames();
-		if (RowNames.Num() != 60)
+		if (RowNames.Num() != DBAConstants::FixedSkillGroupRowCount)
 		{
 			OutErrors.Add(FString::Printf(TEXT("FixedSkillGroupTable 应包含 60 行数据（12 生肖 × 5 元素），实际 %d 行"), RowNames.Num()));
 			bIsValid = false;
@@ -204,15 +211,5 @@ FName UDBAZodiacHeroDataAsset::BuildZodiacRowName(EDBAZodiac Zodiac) const
 
 FName UDBAZodiacHeroDataAsset::BuildSkillGroupRowName(EDBAZodiac Zodiac, EDBAElement Element) const
 {
-	const FString ZodiacString = UEnum::GetValueAsString(Zodiac);
-	const FString ElementString = UEnum::GetValueAsString(Element);
-
-	// 移除枚举前缀
-	FString CleanZodiacString = ZodiacString;
-	CleanZodiacString.RemoveFromStart(TEXT("EDBAZodiac::"));
-
-	FString CleanElementString = ElementString;
-	CleanElementString.RemoveFromStart(TEXT("EDBAElement::"));
-
-	return FName(*FString::Printf(TEXT("Zodiac_%s_Element_%s"), *CleanZodiacString, *CleanElementString));
+	return BuildFixedSkillGroupRowName(Zodiac, Element);
 }

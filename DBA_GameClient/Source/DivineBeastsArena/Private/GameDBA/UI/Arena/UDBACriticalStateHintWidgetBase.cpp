@@ -18,6 +18,7 @@ UDBACriticalStateHintWidgetBase::UDBACriticalStateHintWidgetBase(const FObjectIn
 void UDBACriticalStateHintWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+	BP_OnCriticalStateChanged(CachedLowHP, CachedLowEnergy);
 }
 
 void UDBACriticalStateHintWidgetBase::NativeDestruct()
@@ -27,13 +28,19 @@ void UDBACriticalStateHintWidgetBase::NativeDestruct()
 
 void UDBACriticalStateHintWidgetBase::ShowCriticalHP(bool bLowHP)
 {
+	CachedLowHP = bLowHP;
+	BP_OnCriticalStateChanged(CachedLowHP, CachedLowEnergy);
 }
 
 void UDBACriticalStateHintWidgetBase::ShowCriticalEnergy(bool bLowEnergy)
 {
+	CachedLowEnergy = bLowEnergy;
+	BP_OnCriticalStateChanged(CachedLowHP, CachedLowEnergy);
 }
 
 void UDBACriticalStateHintWidgetBase::HideAllHints()
 {
+	CachedLowHP = false;
+	CachedLowEnergy = false;
+	BP_OnCriticalStateChanged(CachedLowHP, CachedLowEnergy);
 }
-

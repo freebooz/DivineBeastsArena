@@ -26,7 +26,7 @@ public static class GameServerEndpoints
     public static void MapGameServerEndpoints(this IEndpointRouteBuilder app)
     {
         var managerGroup = app.MapGroup("/internal/game-servers").WithTags("Dedicated Server Orchestration");
-        managerGroup.AddEndpointFilter(RequireInternalApiKey);
+        managerGroup.AddEndpointFilter(InternalApiKeyEndpointFilter.RequireInternalApiKey);
         managerGroup.MapPost("/allocate", AllocateManagedServer);
         managerGroup.MapPost("/{serverId:guid}/release", ReleaseManagedServer);
         managerGroup.MapGet("/", ListManagedServers);
@@ -90,19 +90,6 @@ GET /internal/servers/active
 ");
     }
 
-    private static async ValueTask<object?> RequireInternalApiKey(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
-    {
-        var configuration = context.HttpContext.RequestServices.GetRequiredService<IConfiguration>();
-        var expected = configuration["InternalApi:Key"];
-        var actual = context.HttpContext.Request.Headers["X-Internal-Api-Key"].ToString();
-        if (string.IsNullOrWhiteSpace(expected) || !string.Equals(expected, actual, StringComparison.Ordinal))
-        {
-            return ErrorResponse.Unauthorized("Invalid internal api key").ToProblem();
-        }
-
-        return await next(context);
-    }
-
     private static async Task<IResult> AllocateManagedServer(
         AllocateManagedServerRequest request,
         IDedicatedServerOrchestrator manager,
@@ -154,8 +141,14 @@ GET /internal/servers/active
         return killed ? Results.Ok(ApiResponse.Ok()) : ErrorResponse.NotFound(ErrorCodes.GameServerNotFound).ToProblem();
     }
 
-    private static async Task<IResult> Register(RegisterGameServerRequest request, IGameServerRegistryService svc)
+    private static async Task<IResult> Register(
+        RegisterGameServerRequest request,
+        IGameServerRegistryService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var server = await svc.RegisterServerAsync(request);
         return server == null
             ? ErrorResponse.Conflict("Server already registered").ToProblem()
@@ -164,8 +157,14 @@ GET /internal/servers/active
                 server.Status, server.StartedAt, server.LastHeartbeatAt)));
     }
 
-    private static async Task<IResult> GetServer(Guid serverId, IGameServerRegistryService svc)
+    private static async Task<IResult> GetServer(
+        Guid serverId,
+        IGameServerRegistryService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var server = await svc.GetServerAsync(serverId);
         return server == null
             ? ErrorResponse.NotFound(ErrorCodes.GameServerNotFound).ToProblem()
@@ -174,8 +173,13 @@ GET /internal/servers/active
                 server.Status, server.StartedAt, server.LastHeartbeatAt)));
     }
 
-    private static async Task<IResult> GetActiveServers(IGameServerRegistryService svc)
+    private static async Task<IResult> GetActiveServers(
+        IGameServerRegistryService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var servers = await svc.GetActiveServersAsync();
         var responses = servers.Select(s => new InternalGameServerResponse(
             s.Id, s.SessionId, s.Mode, s.MapId, s.Ip, s.Port,

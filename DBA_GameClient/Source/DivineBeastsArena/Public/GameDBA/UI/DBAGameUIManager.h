@@ -21,6 +21,8 @@
 #include "DBAGameUIManager.generated.h"
 
 class UDBAArenaHUDRootWidgetBase;
+class UDBAArenaHUDWidgetController;
+class ADBAZodiacCharacterBase;
 class UDBAMainLobbyWidgetBase;
 class UDBALobbyPlayerHUDWidgetBase;
 class UDBALoadingScreenWidgetBase;
@@ -113,6 +115,78 @@ public:
 	/** 隐藏战斗HUD */
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	void HideArenaHUD();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD")
+	void UpdateArenaHUDPlayerVitals(float CurrentHP, float MaxHP, float CurrentEnergy, float MaxEnergy);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD")
+	void UpdateArenaHUDPlayerLevel(int32 Level);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD")
+	void UpdateArenaHUDUltimateEnergy(float CurrentEnergy, float MaxEnergy);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD")
+	void UpdateArenaHUDCombatState(int32 ChainLevel, int32 ResonanceLevel);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD")
+	void UpdateArenaHUDMomentum(int32 MomentumLevel, float MomentumProgress);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Status")
+	void AddArenaHUDBuff(const FString& BuffId, float Duration);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Status")
+	void RemoveArenaHUDBuff(const FString& BuffId);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Status")
+	void ClearArenaHUDBuffs();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Status")
+	void AddArenaHUDDebuff(const FString& DebuffId, float Duration);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Status")
+	void RemoveArenaHUDDebuff(const FString& DebuffId);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Status")
+	void ClearArenaHUDDebuffs();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Status")
+	void AddArenaHUDCCEffect(const FString& CCId, float Duration);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Status")
+	void RemoveArenaHUDCCEffect(const FString& CCId);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Status")
+	void ClearArenaHUDCCEffects();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Feedback")
+	void ShowArenaHUDCombatAnnouncement(const FText& Text, float Duration);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Feedback")
+	void ClearArenaHUDCombatAnnouncement();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Feedback")
+	void UpdateArenaHUDCriticalStateHints(bool bLowHP, bool bLowEnergy);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Feedback")
+	void UpdateArenaHUDObjective(const FText& ObjectiveText, float Progress);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Feedback")
+	void CompleteArenaHUDObjective();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Feedback")
+	void AddArenaHUDEventFeedEntry(const FText& Text, float Duration);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Feedback")
+	void ClearArenaHUDEventFeed();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Feedback")
+	void ShowArenaHUDUltimateReadyPrompt();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD|Feedback")
+	void HideArenaHUDUltimateReadyPrompt();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|ArenaHUD")
+	void BindArenaHUDToCharacter(ADBAZodiacCharacterBase* Character);
 
 	/** 清理所有UI */
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
@@ -240,6 +314,9 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	virtual void CreateArenaHUDWidget();
 
+	APlayerController* GetArenaHUDLocalPlayerController() const;
+	UDBAArenaHUDWidgetController* EnsureArenaHUDWidgetController(class APlayerController* InPlayerController);
+
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	virtual void CreateGameSettingsWidget();
 
@@ -299,6 +376,12 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
 	TObjectPtr<UDBAArenaHUDRootWidgetBase> ArenaHUDWidget;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
+	TObjectPtr<UDBAArenaHUDWidgetController> ArenaHUDWidgetController;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
+	TWeakObjectPtr<ADBAZodiacCharacterBase> ArenaHUDCharacter;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|Manager")
 	TObjectPtr<UDBALoginFlowWidgetBase> LoginWidget;

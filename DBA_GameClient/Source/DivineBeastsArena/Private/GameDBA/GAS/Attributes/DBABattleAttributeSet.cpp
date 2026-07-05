@@ -28,7 +28,6 @@ UDBABattleAttributeSet::UDBABattleAttributeSet()
 	InitCriticalMultiplier(2.0f);
 	InitMaxShield(0.0f);
 	InitCurrentShield(0.0f);
-	InitUltimateEnergy(0.0f);
 }
 
 void UDBABattleAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -47,7 +46,6 @@ void UDBABattleAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 	DOREPLIFETIME_CONDITION_NOTIFY(UDBABattleAttributeSet, CriticalMultiplier, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UDBABattleAttributeSet, MaxShield, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UDBABattleAttributeSet, CurrentShield, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UDBABattleAttributeSet, UltimateEnergy, COND_None, REPNOTIFY_Always);
 }
 
 void UDBABattleAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
@@ -68,11 +66,6 @@ void UDBABattleAttributeSet::PreAttributeChange(const FGameplayAttribute& Attrib
 	else if (Attribute == GetCurrentShieldAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxShield());
-	}
-	// Clamp UltimateEnergy：不能小于 0，不能超过 100
-	else if (Attribute == GetUltimateEnergyAttribute())
-	{
-		NewValue = FMath::Clamp(NewValue, 0.0f, DBAConstants::MaxUltimateEnergy);
 	}
 	// Clamp CriticalRate：范围 0~1
 	else if (Attribute == GetCriticalRateAttribute())
@@ -103,16 +96,12 @@ void UDBABattleAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModC
 	{
 		SetCurrentShield(FMath::Clamp(GetCurrentShield(), 0.0f, GetMaxShield()));
 	}
-	else if (Data.EvaluatedData.Attribute == GetUltimateEnergyAttribute())
-	{
-		SetUltimateEnergy(FMath::Clamp(GetUltimateEnergy(), 0.0f, DBAConstants::MaxUltimateEnergy));
-	}
 }
 
 float UDBABattleAttributeSet::CalculatePhysicalDamageReduction() const
 {
 	float DefenseValue = GetDefense();
-	return DefenseValue / (DefenseValue + 100.0f);
+	return DefenseValue / (DefenseValue + DBAConstants::DefenseReductionConstant);
 }
 
 bool UDBABattleAttributeSet::RollCriticalHit() const
@@ -181,9 +170,4 @@ void UDBABattleAttributeSet::OnRep_MaxShield(const FGameplayAttributeData& OldMa
 void UDBABattleAttributeSet::OnRep_CurrentShield(const FGameplayAttributeData& OldCurrentShield)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UDBABattleAttributeSet, CurrentShield, OldCurrentShield);
-}
-
-void UDBABattleAttributeSet::OnRep_UltimateEnergy(const FGameplayAttributeData& OldUltimateEnergy)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UDBABattleAttributeSet, UltimateEnergy, OldUltimateEnergy);
 }

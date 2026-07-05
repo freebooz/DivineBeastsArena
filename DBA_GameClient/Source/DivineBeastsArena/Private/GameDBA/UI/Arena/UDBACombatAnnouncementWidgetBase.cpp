@@ -9,6 +9,22 @@
 
 
 #include "GameDBA/UI/Arena/UDBACombatAnnouncementWidgetBase.h"
+#include "Math/UnrealMathUtility.h"
+
+namespace
+{
+bool NormalizeHUDWidgetText(const FText& Text, FText& OutText)
+{
+	const FString NormalizedText = Text.ToString().TrimStartAndEnd();
+	if (NormalizedText.IsEmpty())
+	{
+		return false;
+	}
+
+	OutText = FText::FromString(NormalizedText);
+	return true;
+}
+}
 
 UDBACombatAnnouncementWidgetBase::UDBACombatAnnouncementWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -18,6 +34,14 @@ UDBACombatAnnouncementWidgetBase::UDBACombatAnnouncementWidgetBase(const FObject
 void UDBACombatAnnouncementWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+	if (bCachedAnnouncementVisible && !CachedAnnouncementText.IsEmpty())
+	{
+		BP_OnAnnouncementShown(CachedAnnouncementText, CachedAnnouncementDuration);
+	}
+	else
+	{
+		BP_OnAnnouncementCleared();
+	}
 }
 
 void UDBACombatAnnouncementWidgetBase::NativeDestruct()
@@ -27,9 +51,22 @@ void UDBACombatAnnouncementWidgetBase::NativeDestruct()
 
 void UDBACombatAnnouncementWidgetBase::ShowAnnouncement(const FText& Text, float Duration)
 {
+	FText NormalizedText;
+	if (!NormalizeHUDWidgetText(Text, NormalizedText))
+	{
+		return;
+	}
+
+	CachedAnnouncementText = NormalizedText;
+	CachedAnnouncementDuration = FMath::Max(0.0f, Duration);
+	bCachedAnnouncementVisible = true;
+	BP_OnAnnouncementShown(CachedAnnouncementText, CachedAnnouncementDuration);
 }
 
 void UDBACombatAnnouncementWidgetBase::ClearAnnouncement()
 {
+	CachedAnnouncementText = FText::GetEmpty();
+	CachedAnnouncementDuration = 0.0f;
+	bCachedAnnouncementVisible = false;
+	BP_OnAnnouncementCleared();
 }
-

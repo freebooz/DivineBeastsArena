@@ -9,7 +9,7 @@ namespace Game.Api.Endpoints.Admin;
 
 public static partial class AdminEndpoints
 {
-    private static async Task<IResult> ListServers(int page, int pageSize, string? status, GameDbContext db)
+    private static async Task<IResult> ListServers(GameDbContext db, string? status = null, int page = 1, int pageSize = 50)
     {
         (page, pageSize) = NormalizePaging(page, pageSize);
 

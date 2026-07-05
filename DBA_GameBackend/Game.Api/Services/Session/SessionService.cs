@@ -7,6 +7,7 @@
 */
 
 using Game.Shared.Contracts.Session;
+using Game.Shared.Contracts.Character;
 using Game.Shared.Errors;
 using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Entities;
@@ -56,6 +57,14 @@ public sealed class SessionService : ISessionService
         if (session == null || session.ServerIp == null || session.ServerPort == null)
             return null;
 
+        if (session.Status is not ("WAITING_PLAYERS" or "IN_PROGRESS"))
+            return null;
+
+        if (!await EnsureFrozenBuildSummaryAsync(playerSession))
+        {
+            return null;
+        }
+
         // 连接令牌是进入 UE Dedicated Server 的短期凭证，只在本次连接请求中返回明文。
         // 数据库仍然只保存 Hash，避免长期保存可直接进服的敏感 token。
         var playerSessionToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
@@ -68,7 +77,9 @@ public sealed class SessionService : ISessionService
             playerSessionToken,
             playerSession.SessionTokenExpiresAt,
             playerSessionToken,
-            playerId);
+            playerId,
+            ResolveSessionTeamId(playerSession),
+            ToCharacterBuildSummary(playerSession));
     }
 
     public async Task<SessionResponse?> CreateFromRoomAsync(Guid roomId)
@@ -101,10 +112,14 @@ public sealed class SessionService : ISessionService
             .Where(x => x.RoomId == roomId && x.LeftAt == null)
             .ToListAsync();
 
+        var selectedCharacters = await LoadSelectedCharactersByPlayerAsync(players.Select(x => x.PlayerId));
+
         foreach (var rp in players)
         {
             var token = Guid.NewGuid().ToString();
             var tokenHash = HashToken(token);
+            selectedCharacters.TryGetValue(rp.PlayerId, out var selectedCharacter);
+            var buildSummary = selectedCharacter is null ? null : ToCharacterBuildSummary(selectedCharacter);
 
             _db.PlayerSessions.Add(new PlayerSession
             {
@@ -113,6 +128,10 @@ public sealed class SessionService : ISessionService
                 PlayerId = rp.PlayerId,
                 SlotIndex = rp.SlotIndex,
                 Team = rp.Team,
+                Zodiac = buildSummary?.Zodiac,
+                PrimaryElement = buildSummary?.PrimaryElement,
+                FiveCamp = buildSummary?.FiveCamp,
+                FixedSkillGroupId = buildSummary?.FixedSkillGroupId,
                 Status = "CREATED",
                 SessionTokenHash = tokenHash,
                 SessionTokenExpiresAt = DateTimeOffset.UtcNow.AddHours(2),
@@ -153,12 +172,18 @@ public sealed class SessionService : ISessionService
 
         var token = Guid.NewGuid().ToString();
         var tokenHash = HashToken(token);
+        var selectedCharacter = await LoadSelectedCharacterAsync(ticket.PlayerId);
+        var buildSummary = selectedCharacter is null ? null : ToCharacterBuildSummary(selectedCharacter);
 
         _db.PlayerSessions.Add(new PlayerSession
         {
             Id = Guid.NewGuid(),
             GameSessionId = session.Id,
             PlayerId = ticket.PlayerId,
+            Zodiac = buildSummary?.Zodiac,
+            PrimaryElement = buildSummary?.PrimaryElement,
+            FiveCamp = buildSummary?.FiveCamp,
+            FixedSkillGroupId = buildSummary?.FixedSkillGroupId,
             Status = "CREATED",
             SessionTokenHash = tokenHash,
             SessionTokenExpiresAt = DateTimeOffset.UtcNow.AddHours(2),
@@ -251,9 +276,131 @@ public sealed class SessionService : ISessionService
         s.Id, s.SourceType, s.Mode, s.MapId, s.Region, s.Status,
         s.ServerIp, s.ServerPort, s.MaxPlayers, s.CreatedAt, s.StartedAt);
 
+    private async Task<bool> EnsureFrozenBuildSummaryAsync(PlayerSession playerSession)
+    {
+        var bHasFrozenZodiac = !string.IsNullOrWhiteSpace(playerSession.Zodiac);
+        var bHasFrozenPrimaryElement = !string.IsNullOrWhiteSpace(playerSession.PrimaryElement);
+        var bHasFrozenFixedSkillGroupId = !string.IsNullOrWhiteSpace(playerSession.FixedSkillGroupId);
+        var bHasAnyFrozenBuildSummary = bHasFrozenZodiac || bHasFrozenPrimaryElement || bHasFrozenFixedSkillGroupId;
+        var bHasCompleteFrozenBuildSummary = bHasFrozenZodiac && bHasFrozenPrimaryElement && bHasFrozenFixedSkillGroupId;
+
+        if (bHasAnyFrozenBuildSummary && !bHasCompleteFrozenBuildSummary)
+        {
+            return false;
+        }
+
+        if (bHasCompleteFrozenBuildSummary)
+        {
+            var existingZodiac = CharacterBuildRules.NormalizeChoice(playerSession.Zodiac, "Rat");
+            var existingPrimaryElement = CharacterBuildRules.NormalizeChoice(playerSession.PrimaryElement, "Water");
+            var existingFixedSkillGroupId = CharacterBuildRules.NormalizeChoice(
+                playerSession.FixedSkillGroupId,
+                CharacterBuildRules.BuildFixedSkillGroupId(existingZodiac, existingPrimaryElement));
+            var expectedFixedSkillGroupId = CharacterBuildRules.BuildFixedSkillGroupId(existingZodiac, existingPrimaryElement);
+
+            if (!string.Equals(existingFixedSkillGroupId, expectedFixedSkillGroupId, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var existingBuildSummary = CharacterBuildRules.BuildSummary(
+                existingZodiac,
+                existingPrimaryElement,
+                playerSession.FiveCamp);
+            playerSession.Zodiac = existingBuildSummary.Zodiac;
+            playerSession.PrimaryElement = existingBuildSummary.PrimaryElement;
+            playerSession.FiveCamp = existingBuildSummary.FiveCamp;
+            playerSession.FixedSkillGroupId = existingBuildSummary.FixedSkillGroupId;
+            return true;
+        }
+
+        var selectedCharacter = await LoadSelectedCharacterAsync(playerSession.PlayerId);
+        if (selectedCharacter is null)
+        {
+            return true;
+        }
+
+        var buildSummary = ToCharacterBuildSummary(selectedCharacter);
+        playerSession.Zodiac = buildSummary.Zodiac;
+        playerSession.PrimaryElement = buildSummary.PrimaryElement;
+        playerSession.FiveCamp = buildSummary.FiveCamp;
+        playerSession.FixedSkillGroupId = buildSummary.FixedSkillGroupId;
+        return true;
+    }
+
+    private async Task<Dictionary<Guid, PlayerCharacter>> LoadSelectedCharactersByPlayerAsync(IEnumerable<Guid> playerIds)
+    {
+        var ids = playerIds.Distinct().ToList();
+        var selectedCharacters = await _db.PlayerCharacters
+            .Where(x => ids.Contains(x.PlayerId) && x.IsSelected)
+            .OrderByDescending(x => x.LastUsedAt)
+            .ToListAsync();
+
+        return selectedCharacters
+            .GroupBy(x => x.PlayerId)
+            .ToDictionary(x => x.Key, x => x.First());
+    }
+
+    private async Task<PlayerCharacter?> LoadSelectedCharacterAsync(Guid playerId)
+    {
+        return await _db.PlayerCharacters
+            .Where(x => x.PlayerId == playerId && x.IsSelected)
+            .OrderByDescending(x => x.LastUsedAt)
+            .FirstOrDefaultAsync();
+    }
+
+    private static CharacterBuildSummaryDto? ToCharacterBuildSummary(PlayerSession playerSession)
+    {
+        if (string.IsNullOrWhiteSpace(playerSession.Zodiac)
+            || string.IsNullOrWhiteSpace(playerSession.PrimaryElement)
+            || string.IsNullOrWhiteSpace(playerSession.FixedSkillGroupId))
+        {
+            return null;
+        }
+
+        return CharacterBuildRules.BuildSummary(
+            playerSession.Zodiac,
+            playerSession.PrimaryElement,
+            playerSession.FiveCamp);
+    }
+
+    private static CharacterBuildSummaryDto ToCharacterBuildSummary(PlayerCharacter selectedCharacter)
+    {
+        return CharacterBuildRules.BuildSummary(
+            selectedCharacter.Zodiac,
+            selectedCharacter.PrimaryElement,
+            selectedCharacter.FiveCamp);
+    }
+
     private static string HashToken(string token)
     {
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(token));
         return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
+    private static int ResolveSessionTeamId(PlayerSession playerSession)
+    {
+        var team = playerSession.Team?.Trim();
+        if (!string.IsNullOrWhiteSpace(team))
+        {
+            if (int.TryParse(team, out var numericTeam) && numericTeam > 0)
+            {
+                return numericTeam;
+            }
+
+            if (team.Equals("blue", StringComparison.OrdinalIgnoreCase) ||
+                team.Equals("team1", StringComparison.OrdinalIgnoreCase))
+            {
+                return 1;
+            }
+
+            if (team.Equals("red", StringComparison.OrdinalIgnoreCase) ||
+                team.Equals("team2", StringComparison.OrdinalIgnoreCase))
+            {
+                return 2;
+            }
+        }
+
+        return playerSession.SlotIndex.HasValue ? playerSession.SlotIndex.Value % 2 + 1 : 0;
     }
 }

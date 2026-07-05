@@ -76,10 +76,12 @@ public class RoomSessionServiceTests
         await roomService.SetReadyAsync(room.Id, secondPlayerId, true);
         await roomService.StartGameAsync(room.Id, ownerId);
         var session = await sessionService.CreateFromRoomAsync(room.Id);
+        Assert.NotNull(session);
 
         var storedSession = await db.GameSessions.SingleAsync(x => x.Id == session!.Id);
         storedSession.ServerIp = "127.0.0.1";
         storedSession.ServerPort = 7777;
+        storedSession.Status = "WAITING_PLAYERS";
         await db.SaveChangesAsync();
 
         var connection = await sessionService.GetConnectionInfoAsync(session!.Id, ownerId);
@@ -92,6 +94,325 @@ public class RoomSessionServiceTests
         Assert.False(string.IsNullOrWhiteSpace(connection.PlayerSessionToken));
         Assert.Equal(HashToken(connection.PlayerSessionToken), playerSession.SessionTokenHash);
         Assert.True(connection.TokenExpiresAt <= DateTimeOffset.UtcNow.AddMinutes(11));
+    }
+
+    [Fact]
+    public async Task GetConnectionInfoAsync_WhenServerIsAllocatedButNotReady_ReturnsNullWithoutReissuingToken()
+    {
+        await using var db = CreateDbContext();
+        var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
+        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var ownerId = Guid.NewGuid();
+        var secondPlayerId = Guid.NewGuid();
+
+        var room = await roomService.CreateRoomAsync(CreateRoom(), ownerId);
+        await roomService.JoinRoomAsync(room.Id, secondPlayerId, null);
+        await roomService.SetReadyAsync(room.Id, secondPlayerId, true);
+        await roomService.StartGameAsync(room.Id, ownerId);
+        var session = await sessionService.CreateFromRoomAsync(room.Id);
+        Assert.NotNull(session);
+
+        var storedSession = await db.GameSessions.SingleAsync(x => x.Id == session!.Id);
+        storedSession.ServerIp = "127.0.0.1";
+        storedSession.ServerPort = 7777;
+        storedSession.Status = "ALLOCATING_SERVER";
+        var playerSession = await db.PlayerSessions.SingleAsync(x => x.GameSessionId == session.Id && x.PlayerId == ownerId);
+        var originalTokenHash = playerSession.SessionTokenHash;
+        var originalTokenExpiresAt = playerSession.SessionTokenExpiresAt;
+        await db.SaveChangesAsync();
+
+        var connection = await sessionService.GetConnectionInfoAsync(session!.Id, ownerId);
+        playerSession = await db.PlayerSessions.SingleAsync(x => x.GameSessionId == session.Id && x.PlayerId == ownerId);
+
+        Assert.Null(connection);
+        Assert.Equal(originalTokenHash, playerSession.SessionTokenHash);
+        Assert.Equal(originalTokenExpiresAt, playerSession.SessionTokenExpiresAt);
+    }
+
+    [Fact]
+    public async Task GetConnectionInfoAsync_ReturnsFrozenSelectedCharacterBuildSummary()
+    {
+        await using var db = CreateDbContext();
+        var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
+        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var ownerId = Guid.NewGuid();
+        var secondPlayerId = Guid.NewGuid();
+
+        db.PlayerCharacters.Add(new()
+        {
+            Id = Guid.NewGuid(),
+            PlayerId = ownerId,
+            CharacterName = "FlowArenaRat",
+            Zodiac = "Rat",
+            PrimaryElement = "Water",
+            FiveCamp = "East",
+            FixedSkillGroupId = "Rat_Water",
+            IsSelected = true,
+            CoreAttributesJson = "{}",
+            CreatedAt = DateTimeOffset.UtcNow,
+            LastUsedAt = DateTimeOffset.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        var room = await roomService.CreateRoomAsync(CreateRoom(), ownerId);
+        await roomService.JoinRoomAsync(room.Id, secondPlayerId, null);
+        await roomService.SetReadyAsync(room.Id, secondPlayerId, true);
+        await roomService.StartGameAsync(room.Id, ownerId);
+        var session = await sessionService.CreateFromRoomAsync(room.Id);
+        Assert.NotNull(session);
+        var sessionId = session!.Id;
+
+        var storedSession = await db.GameSessions.SingleAsync(x => x.Id == sessionId);
+        storedSession.ServerIp = "127.0.0.1";
+        storedSession.ServerPort = 7777;
+        storedSession.Status = "WAITING_PLAYERS";
+        await db.SaveChangesAsync();
+
+        var connection = await sessionService.GetConnectionInfoAsync(session!.Id, ownerId);
+        var playerSession = await db.PlayerSessions.SingleAsync(x => x.GameSessionId == sessionId && x.PlayerId == ownerId);
+
+        Assert.NotNull(connection);
+        Assert.NotNull(connection!.CharacterBuildSummary);
+        Assert.Equal("Rat", connection.CharacterBuildSummary!.Zodiac);
+        Assert.Equal("Water", connection.CharacterBuildSummary.PrimaryElement);
+        Assert.Equal("East", connection.CharacterBuildSummary.FiveCamp);
+        Assert.Equal("Rat_Water", connection.CharacterBuildSummary.FixedSkillGroupId);
+        Assert.Equal(1, connection.TeamId);
+        Assert.Equal("Rat_Water", playerSession.FixedSkillGroupId);
+    }
+
+    [Fact]
+    public async Task GetConnectionInfoAsync_WhenSelectedCharacterBuildSummaryIsPadded_ReturnsNormalizedSummary()
+    {
+        await using var db = CreateDbContext();
+        var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
+        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var ownerId = Guid.NewGuid();
+        var secondPlayerId = Guid.NewGuid();
+
+        db.PlayerCharacters.Add(new()
+        {
+            Id = Guid.NewGuid(),
+            PlayerId = ownerId,
+            CharacterName = "FlowArenaPaddedRat",
+            Zodiac = " Rat ",
+            PrimaryElement = " Water ",
+            FiveCamp = " East ",
+            FixedSkillGroupId = " Rat_Water ",
+            IsSelected = true,
+            CoreAttributesJson = "{}",
+            CreatedAt = DateTimeOffset.UtcNow,
+            LastUsedAt = DateTimeOffset.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        var room = await roomService.CreateRoomAsync(CreateRoom(), ownerId);
+        await roomService.JoinRoomAsync(room.Id, secondPlayerId, null);
+        await roomService.SetReadyAsync(room.Id, secondPlayerId, true);
+        await roomService.StartGameAsync(room.Id, ownerId);
+        var session = await sessionService.CreateFromRoomAsync(room.Id);
+        Assert.NotNull(session);
+        var sessionId = session!.Id;
+
+        var storedSession = await db.GameSessions.SingleAsync(x => x.Id == sessionId);
+        storedSession.ServerIp = "127.0.0.1";
+        storedSession.ServerPort = 7777;
+        storedSession.Status = "WAITING_PLAYERS";
+        await db.SaveChangesAsync();
+
+        var connection = await sessionService.GetConnectionInfoAsync(session!.Id, ownerId);
+        var playerSession = await db.PlayerSessions.SingleAsync(x => x.GameSessionId == sessionId && x.PlayerId == ownerId);
+
+        Assert.NotNull(connection);
+        Assert.NotNull(connection!.CharacterBuildSummary);
+        Assert.Equal("Rat", connection.CharacterBuildSummary!.Zodiac);
+        Assert.Equal("Water", connection.CharacterBuildSummary.PrimaryElement);
+        Assert.Equal("East", connection.CharacterBuildSummary.FiveCamp);
+        Assert.Equal("Rat_Water", connection.CharacterBuildSummary.FixedSkillGroupId);
+        Assert.Equal("Rat", playerSession.Zodiac);
+        Assert.Equal("Water", playerSession.PrimaryElement);
+        Assert.Equal("East", playerSession.FiveCamp);
+        Assert.Equal("Rat_Water", playerSession.FixedSkillGroupId);
+    }
+
+    [Fact]
+    public async Task GetConnectionInfoAsync_WhenExistingFrozenBuildSummaryIsPadded_PersistsNormalizedSummary()
+    {
+        await using var db = CreateDbContext();
+        var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
+        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var ownerId = Guid.NewGuid();
+        var secondPlayerId = Guid.NewGuid();
+
+        var room = await roomService.CreateRoomAsync(CreateRoom(), ownerId);
+        await roomService.JoinRoomAsync(room.Id, secondPlayerId, null);
+        await roomService.SetReadyAsync(room.Id, secondPlayerId, true);
+        await roomService.StartGameAsync(room.Id, ownerId);
+        var session = await sessionService.CreateFromRoomAsync(room.Id);
+        Assert.NotNull(session);
+        var sessionId = session!.Id;
+
+        var storedSession = await db.GameSessions.SingleAsync(x => x.Id == sessionId);
+        storedSession.ServerIp = "127.0.0.1";
+        storedSession.ServerPort = 7777;
+        storedSession.Status = "WAITING_PLAYERS";
+
+        var playerSession = await db.PlayerSessions.SingleAsync(x => x.GameSessionId == sessionId && x.PlayerId == ownerId);
+        playerSession.Zodiac = " Rat ";
+        playerSession.PrimaryElement = " Water ";
+        playerSession.FiveCamp = " East ";
+        playerSession.FixedSkillGroupId = " Rat_Water ";
+        await db.SaveChangesAsync();
+
+        var connection = await sessionService.GetConnectionInfoAsync(sessionId, ownerId);
+        playerSession = await db.PlayerSessions.SingleAsync(x => x.GameSessionId == sessionId && x.PlayerId == ownerId);
+
+        Assert.NotNull(connection);
+        Assert.NotNull(connection!.CharacterBuildSummary);
+        Assert.Equal("Rat", connection.CharacterBuildSummary!.Zodiac);
+        Assert.Equal("Water", connection.CharacterBuildSummary.PrimaryElement);
+        Assert.Equal("East", connection.CharacterBuildSummary.FiveCamp);
+        Assert.Equal("Rat_Water", connection.CharacterBuildSummary.FixedSkillGroupId);
+        Assert.Equal("Rat", playerSession.Zodiac);
+        Assert.Equal("Water", playerSession.PrimaryElement);
+        Assert.Equal("East", playerSession.FiveCamp);
+        Assert.Equal("Rat_Water", playerSession.FixedSkillGroupId);
+    }
+
+    [Fact]
+    public async Task GetConnectionInfoAsync_WhenExistingFrozenFixedSkillGroupIsTampered_ReturnsNull()
+    {
+        await using var db = CreateDbContext();
+        var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
+        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var ownerId = Guid.NewGuid();
+        var secondPlayerId = Guid.NewGuid();
+
+        var room = await roomService.CreateRoomAsync(CreateRoom(), ownerId);
+        await roomService.JoinRoomAsync(room.Id, secondPlayerId, null);
+        await roomService.SetReadyAsync(room.Id, secondPlayerId, true);
+        await roomService.StartGameAsync(room.Id, ownerId);
+        var session = await sessionService.CreateFromRoomAsync(room.Id);
+        Assert.NotNull(session);
+        var sessionId = session!.Id;
+
+        var storedSession = await db.GameSessions.SingleAsync(x => x.Id == sessionId);
+        storedSession.ServerIp = "127.0.0.1";
+        storedSession.ServerPort = 7777;
+        storedSession.Status = "WAITING_PLAYERS";
+
+        var playerSession = await db.PlayerSessions.SingleAsync(x => x.GameSessionId == sessionId && x.PlayerId == ownerId);
+        playerSession.Zodiac = "Rat";
+        playerSession.PrimaryElement = "Water";
+        playerSession.FiveCamp = "East";
+        playerSession.FixedSkillGroupId = "Tiger_Fire";
+        await db.SaveChangesAsync();
+
+        var connection = await sessionService.GetConnectionInfoAsync(sessionId, ownerId);
+        playerSession = await db.PlayerSessions.SingleAsync(x => x.GameSessionId == sessionId && x.PlayerId == ownerId);
+
+        Assert.Null(connection);
+        Assert.Equal("Tiger_Fire", playerSession.FixedSkillGroupId);
+    }
+
+    [Fact]
+    public async Task GetConnectionInfoAsync_WhenExistingFrozenBuildSummaryIsPartial_ReturnsNull()
+    {
+        await using var db = CreateDbContext();
+        var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
+        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var ownerId = Guid.NewGuid();
+        var secondPlayerId = Guid.NewGuid();
+
+        db.PlayerCharacters.Add(new()
+        {
+            Id = Guid.NewGuid(),
+            PlayerId = ownerId,
+            CharacterName = "FlowArenaPartialFrozen",
+            Zodiac = "Rat",
+            PrimaryElement = "Water",
+            FiveCamp = "East",
+            FixedSkillGroupId = "Rat_Water",
+            IsSelected = true,
+            CoreAttributesJson = "{}",
+            CreatedAt = DateTimeOffset.UtcNow,
+            LastUsedAt = DateTimeOffset.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        var room = await roomService.CreateRoomAsync(CreateRoom(), ownerId);
+        await roomService.JoinRoomAsync(room.Id, secondPlayerId, null);
+        await roomService.SetReadyAsync(room.Id, secondPlayerId, true);
+        await roomService.StartGameAsync(room.Id, ownerId);
+        var session = await sessionService.CreateFromRoomAsync(room.Id);
+        Assert.NotNull(session);
+        var sessionId = session!.Id;
+
+        var storedSession = await db.GameSessions.SingleAsync(x => x.Id == sessionId);
+        storedSession.ServerIp = "127.0.0.1";
+        storedSession.ServerPort = 7777;
+        storedSession.Status = "WAITING_PLAYERS";
+
+        var playerSession = await db.PlayerSessions.SingleAsync(x => x.GameSessionId == sessionId && x.PlayerId == ownerId);
+        playerSession.Zodiac = "Rat";
+        playerSession.PrimaryElement = null;
+        playerSession.FiveCamp = "East";
+        playerSession.FixedSkillGroupId = "Rat_Water";
+        await db.SaveChangesAsync();
+
+        var connection = await sessionService.GetConnectionInfoAsync(sessionId, ownerId);
+        playerSession = await db.PlayerSessions.SingleAsync(x => x.GameSessionId == sessionId && x.PlayerId == ownerId);
+
+        Assert.Null(connection);
+        Assert.Null(playerSession.PrimaryElement);
+        Assert.Equal("Rat_Water", playerSession.FixedSkillGroupId);
+    }
+
+    [Fact]
+    public async Task GetConnectionInfoAsync_WhenSelectedCharacterFixedSkillGroupIsTampered_FreezesComputedSkillGroup()
+    {
+        await using var db = CreateDbContext();
+        var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
+        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var ownerId = Guid.NewGuid();
+        var secondPlayerId = Guid.NewGuid();
+
+        db.PlayerCharacters.Add(new()
+        {
+            Id = Guid.NewGuid(),
+            PlayerId = ownerId,
+            CharacterName = "FlowArenaTamperedSource",
+            Zodiac = "Rat",
+            PrimaryElement = "Water",
+            FiveCamp = "East",
+            FixedSkillGroupId = "Tiger_Fire",
+            IsSelected = true,
+            CoreAttributesJson = "{}",
+            CreatedAt = DateTimeOffset.UtcNow,
+            LastUsedAt = DateTimeOffset.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        var room = await roomService.CreateRoomAsync(CreateRoom(), ownerId);
+        await roomService.JoinRoomAsync(room.Id, secondPlayerId, null);
+        await roomService.SetReadyAsync(room.Id, secondPlayerId, true);
+        await roomService.StartGameAsync(room.Id, ownerId);
+        var session = await sessionService.CreateFromRoomAsync(room.Id);
+        Assert.NotNull(session);
+        var sessionId = session!.Id;
+
+        var storedSession = await db.GameSessions.SingleAsync(x => x.Id == sessionId);
+        storedSession.ServerIp = "127.0.0.1";
+        storedSession.ServerPort = 7777;
+        storedSession.Status = "WAITING_PLAYERS";
+        await db.SaveChangesAsync();
+
+        var connection = await sessionService.GetConnectionInfoAsync(sessionId, ownerId);
+        var playerSession = await db.PlayerSessions.SingleAsync(x => x.GameSessionId == sessionId && x.PlayerId == ownerId);
+
+        Assert.NotNull(connection);
+        Assert.Equal("Rat_Water", connection!.CharacterBuildSummary!.FixedSkillGroupId);
+        Assert.Equal("Rat_Water", playerSession.FixedSkillGroupId);
     }
 
     private static GameDbContext CreateDbContext()

@@ -31,6 +31,14 @@ jobs:
             echo "Vulnerable NuGet packages detected."
             exit 1
           fi
+      - name: Upload NuGet vulnerability report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-ci-nuget-vulnerability-report
+          path: DBA_GameBackend/vulnerability-report.txt
+          if-no-files-found: error
+          retention-days: 30
 
   npm-audit:
     runs-on: ubuntu-latest
@@ -53,7 +61,16 @@ jobs:
           cache-dependency-path: ${{ matrix.app }}/package-lock.json
       - run: npm ci
       - name: Check production npm vulnerabilities
-        run: npm audit --omit=dev --audit-level=high
+        shell: bash
+        run: npm audit --omit=dev --audit-level=high --json > npm-audit-report.json
+      - name: Upload npm audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-ci-npm-audit-${{ matrix.app }}
+          path: ${{ matrix.app }}/npm-audit-report.json
+          if-no-files-found: error
+          retention-days: 30
 
   container-scan:
     runs-on: ubuntu-latest
@@ -82,6 +99,14 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-api.sarif
+      - name: Archive API Trivy SARIF
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-ci-trivy-api-sarif
+          path: DBA_GameBackend/trivy-api.sarif
+          if-no-files-found: error
+          retention-days: 30
       - name: Scan Worker image
         uses: aquasecurity/trivy-action@0.31.0
         with:
@@ -95,3 +120,11 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-worker.sarif
+      - name: Archive Worker Trivy SARIF
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-ci-trivy-worker-sarif
+          path: DBA_GameBackend/trivy-worker.sarif
+          if-no-files-found: error
+          retention-days: 30

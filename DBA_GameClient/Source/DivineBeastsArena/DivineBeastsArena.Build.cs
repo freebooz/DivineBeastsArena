@@ -53,10 +53,9 @@ public class DivineBeastsArena : ModuleRules
                 "RenderCore",
                 "RHI",
                 "AudioMixer",
+                "MediaAssets",
             });
         }
-
-        PrivateDependencyModuleNames.Add("MediaAssets");
 
         if (Target.Type == TargetType.Editor)
         {

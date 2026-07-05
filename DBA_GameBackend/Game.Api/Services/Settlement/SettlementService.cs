@@ -11,6 +11,7 @@ using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Entities;
 using Game.Api.Services.Inventory;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Game.Api.Services.Settlement;
 
@@ -38,22 +39,42 @@ public sealed class SettlementService : ISettlementService
     {
         await using var tx = await _db.Database.BeginTransactionAsync();
 
-        var existing = await _db.MatchResults
-            .FirstOrDefaultAsync(x => x.SessionId == request.SessionId || x.IdempotencyKey == request.IdempotencyKey);
-        if (existing != null) return existing;
+        if (string.IsNullOrWhiteSpace(request.IdempotencyKey)) return null;
+        var idempotencyKey = request.IdempotencyKey.Trim();
+
+        var existingForSession = await _db.MatchResults
+            .Include(x => x.PlayerResults)
+            .FirstOrDefaultAsync(x => x.SessionId == request.SessionId);
+        if (existingForSession != null) return existingForSession;
+
+        var existingForIdempotencyKey = await _db.MatchResults
+            .FirstOrDefaultAsync(x => x.IdempotencyKey == idempotencyKey);
+        if (existingForIdempotencyKey != null) return null;
 
         var session = await _db.GameSessions
             .Include(x => x.PlayerSessions)
             .FirstOrDefaultAsync(x => x.Id == request.SessionId);
         if (session == null) return null;
-        if (session.Status is not ("IN_PROGRESS" or "SETTLING")) return null;
+        if (session.Status != "SETTLING") return null;
 
         var server = await _db.GameServerInstances
             .FirstOrDefaultAsync(x => x.SessionId == request.SessionId && x.Id == session.ServerId);
         if (server == null) return null;
 
         var sessionPlayers = session.PlayerSessions.Select(x => x.PlayerId).ToHashSet();
-        if (request.Players.Any(x => !sessionPlayers.Contains(x.PlayerId))) return null;
+        var submittedPlayers = request.Players.Select(x => x.PlayerId).ToHashSet();
+        if (sessionPlayers.Count == 0 || request.Players.Count == 0) return null;
+        if (request.Players.Count != submittedPlayers.Count) return null;
+        if (!sessionPlayers.SetEquals(submittedPlayers)) return null;
+        var playerResults = request.Players.ToDictionary(x => x.PlayerId, x => NormalizePlayerResult(x.Result));
+        if (playerResults.Values.Any(x => !IsValidPlayerResult(x))) return null;
+        if (request.Players.Any(x => !HasValidNonNegativePlayerValues(x))) return null;
+        var sessionPlayerTeams = session.PlayerSessions.ToDictionary(x => x.PlayerId, x => NormalizeTeam(x.Team));
+        if (request.Players.Any(x => sessionPlayerTeams[x.PlayerId].Length == 0 ||
+                                     NormalizeTeam(x.Team) != sessionPlayerTeams[x.PlayerId]))
+        {
+            return null;
+        }
 
         var duration = (int)(DateTimeOffset.UtcNow - (session.StartedAt ?? session.CreatedAt)).TotalSeconds;
 
@@ -66,7 +87,7 @@ public sealed class SettlementService : ISettlementService
             MapId = session.MapId,
             DurationSeconds = duration,
             ResultJson = request.ResultJson,
-            IdempotencyKey = request.IdempotencyKey,
+            IdempotencyKey = idempotencyKey,
             CreatedAt = DateTimeOffset.UtcNow
         };
 
@@ -79,8 +100,8 @@ public sealed class SettlementService : ISettlementService
                 Id = Guid.NewGuid(),
                 MatchResultId = result.Id,
                 PlayerId = player.PlayerId,
-                Team = player.Team,
-                Result = player.Result,
+                Team = sessionPlayerTeams[player.PlayerId],
+                Result = playerResults[player.PlayerId],
                 Kills = player.Kills,
                 Deaths = player.Deaths,
                 Assists = player.Assists,
@@ -90,6 +111,22 @@ public sealed class SettlementService : ISettlementService
                 CreatedAt = DateTimeOffset.UtcNow
             };
             _db.MatchPlayerResults.Add(playerResult);
+            _db.PlayerMatchHistories.Add(new PlayerMatchHistory
+            {
+                Id = Guid.NewGuid(),
+                PlayerId = player.PlayerId,
+                SessionId = session.Id,
+                Mode = session.Mode,
+                MapId = session.MapId,
+                Team = sessionPlayerTeams[player.PlayerId],
+                Result = playerResults[player.PlayerId],
+                Kills = player.Kills,
+                Deaths = player.Deaths,
+                Assists = player.Assists,
+                Score = player.Score,
+                DurationSeconds = duration,
+                PlayedAt = result.CreatedAt
+            });
 
             var profile = await _db.PlayerProfiles.FirstOrDefaultAsync(x => x.PlayerId == player.PlayerId);
             if (profile != null)
@@ -102,9 +139,9 @@ public sealed class SettlementService : ISettlementService
             if (stats != null)
             {
                 stats.TotalMatches += 1;
-                stats.Wins += player.Result.Equals("win", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
-                stats.Losses += player.Result.Equals("loss", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
-                stats.Draws += player.Result.Equals("draw", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+                stats.Wins += playerResults[player.PlayerId] == "win" ? 1 : 0;
+                stats.Losses += playerResults[player.PlayerId] == "loss" ? 1 : 0;
+                stats.Draws += playerResults[player.PlayerId] == "draw" ? 1 : 0;
                 stats.Kills += player.Kills;
                 stats.Deaths += player.Deaths;
                 stats.Assists += player.Assists;
@@ -140,7 +177,9 @@ public sealed class SettlementService : ISettlementService
 
     public async Task<MatchResult?> GetMatchResultAsync(Guid matchResultId)
     {
-        return await _db.MatchResults.FindAsync(matchResultId);
+        return await _db.MatchResults
+            .Include(x => x.PlayerResults)
+            .FirstOrDefaultAsync(x => x.Id == matchResultId);
     }
 
     public async Task<IReadOnlyList<MatchResult>> GetSessionResultsAsync(Guid sessionId)
@@ -148,6 +187,52 @@ public sealed class SettlementService : ISettlementService
         return await _db.MatchResults
             .Where(x => x.SessionId == sessionId)
             .Include(x => x.PlayerResults)
+            .OrderByDescending(x => x.CreatedAt)
             .ToListAsync();
+    }
+
+    private static string NormalizeTeam(string? team)
+    {
+        return string.IsNullOrWhiteSpace(team)
+            ? string.Empty
+            : team.Trim().ToLowerInvariant();
+    }
+
+    private static string NormalizePlayerResult(string? result)
+    {
+        return string.IsNullOrWhiteSpace(result)
+            ? string.Empty
+            : result.Trim().ToLowerInvariant();
+    }
+
+    private static bool IsValidPlayerResult(string result)
+    {
+        return result is "win" or "loss" or "draw";
+    }
+
+    private static bool HasValidNonNegativePlayerValues(MatchPlayerResultDto player)
+    {
+        return player.Kills >= 0 &&
+               player.Deaths >= 0 &&
+               player.Assists >= 0 &&
+               player.Score >= 0 &&
+               player.ExpDelta >= 0 &&
+               player.Rewards.All(x => IsNonNegativeRewardQuantity(x.Value));
+    }
+
+    private static bool IsNonNegativeRewardQuantity(object value)
+    {
+        return value switch
+        {
+            int quantity => quantity >= 0,
+            long quantity => quantity >= 0,
+            decimal quantity => quantity >= 0,
+            double quantity => quantity >= 0,
+            JsonElement { ValueKind: JsonValueKind.Number } quantity =>
+                quantity.TryGetInt64(out var longQuantity)
+                    ? longQuantity >= 0
+                    : quantity.TryGetDouble(out var doubleQuantity) && doubleQuantity >= 0,
+            _ => true
+        };
     }
 }

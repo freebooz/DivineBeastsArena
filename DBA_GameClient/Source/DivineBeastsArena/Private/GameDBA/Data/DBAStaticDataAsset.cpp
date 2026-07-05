@@ -10,6 +10,7 @@
 
 #include "GameDBA/Data/DBAStaticDataAsset.h"
 #include "Engine/DataTable.h"
+#include "GameDBA/Core/DBAConstants.h"
 #include "GameDBA/Core/DBALogChannels.h"
 
 #if WITH_EDITOR
@@ -117,14 +118,14 @@ UDataTable* UDBAStaticDataAsset::GetModeDefinitionTable() const
 }
 
 #if WITH_EDITOR
-EDataValidationResult UDBAStaticDataAsset::IsDataValid(TArray<FText>& ValidationErrors)
+EDataValidationResult UDBAStaticDataAsset::IsDataValid(FDataValidationContext& Context) const
 {
 	EDataValidationResult Result = EDataValidationResult::Valid;
 
 	// 验证生肖数据表
 	if (ZodiacStaticTable.IsNull())
 	{
-		ValidationErrors.Add(FText::FromString(TEXT("生肖数据表引用为空")));
+		Context.AddError(FText::FromString(TEXT("生肖数据表引用为空")));
 		Result = EDataValidationResult::Invalid;
 	}
 	else
@@ -132,12 +133,12 @@ EDataValidationResult UDBAStaticDataAsset::IsDataValid(TArray<FText>& Validation
 		UDataTable* Table = ZodiacStaticTable.LoadSynchronous();
 		if (!Table)
 		{
-			ValidationErrors.Add(FText::FromString(TEXT("生肖数据表加载失败")));
+			Context.AddError(FText::FromString(TEXT("生肖数据表加载失败")));
 			Result = EDataValidationResult::Invalid;
 		}
 		else if (Table->GetRowNames().Num() == 0)
 		{
-			ValidationErrors.Add(FText::FromString(TEXT("生肖数据表为空")));
+			Context.AddError(FText::FromString(TEXT("生肖数据表为空")));
 			Result = EDataValidationResult::Invalid;
 		}
 	}
@@ -145,7 +146,7 @@ EDataValidationResult UDBAStaticDataAsset::IsDataValid(TArray<FText>& Validation
 	// 验证自然元素之力数据表
 	if (ElementDefinitionTable.IsNull())
 	{
-		ValidationErrors.Add(FText::FromString(TEXT("自然元素之力数据表引用为空")));
+		Context.AddError(FText::FromString(TEXT("自然元素之力数据表引用为空")));
 		Result = EDataValidationResult::Invalid;
 	}
 	else
@@ -153,12 +154,12 @@ EDataValidationResult UDBAStaticDataAsset::IsDataValid(TArray<FText>& Validation
 		UDataTable* Table = ElementDefinitionTable.LoadSynchronous();
 		if (!Table)
 		{
-			ValidationErrors.Add(FText::FromString(TEXT("自然元素之力数据表加载失败")));
+			Context.AddError(FText::FromString(TEXT("自然元素之力数据表加载失败")));
 			Result = EDataValidationResult::Invalid;
 		}
-		else if (Table->GetRowNames().Num() != 5)
+		else if (Table->GetRowNames().Num() != DBAConstants::ElementCount)
 		{
-			ValidationErrors.Add(FText::FromString(TEXT("自然元素之力数据表必须包含 5 个元素（Metal/Wood/Water/Fire/Earth）")));
+			Context.AddError(FText::FromString(TEXT("自然元素之力数据表必须包含 5 个元素（Metal/Wood/Water/Fire/Earth）")));
 			Result = EDataValidationResult::Invalid;
 		}
 	}
@@ -166,7 +167,7 @@ EDataValidationResult UDBAStaticDataAsset::IsDataValid(TArray<FText>& Validation
 	// 验证五大阵营数据表
 	if (FiveCampDisplayTable.IsNull())
 	{
-		ValidationErrors.Add(FText::FromString(TEXT("五大阵营数据表引用为空")));
+		Context.AddError(FText::FromString(TEXT("五大阵营数据表引用为空")));
 		Result = EDataValidationResult::Invalid;
 	}
 	else
@@ -174,12 +175,12 @@ EDataValidationResult UDBAStaticDataAsset::IsDataValid(TArray<FText>& Validation
 		UDataTable* Table = FiveCampDisplayTable.LoadSynchronous();
 		if (!Table)
 		{
-			ValidationErrors.Add(FText::FromString(TEXT("五大阵营数据表加载失败")));
+			Context.AddError(FText::FromString(TEXT("五大阵营数据表加载失败")));
 			Result = EDataValidationResult::Invalid;
 		}
-		else if (Table->GetRowNames().Num() != 5)
+		else if (Table->GetRowNames().Num() != DBAConstants::ElementCount)
 		{
-			ValidationErrors.Add(FText::FromString(TEXT("五大阵营数据表必须包含 5 个阵营（Byakko/Qinglong/Xuanwu/Zhuque/Kirin）")));
+			Context.AddError(FText::FromString(TEXT("五大阵营数据表必须包含 5 个阵营（Byakko/Qinglong/Xuanwu/Zhuque/Kirin）")));
 			Result = EDataValidationResult::Invalid;
 		}
 	}
@@ -187,7 +188,7 @@ EDataValidationResult UDBAStaticDataAsset::IsDataValid(TArray<FText>& Validation
 	// 验证地图数据表
 	if (MapDefinitionTable.IsNull())
 	{
-		ValidationErrors.Add(FText::FromString(TEXT("地图数据表引用为空")));
+		Context.AddError(FText::FromString(TEXT("地图数据表引用为空")));
 		Result = EDataValidationResult::Invalid;
 	}
 	else
@@ -195,12 +196,12 @@ EDataValidationResult UDBAStaticDataAsset::IsDataValid(TArray<FText>& Validation
 		UDataTable* Table = MapDefinitionTable.LoadSynchronous();
 		if (!Table)
 		{
-			ValidationErrors.Add(FText::FromString(TEXT("地图数据表加载失败")));
+			Context.AddError(FText::FromString(TEXT("地图数据表加载失败")));
 			Result = EDataValidationResult::Invalid;
 		}
 		else if (Table->GetRowNames().Num() == 0)
 		{
-			ValidationErrors.Add(FText::FromString(TEXT("地图数据表为空")));
+			Context.AddError(FText::FromString(TEXT("地图数据表为空")));
 			Result = EDataValidationResult::Invalid;
 		}
 	}
@@ -208,7 +209,7 @@ EDataValidationResult UDBAStaticDataAsset::IsDataValid(TArray<FText>& Validation
 	// 验证游戏模式数据表
 	if (ModeDefinitionTable.IsNull())
 	{
-		ValidationErrors.Add(FText::FromString(TEXT("游戏模式数据表引用为空")));
+		Context.AddError(FText::FromString(TEXT("游戏模式数据表引用为空")));
 		Result = EDataValidationResult::Invalid;
 	}
 	else
@@ -216,12 +217,12 @@ EDataValidationResult UDBAStaticDataAsset::IsDataValid(TArray<FText>& Validation
 		UDataTable* Table = ModeDefinitionTable.LoadSynchronous();
 		if (!Table)
 		{
-			ValidationErrors.Add(FText::FromString(TEXT("游戏模式数据表加载失败")));
+			Context.AddError(FText::FromString(TEXT("游戏模式数据表加载失败")));
 			Result = EDataValidationResult::Invalid;
 		}
 		else if (Table->GetRowNames().Num() == 0)
 		{
-			ValidationErrors.Add(FText::FromString(TEXT("游戏模式数据表为空")));
+			Context.AddError(FText::FromString(TEXT("游戏模式数据表为空")));
 			Result = EDataValidationResult::Invalid;
 		}
 	}

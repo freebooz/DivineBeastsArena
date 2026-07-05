@@ -36,4 +36,16 @@ public:
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|CombatAnnouncement", meta = (DisplayName = "On Announcement Shown"))
 	void BP_OnAnnouncementShown(const FText& Text, float Duration);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|CombatAnnouncement", meta = (DisplayName = "On Announcement Cleared"))
+	void BP_OnAnnouncementCleared();
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|CombatAnnouncement")
+	FText CachedAnnouncementText;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|CombatAnnouncement")
+	float CachedAnnouncementDuration = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|CombatAnnouncement")
+	bool bCachedAnnouncementVisible = false;
 };

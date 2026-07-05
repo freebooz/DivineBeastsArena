@@ -9,6 +9,16 @@
 
 
 #include "GameDBA/UI/Arena/UDBACCBarWidgetBase.h"
+#include "Math/UnrealMathUtility.h"
+
+namespace
+{
+bool NormalizeStatusWidgetId(const FString& EffectId, FString& OutEffectId)
+{
+	OutEffectId = EffectId.TrimStartAndEnd();
+	return !OutEffectId.IsEmpty();
+}
+}
 
 UDBACCBarWidgetBase::UDBACCBarWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -18,6 +28,12 @@ UDBACCBarWidgetBase::UDBACCBarWidgetBase(const FObjectInitializer& ObjectInitial
 void UDBACCBarWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	BP_OnCCEffectsCleared();
+	for (const TPair<FString, float>& CachedCCEffect : CachedActiveCCEffects)
+	{
+		BP_OnCCEffectAdded(CachedCCEffect.Key, CachedCCEffect.Value);
+	}
 }
 
 void UDBACCBarWidgetBase::NativeDestruct()
@@ -27,15 +43,30 @@ void UDBACCBarWidgetBase::NativeDestruct()
 
 void UDBACCBarWidgetBase::AddCCEffect(const FString& CCId, float Duration)
 {
-	BP_OnCCEffectAdded(CCId, Duration);
+	FString NormalizedCCId;
+	if (!NormalizeStatusWidgetId(CCId, NormalizedCCId))
+	{
+		return;
+	}
+
+	CachedActiveCCEffects.Add(NormalizedCCId, FMath::Max(0.0f, Duration));
+	BP_OnCCEffectAdded(NormalizedCCId, CachedActiveCCEffects[NormalizedCCId]);
 }
 
 void UDBACCBarWidgetBase::RemoveCCEffect(const FString& CCId)
 {
-	BP_OnCCEffectRemoved(CCId);
+	FString NormalizedCCId;
+	if (!NormalizeStatusWidgetId(CCId, NormalizedCCId))
+	{
+		return;
+	}
+
+	CachedActiveCCEffects.Remove(NormalizedCCId);
+	BP_OnCCEffectRemoved(NormalizedCCId);
 }
 
 void UDBACCBarWidgetBase::ClearAllCCEffects()
 {
+	CachedActiveCCEffects.Reset();
+	BP_OnCCEffectsCleared();
 }
-

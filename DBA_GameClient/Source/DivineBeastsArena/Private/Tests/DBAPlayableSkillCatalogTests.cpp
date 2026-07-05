@@ -20,105 +20,26 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FDBAPlayableSkillCatalogDefaultsTest::RunTest(const FString& Parameters)
 {
 	UDBAPlayableSkillComponent* SkillComponent = NewObject<UDBAPlayableSkillComponent>();
-	TestNotNull(TEXT("SkillComponent"), SkillComponent);
+	TestNotNull(TEXT("技能组件应能创建"), SkillComponent);
 	if (!SkillComponent)
 	{
 		return false;
 	}
 
 	const TArray<FDBAPlayableSkillRuntimeSpec> SkillSpecs = SkillComponent->GetAllSkillSpecs();
-	TestEqual(TEXT("Default skill count"), SkillSpecs.Num(), 6);
+	TestEqual(TEXT("未配置默认技能目录时不应生成 C++ 内置技能"), SkillSpecs.Num(), 0);
 
 	TArray<FString> ValidationErrors;
-	TestTrue(TEXT("Default skill catalog validates"), SkillComponent->ValidateEffectiveSkillSpecs(ValidationErrors));
-	TestEqual(TEXT("Default skill catalog validation error count"), ValidationErrors.Num(), 0);
+	TestFalse(TEXT("未配置默认技能目录时应报告无可用技能"), SkillComponent->ValidateEffectiveSkillSpecs(ValidationErrors));
+	TestTrue(TEXT("未配置默认技能目录时应输出中文校验错误"), ValidationErrors.Contains(TEXT("SkillSpecs 为空")));
 
 	const FDBAPlayableSkillCatalogSummary DefaultSummary = SkillComponent->GetSkillCatalogSummary();
-	TestEqual(TEXT("Default summary source"), DefaultSummary.Source, EDBAPlayableSkillCatalogSource::BuiltInDefaults);
-	TestEqual(TEXT("Default summary catalog id"), DefaultSummary.CatalogId, FName(TEXT("BuiltInDefaults")));
-	TestEqual(TEXT("Default summary skill count"), DefaultSummary.SkillCount, 6);
-	TestEqual(TEXT("Default summary configured catalog count"), DefaultSummary.ConfiguredCatalogSkillCount, 0);
-	TestTrue(TEXT("Default summary is valid"), DefaultSummary.bIsValid);
-	TestTrue(TEXT("Default summary appends defaults"), DefaultSummary.bAppendsBuiltInDefaults);
-
-	const auto FindSkill = [&SkillSpecs](int32 SkillSlot) -> const FDBAPlayableSkillRuntimeSpec*
-	{
-		return SkillSpecs.FindByPredicate([SkillSlot](const FDBAPlayableSkillRuntimeSpec& Spec)
-		{
-			return Spec.SkillSlot == SkillSlot;
-		});
-	};
-
-	const FDBAPlayableSkillRuntimeSpec* Fireball = FindSkill(1);
-	TestNotNull(TEXT("Slot 1 fireball"), Fireball);
-	if (Fireball)
-	{
-		TestEqual(TEXT("Fireball shape"), Fireball->EffectShape, EDBAPlayableSkillEffectShape::Projectile);
-		TestEqual(TEXT("Fireball element"), Fireball->Element, EDBAElement::Fire);
-		TestTrue(TEXT("Fireball has projectile class"), Fireball->ProjectileClass != nullptr);
-		TestTrue(TEXT("Fireball has cast VFX"), !Fireball->CastNiagaraVFXAsset.IsNull());
-		TestTrue(TEXT("Fireball has cast SFX"), !Fireball->CastSFXAsset.IsNull());
-		TestTrue(TEXT("Fireball has flight VFX"), !Fireball->ProjectileNiagaraVFXAsset.IsNull());
-		TestTrue(TEXT("Fireball has impact VFX"), !Fireball->ImpactNiagaraVFXAsset.IsNull());
-	}
-
-	const FDBAPlayableSkillRuntimeSpec* Frost = FindSkill(2);
-	TestNotNull(TEXT("Slot 2 frost shard"), Frost);
-	if (Frost)
-	{
-		TestEqual(TEXT("Frost shape"), Frost->EffectShape, EDBAPlayableSkillEffectShape::Projectile);
-		TestEqual(TEXT("Frost element"), Frost->Element, EDBAElement::Water);
-		TestTrue(TEXT("Frost has projectile class"), Frost->ProjectileClass != nullptr);
-		TestTrue(TEXT("Frost has cast VFX"), !Frost->CastNiagaraVFXAsset.IsNull());
-		TestTrue(TEXT("Frost has flight VFX"), !Frost->ProjectileNiagaraVFXAsset.IsNull());
-		TestTrue(TEXT("Frost has impact VFX"), !Frost->ImpactNiagaraVFXAsset.IsNull());
-	}
-
-	const FDBAPlayableSkillRuntimeSpec* Bloom = FindSkill(3);
-	TestNotNull(TEXT("Slot 3 bloom"), Bloom);
-	if (Bloom)
-	{
-		TestEqual(TEXT("Bloom shape"), Bloom->EffectShape, EDBAPlayableSkillEffectShape::BloomHealing);
-		TestEqual(TEXT("Bloom element"), Bloom->Element, EDBAElement::Wood);
-		TestTrue(TEXT("Bloom has spell class"), Bloom->BloomHealingClass != nullptr);
-		TestTrue(TEXT("Bloom has cast VFX"), !Bloom->CastNiagaraVFXAsset.IsNull());
-		TestTrue(TEXT("Bloom has flight VFX"), !Bloom->ProjectileNiagaraVFXAsset.IsNull());
-		TestTrue(TEXT("Bloom has impact VFX"), !Bloom->ImpactNiagaraVFXAsset.IsNull());
-	}
-
-	const FDBAPlayableSkillRuntimeSpec* Chain = FindSkill(4);
-	TestNotNull(TEXT("Slot 4 chain lightning"), Chain);
-	if (Chain)
-	{
-		TestEqual(TEXT("Chain shape"), Chain->EffectShape, EDBAPlayableSkillEffectShape::ChainLightning);
-		TestTrue(TEXT("Chain has spell class"), Chain->ChainLightningClass != nullptr);
-		TestTrue(TEXT("Chain has cast VFX"), !Chain->CastNiagaraVFXAsset.IsNull());
-		TestTrue(TEXT("Chain has flight VFX"), !Chain->ProjectileNiagaraVFXAsset.IsNull());
-		TestTrue(TEXT("Chain has impact VFX"), !Chain->ImpactNiagaraVFXAsset.IsNull());
-	}
-
-	const FDBAPlayableSkillRuntimeSpec* Shield = FindSkill(5);
-	TestNotNull(TEXT("Slot 5 shield"), Shield);
-	if (Shield)
-	{
-		TestEqual(TEXT("Shield shape"), Shield->EffectShape, EDBAPlayableSkillEffectShape::HolyShield);
-		TestTrue(TEXT("Shield has spell class"), Shield->HolyShieldClass != nullptr);
-		TestTrue(TEXT("Shield has cast VFX"), !Shield->CastNiagaraVFXAsset.IsNull());
-		TestTrue(TEXT("Shield has flight VFX"), !Shield->ProjectileNiagaraVFXAsset.IsNull());
-		TestTrue(TEXT("Shield has impact VFX"), !Shield->ImpactNiagaraVFXAsset.IsNull());
-	}
-
-	const FDBAPlayableSkillRuntimeSpec* Shadow = FindSkill(6);
-	TestNotNull(TEXT("Slot 6 shadow bolt"), Shadow);
-	if (Shadow)
-	{
-		TestEqual(TEXT("Shadow shape"), Shadow->EffectShape, EDBAPlayableSkillEffectShape::Projectile);
-		TestTrue(TEXT("Shadow has projectile class"), Shadow->ProjectileClass != nullptr);
-		TestTrue(TEXT("Shadow has cast VFX"), !Shadow->CastNiagaraVFXAsset.IsNull());
-		TestTrue(TEXT("Shadow has flight VFX"), !Shadow->ProjectileNiagaraVFXAsset.IsNull());
-		TestTrue(TEXT("Shadow has impact VFX"), !Shadow->ImpactNiagaraVFXAsset.IsNull());
-		TestTrue(TEXT("Shadow has impact SFX"), !Shadow->ImpactSFXAsset.IsNull());
-	}
+	TestEqual(TEXT("未配置摘要来源应为内置默认占位"), DefaultSummary.Source, EDBAPlayableSkillCatalogSource::BuiltInDefaults);
+	TestEqual(TEXT("未配置摘要目录标识应为空"), DefaultSummary.CatalogId, NAME_None);
+	TestEqual(TEXT("未配置摘要技能数量应为零"), DefaultSummary.SkillCount, 0);
+	TestEqual(TEXT("默认摘要已配置目录技能数量应为零"), DefaultSummary.ConfiguredCatalogSkillCount, 0);
+	TestFalse(TEXT("未配置摘要不应有效"), DefaultSummary.bIsValid);
+	TestFalse(TEXT("未配置摘要不应追加默认技能"), DefaultSummary.bAppendsBuiltInDefaults);
 
 	return true;
 }
@@ -131,7 +52,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FDBAPlayableSkillCatalogValidationTest::RunTest(const FString& Parameters)
 {
 	UDBAPlayableSkillCatalogDataAsset* Catalog = NewObject<UDBAPlayableSkillCatalogDataAsset>();
-	TestNotNull(TEXT("Catalog"), Catalog);
+	TestNotNull(TEXT("技能目录数据资产应能创建"), Catalog);
 	if (!Catalog)
 	{
 		return false;
@@ -146,7 +67,7 @@ bool FDBAPlayableSkillCatalogValidationTest::RunTest(const FString& Parameters)
 	FDBAPlayableSkillRuntimeSpec DuplicateSlot;
 	DuplicateSlot.SkillSlot = 1;
 	DuplicateSlot.SkillId = TEXT("Test.DuplicateSlot");
-	DuplicateSlot.DisplayName = FText::FromString(TEXT("Duplicate Slot"));
+	DuplicateSlot.DisplayName = FText::FromString(TEXT("重复槽位"));
 	DuplicateSlot.EffectShape = EDBAPlayableSkillEffectShape::HolyShield;
 	DuplicateSlot.Magnitude = 10.0f;
 	DuplicateSlot.Cooldown = 1.0f;
@@ -157,8 +78,8 @@ bool FDBAPlayableSkillCatalogValidationTest::RunTest(const FString& Parameters)
 	Catalog->SkillSpecs.Add(DuplicateSlot);
 
 	TArray<FString> ValidationErrors;
-	TestFalse(TEXT("Broken catalog fails validation"), Catalog->ValidateDataIntegrity(ValidationErrors));
-	TestTrue(TEXT("Broken catalog reports errors"), ValidationErrors.Num() > 0);
+	TestFalse(TEXT("损坏技能目录应无法通过校验"), Catalog->ValidateDataIntegrity(ValidationErrors));
+	TestTrue(TEXT("损坏技能目录应报告错误"), ValidationErrors.Num() > 0);
 
 	const auto HasErrorContaining = [&ValidationErrors](const TCHAR* ExpectedText)
 	{
@@ -168,12 +89,12 @@ bool FDBAPlayableSkillCatalogValidationTest::RunTest(const FString& Parameters)
 		});
 	};
 
-	TestTrue(TEXT("Missing catalog id is reported"), HasErrorContaining(TEXT("CatalogId")));
-	TestTrue(TEXT("Missing projectile class is reported"), HasErrorContaining(TEXT("ProjectileClass")));
-	TestTrue(TEXT("Duplicate slot is reported"), HasErrorContaining(TEXT("SkillSlot is duplicated")));
-	TestTrue(TEXT("Missing cast VFX is reported"), HasErrorContaining(TEXT("CastNiagaraVFXAsset")));
-	TestTrue(TEXT("Missing cast SFX is reported"), HasErrorContaining(TEXT("CastSFXAsset")));
-	TestTrue(TEXT("Missing impact VFX is reported"), HasErrorContaining(TEXT("ImpactNiagaraVFXAsset")));
+	TestTrue(TEXT("缺少目录标识应被报告"), HasErrorContaining(TEXT("CatalogId")));
+	TestTrue(TEXT("缺少投射物类应被报告"), HasErrorContaining(TEXT("ProjectileClass")));
+	TestTrue(TEXT("重复技能槽应被报告"), HasErrorContaining(TEXT("SkillSlot 重复")));
+	TestTrue(TEXT("缺少施放特效应被报告"), HasErrorContaining(TEXT("CastNiagaraVFXAsset")));
+	TestTrue(TEXT("缺少施放音效应被报告"), HasErrorContaining(TEXT("CastSFXAsset")));
+	TestTrue(TEXT("缺少命中特效应被报告"), HasErrorContaining(TEXT("ImpactNiagaraVFXAsset")));
 
 	return true;
 }
@@ -186,7 +107,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FDBAPlayableSkillCatalogDataAssetOverrideTest::RunTest(const FString& Parameters)
 {
 	UDBAPlayableSkillCatalogDataAsset* Catalog = NewObject<UDBAPlayableSkillCatalogDataAsset>();
-	TestNotNull(TEXT("Catalog"), Catalog);
+	TestNotNull(TEXT("技能目录数据资产应能创建"), Catalog);
 	if (!Catalog)
 	{
 		return false;
@@ -199,7 +120,7 @@ bool FDBAPlayableSkillCatalogDataAssetOverrideTest::RunTest(const FString& Param
 	FDBAPlayableSkillRuntimeSpec OverrideSpec;
 	OverrideSpec.SkillSlot = 1;
 	OverrideSpec.SkillId = TEXT("Test.Skill.OverrideFireball");
-	OverrideSpec.DisplayName = FText::FromString(TEXT("Override Fireball"));
+	OverrideSpec.DisplayName = FText::FromString(TEXT("覆盖炎弹"));
 	OverrideSpec.EffectShape = EDBAPlayableSkillEffectShape::Projectile;
 	OverrideSpec.Element = EDBAElement::Fire;
 	OverrideSpec.Magnitude = 99.0f;
@@ -214,11 +135,11 @@ bool FDBAPlayableSkillCatalogDataAssetOverrideTest::RunTest(const FString& Param
 	Catalog->SkillSpecs.Add(OverrideSpec);
 
 	const TArray<FDBAPlayableSkillRuntimeSpec> CatalogSpecs = Catalog->GetAllSkillSpecs();
-	TestEqual(TEXT("Catalog ignores invalid slots"), CatalogSpecs.Num(), 1);
-	TestEqual(TEXT("Catalog override slot"), CatalogSpecs[0].SkillSlot, 1);
+	TestEqual(TEXT("技能目录应忽略无效槽位"), CatalogSpecs.Num(), 1);
+	TestEqual(TEXT("技能目录覆盖槽位应匹配"), CatalogSpecs[0].SkillSlot, 1);
 
 	UDBAPlayableSkillComponent* SkillComponent = NewObject<UDBAPlayableSkillComponent>();
-	TestNotNull(TEXT("SkillComponent"), SkillComponent);
+	TestNotNull(TEXT("技能组件应能创建"), SkillComponent);
 	if (!SkillComponent)
 	{
 		return false;
@@ -227,14 +148,14 @@ bool FDBAPlayableSkillCatalogDataAssetOverrideTest::RunTest(const FString& Param
 	SkillComponent->SetSkillCatalog(Catalog);
 
 	const TArray<FDBAPlayableSkillRuntimeSpec> EffectiveSpecs = SkillComponent->GetAllSkillSpecs();
-	TestEqual(TEXT("Catalog override keeps default fallback count"), EffectiveSpecs.Num(), 6);
+	TestEqual(TEXT("技能目录覆盖不应追加 C++ 内置默认技能"), EffectiveSpecs.Num(), 1);
 
 	FDBAPlayableSkillCatalogSummary OverrideSummary = SkillComponent->GetSkillCatalogSummary();
-	TestEqual(TEXT("Override summary source"), OverrideSummary.Source, EDBAPlayableSkillCatalogSource::DataAssetWithDefaults);
-	TestEqual(TEXT("Override summary catalog id"), OverrideSummary.CatalogId, FName(TEXT("DefaultPlayableSkillCatalog")));
-	TestEqual(TEXT("Override summary skill count"), OverrideSummary.SkillCount, 6);
-	TestEqual(TEXT("Override summary configured catalog count"), OverrideSummary.ConfiguredCatalogSkillCount, 1);
-	TestTrue(TEXT("Override summary appends defaults"), OverrideSummary.bAppendsBuiltInDefaults);
+	TestEqual(TEXT("覆盖摘要来源应为纯数据资产"), OverrideSummary.Source, EDBAPlayableSkillCatalogSource::DataAssetOnly);
+	TestEqual(TEXT("覆盖摘要目录标识应匹配"), OverrideSummary.CatalogId, FName(TEXT("DefaultPlayableSkillCatalog")));
+	TestEqual(TEXT("覆盖摘要技能数量应匹配"), OverrideSummary.SkillCount, 1);
+	TestEqual(TEXT("覆盖摘要已配置目录技能数量应匹配"), OverrideSummary.ConfiguredCatalogSkillCount, 1);
+	TestFalse(TEXT("覆盖摘要不应追加 C++ 内置默认技能"), OverrideSummary.bAppendsBuiltInDefaults);
 
 	const auto FindSkill = [](const TArray<FDBAPlayableSkillRuntimeSpec>& SkillSpecs, int32 SkillSlot) -> const FDBAPlayableSkillRuntimeSpec*
 	{
@@ -245,34 +166,30 @@ bool FDBAPlayableSkillCatalogDataAssetOverrideTest::RunTest(const FString& Param
 	};
 
 	const FDBAPlayableSkillRuntimeSpec* SlotOne = FindSkill(EffectiveSpecs, 1);
-	TestNotNull(TEXT("Slot 1 override"), SlotOne);
+	TestNotNull(TEXT("槽位 1 覆盖技能应存在"), SlotOne);
 	if (SlotOne)
 	{
-		TestEqual(TEXT("Slot 1 override skill id"), SlotOne->SkillId, FName(TEXT("Test.Skill.OverrideFireball")));
-		TestEqual(TEXT("Slot 1 override name"), SlotOne->DisplayName.ToString(), FString(TEXT("Override Fireball")));
-		TestEqual(TEXT("Slot 1 override magnitude"), SlotOne->Magnitude, 99.0f);
-		TestEqual(TEXT("Slot 1 override cooldown"), SlotOne->Cooldown, 9.5f);
-		TestTrue(TEXT("Slot 1 override keeps projectile class"), SlotOne->ProjectileClass == ADBAFireballProjectile::StaticClass());
+		TestEqual(TEXT("槽位 1 覆盖技能标识应匹配"), SlotOne->SkillId, FName(TEXT("Test.Skill.OverrideFireball")));
+		TestEqual(TEXT("槽位 1 覆盖技能名称应匹配"), SlotOne->DisplayName.ToString(), FString(TEXT("覆盖炎弹")));
+		TestEqual(TEXT("槽位 1 覆盖技能强度应匹配"), SlotOne->Magnitude, 99.0f);
+		TestEqual(TEXT("槽位 1 覆盖技能冷却应匹配"), SlotOne->Cooldown, 9.5f);
+		TestTrue(TEXT("槽位 1 覆盖技能应保留投射物类"), SlotOne->ProjectileClass == ADBAFireballProjectile::StaticClass());
 	}
 
 	const FDBAPlayableSkillRuntimeSpec* SlotTwo = FindSkill(EffectiveSpecs, 2);
-	TestNotNull(TEXT("Slot 2 default fallback"), SlotTwo);
-	if (SlotTwo)
-	{
-		TestEqual(TEXT("Slot 2 remains default frost skill"), SlotTwo->SkillId, FName(TEXT("Lobby.Skill02.FrostShard")));
-	}
+	TestNull(TEXT("未配置槽位 2 时不应生成 C++ 默认兜底技能"), SlotTwo);
 
 	SkillComponent->SetAppendDefaultSkillsWhenCatalogMissingSlots(false);
 	const TArray<FDBAPlayableSkillRuntimeSpec> CatalogOnlySpecs = SkillComponent->GetAllSkillSpecs();
-	TestEqual(TEXT("Catalog-only mode does not append defaults"), CatalogOnlySpecs.Num(), 1);
+	TestEqual(TEXT("仅目录模式不应追加默认技能"), CatalogOnlySpecs.Num(), 1);
 
 	const FDBAPlayableSkillCatalogSummary CatalogOnlySummary = SkillComponent->GetSkillCatalogSummary();
-	TestEqual(TEXT("Catalog-only summary source"), CatalogOnlySummary.Source, EDBAPlayableSkillCatalogSource::DataAssetOnly);
-	TestEqual(TEXT("Catalog-only summary skill count"), CatalogOnlySummary.SkillCount, 1);
-	TestFalse(TEXT("Catalog-only summary does not append defaults"), CatalogOnlySummary.bAppendsBuiltInDefaults);
+	TestEqual(TEXT("仅目录摘要来源应为纯数据资产"), CatalogOnlySummary.Source, EDBAPlayableSkillCatalogSource::DataAssetOnly);
+	TestEqual(TEXT("仅目录摘要技能数量应匹配"), CatalogOnlySummary.SkillCount, 1);
+	TestFalse(TEXT("仅目录摘要不应追加默认技能"), CatalogOnlySummary.bAppendsBuiltInDefaults);
 
 	FDBAPlayableSkillRuntimeSpec MissingSpec;
-	TestFalse(TEXT("Catalog-only mode has no slot 2"), SkillComponent->GetSkillSpec(2, MissingSpec));
+	TestFalse(TEXT("仅目录模式不应存在槽位 2"), SkillComponent->GetSkillSpec(2, MissingSpec));
 
 	return true;
 }

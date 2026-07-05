@@ -1,0 +1,44 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "release-input-template-validation",
+    "generatedAtUtc":  "2026-06-30T01:35:31.9794058Z",
+    "releaseId":  "local-production-evidence-20260630n",
+    "templatePath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\release-input-template.json",
+    "isValid":  true,
+    "inputCount":  9,
+    "declaredInputCount":  9,
+    "actualInputCount":  9,
+    "inputCountMatches":  true,
+    "commandCount":  4,
+    "scriptCount":  4,
+    "placeholderCount":  9,
+    "declaredPlaceholderCount":  9,
+    "missingPlaceholderCount":  0,
+    "missingScriptCount":  0,
+    "invalidParameterCount":  0,
+    "missingInputReferenceCount":  0,
+    "missingCommandInputReferenceCount":  0,
+    "missingCompatibleInputReferenceCount":  0,
+    "asymmetricCompatibleInputReferenceCount":  0,
+    "missingPlaceholders":  [
+
+                            ],
+    "missingScripts":  [
+
+                       ],
+    "invalidParameters":  [
+
+                          ],
+    "missingInputReferences":  [
+
+                               ],
+    "missingCommandInputReferences":  [
+
+                                      ],
+    "missingCompatibleInputReferences":  [
+
+                                         ],
+    "asymmetricCompatibleInputReferences":  [
+
+                                            ]
+}

@@ -12,6 +12,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "GameCore/Character/DBACharacterBuildTypes.h"
 #include "GameCore/Types/DBACommonTypes.h"
 #include "InputCoreTypes.h"
 #include "DBAFixedSkillGroupData.generated.h"
@@ -199,6 +200,22 @@ struct DIVINEBEASTSARENA_API FDBAZodiacElementFixedSkillGroupRow : public FTable
 		// 当前阶段简化实现，返回配置的共鸣等级
 		// 未来可以根据技能表动态计算
 		return ElementResonanceLevel;
+	}
+
+	/**
+	 * 校验数据行身份是否与 Zodiac + Element 固定技能组规则一致。
+	 *
+	 * 注意：该校验只检查源码层身份契约，不加载 AbilitySet、图标或表现资源，
+	 * 因此可安全用于 Dedicated Server 和自动化测试。
+	 */
+	bool HasValidIdentity() const
+	{
+		if (ZodiacType == EDBAZodiac::None || ElementType == EDBAElement::None || RowId.IsNone())
+		{
+			return false;
+		}
+
+		return RowId == DBACharacterBuild::MakeFixedSkillGroupId(ZodiacType, ElementType);
 	}
 };
 

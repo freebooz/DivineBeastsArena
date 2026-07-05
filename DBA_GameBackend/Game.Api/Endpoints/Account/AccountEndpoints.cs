@@ -6,11 +6,13 @@
 - 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
 */
 
-using System.Security.Claims;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Game.Api.Extensions;
 using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Entities;
+using Game.Shared.Common;
+using Game.Shared.Contracts.Character;
 using Microsoft.EntityFrameworkCore;
 
 namespace Game.Api.Endpoints.Account;
@@ -55,7 +57,7 @@ public static class AccountEndpoints
     {
         var playerId = GetPlayerId(ctx);
         if (playerId == null)
-            return Results.Ok(new { success = false, error = "Unauthorized" });
+            return ErrorResponse.Unauthorized().ToProblem();
 
         var rows = await db.PlayerCharacters
             .Where(x => x.PlayerId == playerId.Value)
@@ -76,7 +78,7 @@ public static class AccountEndpoints
     {
         var playerId = GetPlayerId(ctx);
         if (playerId == null)
-            return Results.Ok(new { success = false, error = "Unauthorized" });
+            return ErrorResponse.Unauthorized().ToProblem();
 
         var characterName = string.IsNullOrWhiteSpace(request.CharacterName)
             ? $"Hero_{Guid.NewGuid():N}"[..13]
@@ -90,15 +92,16 @@ public static class AccountEndpoints
             return Results.Ok(new { success = false, error = "Character name already exists." });
 
         var now = DateTimeOffset.UtcNow;
+        var buildSummary = CharacterBuildRules.BuildSummary(request.Zodiac, request.PrimaryElement, request.FiveCamp);
         var row = new PlayerCharacter
         {
             Id = Guid.NewGuid(),
             PlayerId = playerId.Value,
             CharacterName = characterName,
-            Zodiac = NormalizeChoice(request.Zodiac, "Rat"),
-            PrimaryElement = NormalizeChoice(request.PrimaryElement, "Water"),
-            FiveCamp = NormalizeChoice(request.FiveCamp, "East"),
-            FixedSkillGroupId = BuildSkillGroupId(request.Zodiac, request.PrimaryElement),
+            Zodiac = buildSummary.Zodiac,
+            PrimaryElement = buildSummary.PrimaryElement,
+            FiveCamp = buildSummary.FiveCamp,
+            FixedSkillGroupId = buildSummary.FixedSkillGroupId,
             CoreAttributesJson = JsonSerializer.Serialize(new CharacterCoreAttributes(1800, 100, 40, 380, 100, 10, 0.05f, 2.0f), JsonOptions),
             Level = 1,
             IsSelected = false,
@@ -126,7 +129,7 @@ public static class AccountEndpoints
     {
         var playerId = GetPlayerId(ctx);
         if (playerId == null)
-            return Results.Ok(new { success = false, error = "Unauthorized" });
+            return ErrorResponse.Unauthorized().ToProblem();
 
         if (!Guid.TryParse(characterId, out var parsedId))
             return Results.Ok(new { success = false, error = "Invalid character id." });
@@ -159,7 +162,7 @@ public static class AccountEndpoints
 
     private static Guid? GetPlayerId(HttpContext ctx)
     {
-        var claim = ctx.User.FindFirst("player_id") ?? ctx.User.FindFirst(ClaimTypes.NameIdentifier);
+        var claim = ctx.User.FindFirst("player_id");
         return claim != null && Guid.TryParse(claim.Value, out var id) ? id : null;
     }
 
@@ -190,20 +193,6 @@ public static class AccountEndpoints
         {
             return new CharacterCoreAttributes(1800, 100, 40, 380, 100, 10, 0.05f, 2.0f);
         }
-    }
-
-    private static string NormalizeChoice(string? value, string fallback)
-    {
-        return string.IsNullOrWhiteSpace(value) || value.Equals("None", StringComparison.OrdinalIgnoreCase)
-            ? fallback
-            : value.Trim();
-    }
-
-    private static string BuildSkillGroupId(string? zodiac, string? element)
-    {
-        var normalizedZodiac = NormalizeChoice(zodiac, "Rat");
-        var normalizedElement = NormalizeChoice(element, "Water");
-        return $"{normalizedZodiac}_{normalizedElement}_Default";
     }
 
     public sealed record CreateCharacterRequest(

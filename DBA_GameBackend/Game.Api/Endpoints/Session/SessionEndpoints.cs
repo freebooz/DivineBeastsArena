@@ -117,48 +117,86 @@ Header: Authorization: Bearer <access-token>
             : Results.Ok(ApiResponse<SessionConnectionResponse>.Ok(conn));
     }
 
-    private static async Task<IResult> CreateFromRoom(InternalCreateSessionFromRoomRequest request, Services.Session.ISessionService svc)
+    private static async Task<IResult> CreateFromRoom(
+        InternalCreateSessionFromRoomRequest request,
+        Services.Session.ISessionService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var session = await svc.CreateFromRoomAsync(request.RoomId);
         return session == null
             ? ErrorResponse.NotFound(ErrorCodes.SessionNotFound).ToProblem()
             : Results.Ok(ApiResponse<SessionResponse>.Ok(session));
     }
 
-    private static async Task<IResult> CreateFromMatch(InternalCreateSessionFromMatchRequest request, Services.Session.ISessionService svc)
+    private static async Task<IResult> CreateFromMatch(
+        InternalCreateSessionFromMatchRequest request,
+        Services.Session.ISessionService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var session = await svc.CreateFromMatchAsync(request.TicketId);
         return session == null
             ? ErrorResponse.NotFound(ErrorCodes.SessionNotFound).ToProblem()
             : Results.Ok(ApiResponse<SessionResponse>.Ok(session));
     }
 
-    private static async Task<IResult> AllocateServer(Guid sessionId, InternalAllocateServerRequest request, Services.Session.ISessionService svc)
+    private static async Task<IResult> AllocateServer(
+        Guid sessionId,
+        InternalAllocateServerRequest request,
+        Services.Session.ISessionService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var session = await svc.AllocateServerAsync(sessionId, request.Ip, request.Port, request.RuntimeToken);
         return session == null
             ? ErrorResponse.NotFound(ErrorCodes.SessionNotFound).ToProblem()
             : Results.Ok(ApiResponse<SessionResponse>.Ok(session));
     }
 
-    private static async Task<IResult> MarkInProgress(Guid sessionId, Services.Session.ISessionService svc)
+    private static async Task<IResult> MarkInProgress(
+        Guid sessionId,
+        Services.Session.ISessionService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var session = await svc.MarkInProgressAsync(sessionId);
         return session == null
             ? ErrorResponse.NotFound(ErrorCodes.SessionNotFound).ToProblem()
             : Results.Ok(ApiResponse<SessionResponse>.Ok(session));
     }
 
-    private static async Task<IResult> MarkCompleted(Guid sessionId, Services.Session.ISessionService svc)
+    private static async Task<IResult> MarkCompleted(
+        Guid sessionId,
+        Services.Session.ISessionService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var session = await svc.MarkCompletedAsync(sessionId);
         return session == null
             ? ErrorResponse.NotFound(ErrorCodes.SessionNotFound).ToProblem()
             : Results.Ok(ApiResponse<SessionResponse>.Ok(session));
     }
 
-    private static async Task<IResult> MarkFailed(Guid sessionId, InternalMarkFailedRequest request, Services.Session.ISessionService svc)
+    private static async Task<IResult> MarkFailed(
+        Guid sessionId,
+        InternalMarkFailedRequest request,
+        Services.Session.ISessionService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var session = await svc.MarkFailedAsync(sessionId, request.Reason);
         return session == null
             ? ErrorResponse.NotFound(ErrorCodes.SessionNotFound).ToProblem()

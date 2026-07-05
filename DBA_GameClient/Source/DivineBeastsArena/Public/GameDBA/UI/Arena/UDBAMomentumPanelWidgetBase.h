@@ -36,4 +36,10 @@ public:
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|MomentumPanel", meta = (DisplayName = "On Momentum Updated"))
 	void BP_OnMomentumUpdated(int32 Level, float Progress);
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|MomentumPanel")
+	int32 CachedMomentumLevel = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|MomentumPanel")
+	float CachedMomentumProgress = 0.0f;
 };

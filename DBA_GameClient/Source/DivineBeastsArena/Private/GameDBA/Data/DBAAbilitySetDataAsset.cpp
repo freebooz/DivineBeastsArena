@@ -10,6 +10,7 @@
 
 #include "GameDBA/Data/DBAAbilitySetDataAsset.h"
 #include "Engine/DataTable.h"
+#include "GameDBA/Core/DBAConstants.h"
 
 UDBAAbilitySetDataAsset::UDBAAbilitySetDataAsset()
 {
@@ -176,7 +177,7 @@ bool UDBAAbilitySetDataAsset::ValidateDataIntegrity(TArray<FString>& OutErrors) 
 	if (PassiveTable)
 	{
 		TArray<FName> RowNames = PassiveTable->GetRowNames();
-		if (RowNames.Num() != 5)
+		if (RowNames.Num() != DBAConstants::ElementCount)
 		{
 			OutErrors.Add(FString::Printf(TEXT("ElementPassiveTable 应包含 5 行数据（5 元素），实际 %d 行"), RowNames.Num()));
 			bIsValid = false;
@@ -187,7 +188,7 @@ bool UDBAAbilitySetDataAsset::ValidateDataIntegrity(TArray<FString>& OutErrors) 
 	if (ActiveTable)
 	{
 		TArray<FName> RowNames = ActiveTable->GetRowNames();
-		if (RowNames.Num() != 25)
+		if (RowNames.Num() != DBAConstants::ElementActiveAbilityRowCount)
 		{
 			OutErrors.Add(FString::Printf(TEXT("ElementActiveAbilityTable 应包含 25 行数据（5元素×5位置），实际 %d 行"), RowNames.Num()));
 			bIsValid = false;
@@ -198,7 +199,7 @@ bool UDBAAbilitySetDataAsset::ValidateDataIntegrity(TArray<FString>& OutErrors) 
 	if (UltimateTable)
 	{
 		TArray<FName> RowNames = UltimateTable->GetRowNames();
-		if (RowNames.Num() != 5)
+		if (RowNames.Num() != DBAConstants::ElementCount)
 		{
 			OutErrors.Add(FString::Printf(TEXT("ElementUltimateTemplateTable 应包含 5 行数据（5 元素），实际 %d 行"), RowNames.Num()));
 			bIsValid = false;
@@ -209,7 +210,7 @@ bool UDBAAbilitySetDataAsset::ValidateDataIntegrity(TArray<FString>& OutErrors) 
 	if (ResonanceTableData)
 	{
 		TArray<FName> RowNames = ResonanceTableData->GetRowNames();
-		if (RowNames.Num() != 25)
+		if (RowNames.Num() != DBAConstants::ElementResonanceRowCount)
 		{
 			OutErrors.Add(FString::Printf(TEXT("ElementResonanceTable 应包含 25 行数据（5元素×5等级），实际 %d 行"), RowNames.Num()));
 			bIsValid = false;
@@ -220,7 +221,7 @@ bool UDBAAbilitySetDataAsset::ValidateDataIntegrity(TArray<FString>& OutErrors) 
 	if (ZodiacUltimateTableData)
 	{
 		TArray<FName> RowNames = ZodiacUltimateTableData->GetRowNames();
-		if (RowNames.Num() != 12)
+		if (RowNames.Num() != DBAConstants::ZodiacCount)
 		{
 			OutErrors.Add(FString::Printf(TEXT("ZodiacUltimateTable 应包含 12 行数据（12 生肖），实际 %d 行"), RowNames.Num()));
 			bIsValid = false;

@@ -12,6 +12,7 @@
 #include "GameBackendClientSubsystem.h"
 #include "GameBackendHttpClient.h"
 #include "Dom/JsonObject.h"
+#include "Dom/JsonValue.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "Serialization/JsonSerializer.h"
@@ -56,10 +57,10 @@ bool UDBA_GameBackendRuntimeService::ConfigureFromCommandLine()
 		RuntimeToken = ReadCommandLineValue(TEXT("RuntimeToken="));
 	}
 
-	UE_LOG(LogDBA_GameBackendClient, Log, TEXT("Runtime 参数读取完成。SessionId=%s ServerId=%s 已配置Token=%s"),
+	UE_LOG(LogDBA_GameBackendClient, Log, TEXT("运行时参数读取完成。会话=%s 服务器=%s 已配置令牌=%s"),
 		*SessionId,
 		*ServerId,
-		RuntimeToken.IsEmpty() ? TEXT("false") : TEXT("true"));
+		RuntimeToken.IsEmpty() ? TEXT("否") : TEXT("是"));
 
 	return IsConfigured();
 }
@@ -89,14 +90,22 @@ void UDBA_GameBackendRuntimeService::NotifyPlayerJoined(
 	const FString& PlayerSessionToken,
 	const FString& Team,
 	int32 SlotIndex,
+	const FDBA_GameBackendRuntimePlayerBuildSummary& BuildSummary,
 	const FDBA_GameBackendResponseDelegate& Callback)
 {
-	const FString Body = BuildRuntimePayload([&PlayerId, &PlayerSessionToken, &Team, SlotIndex](TSharedRef<FJsonObject> Json)
+	const FString Body = BuildRuntimePayload([&PlayerId, &PlayerSessionToken, &Team, SlotIndex, &BuildSummary](TSharedRef<FJsonObject> Json)
 	{
 		Json->SetStringField(TEXT("playerId"), PlayerId);
 		Json->SetStringField(TEXT("playerSessionToken"), PlayerSessionToken);
 		Json->SetStringField(TEXT("team"), Team);
 		Json->SetNumberField(TEXT("slotIndex"), SlotIndex);
+		if (BuildSummary.HasAnyValue())
+		{
+			Json->SetStringField(TEXT("zodiac"), BuildSummary.Zodiac);
+			Json->SetStringField(TEXT("primaryElement"), BuildSummary.PrimaryElement);
+			Json->SetStringField(TEXT("fiveCamp"), BuildSummary.FiveCamp);
+			Json->SetStringField(TEXT("fixedSkillGroupId"), BuildSummary.FixedSkillGroupId);
+		}
 	});
 	PostRuntime(TEXT("/runtime/servers/player-joined"), Body, Callback);
 }
@@ -120,6 +129,61 @@ void UDBA_GameBackendRuntimeService::NotifyMatchEnded(const FDBA_GameBackendResp
 	PostRuntime(TEXT("/runtime/servers/match-ended"), BuildRuntimePayload([](TSharedRef<FJsonObject>) {}), Callback);
 }
 
+void UDBA_GameBackendRuntimeService::NotifyMatchResults(
+	const FString& IdempotencyKey,
+	const FString& ResultJson,
+	const TArray<FDBA_GameBackendRuntimePlayerResult>& Players,
+	const FDBA_GameBackendResponseDelegate& Callback)
+{
+	const FString Body = BuildMatchResultsPayload(ServerId, SessionId, RuntimeToken, IdempotencyKey, ResultJson, Players);
+	PostRuntime(TEXT("/runtime/matches/results"), Body, Callback);
+}
+
+FString UDBA_GameBackendRuntimeService::BuildMatchResultsPayload(
+	const FString& ServerId,
+	const FString& SessionId,
+	const FString& RuntimeToken,
+	const FString& IdempotencyKey,
+	const FString& ResultJson,
+	const TArray<FDBA_GameBackendRuntimePlayerResult>& Players)
+{
+	TSharedRef<FJsonObject> Json = MakeShared<FJsonObject>();
+	Json->SetStringField(TEXT("serverId"), ServerId);
+	Json->SetStringField(TEXT("sessionId"), SessionId);
+	Json->SetStringField(TEXT("runtimeToken"), RuntimeToken);
+	Json->SetStringField(TEXT("idempotencyKey"), IdempotencyKey);
+	Json->SetStringField(TEXT("resultJson"), ResultJson);
+
+	TArray<TSharedPtr<FJsonValue>> PlayerValues;
+	PlayerValues.Reserve(Players.Num());
+	for (const FDBA_GameBackendRuntimePlayerResult& Player : Players)
+	{
+		TSharedRef<FJsonObject> PlayerJson = MakeShared<FJsonObject>();
+		PlayerJson->SetStringField(TEXT("playerId"), Player.PlayerId);
+		PlayerJson->SetStringField(TEXT("team"), Player.Team);
+		PlayerJson->SetStringField(TEXT("result"), Player.Result);
+		PlayerJson->SetNumberField(TEXT("kills"), Player.Kills);
+		PlayerJson->SetNumberField(TEXT("deaths"), Player.Deaths);
+		PlayerJson->SetNumberField(TEXT("assists"), Player.Assists);
+		PlayerJson->SetNumberField(TEXT("score"), Player.Score);
+		PlayerJson->SetNumberField(TEXT("expDelta"), static_cast<double>(Player.ExpDelta));
+
+		TSharedRef<FJsonObject> RewardsJson = MakeShared<FJsonObject>();
+		for (const TPair<FString, int32>& Reward : Player.Rewards)
+		{
+			RewardsJson->SetNumberField(Reward.Key, Reward.Value);
+		}
+		PlayerJson->SetObjectField(TEXT("rewards"), RewardsJson);
+		PlayerValues.Add(MakeShared<FJsonValueObject>(PlayerJson));
+	}
+	Json->SetArrayField(TEXT("players"), PlayerValues);
+
+	FString Body;
+	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Body);
+	FJsonSerializer::Serialize(Json, Writer);
+	return Body;
+}
+
 FString UDBA_GameBackendRuntimeService::BuildRuntimePayload(const TFunction<void(TSharedRef<FJsonObject>)>& Fill) const
 {
 	TSharedRef<FJsonObject> Json = MakeShared<FJsonObject>();
@@ -141,7 +205,7 @@ void UDBA_GameBackendRuntimeService::PostRuntime(const FString& Path, const FStr
 {
 	if (!HttpClient || !IsConfigured())
 	{
-		Callback.ExecuteIfBound(false, TEXT("Runtime service is not configured."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("Runtime 服务未配置。"), TEXT("{}"));
 		return;
 	}
 
@@ -154,6 +218,6 @@ void UDBA_GameBackendRuntimeService::PostRuntime(const FString& Path, const FStr
 void UDBA_GameBackendRuntimeService::ExecuteResponse(const FDBA_GameBackendResponseDelegate& Callback, const FDBA_GameBackendHttpResult& Result)
 {
 	const bool bSuccess = Result.IsSuccessful();
-	const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("Runtime request failed.") : Result.Message);
+	const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("运行时请求失败。") : Result.Message);
 	Callback.ExecuteIfBound(bSuccess, ErrorMessage, Result.DataJson);
 }

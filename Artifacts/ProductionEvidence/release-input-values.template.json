@@ -1,0 +1,183 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "release-input-values",
+    "generatedAtUtc":  "2026-06-30T01:35:31.9970001Z",
+    "releaseId":  "local-production-evidence-20260630n",
+    "isTemplate":  true,
+    "templatePath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\release-input-template.json",
+    "inputCount":  9,
+    "values":  [
+                   {
+                       "input":  "real HTTPS CDN download URL",
+                       "value":  "",
+                       "placeholder":  "\u003creal-https-cdn-download-url\u003e",
+                       "primaryParameter":  "-DownloadUrl",
+                       "parameters":  [
+                                          "-DownloadUrl"
+                                      ],
+                       "environmentVariables":  [
+
+                                                ],
+                       "blockedBy":  [
+                                         "client.release_prerequisites",
+                                         "client.package_launcher"
+                                     ],
+                       "compatibleInputs":  [
+
+                                            ]
+                   },
+                   {
+                       "input":  "real HTTPS CDN manifest URL",
+                       "value":  "",
+                       "placeholder":  "\u003creal-https-cdn-manifest-url\u003e",
+                       "primaryParameter":  "-ManifestUrl",
+                       "parameters":  [
+                                          "-ManifestUrl"
+                                      ],
+                       "environmentVariables":  [
+
+                                                ],
+                       "blockedBy":  [
+                                         "client.release_prerequisites",
+                                         "client.package_launcher",
+                                         "client.cdn_launcher_smoke"
+                                     ],
+                       "compatibleInputs":  [
+
+                                            ]
+                   },
+                   {
+                       "input":  "release package root",
+                       "value":  "",
+                       "placeholder":  "\u003crelease-package-root\u003e",
+                       "primaryParameter":  "-PackageRoot",
+                       "parameters":  [
+                                          "-PackageRoot"
+                                      ],
+                       "environmentVariables":  [
+
+                                                ],
+                       "blockedBy":  [
+                                         "client.release_prerequisites"
+                                     ],
+                       "compatibleInputs":  [
+                                                "public Shipping package root",
+                                                "public package root containing signable binaries"
+                                            ]
+                   },
+                   {
+                       "input":  "trusted Authenticode signing identity",
+                       "value":  "",
+                       "placeholder":  "\u003ctrusted-authenticode-signing-identity\u003e",
+                       "primaryParameter":  "-CertificateThumbprint",
+                       "parameters":  [
+                                          "-CertificateThumbprint",
+                                          "-CertificateSubject",
+                                          "-PfxPath"
+                                      ],
+                       "environmentVariables":  [
+
+                                                ],
+                       "blockedBy":  [
+                                         "client.release_prerequisites",
+                                         "client.code_signing"
+                                     ],
+                       "compatibleInputs":  [
+
+                                            ]
+                   },
+                   {
+                       "input":  "signtool path",
+                       "value":  "",
+                       "placeholder":  "\u003csigntool-path\u003e",
+                       "primaryParameter":  "-SignToolPath",
+                       "parameters":  [
+                                          "-SignToolPath"
+                                      ],
+                       "environmentVariables":  [
+                                                    "WindowsSdkDir"
+                                                ],
+                       "blockedBy":  [
+                                         "client.release_prerequisites"
+                                     ],
+                       "compatibleInputs":  [
+
+                                            ]
+                   },
+                   {
+                       "input":  "public Shipping package root",
+                       "value":  "",
+                       "placeholder":  "\u003cpublic-shipping-package-root\u003e",
+                       "primaryParameter":  "-PackageRoot",
+                       "parameters":  [
+                                          "-PackageRoot",
+                                          "-StagedPackageRoot"
+                                      ],
+                       "environmentVariables":  [
+
+                                                ],
+                       "blockedBy":  [
+                                         "client.package_launcher"
+                                     ],
+                       "compatibleInputs":  [
+                                                "release package root",
+                                                "public package root containing signable binaries"
+                                            ]
+                   },
+                   {
+                       "input":  "local smoke install root",
+                       "value":  "",
+                       "placeholder":  "\u003clocal-smoke-install-root\u003e",
+                       "primaryParameter":  "-InstallRoot",
+                       "parameters":  [
+                                          "-InstallRoot"
+                                      ],
+                       "environmentVariables":  [
+
+                                                ],
+                       "blockedBy":  [
+                                         "client.cdn_launcher_smoke"
+                                     ],
+                       "compatibleInputs":  [
+
+                                            ]
+                   },
+                   {
+                       "input":  "timestamp URL",
+                       "value":  "",
+                       "placeholder":  "\u003ctimestamp-url\u003e",
+                       "primaryParameter":  "-TimestampUrl",
+                       "parameters":  [
+                                          "-TimestampUrl"
+                                      ],
+                       "environmentVariables":  [
+
+                                                ],
+                       "blockedBy":  [
+                                         "client.code_signing"
+                                     ],
+                       "compatibleInputs":  [
+
+                                            ]
+                   },
+                   {
+                       "input":  "public package root containing signable binaries",
+                       "value":  "",
+                       "placeholder":  "\u003cpublic-package-root-containing-signable-binaries\u003e",
+                       "primaryParameter":  "-PackageRoot",
+                       "parameters":  [
+                                          "-PackageRoot"
+                                      ],
+                       "environmentVariables":  [
+
+                                                ],
+                       "blockedBy":  [
+                                         "client.code_signing"
+                                     ],
+                       "compatibleInputs":  [
+                                                "release package root",
+                                                "public Shipping package root"
+                                            ]
+                   }
+               ]
+}

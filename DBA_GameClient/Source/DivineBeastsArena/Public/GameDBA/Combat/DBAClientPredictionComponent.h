@@ -50,6 +50,9 @@ public:
 	float GetPredictionError() const { return PredictionError; }
 
 protected:
+	/** 是否允许在当前运行时执行客户端预测逻辑 */
+	bool IsPredictionRuntimeAllowed() const;
+
 	/** 处理技能激活返回 */
 	void OnAbilityActivated(FGameplayAbilitySpecHandle Handle, bool bSuccess);
 

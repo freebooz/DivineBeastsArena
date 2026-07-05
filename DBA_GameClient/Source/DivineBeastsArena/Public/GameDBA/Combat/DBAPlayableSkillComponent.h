@@ -41,6 +41,9 @@ public:
 	void ResetToDefaultSkillSpecs();
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|Playable Skill")
+	void RequestDefaultSkillCatalogAsync();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Playable Skill")
 	void SetSkillCatalog(UDBAPlayableSkillCatalogDataAsset* InSkillCatalog);
 
 	UFUNCTION(BlueprintPure, Category = "DBA|Playable Skill")
@@ -69,16 +72,24 @@ protected:
 	TObjectPtr<UDBAPlayableSkillCatalogDataAsset> SkillCatalog;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Playable Skill")
+	TSoftObjectPtr<UDBAPlayableSkillCatalogDataAsset> DefaultSkillCatalog;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Playable Skill")
 	TArray<FDBAPlayableSkillRuntimeSpec> SkillSpecs;
 
 private:
 	void BuildEffectiveSkillSpecs(TArray<FDBAPlayableSkillRuntimeSpec>& OutSpecs) const;
+	const UDBAPlayableSkillCatalogDataAsset* GetEffectiveSkillCatalog() const;
+	TSoftObjectPtr<UDBAPlayableSkillCatalogDataAsset> ResolveDefaultSkillCatalogAsset() const;
+	void HandleDefaultSkillCatalogLoaded(UDBAPlayableSkillCatalogDataAsset* LoadedCatalog);
 	FName ResolveEquippedSkillId(int32 SkillSlot, FName FallbackSkillId) const;
 	void QueueNiagaraWarmupAssets();
 	void AddNiagaraWarmupPath(const TSoftObjectPtr<UNiagaraSystem>& Asset);
-	void AddNiagaraWarmupPath(const TCHAR* AssetPath);
 	void PumpNiagaraWarmupQueue();
 	void WarmUpNiagaraSystem(UNiagaraSystem* NiagaraSystem) const;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDBAPlayableSkillCatalogDataAsset> LoadedDefaultSkillCatalog;
 
 	TArray<FSoftObjectPath> PendingNiagaraWarmupPaths;
 	FTimerHandle NiagaraWarmupTimerHandle;

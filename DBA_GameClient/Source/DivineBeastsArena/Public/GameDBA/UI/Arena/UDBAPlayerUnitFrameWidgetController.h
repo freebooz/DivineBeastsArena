@@ -24,6 +24,18 @@ public:
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|PlayerUnitFrame")
+	void SetOwningPlayerController(APlayerController* InPlayerController);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|PlayerUnitFrame")
+	APlayerController* GetOwningPlayerController() const;
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|PlayerUnitFrame")
+	void SetVitals(float InCurrentHP, float InMaxHP, float InCurrentEnergy, float InMaxEnergy);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|PlayerUnitFrame")
+	void SetCurrentLevel(int32 InLevel);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|PlayerUnitFrame")
 	float GetCurrentHP() const;
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|PlayerUnitFrame")
@@ -50,4 +62,23 @@ public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLevelUpdated, int32, Level);
 	UPROPERTY(BlueprintAssignable, Category = "DBA|UI|PlayerUnitFrame")
 	FOnLevelUpdated OnLevelUpdated;
+
+protected:
+	UPROPERTY()
+	TWeakObjectPtr<class APlayerController> OwningPlayerController;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|PlayerUnitFrame")
+	float CurrentHP = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|PlayerUnitFrame")
+	float MaxHP = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|PlayerUnitFrame")
+	float CurrentEnergy = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|PlayerUnitFrame")
+	float MaxEnergy = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|PlayerUnitFrame")
+	int32 CurrentLevel = 1;
 };

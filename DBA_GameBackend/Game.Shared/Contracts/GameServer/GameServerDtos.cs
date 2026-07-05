@@ -15,7 +15,18 @@ public record InternalAllocateServerResponse(Guid ServerId, string Ip, int Port,
 public record RuntimeRegisterRequest(Guid ServerId, Guid SessionId, string RuntimeToken);
 public record RuntimeReadyRequest(Guid ServerId, Guid SessionId, string RuntimeToken);
 public record RuntimeHeartbeatRequest(Guid ServerId, Guid SessionId, string RuntimeToken);
-public record RuntimePlayerJoinedRequest(Guid ServerId, Guid SessionId, string RuntimeToken, Guid PlayerId, string? Team, int SlotIndex, string? PlayerSessionToken = null);
+public record RuntimePlayerJoinedRequest(
+    Guid ServerId,
+    Guid SessionId,
+    string RuntimeToken,
+    Guid PlayerId,
+    string? Team,
+    int SlotIndex,
+    string? PlayerSessionToken = null,
+    string? Zodiac = null,
+    string? PrimaryElement = null,
+    string? FiveCamp = null,
+    string? FixedSkillGroupId = null);
 public record RuntimePlayerLeftRequest(Guid ServerId, Guid SessionId, string RuntimeToken, Guid PlayerId);
 public record RuntimeMatchStartedRequest(Guid ServerId, Guid SessionId, string RuntimeToken);
 public record RuntimeMatchEndedRequest(Guid ServerId, Guid SessionId, string RuntimeToken);

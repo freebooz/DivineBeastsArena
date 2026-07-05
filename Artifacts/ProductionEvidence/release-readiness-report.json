@@ -1,0 +1,286 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "release-readiness-report",
+    "generatedAtUtc":  "2026-06-30T13:39:47.2329731Z",
+    "readyForRelease":  false,
+    "developmentContinuationReady":  true,
+    "releaseId":  "local-launcher-evidence-support-files-gate-20260630",
+    "manifestPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\production-evidence-manifest.json",
+    "evidenceRoot":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence",
+    "gitCommit":  "a5a08469d8d6ada512972c4edfc9787a680be9a4",
+    "gitIsDirty":  true,
+    "requirementCount":  14,
+    "presentRequirementCount":  10,
+    "blockingRequirementCount":  4,
+    "releaseBlockerPosture":  {
+                                  "kind":  "release-blockers-external-only-validation",
+                                  "path":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\release-blockers-external-only-validation.json",
+                                  "releaseId":  "local-launcher-evidence-support-files-gate-20260630",
+                                  "kindIsValid":  true,
+                                  "releaseIdMatchesManifest":  true,
+                                  "blockerCountMatchesManifest":  true,
+                                  "externalOnly":  true,
+                                  "blockerCount":  4,
+                                  "externalBlockerCount":  4,
+                                  "externalBlockers":  [
+                                                           "client.release_prerequisites",
+                                                           "client.package_launcher",
+                                                           "client.cdn_launcher_smoke",
+                                                           "client.code_signing"
+                                                       ],
+                                  "localAutomationBlockerCount":  0,
+                                  "localAutomationBlockers":  [
+
+                                                              ],
+                                  "emptyExternalInputBlockerCount":  0,
+                                  "emptyExternalInputBlockers":  [
+
+                                                                 ]
+                              },
+    "blockingRequirements":  [
+                                 {
+                                     "key":  "client.release_prerequisites",
+                                     "status":  "incomplete",
+                                     "description":  "Client release input prerequisite evidence proving package root, production CDN URLs, and signing inputs are ready before release automation runs.",
+                                     "fileCount":  1,
+                                     "files":  [
+                                                   "client/client-release-prerequisites-client-evidence-local-20260628T080212Z-example-url.json"
+                                               ]
+                                 },
+                                 {
+                                     "key":  "client.package_launcher",
+                                     "status":  "incomplete",
+                                     "description":  "Client package, launcher manifest, SHA256 file list, and local install/update repair smoke evidence.",
+                                     "fileCount":  16,
+                                     "files":  [
+                                                   "client/client-package-launcher-client-evidence-local-20260628T080212Z-package.json",
+                                                   "client/client-package-launcher-client-package-launcher-copy-smoke-20260628T072000Z.json",
+                                                   "client/client-package-launcher-client-package-launcher-local-20260628T071000Z.json",
+                                                   "client/client-package-launcher-client-package-release-readiness-dev-20260628T073000Z.json",
+                                                   "client/client-package-launcher-client-package-shipping-public-example-cdn-20260628T084000Z.json",
+                                                   "client/client-package-launcher-client-package-shipping-release-ready-20260628T083000Z.json",
+                                                   "client/client-package-launcher-client-release-bundle-final-verify-20260628T104500Z-package.json",
+                                                   "client/client-package-launcher-client-release-bundle-local-20260628T103500Z-package.json",
+                                                   "client/launcher-manifest-client-evidence-local-20260628T080212Z-package.json",
+                                                   "client/launcher-manifest-client-package-launcher-copy-smoke-20260628T072000Z.json",
+                                                   "client/launcher-manifest-client-package-launcher-local-20260628T071000Z.json",
+                                                   "client/launcher-manifest-client-package-release-readiness-dev-20260628T073000Z.json",
+                                                   "client/launcher-manifest-client-package-shipping-public-example-cdn-20260628T084000Z.json",
+                                                   "client/launcher-manifest-client-package-shipping-release-ready-20260628T083000Z.json",
+                                                   "client/launcher-manifest-client-release-bundle-final-verify-20260628T104500Z-package.json",
+                                                   "client/launcher-manifest-client-release-bundle-local-20260628T103500Z-package.json"
+                                               ]
+                                 },
+                                 {
+                                     "key":  "client.cdn_launcher_smoke",
+                                     "status":  "incomplete",
+                                     "description":  "Launcher CDN smoke evidence proving manifest fetch, package downloads, SHA256 verification, and local install version persistence.",
+                                     "fileCount":  2,
+                                     "files":  [
+                                                   "client/launcher-cdn-smoke-client-evidence-local-20260628T080212Z-local-cdn-payload-smoke.json",
+                                                   "client/launcher-cdn-smoke-launcher-cdn-local-http-smoke-20260628T090000Z.json"
+                                               ]
+                                 },
+                                 {
+                                     "key":  "client.code_signing",
+                                     "status":  "incomplete",
+                                     "description":  "Windows Authenticode code-signing evidence proving public client executables and libraries are trusted signed.",
+                                     "fileCount":  7,
+                                     "files":  [
+                                                   "client/code-signing-client-code-signing-final-require-signed-expected-fail-20260628T094500Z.json",
+                                                   "client/code-signing-client-code-signing-final-verify-20260628T094500Z.json",
+                                                   "client/code-signing-client-code-signing-require-signed-expected-fail-20260628T093000Z.json",
+                                                   "client/code-signing-client-code-signing-unsigned-local-20260628T093000Z.json",
+                                                   "client/code-signing-client-evidence-local-20260628T080212Z-signing.json",
+                                                   "client/code-signing-client-release-bundle-final-verify-20260628T104500Z-signing.json",
+                                                   "client/code-signing-client-release-bundle-local-20260628T103500Z-signing.json"
+                                               ]
+                                 }
+                             ],
+    "requirements":  [
+                         {
+                             "key":  "security.nuget",
+                             "status":  "present",
+                             "description":  "NuGet vulnerable package report from security-ci or production-security-audit.",
+                             "fileCount":  1,
+                             "files":  [
+                                           "security/vulnerability-report.txt"
+                                       ]
+                         },
+                         {
+                             "key":  "security.npm",
+                             "status":  "present",
+                             "description":  "Production npm audit JSON for Admin, Website, and Launcher.",
+                             "fileCount":  9,
+                             "files":  [
+                                           "security/npm-audit-admin-local-20260628T075336Z.json",
+                                           "security/npm-audit-admin-local-20260630T095827Z.json",
+                                           "security/npm-audit-admin-local-security-20260628T020000Z.json",
+                                           "security/npm-audit-launcher-local-20260628T075336Z.json",
+                                           "security/npm-audit-launcher-local-20260630T095827Z.json",
+                                           "security/npm-audit-launcher-local-security-20260628T020000Z.json",
+                                           "security/npm-audit-website-local-20260628T075336Z.json",
+                                           "security/npm-audit-website-local-20260630T095827Z.json",
+                                           "security/npm-audit-website-local-security-20260628T020000Z.json"
+                                       ]
+                         },
+                         {
+                             "key":  "security.trivy",
+                             "status":  "present",
+                             "description":  "API and Worker container Trivy SARIF or scan report.",
+                             "fileCount":  2,
+                             "files":  [
+                                           "security/trivy-api-local-security-20260628T020000Z.sarif",
+                                           "security/trivy-worker-local-security-20260628T020000Z.sarif"
+                                       ]
+                         },
+                         {
+                             "key":  "load.k6",
+                             "status":  "present",
+                             "description":  "k6 login, matchmaking, or dedicated server orchestration load-test output.",
+                             "fileCount":  4,
+                             "files":  [
+                                           "load/k6-login-local-k6-login-20260628T022527Z.json",
+                                           "load/k6-login-local-k6-login-20260628T022527Z.log",
+                                           "load/k6-matchmaking-local-k6-matchmaking-20260628T022812Z.json",
+                                           "load/k6-matchmaking-local-k6-matchmaking-20260628T022812Z.log"
+                                       ]
+                         },
+                         {
+                             "key":  "ops.backup_restore",
+                             "status":  "present",
+                             "description":  "PostgreSQL backup and restore rehearsal evidence.",
+                             "fileCount":  2,
+                             "files":  [
+                                           "ops/backup-restore-rehearsal-20260628T015502Z.json",
+                                           "ops/backup-restore-rehearsal-20260628T015502Z.log"
+                                       ]
+                         },
+                         {
+                             "key":  "ops.deploy_rollback",
+                             "status":  "present",
+                             "description":  "Deployment, smoke test, and rollback evidence.",
+                             "fileCount":  2,
+                             "files":  [
+                                           "ops/production-smoke-backend-local-smoke-20260628T021000Z.json",
+                                           "ops/production-smoke-backend-local-smoke-20260628T021000Z.log"
+                                       ]
+                         },
+                         {
+                             "key":  "unreal.online_validation",
+                             "status":  "present",
+                             "description":  "UE packaged or editor online validation evidence for backend allocation, Dedicated Server startup, and client joins.",
+                             "fileCount":  5,
+                             "files":  [
+                                           "unreal/ue-online-validation-packaged-ue-online-build-summary-20260628T040000Z.json",
+                                           "unreal/ue-online-validation-packaged-ue-online-build-summary-20260628T041000Z.json",
+                                           "unreal/ue-online-validation-packaged-ue-online-external-mode-20260628T062800Z.json",
+                                           "unreal/ue-online-validation-packaged-ue-online-url-decode-20260628T064000Z.json",
+                                           "unreal/ue-online-validation-packaged-ue-online-wrapper-full-20260628T061500Z.json"
+                                       ]
+                         },
+                         {
+                             "key":  "unreal.ai_showcase_automation",
+                             "status":  "present",
+                             "description":  "AI_Showcase UI/VFX automation regression evidence for MCP-generated showcase assets.",
+                             "fileCount":  6,
+                             "files":  [
+                                           "unreal/ai-showcase-automation-ai-showcase-editorcmd-20260629.json",
+                                           "unreal/ai-showcase-automation-ai-showcase-editorcmd-window-20260629.json",
+                                           "unreal/ai-showcase-automation-ai-showcase-loggate-20260629.json",
+                                           "unreal/ai-showcase-automation-ai-showcase-semantic-20260629.json",
+                                           "unreal/ai-showcase-automation-ai-showcase-widget-tree-20260630.json",
+                                           "unreal/ai-showcase-automation-ai-showcase-widget-tree-20260630b.json"
+                                       ]
+                         },
+                         {
+                             "key":  "client.release_prerequisites",
+                             "status":  "incomplete",
+                             "description":  "Client release input prerequisite evidence proving package root, production CDN URLs, and signing inputs are ready before release automation runs.",
+                             "fileCount":  1,
+                             "files":  [
+                                           "client/client-release-prerequisites-client-evidence-local-20260628T080212Z-example-url.json"
+                                       ]
+                         },
+                         {
+                             "key":  "client.package_launcher",
+                             "status":  "incomplete",
+                             "description":  "Client package, launcher manifest, SHA256 file list, and local install/update repair smoke evidence.",
+                             "fileCount":  16,
+                             "files":  [
+                                           "client/client-package-launcher-client-evidence-local-20260628T080212Z-package.json",
+                                           "client/client-package-launcher-client-package-launcher-copy-smoke-20260628T072000Z.json",
+                                           "client/client-package-launcher-client-package-launcher-local-20260628T071000Z.json",
+                                           "client/client-package-launcher-client-package-release-readiness-dev-20260628T073000Z.json",
+                                           "client/client-package-launcher-client-package-shipping-public-example-cdn-20260628T084000Z.json",
+                                           "client/client-package-launcher-client-package-shipping-release-ready-20260628T083000Z.json",
+                                           "client/client-package-launcher-client-release-bundle-final-verify-20260628T104500Z-package.json",
+                                           "client/client-package-launcher-client-release-bundle-local-20260628T103500Z-package.json",
+                                           "client/launcher-manifest-client-evidence-local-20260628T080212Z-package.json",
+                                           "client/launcher-manifest-client-package-launcher-copy-smoke-20260628T072000Z.json",
+                                           "client/launcher-manifest-client-package-launcher-local-20260628T071000Z.json",
+                                           "client/launcher-manifest-client-package-release-readiness-dev-20260628T073000Z.json",
+                                           "client/launcher-manifest-client-package-shipping-public-example-cdn-20260628T084000Z.json",
+                                           "client/launcher-manifest-client-package-shipping-release-ready-20260628T083000Z.json",
+                                           "client/launcher-manifest-client-release-bundle-final-verify-20260628T104500Z-package.json",
+                                           "client/launcher-manifest-client-release-bundle-local-20260628T103500Z-package.json"
+                                       ]
+                         },
+                         {
+                             "key":  "client.cdn_launcher_smoke",
+                             "status":  "incomplete",
+                             "description":  "Launcher CDN smoke evidence proving manifest fetch, package downloads, SHA256 verification, and local install version persistence.",
+                             "fileCount":  2,
+                             "files":  [
+                                           "client/launcher-cdn-smoke-client-evidence-local-20260628T080212Z-local-cdn-payload-smoke.json",
+                                           "client/launcher-cdn-smoke-launcher-cdn-local-http-smoke-20260628T090000Z.json"
+                                       ]
+                         },
+                         {
+                             "key":  "client.code_signing",
+                             "status":  "incomplete",
+                             "description":  "Windows Authenticode code-signing evidence proving public client executables and libraries are trusted signed.",
+                             "fileCount":  7,
+                             "files":  [
+                                           "client/code-signing-client-code-signing-final-require-signed-expected-fail-20260628T094500Z.json",
+                                           "client/code-signing-client-code-signing-final-verify-20260628T094500Z.json",
+                                           "client/code-signing-client-code-signing-require-signed-expected-fail-20260628T093000Z.json",
+                                           "client/code-signing-client-code-signing-unsigned-local-20260628T093000Z.json",
+                                           "client/code-signing-client-evidence-local-20260628T080212Z-signing.json",
+                                           "client/code-signing-client-release-bundle-final-verify-20260628T104500Z-signing.json",
+                                           "client/code-signing-client-release-bundle-local-20260628T103500Z-signing.json"
+                                       ]
+                         },
+                         {
+                             "key":  "client.launcher_install_update",
+                             "status":  "present",
+                             "description":  "Launcher install/update smoke evidence proving manifest fetch, repair download, SHA256 verification, and version persistence.",
+                             "fileCount":  10,
+                             "files":  [
+                                           "client/launcher-install-update-smoke-client-evidence-local-20260628T080212Z-launcher-install-update.json",
+                                           "client/launcher-install-update-smoke-client-evidence-local-20260628T080212Z-launcher-install-update.log",
+                                           "client/launcher-install-update-smoke-client-release-bundle-final-verify-20260628T104500Z-launcher-install-update.json",
+                                           "client/launcher-install-update-smoke-client-release-bundle-final-verify-20260628T104500Z-launcher-install-update.log",
+                                           "client/launcher-install-update-smoke-client-release-bundle-local-20260628T103500Z-launcher-install-update.json",
+                                           "client/launcher-install-update-smoke-client-release-bundle-local-20260628T103500Z-launcher-install-update.log",
+                                           "client/launcher-install-update-smoke-launcher-install-update-final-verify-20260628T102500Z.json",
+                                           "client/launcher-install-update-smoke-launcher-install-update-final-verify-20260628T102500Z.log",
+                                           "client/launcher-install-update-smoke-launcher-install-update-local-20260628T101500Z.json",
+                                           "client/launcher-install-update-smoke-launcher-install-update-local-20260628T101500Z.log"
+                                       ]
+                         },
+                         {
+                             "key":  "client.launcher_ui_visual",
+                             "status":  "present",
+                             "description":  "Launcher UI visual evidence proving the player-facing launcher screen renders and exposes install/update actions.",
+                             "fileCount":  5,
+                             "files":  [
+                                           "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.json",
+                                           "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.browser.log",
+                                           "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.build.log",
+                                           "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.png",
+                                           "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.preview.log"
+                                       ]
+                         }
+                     ]
+}

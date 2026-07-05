@@ -10,9 +10,11 @@
 // RPC 处理器实现
 
 #include "GameDBA/RPC/DBARpcHandler.h"
+#include "GameDBA/Combat/DBADamageCalculator.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/Core/DBAConstants.h"
 #include "GameDBA/Character/IDBACharacterRef.h"
+#include "GameDBA/GAS/DBAAbilitySystemComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "Engine/OverlapResult.h"
@@ -44,6 +46,24 @@ void ADBARpcHandler::ServerTryActivateAbility_Implementation(const FDBAAbilityRp
 {
 	UE_LOG(LogDBANetwork, Log, TEXT("[服务器] 尝试激活技能，句柄=%s"), *Params.AbilityHandle.ToString());
 
+	if (!ValidateServerCharacterContext(TEXT("激活技能")))
+	{
+		ClientAbilityFailed_Implementation(Params.AbilityHandle, FGameplayTag());
+		return;
+	}
+
+	if (!ValidateAbilityInputSemantics(Params, false))
+	{
+		ClientAbilityFailed_Implementation(Params.AbilityHandle, FGameplayTag());
+		return;
+	}
+
+	if (!ValidateAbilityCooldown(Params))
+	{
+		ClientAbilityFailed_Implementation(Params.AbilityHandle, FGameplayTag());
+		return;
+	}
+
 	if (TScriptInterface<IIDBACharacterRef> CharacterRef = GetCharacterRef())
 	{
 		if (UAbilitySystemComponent* ASC = CharacterRef->GetAbilitySystemComponent())
@@ -60,7 +80,7 @@ void ADBARpcHandler::ServerTryActivateAbility_Implementation(const FDBAAbilityRp
 		}
 	}
 
-	UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 激活技能失败：无法获取 ASC 或技能句柄无效。"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 激活技能失败：无法获取能力系统组件(ASC)或技能句柄无效。"));
 	ClientAbilityFailed_Implementation(Params.AbilityHandle, FGameplayTag());
 }
 
@@ -72,9 +92,24 @@ bool ADBARpcHandler::ServerTryActivateAbility_Validate(const FDBAAbilityRpcParam
 		return false;
 	}
 
+	if (!ValidateServerCharacterContext(TEXT("激活技能")))
+	{
+		return false;
+	}
+
 	if (Params.TargetActor != nullptr && !ValidateTarget(Params.TargetActor.Get()))
 	{
 		UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 激活技能被拒绝：目标无效。"));
+		return false;
+	}
+
+	if (!ValidateAbilityInputSemantics(Params, false))
+	{
+		return false;
+	}
+
+	if (!ValidateAbilityCooldown(Params))
+	{
 		return false;
 	}
 
@@ -84,6 +119,11 @@ bool ADBARpcHandler::ServerTryActivateAbility_Validate(const FDBAAbilityRpcParam
 void ADBARpcHandler::ServerCancelAbility_Implementation(FGameplayAbilitySpecHandle Handle)
 {
 	UE_LOG(LogDBANetwork, Log, TEXT("[服务器] 取消技能，句柄=%s"), *Handle.ToString());
+
+	if (!ValidateServerCharacterContext(TEXT("取消技能")))
+	{
+		return;
+	}
 
 	if (TScriptInterface<IIDBACharacterRef> CharacterRef = GetCharacterRef())
 	{
@@ -95,7 +135,7 @@ void ADBARpcHandler::ServerCancelAbility_Implementation(FGameplayAbilitySpecHand
 		}
 	}
 
-	UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 取消技能失败：无法获取 ASC。"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 取消技能失败：无法获取能力系统组件(ASC)。"));
 }
 
 bool ADBARpcHandler::ServerCancelAbility_Validate(FGameplayAbilitySpecHandle Handle)
@@ -105,56 +145,113 @@ bool ADBARpcHandler::ServerCancelAbility_Validate(FGameplayAbilitySpecHandle Han
 		UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 取消技能被拒绝：技能句柄无效。"));
 		return false;
 	}
+
+	if (!ValidateServerCharacterContext(TEXT("取消技能")))
+	{
+		return false;
+	}
+
 	return true;
 }
 
 void ADBARpcHandler::ServerLockTarget_Implementation(AActor* TargetActor)
 {
+	if (!ValidateServerCharacterContext(TEXT("锁定目标")))
+	{
+		return;
+	}
+
 	UE_LOG(LogDBANetwork, Log, TEXT("[服务器] 请求锁定目标：%s"), *GetNameSafe(TargetActor));
+
+	if (!ValidateTarget(TargetActor))
+	{
+		UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 目标锁定失败：目标无效。"));
+		return;
+	}
 
 	// 验证目标是有效的敌人
 	if (TargetActor && IsEnemy(GetOwner(), TargetActor))
 	{
-		// 通过接口设置锁定目标
-		if (TScriptInterface<IIDBACharacterRef> CharacterRef = GetCharacterRef())
-		{
-			UE_LOG(LogDBANetwork, Log, TEXT("[服务器] 目标锁定成功。"));
-		}
+		LockedTargetActor = TargetActor;
+		UE_LOG(LogDBANetwork, Log, TEXT("[服务器] 目标锁定成功。"));
 	}
 }
 
 bool ADBARpcHandler::ServerLockTarget_Validate(AActor* TargetActor)
 {
+	if (!ValidateServerCharacterContext(TEXT("锁定目标")))
+	{
+		return false;
+	}
+
 	if (!ValidateTarget(TargetActor))
 	{
 		UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 锁定目标被拒绝：目标无效。"));
 		return false;
 	}
+
+	if (!IsEnemy(GetOwner(), TargetActor))
+	{
+		UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 锁定目标被拒绝：目标不是敌对单位。"));
+		return false;
+	}
+
 	return true;
 }
 
 void ADBARpcHandler::ServerMoveTo_Implementation(FVector_NetQuantize10 Location)
 {
+	if (!ValidateServerCharacterContext(TEXT("请求移动")))
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 移动请求失败：缺少世界对象。"));
+		return;
+	}
+
+	AActor* OwnerActor = GetOwner();
+	if (!OwnerActor)
+	{
+		UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 移动请求失败：缺少拥有者。"));
+		return;
+	}
+
+	OwnerActor->SetActorLocation(Location);
+	const float ServerTime = World->GetTimeSeconds();
+	ClientMoveCorrection_Implementation(Location, ServerTime);
 	UE_LOG(LogDBANetwork, Verbose, TEXT("[服务器] 请求移动到位置：%s"), *Location.ToString());
 }
 
 bool ADBARpcHandler::ServerMoveTo_Validate(FVector_NetQuantize10 Location)
 {
+	if (!ValidateServerCharacterContext(TEXT("请求移动")))
+	{
+		return false;
+	}
+
 	if (Location.ContainsNaN())
 	{
 		UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 移动被拒绝：位置坐标无效。"));
 		return false;
 	}
 
-	if (UWorld* World = GetWorld())
+	UWorld* World = GetWorld();
+	if (!World)
 	{
-		if (Location.X < DBAConstants::MapBoundary_MinX || Location.X > DBAConstants::MapBoundary_MaxX ||
-			Location.Y < DBAConstants::MapBoundary_MinY || Location.Y > DBAConstants::MapBoundary_MaxY ||
-			Location.Z < DBAConstants::MapBoundary_MinZ || Location.Z > DBAConstants::MapBoundary_MaxZ)
-		{
-			UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 移动被拒绝：位置超出边界。"));
-			return false;
-		}
+		UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 移动被拒绝：缺少世界对象。"));
+		return false;
+	}
+
+	if (Location.X < DBAConstants::MapBoundary_MinX || Location.X > DBAConstants::MapBoundary_MaxX ||
+		Location.Y < DBAConstants::MapBoundary_MinY || Location.Y > DBAConstants::MapBoundary_MaxY ||
+		Location.Z < DBAConstants::MapBoundary_MinZ || Location.Z > DBAConstants::MapBoundary_MaxZ)
+	{
+		UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 移动被拒绝：位置超出边界。"));
+		return false;
 	}
 
 	return true;
@@ -164,23 +261,62 @@ void ADBARpcHandler::ServerRequestAttack_Implementation()
 {
 	UE_LOG(LogDBANetwork, Log, TEXT("[服务器] 收到攻击请求。"));
 
+	if (!ValidateServerCharacterContext(TEXT("请求攻击")))
+	{
+		return;
+	}
+
+	AActor* Attacker = GetOwner();
+	if (!Attacker)
+	{
+		UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 攻击请求失败：缺少攻击者。"));
+		return;
+	}
+
 	AActor* AttackTarget = FindAttackTarget();
 	if (!AttackTarget)
 	{
 		UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 攻击请求失败：未找到目标。"));
+		ClientHitRejected_Implementation(FGameplayAbilitySpecHandle());
 		return;
 	}
 
 	// 通知客户端命中
 	bool bIsCritical = false;
 	float Damage = CalculateAttackDamage(AttackTarget, bIsCritical);
+	if (Damage <= 0.0f)
+	{
+		UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 攻击请求失败：伤害无效。"));
+		ClientHitRejected_Implementation(FGameplayAbilitySpecHandle());
+		return;
+	}
 
 	FVector HitLocation = AttackTarget->GetActorLocation();
+	UDBADamageCalculator::ApplyDamageToTargetWithCue(
+		Attacker,
+		AttackTarget,
+		Damage,
+		EDBAElement::None,
+		bIsCritical,
+		FGameplayTag::RequestGameplayTag(FName(TEXT("GameplayCue.DBA.Skill.Impact")), false),
+		HitLocation);
 	ClientHitConfirmedWithCritical_Implementation(FGameplayAbilitySpecHandle(), Damage, FGameplayTag(), bIsCritical, HitLocation);
 }
 
 bool ADBARpcHandler::ServerRequestAttack_Validate()
 {
+	if (!ValidateServerCharacterContext(TEXT("请求攻击")))
+	{
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 攻击请求被拒绝：缺少世界对象。"));
+		return false;
+	}
+
 	return true;
 }
 
@@ -188,10 +324,28 @@ void ADBARpcHandler::ServerUltimateAbility_Implementation(const FDBAAbilityRpcPa
 {
 	UE_LOG(LogDBANetwork, Log, TEXT("[服务器] 收到终极技能请求。"));
 
+	if (!ValidateServerCharacterContext(TEXT("终极技能")))
+	{
+		ClientAbilityFailed_Implementation(Params.AbilityHandle, FGameplayTag());
+		return;
+	}
+
+	if (!ValidateAbilityInputSemantics(Params, true))
+	{
+		ClientAbilityFailed_Implementation(Params.AbilityHandle, FGameplayTag());
+		return;
+	}
+
+	if (!ValidateAbilityCooldown(Params))
+	{
+		ClientAbilityFailed_Implementation(Params.AbilityHandle, FGameplayTag());
+		return;
+	}
+
 	// 检查终极能量是否足够
 	if (TScriptInterface<IIDBACharacterRef> CharacterRef = GetCharacterRef())
 	{
-		if (CharacterRef->GetUltimateEnergy() >= 100.f)
+		if (CharacterRef->GetUltimateEnergy() >= DBAConstants::MaxUltimateEnergy)
 		{
 			// 消耗终极能量
 			// 注意：这里只是记录，实际消耗在技能激活时进行
@@ -206,7 +360,7 @@ void ADBARpcHandler::ServerUltimateAbility_Implementation(const FDBAAbilityRpcPa
 		}
 	}
 
-	UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 终极技能激活失败：能量不足或 ASC 无效。"));
+	UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 终极技能激活失败：能量不足或能力系统组件(ASC)无效。"));
 	ClientAbilityFailed_Implementation(Params.AbilityHandle, FGameplayTag());
 }
 
@@ -218,9 +372,24 @@ bool ADBARpcHandler::ServerUltimateAbility_Validate(const FDBAAbilityRpcParams& 
 		return false;
 	}
 
+	if (!ValidateServerCharacterContext(TEXT("终极技能")))
+	{
+		return false;
+	}
+
+	if (!ValidateAbilityInputSemantics(Params, true))
+	{
+		return false;
+	}
+
+	if (!ValidateAbilityCooldown(Params))
+	{
+		return false;
+	}
+
 	if (TScriptInterface<IIDBACharacterRef> CharacterRef = GetCharacterRef())
 	{
-		if (CharacterRef->GetUltimateEnergy() < 100.f)
+		if (CharacterRef->GetUltimateEnergy() < DBAConstants::MaxUltimateEnergy)
 		{
 			UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 终极技能被拒绝：终极能量未满。"));
 			return false;
@@ -337,13 +506,107 @@ void ADBARpcHandler::ClientHitConfirmedWithCritical_Implementation(FGameplayAbil
 
 // ==================== 辅助方法 ====================
 
+bool ADBARpcHandler::ValidateServerCharacterContext(const TCHAR* OperationName) const
+{
+	const TCHAR* SafeOperationName = OperationName ? OperationName : TEXT("RPC");
+
+	if (TScriptInterface<IIDBACharacterRef> CharacterRef = GetCharacterRef())
+	{
+		if (CharacterRef->IsDead())
+		{
+			UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] %s 被拒绝：角色已死亡。"), SafeOperationName);
+			return false;
+		}
+
+		if (!CharacterRef->GetAbilitySystemComponent())
+		{
+			UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] %s 被拒绝：缺少能力系统组件(ASC)。"), SafeOperationName);
+			return false;
+		}
+
+		return true;
+	}
+
+	UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] %s 被拒绝：缺少角色上下文。"), SafeOperationName);
+	return false;
+}
+
 bool ADBARpcHandler::ValidateEnergyCost(float Cost) const
 {
 	if (TScriptInterface<IIDBACharacterRef> CharacterRef = GetCharacterRef())
 	{
 		return CharacterRef->HasEnoughEnergy(Cost);
 	}
-	return true;
+	return false;
+}
+
+bool ADBARpcHandler::ValidateAbilityInputSemantics(const FDBAAbilityRpcParams& Params, bool bRequireUltimate) const
+{
+	if (TScriptInterface<IIDBACharacterRef> CharacterRef = GetCharacterRef())
+	{
+		UAbilitySystemComponent* AbilitySystem = CharacterRef->GetAbilitySystemComponent();
+		if (!AbilitySystem)
+		{
+			UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 技能输入语义校验失败：缺少能力系统组件(ASC)。"));
+			return false;
+		}
+
+		FGameplayAbilitySpec* Spec = AbilitySystem->FindAbilitySpecFromHandle(Params.AbilityHandle);
+		if (!Spec)
+		{
+			UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 技能输入语义校验失败：技能句柄无效。"));
+			return false;
+		}
+
+		const bool bIsUltimateInput = Spec->InputID == static_cast<int32>(EDBAAbilityInputID::Ultimate);
+		if (bRequireUltimate != bIsUltimateInput)
+		{
+			UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 技能输入语义校验失败：远程调用入口(RPC)与技能输入类型不匹配。"));
+			return false;
+		}
+
+		if (Spec->InputID == static_cast<int32>(EDBAAbilityInputID::None))
+		{
+			UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 技能输入语义校验失败：技能输入 ID 无效。"));
+			return false;
+		}
+
+		return true;
+	}
+
+	UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 技能输入语义校验失败：缺少角色上下文。"));
+	return false;
+}
+
+bool ADBARpcHandler::ValidateAbilityCooldown(const FDBAAbilityRpcParams& Params) const
+{
+	if (TScriptInterface<IIDBACharacterRef> CharacterRef = GetCharacterRef())
+	{
+		UDBAAbilitySystemComponent* DBAAbilitySystem = Cast<UDBAAbilitySystemComponent>(CharacterRef->GetAbilitySystemComponent());
+		if (!DBAAbilitySystem)
+		{
+			UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 技能冷却校验失败：缺少 DBA 能力系统组件。"));
+			return false;
+		}
+
+		FGameplayAbilitySpec* Spec = DBAAbilitySystem->FindAbilitySpecFromHandle(Params.AbilityHandle);
+		if (!Spec)
+		{
+			UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 技能冷却校验失败：技能句柄无效。"));
+			return false;
+		}
+
+		if (DBAAbilitySystem->IsInputAbilityOnCooldown(Spec->InputID))
+		{
+			UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 技能激活被拒绝：技能仍在冷却中。"));
+			return false;
+		}
+
+		return true;
+	}
+
+	UE_LOG(LogDBANetwork, Warning, TEXT("[服务器] 技能冷却校验失败：缺少角色上下文。"));
+	return false;
 }
 
 bool ADBARpcHandler::ValidateTarget(AActor* Target) const
@@ -378,12 +641,26 @@ bool ADBARpcHandler::ValidateCastRange(AActor* Target, float Range) const
 	return Distance <= Range;
 }
 
-AActor* ADBARpcHandler::FindAttackTarget() const
+AActor* ADBARpcHandler::FindAttackTarget()
 {
 	AActor* OwnerActor = GetOwner();
 	if (!OwnerActor)
 	{
 		return nullptr;
+	}
+
+	AActor* LockedTarget = LockedTargetActor.Get();
+	if (ValidateTarget(LockedTarget) &&
+		IsEnemy(OwnerActor, LockedTarget) &&
+		ValidateCastRange(LockedTarget, DBAConstants::DefaultAttackRange))
+	{
+		return LockedTarget;
+	}
+
+	if (LockedTarget)
+	{
+		LockedTargetActor = nullptr;
+		UE_LOG(LogDBANetwork, Verbose, TEXT("[服务器] 锁定目标已失效，回退到自动目标搜索。"));
 	}
 
 	const FVector OwnerLocation = OwnerActor->GetActorLocation();

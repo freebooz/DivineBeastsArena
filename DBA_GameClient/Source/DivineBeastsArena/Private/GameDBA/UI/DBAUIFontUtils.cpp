@@ -108,9 +108,10 @@ void DBAUIFonts::ApplyGameFontToWidgetTree(UWidgetTree* WidgetTree)
 
 			if (UEditableTextBox* EditableTextBox = Cast<UEditableTextBox>(Widget))
 			{
-				// UE 5.7's SEditableText is sensitive to runtime-built composite fonts during prepass.
+				// UE 5.8's SEditableText is sensitive to runtime-built composite fonts during prepass.
 				// Keep editable fields on their default stable font; labels and buttons still use the DBA font.
 				(void)EditableTextBox;
 			}
 		});
 }
+

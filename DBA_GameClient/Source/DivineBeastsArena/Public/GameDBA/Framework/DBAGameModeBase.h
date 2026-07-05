@@ -39,6 +39,8 @@ protected:
 	virtual FString InitNewPlayer(APlayerController* NewPlayerController, const FUniqueNetIdRepl& UniqueId, const FString& Options, const FString& Portal) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
+	virtual void HandleMatchHasStarted() override;
+	virtual void HandleMatchHasEnded() override;
 	virtual UClass* GetDefaultPawnClassForController_Implementation(AController* InController) override;
 	virtual APawn* SpawnDefaultPawnAtTransform_Implementation(AController* NewPlayer, const FTransform& SpawnTransform) override;
 
@@ -48,8 +50,11 @@ private:
 	UClass* ResolveLobbyPawnClass(EDBAZodiac Zodiac) const;
 	void TryInitializeBackendRuntime();
 	void SendBackendHeartbeat();
+	void SyncBackendMatchTeamId(APlayerController* PlayerController);
+	void ReportBackendMatchStarted();
 	void ReportBackendPlayerJoined(APlayerController* PlayerController, const FString& Options);
 	void ReportBackendPlayerLeft(APlayerController* PlayerController);
+	void ReportBackendMatchResults();
 
 private:
 	int32 NextLobbyJoinIndex = 0;
@@ -57,8 +62,13 @@ private:
 	TMap<TObjectKey<APlayerController>, EDBAZodiac> LobbyJoinZodiacs;
 	TMap<TObjectKey<APlayerController>, FString> BackendRuntimePlayerIds;
 	TMap<TObjectKey<APlayerController>, FString> BackendRuntimePlayerOptions;
+	TMap<TObjectKey<APlayerController>, int32> BackendRuntimePlayerTeamIds;
 	TMap<TObjectKey<APlayerController>, TWeakObjectPtr<ADBACharacterPreviewActor>> LobbyDisplayActors;
 	TArray<TWeakObjectPtr<ADBALobbyTrainingMonster>> LobbyTrainingMonsters;
 	FTimerHandle BackendRuntimeHeartbeatTimerHandle;
 	bool bBackendRuntimeReadySent = false;
+	bool bBackendMatchStartedSent = false;
+	bool bBackendMatchEndedSent = false;
+	bool bBackendMatchResultsSent = false;
+	FString BackendMatchResultIdempotencyKey;
 };

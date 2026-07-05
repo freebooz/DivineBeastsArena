@@ -1,0 +1,140 @@
+{
+    "metrics": {
+        "vus": {
+            "max": 30,
+            "value": 1,
+            "min": 1
+        },
+        "http_req_duration": {
+            "min": 0.747188,
+            "med": 1.758467,
+            "max": 17.654173,
+            "p(90)": 3.0360424,
+            "p(95)": 3.8795165999999996,
+            "avg": 2.0727029082260775,
+            "thresholds": {
+                "p(95)<500": false
+            }
+        },
+        "checks": {
+            "fails": 3494,
+            "passes": 80,
+            "value": 0.02238388360380526
+        },
+        "http_req_receiving": {
+            "p(90)": 0.073954,
+            "p(95)": 0.09266869999999999,
+            "avg": 0.05204094907666473,
+            "min": 0.005796,
+            "med": 0.050773,
+            "max": 0.490237
+        },
+        "http_req_tls_handshaking": {
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_reqs": {
+            "count": 1787,
+            "rate": 14.837101502684845
+        },
+        "http_req_blocked": {
+            "max": 4.590637,
+            "p(90)": 0.0059348000000000005,
+            "p(95)": 0.008656299999999988,
+            "avg": 0.032392512031337445,
+            "min": 0.001134,
+            "med": 0.004171
+        },
+        "http_req_connecting": {
+            "avg": 0.02583026692781197,
+            "min": 0,
+            "med": 0,
+            "max": 4.403065,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_sending": {
+            "p(95)": 0.05183719999999999,
+            "avg": 0.021631517627308347,
+            "min": 0.003318,
+            "med": 0.016238,
+            "max": 0.571551,
+            "p(90)": 0.032301600000000055
+        },
+        "iteration_duration": {
+            "med": 1002.573764,
+            "max": 1018.078252,
+            "p(90)": 1003.9510544,
+            "p(95)": 1004.7625456,
+            "avg": 1002.8401437364314,
+            "min": 1000.950438
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(90)": 10.274815100000001,
+            "p(95)": 12.854926899999995,
+            "avg": 8.442456925,
+            "min": 4.79488,
+            "med": 8.963635499999999,
+            "max": 17.654173
+        },
+        "data_sent": {
+            "count": 424182,
+            "rate": 3521.8978117581773
+        },
+        "data_received": {
+            "count": 631931,
+            "rate": 5246.795965133261
+        },
+        "http_req_waiting": {
+            "max": 17.540047,
+            "p(90)": 2.9524888,
+            "p(95)": 3.7562333,
+            "avg": 1.999030441522105,
+            "min": 0.712236,
+            "med": 1.689324
+        },
+        "http_req_failed": {
+            "passes": 1747,
+            "fails": 40,
+            "thresholds": {
+                "rate<0.01": true
+            },
+            "value": 0.9776161163961947
+        },
+        "vus_max": {
+            "value": 30,
+            "min": 30,
+            "max": 30
+        },
+        "iterations": {
+            "count": 1787,
+            "rate": 14.837101502684845
+        }
+    },
+    "root_group": {
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "login status is 200": {
+                    "name": "login status is 200",
+                    "path": "::login status is 200",
+                    "id": "baba87e761865dc93085ee0c1fe25f4c",
+                    "passes": 40,
+                    "fails": 1747
+                },
+                "login returns access token": {
+                    "passes": 40,
+                    "fails": 1747,
+                    "name": "login returns access token",
+                    "path": "::login returns access token",
+                    "id": "6293b1160fa705bac3d194d14543619f"
+                }
+            },
+        "name": ""
+    }
+}

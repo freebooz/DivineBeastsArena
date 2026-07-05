@@ -51,7 +51,7 @@ UTexture2D* UDBASoftwareCursorWidget::LoadCursorTexture()
 	if (CursorTexture)
 	{
 		CursorTexture->NeverStream = true;
-		UE_LOG(LogDBACore, Log, TEXT("[DBASoftwareCursor] Loaded cursor texture asset: %s"), CursorTextureObjectPath);
+		UE_LOG(LogDBACore, Log, TEXT("[DBASoftwareCursor] 已加载鼠标指针纹理资产：%s"), CursorTextureObjectPath);
 		return CursorTexture;
 	}
 
@@ -61,11 +61,11 @@ UTexture2D* UDBASoftwareCursorWidget::LoadCursorTexture()
 	{
 		CursorTexture->NeverStream = true;
 		CursorTexture->SRGB = true;
-		UE_LOG(LogDBACore, Log, TEXT("[DBASoftwareCursor] Loaded cursor texture: %s"), *CursorPngPath);
+		UE_LOG(LogDBACore, Log, TEXT("[DBASoftwareCursor] 已从 PNG 加载鼠标指针纹理：%s"), *CursorPngPath);
 	}
 	else
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBASoftwareCursor] Failed to load cursor PNG: %s"), *CursorPngPath);
+		UE_LOG(LogDBACore, Warning, TEXT("[DBASoftwareCursor] 加载鼠标指针 PNG 失败：%s"), *CursorPngPath);
 	}
 	return CursorTexture;
 }

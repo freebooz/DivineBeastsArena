@@ -504,7 +504,7 @@ void UDBALoginFlowWidgetBase::NativeConstruct()
 	}
 	BindButtonClickAudio();
 	BindControls();
-	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] 组件绑定: LoginButton=%s, GuestLoginButton=%s, DebugLoginButton=%s, EmailInput=%s, PasswordInput=%s"),
+	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] 组件绑定状态：登录按钮=%s，游客登录按钮=%s，调试登录按钮=%s，账号输入框=%s，密码输入框=%s"),
 		LoginButton ? *LoginButton->GetName() : TEXT("NULL"),
 		GuestLoginButton ? *GuestLoginButton->GetName() : TEXT("NULL"),
 		DebugLoginButton ? *DebugLoginButton->GetName() : TEXT("NULL"),
@@ -573,7 +573,7 @@ void UDBALoginFlowWidgetBase::SubmitLogin()
 
 void UDBALoginFlowWidgetBase::SubmitGuestLogin()
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] \u70b9\u51fb\u8bbf\u5ba2\u767b\u5f55"));
+	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] 点击游客登录"));
 	if (!CanSubmitLoginAction())
 	{
 		return;
@@ -635,13 +635,13 @@ void UDBALoginFlowWidgetBase::HandleLoginClicked()
 
 void UDBALoginFlowWidgetBase::HandleGuestLoginClicked()
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] \u70b9\u51fb\u8bbf\u5ba2\u767b\u5f55\u6309\u94ae"));
+	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] 点击游客登录按钮"));
 	SubmitGuestLogin();
 }
 
 void UDBALoginFlowWidgetBase::HandleDebugLoginClicked()
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] \u70b9\u51fb\u8c03\u8bd5\u767b\u5f55\u6309\u94ae"));
+	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] 点击调试登录按钮"));
 	SubmitDebugLogin(TEXT("dba_dev_01"));
 }
 
@@ -736,7 +736,7 @@ void UDBALoginFlowWidgetBase::HandlePrivacyPolicyClicked()
 
 void UDBALoginFlowWidgetBase::HandleFlowStateChanged(EDBALoginFlowState NewState)
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] \u6d41\u7a0b\u72b6\u6001\u53d8\u66f4: %d"), static_cast<int32>(NewState));
+	UE_LOG(LogDBAUI, Log, TEXT("[LoginWidget] 流程状态变更：%d"), static_cast<int32>(NewState));
 	SetStatus(GetLoginFlowStatusText(NewState));
 	UpdateLoadingStateByFlow(NewState);
 	if (NewState != EDBALoginFlowState::LoginScreen && NewState != EDBALoginFlowState::Error)
@@ -807,7 +807,7 @@ void UDBALoginFlowWidgetBase::BindControls()
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] LoginButton \u4e3a\u7a7a\uff0c\u672a\u7ed1\u5b9a\u70b9\u51fb\u4e8b\u4ef6\u3002"));
+		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] 登录按钮为空，未绑定点击事件。"));
 	}
 	if (GuestLoginButton)
 	{
@@ -817,7 +817,7 @@ void UDBALoginFlowWidgetBase::BindControls()
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] GuestLoginButton \u4e3a\u7a7a\uff0c\u672a\u7ed1\u5b9a\u70b9\u51fb\u4e8b\u4ef6\u3002"));
+		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] 游客登录按钮为空，未绑定点击事件。"));
 	}
 	if (DebugLoginButton)
 	{
@@ -833,7 +833,7 @@ void UDBALoginFlowWidgetBase::BindControls()
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] DebugLoginButton \u4e3a\u7a7a\uff0c\u672a\u7ed1\u5b9a\u70b9\u51fb\u4e8b\u4ef6\u3002"));
+		UE_LOG(LogDBAUI, Warning, TEXT("[LoginWidget] 调试登录按钮为空，未绑定点击事件。"));
 	}
 	if (RememberToggleButton)
 	{

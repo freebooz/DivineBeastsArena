@@ -1,0 +1,96 @@
+name: unreal-evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Backend base URL reachable from the UE runner"
+        required: true
+        default: "http://localhost:8080"
+      run_id:
+        description: "Evidence run id; leave empty to use GitHub run id"
+        required: false
+        default: ""
+      evidence_root:
+        description: "Evidence output directory"
+        required: true
+        default: "Artifacts/ProductionEvidence"
+      package_server:
+        description: "Rebuild/cook/package the server before validation"
+        required: true
+        type: boolean
+        default: false
+      use_packaged_server:
+        description: "Run validation with staged packaged Dedicated Server"
+        required: true
+        type: boolean
+        default: true
+      run_online_clients:
+        description: "Launch two UE clients and validate real joins"
+        required: true
+        type: boolean
+        default: true
+      run_ai_showcase_automation:
+        description: "Run AI_Showcase UI/VFX automation regression before online validation"
+        required: true
+        type: boolean
+        default: true
+      client_validation_wait_sec:
+        description: "Seconds to observe client/server logs after client launch"
+        required: true
+        default: "45"
+
+jobs:
+  packaged-online-validation:
+    name: Packaged UE online validation evidence
+    runs-on:
+      - self-hosted
+      - Windows
+      - Unreal
+    env:
+      DBA_INTERNAL_API_KEY: ${{ secrets.DBA_INTERNAL_API_KEY }}
+      UNREAL_ENGINE_ROOT: ${{ vars.UNREAL_ENGINE_ROOT || 'D:\UnrealEngine-5.8.0-release' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Unreal production evidence
+        shell: pwsh
+        run: |
+          $runId = "${{ inputs.run_id }}"
+          if ([string]::IsNullOrWhiteSpace($runId)) {
+            $runId = "gha-${{ github.run_id }}-${{ github.run_attempt }}"
+          }
+
+          $args = @{
+            BaseUrl = "${{ inputs.base_url }}"
+            UnrealRoot = $env:UNREAL_ENGINE_ROOT
+            InternalApiKey = $env:DBA_INTERNAL_API_KEY
+            EvidenceRoot = "${{ inputs.evidence_root }}"
+            RunId = $runId
+            ClientValidationWaitSec = [int]"${{ inputs.client_validation_wait_sec }}"
+          }
+
+          if ("${{ inputs.package_server }}" -eq "true") {
+            $args.PackageServer = $true
+          }
+
+          if ("${{ inputs.use_packaged_server }}" -eq "true") {
+            $args.UsePackagedServer = $true
+          }
+
+          if ("${{ inputs.run_online_clients }}" -ne "true") {
+            $args.SkipClientLaunch = $true
+          }
+
+          if ("${{ inputs.run_ai_showcase_automation }}" -ne "true") {
+            $args.SkipAIShowcaseAutomation = $true
+          }
+
+          .\scripts\run-unreal-evidence.ps1 @args
+
+      - name: Upload UE production evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ue-production-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ inputs.evidence_root }}
+          if-no-files-found: error

@@ -32,7 +32,7 @@ public static partial class GameFeatureEndpoints
 
     // ==================== 排行榜 ====================
 
-    private static async Task<IResult> GetRanking(string mode, int page, int pageSize, GameDbContext db)
+    private static async Task<IResult> GetRanking(string mode, GameDbContext db, int page = 1, int pageSize = 50)
     {
         (page, pageSize) = NormalizePaging(page, pageSize);
 

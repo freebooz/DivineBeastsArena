@@ -9,6 +9,16 @@
 
 
 #include "GameDBA/UI/Arena/UDBABuffBarWidgetBase.h"
+#include "Math/UnrealMathUtility.h"
+
+namespace
+{
+bool NormalizeStatusWidgetId(const FString& EffectId, FString& OutEffectId)
+{
+	OutEffectId = EffectId.TrimStartAndEnd();
+	return !OutEffectId.IsEmpty();
+}
+}
 
 UDBABuffBarWidgetBase::UDBABuffBarWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -18,6 +28,11 @@ UDBABuffBarWidgetBase::UDBABuffBarWidgetBase(const FObjectInitializer& ObjectIni
 void UDBABuffBarWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+	BP_OnBuffsCleared();
+	for (const TPair<FString, float>& CachedBuff : CachedActiveBuffs)
+	{
+		BP_OnBuffAdded(CachedBuff.Key, CachedBuff.Value);
+	}
 }
 
 void UDBABuffBarWidgetBase::NativeDestruct()
@@ -27,15 +42,30 @@ void UDBABuffBarWidgetBase::NativeDestruct()
 
 void UDBABuffBarWidgetBase::AddBuff(const FString& BuffId, float Duration)
 {
-	BP_OnBuffAdded(BuffId, Duration);
+	FString NormalizedBuffId;
+	if (!NormalizeStatusWidgetId(BuffId, NormalizedBuffId))
+	{
+		return;
+	}
+
+	CachedActiveBuffs.Add(NormalizedBuffId, FMath::Max(0.0f, Duration));
+	BP_OnBuffAdded(NormalizedBuffId, CachedActiveBuffs[NormalizedBuffId]);
 }
 
 void UDBABuffBarWidgetBase::RemoveBuff(const FString& BuffId)
 {
-	BP_OnBuffRemoved(BuffId);
+	FString NormalizedBuffId;
+	if (!NormalizeStatusWidgetId(BuffId, NormalizedBuffId))
+	{
+		return;
+	}
+
+	CachedActiveBuffs.Remove(NormalizedBuffId);
+	BP_OnBuffRemoved(NormalizedBuffId);
 }
 
 void UDBABuffBarWidgetBase::ClearAllBuffs()
 {
+	CachedActiveBuffs.Reset();
+	BP_OnBuffsCleared();
 }
-

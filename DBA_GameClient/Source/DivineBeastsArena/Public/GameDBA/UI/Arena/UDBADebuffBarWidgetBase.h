@@ -42,4 +42,10 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|DebuffBar", meta = (DisplayName = "On Debuff Removed"))
 	void BP_OnDebuffRemoved(const FString& DebuffId);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|DebuffBar", meta = (DisplayName = "On Debuffs Cleared"))
+	void BP_OnDebuffsCleared();
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|DebuffBar")
+	TMap<FString, float> CachedActiveDebuffs;
 };

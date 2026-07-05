@@ -1,0 +1,29 @@
+﻿{
+    "kind":  "ai-showcase-automation",
+    "runId":  "ai-showcase-widget-tree-20260630b",
+    "generatedAtUtc":  "2026-06-30T00:26:18.8656330Z",
+    "automationReady":  true,
+    "logErrorCount":  0,
+    "logWarningCount":  0,
+    "requestedTestCount":  5,
+    "passedTestCount":  5,
+    "testFilter":  "DivineBeastsArena.Showcase.AIShowcase",
+    "platform":  "Win64",
+    "configuration":  "Development",
+    "projectPath":  "E:\\work\\Game\\DivineBeastsArena\\DBA_GameClient\\DivineBeastsArena.uproject",
+    "command":  {
+                    "filePath":  "D:\\UnrealEngine-5.8.0-release\\Engine\\Binaries\\Win64\\UnrealEditor-Cmd.exe",
+                    "workingDirectory":  "E:\\work\\Game\\DivineBeastsArena",
+                    "arguments":  [
+                                      "E:\\work\\Game\\DivineBeastsArena\\DBA_GameClient\\DivineBeastsArena.uproject",
+                                      "-unattended",
+                                      "-nullrhi",
+                                      "-nosplash",
+                                      "-log",
+                                      "-abslog=E:\\work\\Game\\DivineBeastsArena\\Artifacts\\Logs\\ai-showcase-automation-ai-showcase-widget-tree-20260630b.log",
+                                      "-ExecCmds=Automation RunTests DivineBeastsArena.Showcase.AIShowcase; Quit",
+                                      "-TestExit=Automation Test Queue Empty"
+                                  ],
+                    "logPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\Logs\\ai-showcase-automation-ai-showcase-widget-tree-20260630b.log"
+                }
+}

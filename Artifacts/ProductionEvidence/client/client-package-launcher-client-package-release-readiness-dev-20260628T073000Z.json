@@ -1,0 +1,32 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "client-package-launcher",
+    "runId":  "client-package-release-readiness-dev-20260628T073000Z",
+    "generatedAtUtc":  "2026-06-28T04:50:46.0473367Z",
+    "packageRoot":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\packaged-server\\Windows",
+    "version":  "0.1.0.0",
+    "buildConfiguration":  "Development",
+    "downloadUrl":  "https://cdn.example.com/releases/0.1.0.0/",
+    "fileCount":  53,
+    "totalBytes":  3433238520,
+    "clientExecutable":  "DivineBeastsArena.exe",
+    "contentContainerCount":  5,
+    "debugSymbolCount":  1,
+    "releaseReady":  false,
+    "releaseReadinessNotes":  [
+                                  "BuildConfiguration is Development; production release evidence requires Shipping.",
+                                  "Debug symbol files are present; production release package should separate symbols from the public client package.",
+                                  "DownloadUrl is an example CDN URL, not a release CDN URL."
+                              ],
+    "launcherManifestPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\client\\launcher-manifest-client-package-release-readiness-dev-20260628T073000Z.json",
+    "sha256":  {
+                   "manifest":  "4a639ea573d42f7a10b7ce1c1fe598854fc46f3cdaea068661dff3963adc249d",
+                   "clientExecutable":  "e2dd1b7d94ec6d8d92c3eeaed54ae1bf70895c9cab3b1a95d18609959af69d54"
+               },
+    "installSmoke":  {
+                         "mode":  "manifest-and-hash-contract-only",
+                         "path":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\launcher-install-smoke\\client-package-release-readiness-dev-20260628T073000Z",
+                         "copiedFiles":  0,
+                         "versionFile":  false
+                     }
+}

@@ -137,6 +137,24 @@ public class RequiredOptionsValidatorTests
     }
 
     [Fact]
+    public void ValidateDedicatedServerOrchestration_WhenProductionExternalMode_DoesNotRequireLocalExecutable()
+    {
+        RequiredOptionsValidator.ValidateDedicatedServerOrchestration(new DedicatedServerOrchestrationOptions
+        {
+            ServerMode = "External",
+            PublicIp = "127.0.0.1",
+            PortRangeStart = 7777,
+            PortRangeEnd = 8000,
+            UeServerExecutablePath = "",
+            AllowMockServerAllocation = false,
+            MaxServersPerMachine = 4,
+            StartupTimeoutSeconds = 120,
+            HeartbeatTimeoutSeconds = 60,
+            IdleTimeoutSeconds = 300
+        }, isProduction: true);
+    }
+
+    [Fact]
     public void ValidateAll_WhenOptionsAreComplete_DoesNotThrow()
     {
         RequiredOptionsValidator.ValidateDatabase(new DatabaseOptions

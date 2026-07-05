@@ -9,6 +9,22 @@
 
 
 #include "GameDBA/UI/Arena/UDBAArenaObjectiveTrackerWidgetBase.h"
+#include "Math/UnrealMathUtility.h"
+
+namespace
+{
+bool NormalizeHUDWidgetText(const FText& Text, FText& OutText)
+{
+	const FString NormalizedText = Text.ToString().TrimStartAndEnd();
+	if (NormalizedText.IsEmpty())
+	{
+		return false;
+	}
+
+	OutText = FText::FromString(NormalizedText);
+	return true;
+}
+}
 
 UDBAArenaObjectiveTrackerWidgetBase::UDBAArenaObjectiveTrackerWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -18,6 +34,14 @@ UDBAArenaObjectiveTrackerWidgetBase::UDBAArenaObjectiveTrackerWidgetBase(const F
 void UDBAArenaObjectiveTrackerWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+	if (!CachedObjectiveText.IsEmpty())
+	{
+		BP_OnObjectiveUpdated(CachedObjectiveText, CachedObjectiveProgress);
+		if (bCachedObjectiveCompleted)
+		{
+			BP_OnObjectiveCompleted();
+		}
+	}
 }
 
 void UDBAArenaObjectiveTrackerWidgetBase::NativeDestruct()
@@ -27,9 +51,20 @@ void UDBAArenaObjectiveTrackerWidgetBase::NativeDestruct()
 
 void UDBAArenaObjectiveTrackerWidgetBase::UpdateObjective(const FText& ObjectiveText, float Progress)
 {
+	FText NormalizedObjectiveText;
+	if (!NormalizeHUDWidgetText(ObjectiveText, NormalizedObjectiveText))
+	{
+		return;
+	}
+
+	CachedObjectiveText = NormalizedObjectiveText;
+	CachedObjectiveProgress = FMath::Clamp(Progress, 0.0f, 1.0f);
+	bCachedObjectiveCompleted = false;
+	BP_OnObjectiveUpdated(CachedObjectiveText, CachedObjectiveProgress);
 }
 
 void UDBAArenaObjectiveTrackerWidgetBase::CompleteObjective()
 {
+	bCachedObjectiveCompleted = true;
+	BP_OnObjectiveCompleted();
 }
-

@@ -18,6 +18,7 @@ UDBAAuraSummaryPanelWidgetBase::UDBAAuraSummaryPanelWidgetBase(const FObjectInit
 void UDBAAuraSummaryPanelWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+	BP_OnAuraCountUpdated(CachedAuraCount);
 }
 
 void UDBAAuraSummaryPanelWidgetBase::NativeDestruct()
@@ -27,9 +28,12 @@ void UDBAAuraSummaryPanelWidgetBase::NativeDestruct()
 
 void UDBAAuraSummaryPanelWidgetBase::UpdateAuraCount(int32 Count)
 {
+	const int32 NormalizedAuraCount = FMath::Max(0, Count);
+	CachedAuraCount = NormalizedAuraCount;
+	BP_OnAuraCountUpdated(CachedAuraCount);
 }
 
 void UDBAAuraSummaryPanelWidgetBase::ShowAuraDetails()
 {
+	BP_OnAuraDetailsRequested();
 }
-

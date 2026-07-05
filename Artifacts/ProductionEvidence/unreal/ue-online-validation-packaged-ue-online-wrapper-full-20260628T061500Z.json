@@ -1,0 +1,36 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "ue-online-validation",
+    "runId":  "packaged-ue-online-wrapper-full-20260628T061500Z",
+    "status":  "passed",
+    "errorMessage":  "",
+    "generatedAtUtc":  "2026-06-28T04:18:38.5393868Z",
+    "baseUrl":  "http://localhost:8080",
+    "usePackagedServer":  true,
+    "skipClientLaunch":  false,
+    "keepProcessesAlive":  false,
+    "serverExecutable":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\packaged-server\\WindowsServer\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer.exe",
+    "roomId":  "675607dc-cb77-4f7c-bcd8-77122c6f8502",
+    "sessionId":  "f936b7b3-7004-4b32-b00a-9868bf711444",
+    "serverId":  "d23967b4-f492-4045-bdb2-b5fef86102b4",
+    "allocatedPort":  7777,
+    "clientConnectPort":  7878,
+    "processIds":  {
+                       "server":  34472,
+                       "clientA":  10012,
+                       "clientB":  33580
+                   },
+    "logPaths":  {
+                     "server":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\server-packaged-ue-online-wrapper-full-20260628T061500Z.log",
+                     "clientA":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\client-a-packaged-ue-online-wrapper-full-20260628T061500Z.log",
+                     "clientB":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\client-b-packaged-ue-online-wrapper-full-20260628T061500Z.log"
+                 },
+    "safeLogEvidence":  {
+                            "runtimePlayerJoined":  [
+                                                        "[2026.06.28-04.18.05:128][451]LogDBACore: [DBAGameModeBase] Runtime player-joined 请求已发送：PlayerId=b13e6264-2266-4c62-85e9-74403b1247a5 Zodiac=Rat Element=Water FixedSkillGroupId=Rat_Water",
+                                                        "[2026.06.28-04.18.08:927][565]LogDBACore: [DBAGameModeBase] Runtime player-joined 请求已发送：PlayerId=7ddd7dcd-517b-42e3-96c1-8e745fe38afd Zodiac=Tiger Element=Fire FixedSkillGroupId=Tiger_Fire"
+                                                    ],
+                            "clientATravelCompleted":  "[2026.06.28-04.18.05:111][ 53]LogGlobalStatus: UPendingNetGame::TravelCompleted Pending net game travel completed",
+                            "clientBTravelCompleted":  "[2026.06.28-04.18.08:910][ 28]LogGlobalStatus: UPendingNetGame::TravelCompleted Pending net game travel completed"
+                        }
+}

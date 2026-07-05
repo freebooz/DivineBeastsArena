@@ -238,6 +238,11 @@ AActor* ADBAChainLightningSpell::FindNextTarget(const FVector& FromLocation, AAc
 
 void ADBAChainLightningSpell::ApplyChainDamage(AActor* Caster, AActor* Target, const FVector& HitLocation, int32 JumpIndex) const
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	if (!Caster || !Target || BaseDamage <= 0.0f)
 	{
 		return;

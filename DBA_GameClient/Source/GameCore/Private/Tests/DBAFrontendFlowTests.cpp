@@ -11,11 +11,14 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "Misc/AutomationTest.h"
+#include "Misc/CommandLine.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Async/TaskGraphInterfaces.h"
 #include "Containers/Ticker.h"
+#include "GameCore/Account/DBAAccountServiceBase.h"
+#include "GameCore/Account/DBAOnlineAccountService.h"
 #include "GameCore/Account/DBASaveGameVersions.h"
 #include "GameCore/Party/DBAPartyServiceBase.h"
 #include "GameCore/Queue/DBAQueueServiceBase.h"
@@ -25,6 +28,25 @@
 
 namespace
 {
+class FScopedFlowCommandLine
+{
+public:
+	explicit FScopedFlowCommandLine(const TCHAR* ExtraFlags)
+		: OriginalCommandLine(FCommandLine::Get())
+	{
+		const FString NewCommandLine = FString::Printf(TEXT("%s %s"), *OriginalCommandLine, ExtraFlags);
+		FCommandLine::Set(*NewCommandLine);
+	}
+
+	~FScopedFlowCommandLine()
+	{
+		FCommandLine::Set(*OriginalCommandLine);
+	}
+
+private:
+	FString OriginalCommandLine;
+};
+
 UGameInstance* ResolveTestGameInstance()
 {
 	static TObjectPtr<UGameInstance> StandaloneGameInstance = nullptr;
@@ -50,10 +72,12 @@ UGameInstance* ResolveTestGameInstance()
 
 void ResetFlowSaveSlots()
 {
-	UGameplayStatics::DeleteGameInSlot(DBASaveGameVersions::SlotNames::ACCOUNT_SLOT, 0);
-	UGameplayStatics::DeleteGameInSlot(DBASaveGameVersions::SlotNames::PROFILE_SLOT, 0);
-	UGameplayStatics::DeleteGameInSlot(DBASaveGameVersions::SlotNames::ACCOUNT_SLOT + DBASaveGameVersions::SlotNames::BACKUP_SUFFIX, 0);
-	UGameplayStatics::DeleteGameInSlot(DBASaveGameVersions::SlotNames::PROFILE_SLOT + DBASaveGameVersions::SlotNames::BACKUP_SUFFIX, 0);
+	const FString AccountSlot = UDBAAccountServiceBase::BuildScopedSaveSlotName(DBASaveGameVersions::SlotNames::ACCOUNT_SLOT);
+	const FString ProfileSlot = UDBAAccountServiceBase::BuildScopedSaveSlotName(DBASaveGameVersions::SlotNames::PROFILE_SLOT);
+	UGameplayStatics::DeleteGameInSlot(AccountSlot, 0);
+	UGameplayStatics::DeleteGameInSlot(ProfileSlot, 0);
+	UGameplayStatics::DeleteGameInSlot(AccountSlot + DBASaveGameVersions::SlotNames::BACKUP_SUFFIX, 0);
+	UGameplayStatics::DeleteGameInSlot(ProfileSlot + DBASaveGameVersions::SlotNames::BACKUP_SUFFIX, 0);
 }
 
 bool WaitForLoginState(UDBALoginFlowSubsystem* LoginFlow, EDBALoginFlowState ExpectedState, double TimeoutSeconds)
@@ -89,31 +113,37 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FDBAFrontendFullFlowTest::RunTest(const FString& Parameters)
 {
+	FScopedFlowCommandLine CommandLine(TEXT("-DBAForceMockAccount -DBASaveSlotSuffix=FrontendFullFlow"));
 	ResetFlowSaveSlots();
 
 	UGameInstance* GameInstance = ResolveTestGameInstance();
-	TestNotNull(TEXT("GameInstance should exist"), GameInstance);
+	TestNotNull(TEXT("游戏实例应存在"), GameInstance);
 	if (!GameInstance)
 	{
 		return false;
 	}
 
 	UDBALoginFlowSubsystem* LoginFlow = GameInstance->GetSubsystem<UDBALoginFlowSubsystem>();
+	UDBAOnlineAccountService* AccountService = GameInstance->GetSubsystem<UDBAOnlineAccountService>();
 	UDBAFrontendSessionSubsystem* FrontendSession = GameInstance->GetSubsystem<UDBAFrontendSessionSubsystem>();
 	UDBAPartyServiceBase* PartyService = GameInstance->GetSubsystem<UDBAPartyServiceBase>();
 	UDBAQueueServiceBase* QueueService = GameInstance->GetSubsystem<UDBAQueueServiceBase>();
 
-	TestNotNull(TEXT("LoginFlow subsystem should exist"), LoginFlow);
-	TestNotNull(TEXT("FrontendSession subsystem should exist"), FrontendSession);
-	TestNotNull(TEXT("PartyService subsystem should exist"), PartyService);
-	TestNotNull(TEXT("QueueService subsystem should exist"), QueueService);
-	if (!LoginFlow || !FrontendSession || !PartyService || !QueueService)
+	TestNotNull(TEXT("登录流程子系统应存在"), LoginFlow);
+	TestNotNull(TEXT("账号服务子系统应存在"), AccountService);
+	TestNotNull(TEXT("前端会话子系统应存在"), FrontendSession);
+	TestNotNull(TEXT("队伍服务子系统应存在"), PartyService);
+	TestNotNull(TEXT("队列服务子系统应存在"), QueueService);
+	if (!LoginFlow || !AccountService || !FrontendSession || !PartyService || !QueueService)
 	{
 		return false;
 	}
 
+	AccountService->Logout(FDBAOnLogoutComplete());
+	FrontendSession->ResetSession();
+
 	LoginFlow->SubmitGuestLogin();
-	TestTrue(TEXT("Guest login should enter CharacterCreate on empty role list"), WaitForLoginState(LoginFlow, EDBALoginFlowState::CharacterCreate, FlowTimeoutSeconds));
+	TestTrue(TEXT("游客登录在角色列表为空时应进入角色创建"), WaitForLoginState(LoginFlow, EDBALoginFlowState::CharacterCreate, FlowTimeoutSeconds));
 
 	FDBACharacterCreateRequest CreateRequest;
 	CreateRequest.CharacterName = TEXT("FlowArena_Rat");
@@ -122,25 +152,25 @@ bool FDBAFrontendFullFlowTest::RunTest(const FString& Parameters)
 	CreateRequest.FiveCamp = EDBAFiveCamp::East;
 	LoginFlow->SubmitCharacterCreation(CreateRequest);
 
-	TestTrue(TEXT("Character creation flow should enter MainLobby"), WaitForLoginState(LoginFlow, EDBALoginFlowState::MainLobby, FlowTimeoutSeconds));
-	TestEqual(TEXT("Frontend state should be MainLobby"), FrontendSession->GetCurrentState(), EDBAFrontendSessionState::MainLobby);
+	TestTrue(TEXT("角色创建流程应进入主大厅"), WaitForLoginState(LoginFlow, EDBALoginFlowState::MainLobby, FlowTimeoutSeconds));
+	TestEqual(TEXT("前端状态应为主大厅"), FrontendSession->GetCurrentState(), EDBAFrontendSessionState::MainLobby);
 
 	FDBAPartyInfo CreatedParty;
 	PartyService->CreateParty(FDBAOnPartyCreated::CreateLambda([&CreatedParty](const FDBAPartyInfo& PartyInfo)
 	{
 		CreatedParty = PartyInfo;
 	}));
-	TestTrue(TEXT("CreateParty should produce a valid party"), CreatedParty.IsValid());
-	TestEqual(TEXT("Frontend state should be InParty"), FrontendSession->GetCurrentState(), EDBAFrontendSessionState::InParty);
+	TestTrue(TEXT("创建队伍应产出有效队伍"), CreatedParty.IsValid());
+	TestEqual(TEXT("前端状态应为已组队"), FrontendSession->GetCurrentState(), EDBAFrontendSessionState::InParty);
 
 	FDBAQueueInfo QueueInfo;
 	QueueService->StartQueue(EDBAQueueType::QuickMatch, FDBAOnQueueStarted::CreateLambda([&QueueInfo](const FDBAQueueInfo& InQueue)
 	{
 		QueueInfo = InQueue;
 	}));
-	TestTrue(TEXT("StartQueue should produce a valid queue"), QueueInfo.IsValid());
-	TestEqual(TEXT("Frontend state should be InQueue"), FrontendSession->GetCurrentState(), EDBAFrontendSessionState::InQueue);
-	TestTrue(TEXT("ReadyCheck should be available"), FrontendSession->GetCurrentReadyCheckInfo().IsValid());
+	TestTrue(TEXT("开始队列应产出有效队列"), QueueInfo.IsValid());
+	TestEqual(TEXT("前端状态应为排队中"), FrontendSession->GetCurrentState(), EDBAFrontendSessionState::InQueue);
+	TestTrue(TEXT("准备确认应可用"), FrontendSession->GetCurrentReadyCheckInfo().IsValid());
 
 	const FDBAReadyCheckId ReadyCheckId = FrontendSession->GetCurrentReadyCheckInfo().ReadyCheckId;
 	bool bReadyConfirmed = false;
@@ -149,11 +179,62 @@ bool FDBAFrontendFullFlowTest::RunTest(const FString& Parameters)
 		bReadyConfirmed = bSuccess;
 	}));
 
-	TestTrue(TEXT("ConfirmReady should succeed"), bReadyConfirmed);
-	TestEqual(TEXT("Frontend state should switch to Loading (entering arena)"), FrontendSession->GetCurrentState(), EDBAFrontendSessionState::Loading);
-	TestEqual(TEXT("Match session should switch to Loading"), FrontendSession->GetCurrentMatchSessionInfo().State, EDBAMatchSessionState::Loading);
+	TestTrue(TEXT("确认准备应成功"), bReadyConfirmed);
+	TestEqual(TEXT("前端状态应切换为加载中并进入竞技场"), FrontendSession->GetCurrentState(), EDBAFrontendSessionState::Loading);
+	TestEqual(TEXT("比赛会话应切换为加载中"), FrontendSession->GetCurrentMatchSessionInfo().State, EDBAMatchSessionState::Loading);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FDBAFrontendTravelContextBuildSummaryGateTest,
+	"DivineBeastsArena.GameCore.Session.FrontendFlow.TravelContextRejectsInvalidBuildSummary",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FDBAFrontendTravelContextBuildSummaryGateTest::RunTest(const FString& Parameters)
+{
+	UGameInstance* GameInstance = ResolveTestGameInstance();
+	TestNotNull(TEXT("游戏实例应存在"), GameInstance);
+	if (!GameInstance)
+	{
+		return false;
+	}
+
+	UDBAFrontendSessionSubsystem* FrontendSession = GameInstance->GetSubsystem<UDBAFrontendSessionSubsystem>();
+	TestNotNull(TEXT("前端会话子系统应存在"), FrontendSession);
+	if (!FrontendSession)
+	{
+		return false;
+	}
+
+	FrontendSession->ResetSession();
+
+	FDBATravelContext ValidContext;
+	ValidContext.MatchSessionId = FDBAMatchSessionId(TEXT("match_valid_build"));
+	ValidContext.AccountId = FDBAAccountId(TEXT("account_valid_build"));
+	ValidContext.CharacterId = FDBACharacterId(TEXT("character_valid_build"));
+	ValidContext.TeamId = 1;
+	ValidContext.SelectedZodiac = EDBAZodiac::Rat;
+	ValidContext.SelectedElement = EDBAElement::Water;
+	ValidContext.SelectedFiveCamp = EDBAFiveCamp::East;
+	ValidContext.FixedSkillGroupId = FName(TEXT("Rat_Water"));
+	ValidContext.MapName = TEXT("/Game/Maps/Lobby/LobbyMap");
+	ValidContext.ServerAddress = TEXT("127.0.0.1");
+	ValidContext.ServerPort = 17777;
+	ValidContext.SessionToken = TEXT("session_valid_build");
+
+	TestTrue(TEXT("有效旅行上下文应被接受"), FrontendSession->TrySetCurrentTravelContext(ValidContext));
+	TestEqual(TEXT("有效旅行上下文应被保存"), FrontendSession->GetCurrentTravelContext().FixedSkillGroupId, FName(TEXT("Rat_Water")));
+	TestEqual(TEXT("已接受旅行上下文应进入加载中"), FrontendSession->GetCurrentState(), EDBAFrontendSessionState::Loading);
+
+	FDBATravelContext TamperedContext = ValidContext;
+	TamperedContext.MatchSessionId = FDBAMatchSessionId(TEXT("match_tampered_build"));
+	TamperedContext.FixedSkillGroupId = FName(TEXT("Rat_Fire"));
+
+	TestFalse(TEXT("被篡改旅行上下文应被拒绝"), FrontendSession->TrySetCurrentTravelContext(TamperedContext));
+	TestEqual(TEXT("被拒绝旅行上下文不得替换已保存固定技能组标识"), FrontendSession->GetCurrentTravelContext().FixedSkillGroupId, FName(TEXT("Rat_Water")));
+	TestEqual(TEXT("被拒绝旅行上下文不得替换已保存比赛会话标识"), FrontendSession->GetCurrentTravelContext().MatchSessionId, FDBAMatchSessionId(TEXT("match_valid_build")));
+	TestEqual(TEXT("被拒绝旅行上下文应保持已接受上下文的加载中状态"), FrontendSession->GetCurrentState(), EDBAFrontendSessionState::Loading);
 	return true;
 }
 
 #endif
-

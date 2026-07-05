@@ -69,6 +69,8 @@ public:
 	UDBAAbilitySlotWidget(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 protected:
+	virtual void NativeConstruct() override;
+
 	/** 技能图标 */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UImage> SkillIcon;
@@ -119,4 +121,7 @@ protected:
 
 	/** 更新图标显示 */
 	void UpdateIconDisplay();
+
+	/** 更新快捷键显示 */
+	void UpdateHotkeyDisplay();
 };

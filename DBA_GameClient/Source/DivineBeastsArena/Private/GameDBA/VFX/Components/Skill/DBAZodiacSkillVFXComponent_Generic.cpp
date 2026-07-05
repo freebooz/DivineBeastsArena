@@ -394,7 +394,7 @@ bool UDBAZodiacSkillVFXComponent_Generic::ApplySkillDamage(AActor* HitTarget, FV
 	bOutIsCritical = false;
 
 	AActor* OwnerActor = GetOwner();
-	if (!OwnerActor || !HitTarget || HitTarget == OwnerActor)
+	if (!OwnerActor || !OwnerActor->HasAuthority() || !HitTarget || HitTarget == OwnerActor)
 	{
 		return false;
 	}
@@ -427,7 +427,7 @@ int32 UDBAZodiacSkillVFXComponent_Generic::ApplyAOEDamage(FVector Center, float 
 
 	UWorld* World = GetWorld();
 	AActor* OwnerActor = GetOwner();
-	if (!World || !OwnerActor)
+	if (!World || !OwnerActor || !OwnerActor->HasAuthority())
 	{
 		return 0;
 	}

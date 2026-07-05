@@ -21,7 +21,7 @@ namespace
 	void ExecuteResponse(const FDBA_GameBackendResponseDelegate& Callback, const FDBA_GameBackendHttpResult& Result)
 	{
 		const bool bSuccess = Result.IsSuccessful();
-		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("Request failed.") : Result.Message);
+		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("请求失败。") : Result.Message);
 		Callback.ExecuteIfBound(bSuccess, ErrorMessage, Result.DataJson);
 	}
 }
@@ -36,7 +36,7 @@ void UDBA_GameBackendRoomService::CreateRoom(const FDBA_GameBackendRoomCreateReq
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Room service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("房间服务不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -57,7 +57,7 @@ void UDBA_GameBackendRoomService::GetRooms(const FDBA_GameBackendResponseDelegat
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Room service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("房间服务不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -68,7 +68,7 @@ void UDBA_GameBackendRoomService::GetRoomDetail(const FString& RoomId, const FDB
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Room service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("房间服务不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -79,7 +79,7 @@ void UDBA_GameBackendRoomService::JoinRoom(const FString& RoomId, const FDBA_Gam
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Room service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("房间服务不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -90,7 +90,7 @@ void UDBA_GameBackendRoomService::LeaveRoom(const FString& RoomId, const FDBA_Ga
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Room service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("房间服务不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -101,7 +101,7 @@ void UDBA_GameBackendRoomService::SetReady(const FString& RoomId, bool bReady, c
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Room service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("房间服务不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -119,7 +119,7 @@ void UDBA_GameBackendRoomService::StartRoom(const FString& RoomId, const FDBA_Ga
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Room service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("房间服务不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -130,7 +130,7 @@ void UDBA_GameBackendRoomService::KickPlayer(const FString& RoomId, const FStrin
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Room service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("房间服务不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -148,7 +148,7 @@ void UDBA_GameBackendRoomService::TransferOwner(const FString& RoomId, const FSt
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Room service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("房间服务不可用。"), TEXT("{}"));
 		return;
 	}
 

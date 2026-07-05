@@ -37,7 +37,6 @@ class DIVINEBEASTSARENA_API ADBASkillProjectileBase : public AActor
 public:
 	ADBASkillProjectileBase();
 
-	UFUNCTION(BlueprintCallable, Category = "DBA|Projectile")
 	virtual void InitializeProjectile(
 		FName InSkillId,
 		AActor* InOwner,
@@ -49,10 +48,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Projectile")
 	void SetProjectileProperties(float InSpeed, float InRadius, float InDamage);
 
-	UFUNCTION(BlueprintCallable, Category = "DBA|Projectile")
 	void LaunchProjectile(const FVector& Direction);
 
-	UFUNCTION(BlueprintCallable, Category = "DBA|Projectile")
 	virtual void OnProjectileHit(AActor* HitActor, FVector HitLocation);
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|Projectile")
@@ -186,6 +183,5 @@ protected:
 		bool bFromSweep,
 		const FHitResult& SweepResult);
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|Projectile", meta = (DisplayName = "On Hit"))
-	void BP_OnProjectileHit(AActor* HitActor, FVector HitLocation);
+	virtual void OnProjectileHitResolved(AActor* HitActor, FVector HitLocation);
 };

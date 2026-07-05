@@ -21,6 +21,7 @@ class ADBAHolyShieldSpell;
 class ADBASkillProjectileBase;
 class UNiagaraSystem;
 class USoundBase;
+class UTexture2D;
 
 UENUM(BlueprintType)
 enum class EDBAPlayableSkillEffectShape : uint8
@@ -55,6 +56,9 @@ struct DIVINEBEASTSARENA_API FDBAPlayableSkillRuntimeSpec
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Skill")
 	FText Description;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Skill")
+	TSoftObjectPtr<UTexture2D> Icon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Skill")
 	EDBAPlayableSkillEffectShape EffectShape = EDBAPlayableSkillEffectShape::Projectile;

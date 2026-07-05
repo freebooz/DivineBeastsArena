@@ -22,7 +22,16 @@ export class AuthService {
 
   token(): string | null {
     const session = this.sessionState();
-    return session && !this.isExpired(session) ? session.accessToken : null;
+    if (!session) {
+      return null;
+    }
+
+    if (this.isExpired(session)) {
+      this.clearExpiredSession();
+      return null;
+    }
+
+    return session.accessToken;
   }
 
   signIn(login: AdminLoginResponse): void {
@@ -33,25 +42,37 @@ export class AuthService {
       role: login.role,
       expiresAt: this.readJwtExpiry(login.accessToken)
     };
-    localStorage.setItem(this.storageKey, JSON.stringify(session));
+    sessionStorage.setItem(this.storageKey, JSON.stringify(session));
     this.sessionState.set(session);
   }
 
   signOut(): void {
-    localStorage.removeItem(this.storageKey);
+    sessionStorage.removeItem(this.storageKey);
     this.sessionState.set(null);
   }
 
   private loadSession(): AdminSession | null {
     try {
-      const raw = localStorage.getItem(this.storageKey);
+      const raw = sessionStorage.getItem(this.storageKey);
       if (!raw) {
         return null;
       }
       const session = JSON.parse(raw) as AdminSession;
-      return this.isExpired(session) ? null : session;
+      if (this.isExpired(session)) {
+        this.clearExpiredSession(false);
+        return null;
+      }
+
+      return session;
     } catch {
       return null;
+    }
+  }
+
+  private clearExpiredSession(resetState = true): void {
+    sessionStorage.removeItem(this.storageKey);
+    if (resetState) {
+      this.sessionState.set(null);
     }
   }
 

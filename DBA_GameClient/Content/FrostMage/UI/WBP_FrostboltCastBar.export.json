@@ -1,0 +1,92 @@
+{
+  "asset_path": "/Game/FrostMage/UI/WBP_FrostboltCastBar",
+  "parent_class": "DBASelfCastBarWidgetBase",
+  "root": {
+    "name": "CanvasPanel",
+    "class": "CanvasPanel",
+    "visibility": "ESlateVisibility::SelfHitTestInvisible",
+    "render_opacity": 1,
+    "is_variable": false,
+    "children": [
+      {
+        "name": "CastRoot",
+        "class": "Border",
+        "visibility": "ESlateVisibility::Visible",
+        "render_opacity": 1,
+        "is_variable": false,
+        "slot": {
+          "slot_type": "CanvasPanelSlot",
+          "anchors": {
+            "min_x": 0.5,
+            "min_y": 1,
+            "max_x": 0.5,
+            "max_y": 1
+          },
+          "offsets": {
+            "left": -240,
+            "top": -140,
+            "right": 480,
+            "bottom": 96
+          },
+          "alignment": {
+            "x": 0.5,
+            "y": 1
+          },
+          "z_order": 0,
+          "auto_size": false
+        },
+        "children": [
+          {
+            "name": "CastVBox",
+            "class": "VerticalBox",
+            "visibility": "ESlateVisibility::SelfHitTestInvisible",
+            "render_opacity": 1,
+            "is_variable": false,
+            "slot": {
+              "slot_type": "BorderSlot"
+            },
+            "children": [
+              {
+                "name": "SpellLabel",
+                "class": "TextBlock",
+                "visibility": "ESlateVisibility::Visible",
+                "render_opacity": 1,
+                "is_variable": false,
+                "slot": {
+                  "slot_type": "VerticalBoxSlot",
+                  "h_align": "HAlign_Fill",
+                  "v_align": "VAlign_Fill"
+                }
+              },
+              {
+                "name": "CastProgress",
+                "class": "ProgressBar",
+                "visibility": "ESlateVisibility::Visible",
+                "render_opacity": 1,
+                "is_variable": true,
+                "slot": {
+                  "slot_type": "VerticalBoxSlot",
+                  "h_align": "HAlign_Fill",
+                  "v_align": "VAlign_Fill"
+                }
+              },
+              {
+                "name": "TimeText",
+                "class": "TextBlock",
+                "visibility": "ESlateVisibility::Visible",
+                "render_opacity": 1,
+                "is_variable": false,
+                "slot": {
+                  "slot_type": "VerticalBoxSlot",
+                  "h_align": "HAlign_Fill",
+                  "v_align": "VAlign_Fill"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "widget_count": 6
+}

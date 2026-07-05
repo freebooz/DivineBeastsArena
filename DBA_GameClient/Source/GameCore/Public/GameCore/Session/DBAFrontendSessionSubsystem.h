@@ -184,6 +184,12 @@ public:
 	void SetCurrentTravelContext(const FDBATravelContext& Context);
 
 	/**
+	 * 尝试设置当前 Travel 上下文。
+	 * 会校验基础 Travel 参数和冻结角色构建摘要，失败时不会覆盖当前上下文。
+	 */
+	bool TrySetCurrentTravelContext(const FDBATravelContext& Context);
+
+	/**
 	 * 清空当前 Travel 上下文
 	 */
 	void ClearCurrentTravelContext();

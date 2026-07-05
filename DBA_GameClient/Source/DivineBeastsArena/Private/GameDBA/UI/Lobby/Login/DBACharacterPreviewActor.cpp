@@ -154,12 +154,12 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 
 	if (!ResolvedMesh)
 	{
-		UE_LOG(LogDBAUI, Error, TEXT("[CharacterPreviewActor] Failed to load any preview skeletal mesh."));
+		UE_LOG(LogDBAUI, Error, TEXT("[CharacterPreviewActor] 加载预览骨骼网格失败：没有任何候选网格可用。"));
 		return;
 	}
-	UE_LOG(LogDBAUI, Log, TEXT("[CharacterPreviewActor] Loaded mesh: %s Skeleton=%s"),
+	UE_LOG(LogDBAUI, Log, TEXT("[CharacterPreviewActor] 已加载预览网格：%s 骨骼=%s"),
 		*ResolvedMeshPath,
-		ResolvedMesh->GetSkeleton() ? TEXT("Valid") : TEXT("None"));
+		ResolvedMesh->GetSkeleton() ? TEXT("有效") : TEXT("无"));
 	PreviewMeshComponent->SetSkeletalMesh(ResolvedMesh);
 	PreviewMeshComponent->SetRelativeRotation(ADBACharacterPresentationActor::GetPreviewMeshPlayerFacingRotation());
 	PreviewMeshComponent->SetRelativeScale3D(FVector(PreviewActorMeshDisplayScale));
@@ -182,7 +182,7 @@ void ADBACharacterPreviewActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 	if (!ADBACharacterPresentationActor::ApplyLobbyDisplayAnimationToMesh(PreviewMeshComponent, ResolvedMeshPath, Zodiac))
 	{
 		PreviewMeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
-		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPreviewActor] Mesh has no skeleton, skip idle animation."));
+		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPreviewActor] 网格缺少骨骼，跳过待机动画。"));
 	}
 
 	ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(PreviewMeshComponent, Zodiac, this);

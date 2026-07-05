@@ -186,7 +186,7 @@ public:
 
 	/** 设置出生点 */
 	UFUNCTION(BlueprintCallable, Category = "AI")
-	void SetSpawnLocation(FVector Location) { SpawnLocation = Location; }
+	void SetSpawnLocation(FVector Location);
 
 protected:
 	// ===== 内部方法 =====

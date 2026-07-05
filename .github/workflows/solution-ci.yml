@@ -69,4 +69,28 @@ jobs:
       - uses: dtolnay/rust-action@stable
       - run: npm ci
       - run: npm run build
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
       - run: cargo check --manifest-path src-tauri/Cargo.toml
+
+  evidence-structure:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install production evidence test dependencies
+        shell: pwsh
+        run: python -m pip install pyyaml
+      - name: Test production evidence automation
+        shell: pwsh
+        run: .\scripts\test-production-evidence-automation.ps1
+      - name: Upload production evidence test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-evidence-test-diagnostics
+          path: .tmp
+          if-no-files-found: ignore
+          retention-days: 14

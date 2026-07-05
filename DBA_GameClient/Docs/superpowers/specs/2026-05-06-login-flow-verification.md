@@ -1,4 +1,4 @@
-# 登录闭环开发与验证说明
+﻿# 登录闭环开发与验证说明
 
 日期：2026-05-06
 
@@ -104,7 +104,7 @@ UDBACharacterCreateWidgetController
 已执行编辑器构建命令：
 
 ```powershell
-& 'E:\UnrealEngine-5.7.1-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project='C:\Users\Administrator\.config\superpowers\worktrees\DivineBeastsArena\feature-login-flow\DivineBeastsArena.uproject' -WaitMutex -NoHotReloadFromIDE
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project='C:\Users\Administrator\.config\superpowers\worktrees\DivineBeastsArena\feature-login-flow\DivineBeastsArena.uproject' -WaitMutex -NoHotReloadFromIDE
 ```
 
 验证结果：
@@ -116,7 +116,7 @@ GameCore 登录流、JSON 协议、在线账号服务相关源文件可编译并
 GameMoba RPC 迁移后的导出宏错误已修复。
 ```
 
-使用 `E:\UnrealEngine-5.7.1-release` 重新验证时，构建进程在 10 分钟工具超时内未返回完整日志；已清理遗留的 UBT/MSBuild 子进程。此前使用 UE 5.7 安装版得到的完整日志显示，当前完整项目构建仍被既有主模块问题阻断，阻断点不属于本次登录闭环新增代码：
+使用 `D:\UnrealEngine-5.8.0-release` 重新验证时，构建进程在 10 分钟工具超时内未返回完整日志；已清理遗留的 UBT/MSBuild 子进程。此前使用 UE 5.8 安装版得到的完整日志显示，当前完整项目构建仍被既有主模块问题阻断，阻断点不属于本次登录闭环新增代码：
 
 ```text
 DBAGameplayAbility_Rat_E.cpp 缺少 DBAGameplayAbility_Rat_E.h
@@ -127,3 +127,4 @@ DBAClientPredictionComponent.h 错误前置声明 FVector
 DBAEnumsCore 生成代码与当前枚举声明不一致
 DBAZodiacAnimInstance.h 引用缺失的 GameDBA/Animation/AnimInstance.h
 ```
+

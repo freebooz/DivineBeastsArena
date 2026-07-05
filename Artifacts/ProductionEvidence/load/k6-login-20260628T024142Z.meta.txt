@@ -1,0 +1,6 @@
+RUN_ID=20260628T024142Z
+K6_RUNNER=docker
+K6_DOCKER_IMAGE=grafana/k6:latest
+BASE_URL=http://host.docker.internal:8080
+AUTH_MODE=
+EVIDENCE_DIR=/mnt/e/work/Game/DivineBeastsArena/DBA_GameBackend/../Artifacts/ProductionEvidence/load

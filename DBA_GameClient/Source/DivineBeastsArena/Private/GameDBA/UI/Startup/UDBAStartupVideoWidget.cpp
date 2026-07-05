@@ -59,21 +59,28 @@ void UDBAStartupVideoWidget::NativeDestruct()
 	if (MediaPlayer)
 	{
 		MediaPlayer->Pause();
+		MediaPlayer->Close();
+		MediaPlayer.Reset();
 	}
 #endif
 
+	bIsPlaying = false;
 	Super::NativeDestruct();
 }
 
-void UDBAStartupVideoWidget::SetMediaPlayer(UMediaPlayer* InMediaPlayer)
+void UDBAStartupVideoWidget::SetMediaPlayer(UObject* InMediaPlayer)
 {
-	MediaPlayer = InMediaPlayer;
+#if UE_SERVER
+	UE_LOG(LogDBAUI, Verbose, TEXT("[DBAStartupVideoWidget] 专用服务器忽略媒体播放器设置"));
+#else
+	MediaPlayer = TStrongObjectPtr<UMediaPlayer>(Cast<UMediaPlayer>(InMediaPlayer));
 
 	if (MediaPlayer)
 	{
 		bIsPlaying = true;
 		UE_LOG(LogDBAUI, Log, TEXT("[DBAStartupVideoWidget] 媒体播放器已设置"));
 	}
+#endif
 }
 
 void UDBAStartupVideoWidget::OnVideoFinished()

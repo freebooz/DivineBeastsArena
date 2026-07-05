@@ -7,6 +7,7 @@
 */
 
 using Game.Shared.Common;
+using Game.Shared.Contracts.Character;
 
 namespace Game.Shared.Contracts.Session;
 
@@ -30,7 +31,9 @@ public record SessionConnectionResponse(
     string SessionToken,
     DateTimeOffset TokenExpiresAt,
     string PlayerSessionToken,
-    Guid PlayerId);
+    Guid PlayerId,
+    int TeamId,
+    CharacterBuildSummaryDto? CharacterBuildSummary = null);
 
 public record ReconnectTokenResponse(string ReconnectToken, DateTimeOffset ExpiresAt);
 

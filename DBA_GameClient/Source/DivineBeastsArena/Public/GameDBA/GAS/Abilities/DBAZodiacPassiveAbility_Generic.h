@@ -64,15 +64,13 @@ public:
 	TObjectPtr<UDataTable> PassiveTable;
 
 protected:
-	// ==================== 可被子类重写的方法 ====================
+	// ==================== C++ 生命周期扩展点 ====================
 
-	/** 被动激活时调用 (可重写) */
-	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|Gameplay")
-	void OnPassiveActivatedBP(FName InSkillID);
+	/** 被动激活时调用，运行时逻辑必须由 C++ 子类承载。 */
+	virtual void OnPassiveActivated(FName InSkillID);
 
-	/** 被动移除时调用 (可重写) */
-	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|Gameplay")
-	void OnPassiveRemovedBP(FName InSkillID);
+	/** 被动移除时调用，运行时逻辑必须由 C++ 子类承载。 */
+	virtual void OnPassiveRemoved(FName InSkillID);
 
 public:
 	// ==================== 辅助方法 ====================

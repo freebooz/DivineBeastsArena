@@ -13,6 +13,7 @@
 #include "CoreMinimal.h"
 #include "GameCore/Types/DBACommonTypes.h"
 #include "GameCore/Account/DBAAccountTypes.h"
+#include "GameCore/Character/DBACharacterBuildTypes.h"
 #include "GameCore/Session/DBAMatchSessionTypes.h"
 #include "DBATravelTypes.generated.h"
 
@@ -59,6 +60,10 @@ struct GAMECORE_API FDBATravelContext
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Travel")
 	EDBAFiveCamp SelectedFiveCamp = EDBAFiveCamp::None;
 
+	/** 服务端冻结的固定技能组 ID，例如 Rat_Water */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Travel")
+	FName FixedSkillGroupId = NAME_None;
+
 	/** 目标地图名称 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Travel")
 	FString MapName;
@@ -90,6 +95,27 @@ struct GAMECORE_API FDBATravelContext
 			&& !MapName.IsEmpty()
 			&& !ServerAddress.IsEmpty()
 			&& ServerPort > 0;
+	}
+
+	FDBACharacterBuildSummary GetCharacterBuildSummary() const
+	{
+		FDBACharacterBuildSummary Summary;
+		Summary.Zodiac = SelectedZodiac;
+		Summary.PrimaryElement = SelectedElement;
+		Summary.FiveCamp = SelectedFiveCamp;
+		Summary.FixedSkillGroupId = FixedSkillGroupId;
+		return Summary;
+	}
+
+	bool HasValidCharacterBuildSummary() const
+	{
+		const FDBACharacterBuildSummary Summary = GetCharacterBuildSummary();
+		if (!Summary.IsValid())
+		{
+			return false;
+		}
+
+		return Summary.FixedSkillGroupId == DBACharacterBuild::MakeFixedSkillGroupId(Summary.Zodiac, Summary.PrimaryElement);
 	}
 
 	/**

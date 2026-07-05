@@ -39,4 +39,10 @@ public:
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|CriticalStateHint", meta = (DisplayName = "On Critical State Changed"))
 	void BP_OnCriticalStateChanged(bool bLowHP, bool bLowEnergy);
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|CriticalStateHint")
+	bool CachedLowHP = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|CriticalStateHint")
+	bool CachedLowEnergy = false;
 };

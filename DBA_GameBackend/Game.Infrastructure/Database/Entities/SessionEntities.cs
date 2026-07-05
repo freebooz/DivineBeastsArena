@@ -117,6 +117,10 @@ public class PlayerSession
     public Guid PlayerId { get; set; }
     public string? Team { get; set; }
     public int? SlotIndex { get; set; }
+    public string? Zodiac { get; set; }
+    public string? PrimaryElement { get; set; }
+    public string? FiveCamp { get; set; }
+    public string? FixedSkillGroupId { get; set; }
     public string Status { get; set; } = "CREATED";
     public string SessionTokenHash { get; set; } = string.Empty;
     public DateTimeOffset SessionTokenExpiresAt { get; set; }

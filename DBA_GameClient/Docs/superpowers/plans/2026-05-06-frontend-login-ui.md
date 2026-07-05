@@ -1,4 +1,4 @@
-# Frontend Login UI Implementation Plan
+﻿# Frontend Login UI Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -6,7 +6,7 @@
 
 **Architecture:** Keep login/account flow in `GameCore` and expose it through small C++ widget controllers. Add a native frontend root widget and UI manager state routing so UMG blueprints only handle layout, animation, and button binding. Use existing `Content/UI` blueprints as the asset path and keep duplicate legacy assets untouched.
 
-**Tech Stack:** Unreal Engine 5.7.1 source build at `E:\UnrealEngine-5.7.1-release`, UE C++, UGameInstanceSubsystem, UUserWidget/UMG, existing Blueprint assets, Dedicated Server + Editor client verification.
+**Tech Stack:** Unreal Engine 5.8.0 source build at `D:\UnrealEngine-5.8.0-release`, UE C++, UGameInstanceSubsystem, UUserWidget/UMG, existing Blueprint assets, Dedicated Server + Editor client verification.
 
 ---
 
@@ -66,7 +66,7 @@ The project currently has main-module compile blockers unrelated to the login UI
 Run:
 
 ```powershell
-& 'E:\UnrealEngine-5.7.1-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaServer Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaServer Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
 ```
 
 Expected: Either build succeeds or fails with concrete compiler errors. Record the first unique error group before editing.
@@ -111,7 +111,7 @@ with:
 #include "Subsystems/GameInstanceSubsystem.h"
 ```
 
-Expected: `UGameInstanceSubsystem` resolves against UE 5.7.1 headers.
+Expected: `UGameInstanceSubsystem` resolves against UE 5.8.0 headers.
 
 - [ ] **Step 4: Fix enum duplicate definitions**
 
@@ -151,7 +151,7 @@ Expected: `DBAEnumsCore.generated.h` no longer forward declares enums that confl
 Run:
 
 ```powershell
-& 'E:\UnrealEngine-5.7.1-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaServer Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaServer Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
 ```
 
 Expected: The fixed error group is gone. If a new unrelated compile blocker appears, fix only that blocker and repeat this step.
@@ -161,7 +161,7 @@ Expected: The fixed error group is gone. If a new unrelated compile blocker appe
 Run:
 
 ```powershell
-& 'E:\UnrealEngine-5.7.1-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
 ```
 
 Expected: The editor target builds, or the first remaining blocker is logged and fixed with the same minimal approach.
@@ -232,7 +232,7 @@ bool FDBAFrontendLoginUIPageMappingTest::RunTest(const FString& Parameters)
 Run:
 
 ```powershell
-& 'E:\UnrealEngine-5.7.1-release\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' "$PWD\DivineBeastsArena.uproject" -ExecCmds="Automation RunTests DivineBeastsArena.UI.Frontend.LoginFlow.PageMapping; Quit" -unattended -nop4 -nosplash
+& 'D:\UnrealEngine-5.8.0-release\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' "$PWD\DivineBeastsArena.uproject" -ExecCmds="Automation RunTests DivineBeastsArena.UI.Frontend.LoginFlow.PageMapping; Quit" -unattended -nop4 -nosplash
 ```
 
 Expected: compile fails because `UDBAFrontendRootWidgetBase.h` does not exist.
@@ -421,7 +421,7 @@ UDBALoginFlowSubsystem* UDBAFrontendRootWidgetBase::GetLoginFlow() const
 Run:
 
 ```powershell
-& 'E:\UnrealEngine-5.7.1-release\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' "$PWD\DivineBeastsArena.uproject" -ExecCmds="Automation RunTests DivineBeastsArena.UI.Frontend.LoginFlow.PageMapping; Quit" -unattended -nop4 -nosplash
+& 'D:\UnrealEngine-5.8.0-release\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' "$PWD\DivineBeastsArena.uproject" -ExecCmds="Automation RunTests DivineBeastsArena.UI.Frontend.LoginFlow.PageMapping; Quit" -unattended -nop4 -nosplash
 ```
 
 Expected: `DivineBeastsArena.UI.Frontend.LoginFlow.PageMapping` passes.
@@ -586,7 +586,7 @@ void UDBAGameUIManager::ClearAllUI()
 Run:
 
 ```powershell
-& 'E:\UnrealEngine-5.7.1-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
 ```
 
 Expected: `DBAGameUIManager.cpp` compiles.
@@ -743,7 +743,7 @@ void UDBACharacterCreateWidgetController::Submit()
 Run:
 
 ```powershell
-& 'E:\UnrealEngine-5.7.1-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
 ```
 
 Expected: the three login/character controllers compile.
@@ -774,7 +774,7 @@ git commit -m "feat: expose frontend login ui binding helpers"
 Run:
 
 ```powershell
-& 'E:\UnrealEngine-5.7.1-release\Engine\Binaries\Win64\UnrealEditor.exe' "$PWD\DivineBeastsArena.uproject" -log
+& 'D:\UnrealEngine-5.8.0-release\Engine\Binaries\Win64\UnrealEditor.exe' "$PWD\DivineBeastsArena.uproject" -log
 ```
 
 Expected: Unreal Editor opens the project.
@@ -942,7 +942,7 @@ Expected: frontend root appears automatically on client startup.
 Run:
 
 ```powershell
-& 'E:\UnrealEngine-5.7.1-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
 ```
 
 Expected: build succeeds.
@@ -970,7 +970,7 @@ Stage only files that changed.
 Run:
 
 ```powershell
-& 'E:\UnrealEngine-5.7.1-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaServer Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaServer Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
 ```
 
 Expected: exit code `0`.
@@ -980,7 +980,7 @@ Expected: exit code `0`.
 Run:
 
 ```powershell
-& 'E:\UnrealEngine-5.7.1-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
 ```
 
 Expected: exit code `0`.
@@ -990,7 +990,7 @@ Expected: exit code `0`.
 Run in a background terminal:
 
 ```powershell
-Start-Process -FilePath 'E:\UnrealEngine-5.7.1-release\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' -ArgumentList @(
+Start-Process -FilePath 'D:\UnrealEngine-5.8.0-release\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' -ArgumentList @(
 	"$PWD\DivineBeastsArena.uproject",
 	"LobbyMap",
 	"-server",
@@ -1006,7 +1006,7 @@ Expected: server process starts and stays running.
 Run:
 
 ```powershell
-& 'E:\UnrealEngine-5.7.1-release\Engine\Binaries\Win64\UnrealEditor.exe' "$PWD\DivineBeastsArena.uproject" 127.0.0.1 -game -log -nosteam
+& 'D:\UnrealEngine-5.8.0-release\Engine\Binaries\Win64\UnrealEditor.exe' "$PWD\DivineBeastsArena.uproject" 127.0.0.1 -game -log -nosteam
 ```
 
 Expected: client opens and reaches frontend root.
@@ -1036,7 +1036,7 @@ Create `Docs/superpowers/verification/2026-05-06-frontend-login-ui-run.md`:
 # Frontend Login UI Verification
 
 Date: 2026-05-06
-Engine: E:\UnrealEngine-5.7.1-release
+Engine: D:\UnrealEngine-5.8.0-release
 
 ## Build
 
@@ -1078,7 +1078,7 @@ Spec coverage:
 
 - Startup/login/guest/character list/create/main lobby are covered by Tasks 1-5.
 - Dedicated Server and client debugging are covered by Task 6.
-- `E:\UnrealEngine-5.7.1-release` is used in every build and run command.
+- `D:\UnrealEngine-5.8.0-release` is used in every build and run command.
 - Existing duplicate UI assets are not moved or deleted.
 - Compile blockers are addressed before UI and runtime validation.
 
@@ -1092,3 +1092,5 @@ Type consistency:
 - `EDBALoginFlowState` is defined by `UDBALoginFlowSubsystem`.
 - `EDBAFrontendPage` is introduced by `UDBAFrontendRootWidgetBase` and used only for page presentation.
 - Existing controller names match current source files.
+
+

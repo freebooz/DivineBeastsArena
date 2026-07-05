@@ -65,6 +65,12 @@ namespace DBAConstants
 	/** 最大队伍数量 */
 	constexpr int32 MaxTeamCount = 5;
 
+	/** 自然元素数量（Metal/Wood/Water/Fire/Earth） */
+	constexpr int32 ElementCount = 5;
+
+	/** 十二生肖英雄数量 */
+	constexpr int32 ZodiacCount = 12;
+
 	// ========================================
 	// 技能系统
 	// ========================================
@@ -75,8 +81,26 @@ namespace DBAConstants
 	/** 主动技能数量（Skill01~04） */
 	constexpr int32 ActiveSkillCount = 4;
 
+	/** 竞技场战斗技能槽数量（Skill01~04 + Ultimate） */
+	constexpr int32 ArenaCombatSkillSlotCount = DBAConstants::ActiveSkillCount + 1;
+
+	/** 可玩技能槽数量（BasicAttack + Skill01~04 + Ultimate） */
+	constexpr int32 PlayableSkillSlotCount = DBAConstants::CoreCombatInputCount;
+
+	/** 可玩技能数组容量（保留 0 号位，技能槽使用 1-based 索引） */
+	constexpr int32 PlayableSkillArraySize = DBAConstants::PlayableSkillSlotCount + 1;
+
 	/** 最大技能等级 */
 	constexpr int32 MaxSkillLevel = 5;
+
+	/** 元素主动技能表每元素位置数量（占位 + Skill01~04） */
+	constexpr int32 ElementAbilityPositionCount = DBAConstants::ActiveSkillCount + 1;
+
+	/** 元素主动技能表期望行数（5 元素 × 5 位置） */
+	constexpr int32 ElementActiveAbilityRowCount = DBAConstants::ElementCount * DBAConstants::ElementAbilityPositionCount;
+
+	/** 固定技能组表期望行数（12 生肖 × 5 元素） */
+	constexpr int32 FixedSkillGroupRowCount = DBAConstants::ZodiacCount * DBAConstants::ElementCount;
 
 	/** 最大英雄等级 */
 	constexpr int32 MaxHeroLevel = 18;
@@ -241,6 +265,9 @@ namespace DBAConstants
 	/** 最大共鸣等级 */
 	constexpr int32 MaxResonanceLevel = 4;
 
+	/** 元素共鸣表期望行数（5 元素 × 0~4 共鸣等级） */
+	constexpr int32 ElementResonanceRowCount = DBAConstants::ElementCount * (DBAConstants::MaxResonanceLevel + 1);
+
 	/** 共鸣1级技能数量要求 */
 	constexpr int32 ResonanceLevel1_SkillCount = 2;
 
@@ -259,11 +286,17 @@ namespace DBAConstants
 	/** 共鸣1级护盾加成 */
 	constexpr float ResonanceLevel1_ShieldBonus = 0.05f;
 
+	/** 共鸣1级伤害加成 */
+	constexpr float ResonanceLevel1_DamageBonus = 0.05f;
+
 	/** 共鸣2级控制时间加成（秒） */
 	constexpr float ResonanceLevel2_CCDuration = 0.50f;
 
 	/** 共鸣2级护盾加成 */
 	constexpr float ResonanceLevel2_ShieldBonus = 0.10f;
+
+	/** 共鸣2级伤害加成 */
+	constexpr float ResonanceLevel2_DamageBonus = 0.10f;
 
 	/** 共鸣3级控制时间加成（秒） */
 	constexpr float ResonanceLevel3_CCDuration = 0.75f;
@@ -271,11 +304,17 @@ namespace DBAConstants
 	/** 共鸣3级护盾加成 */
 	constexpr float ResonanceLevel3_ShieldBonus = 0.15f;
 
+	/** 共鸣3级伤害加成 */
+	constexpr float ResonanceLevel3_DamageBonus = 0.15f;
+
 	/** 共鸣4级控制时间加成（秒） */
 	constexpr float ResonanceLevel4_CCDuration = 1.0f;
 
 	/** 共鸣4级护盾加成 */
 	constexpr float ResonanceLevel4_ShieldBonus = 0.20f;
+
+	/** 共鸣4级伤害加成 */
+	constexpr float ResonanceLevel4_DamageBonus = 0.20f;
 
 	// ========================================
 	// 终极能量系统

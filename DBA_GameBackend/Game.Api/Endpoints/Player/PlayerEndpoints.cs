@@ -11,7 +11,6 @@ using Game.Shared.Contracts.Player;
 using Game.Api.Extensions;
 using Game.Api.Services.Player;
 using Game.Shared.Errors;
-using System.Security.Claims;
 
 namespace Game.Api.Endpoints.Player;
 
@@ -86,7 +85,7 @@ GET /api/players/{playerId}/public
 
     private static Guid? GetPlayerId(HttpContext ctx)
     {
-        var claim = ctx.User.FindFirst("player_id") ?? ctx.User.FindFirst(ClaimTypes.NameIdentifier);
+        var claim = ctx.User.FindFirst("player_id");
         if (claim == null || !Guid.TryParse(claim.Value, out var id)) return null;
         return id;
     }

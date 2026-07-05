@@ -94,10 +94,35 @@ FString ReadBackendUrlCommandLineOverride()
 
 	return FString();
 }
+
+bool ShouldForceMockAccount()
+{
+#if UE_BUILD_SHIPPING
+	return false;
+#else
+	if (FParse::Param(FCommandLine::Get(), TEXT("DBAForceMockAccount")))
+	{
+		return true;
+	}
+
+	FString AccountMode;
+	if (FParse::Value(FCommandLine::Get(), TEXT("DBAAccountMode="), AccountMode))
+	{
+		AccountMode.TrimStartAndEndInline();
+		return AccountMode.Equals(TEXT("mock"), ESearchCase::IgnoreCase)
+			|| AccountMode.Equals(TEXT("local"), ESearchCase::IgnoreCase);
+	}
+
+	return false;
+#endif
+}
 }
 
 UDBAOnlineAccountService::UDBAOnlineAccountService()
 {
+#if !UE_BUILD_SHIPPING
+	OnlineConfig.bAllowMockFallback = true;
+#endif
 }
 
 void UDBAOnlineAccountService::OnSubsystemInitialize()
@@ -106,7 +131,7 @@ void UDBAOnlineAccountService::OnSubsystemInitialize()
 
 	MockService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAMockAccountService>() : nullptr;
 	LoadOnlineAccountState();
-	LogSubsystemInfo(FString::Printf(TEXT("Online account service initialized: %s"), *OnlineConfig.GetBaseUrl()));
+	LogSubsystemInfo(FString::Printf(TEXT("在线账号服务已初始化：%s"), *OnlineConfig.GetBaseUrl()));
 }
 
 void UDBAOnlineAccountService::CancelAllAsyncOperations()
@@ -125,7 +150,6 @@ bool UDBAOnlineAccountService::CanFallbackToMock(EDBAOnlineAccountError Error)
 {
 	return Error == EDBAOnlineAccountError::NetworkUnavailable
 		|| Error == EDBAOnlineAccountError::Timeout
-		|| Error == EDBAOnlineAccountError::EndpointMissing
 		|| Error == EDBAOnlineAccountError::ServiceUnavailable;
 }
 
@@ -273,7 +297,7 @@ bool UDBAOnlineAccountService::ShouldFallback(EDBAOnlineAccountError Error) cons
 #if UE_BUILD_SHIPPING
 	return false;
 #else
-	return OnlineConfig.bAllowMockFallback && CanFallbackToMock(Error) && MockService;
+	return MockService && (ShouldForceMockAccount() || (OnlineConfig.bAllowMockFallback && CanFallbackToMock(Error)));
 #endif
 }
 
@@ -290,6 +314,12 @@ void UDBAOnlineAccountService::Login(const FDBALoginRequest& RequestData, FDBAOn
 		return;
 	}
 
+	if (ShouldForceMockAccount())
+	{
+		FallbackLogin(OnComplete);
+		return;
+	}
+
 	const FString Body = FDBAOnlineAccountJson::BuildLoginRequest(RequestData);
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateJsonRequest(TEXT("POST"), TEXT("/api/auth/login"), Body);
 	Request->OnProcessRequestComplete().BindWeakLambda(this, [this, OnComplete](FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded)
@@ -300,10 +330,10 @@ void UDBAOnlineAccountService::Login(const FDBALoginRequest& RequestData, FDBAOn
 		{
 			const int32 ResponseCode = HttpResponse.IsValid() ? HttpResponse->GetResponseCode() : 0;
 			LogSubsystemWarning(FString::Printf(
-				TEXT("GuestLogin request failed: URL=%s HTTP=%d Succeeded=%s"),
+				TEXT("在线登录请求失败：URL=%s HTTP=%d 请求成功=%s"),
 				*HttpRequest->GetURL(),
 				ResponseCode,
-				bSucceeded ? TEXT("true") : TEXT("false")));
+				bSucceeded ? TEXT("是") : TEXT("否")));
 
 			const EDBAOnlineAccountError Error = ClassifyHttpFailure(bSucceeded, HttpResponse);
 			if (ShouldFallback(Error))
@@ -313,7 +343,7 @@ void UDBAOnlineAccountService::Login(const FDBALoginRequest& RequestData, FDBAOn
 			}
 
 			FDBALoginResponse Response;
-			Response.ErrorMessage = TEXT("Online login failed");
+			Response.ErrorMessage = TEXT("在线登录失败。");
 			OnComplete.ExecuteIfBound(Response);
 			return;
 		}
@@ -352,7 +382,7 @@ void UDBAOnlineAccountService::Register(const FDBALoginRequest& RequestData, FDB
 		if (!bSucceeded || !HttpResponse.IsValid() || !EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
 		{
 			FDBALoginResponse Response;
-			Response.ErrorMessage = TEXT("Online registration failed");
+			Response.ErrorMessage = TEXT("在线注册失败。");
 			OnComplete.ExecuteIfBound(Response);
 			return;
 		}
@@ -368,6 +398,10 @@ void UDBAOnlineAccountService::Register(const FDBALoginRequest& RequestData, FDB
 
 		if (Response.bSuccess)
 		{
+			if (!Response.AccountInfo.AccountId.IsValid() && !Response.PlayerId.IsEmpty())
+			{
+				Response.AccountInfo.AccountId = FDBAAccountId(Response.PlayerId);
+			}
 			CacheLoginSuccess(Response);
 		}
 		OnComplete.ExecuteIfBound(Response);
@@ -382,11 +416,17 @@ void UDBAOnlineAccountService::GuestLogin(FDBAOnLoginComplete OnComplete)
 		return;
 	}
 
+	if (ShouldForceMockAccount())
+	{
+		FallbackLogin(OnComplete);
+		return;
+	}
+
 	FDBALoginRequest RequestData;
 	RequestData.LoginType = EDBALoginType::Guest;
 	RequestData.DeviceId = BuildStableGuestDeviceId();
 
-	const FString Body = FDBAOnlineAccountJson::BuildLoginRequest(RequestData);
+	const FString Body = FDBAOnlineAccountJson::BuildGuestLoginRequest(RequestData.DeviceId, TEXT("UnrealClient"), TEXT("Windows"));
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateJsonRequest(TEXT("POST"), TEXT("/api/auth/guest-login"), Body);
 	Request->OnProcessRequestComplete().BindWeakLambda(this, [this, OnComplete](FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded)
 	{
@@ -418,6 +458,7 @@ void UDBAOnlineAccountService::GuestLogin(FDBAOnLoginComplete OnComplete)
 
 		if (Response.bSuccess)
 		{
+			Response.AccountInfo.LoginType = EDBALoginType::Guest;
 			CacheLoginSuccess(Response);
 		}
 		OnComplete.ExecuteIfBound(Response);
@@ -429,6 +470,12 @@ void UDBAOnlineAccountService::AutoLogin(FDBAOnLoginComplete OnComplete)
 {
 	if (!EnsureGameThread(TEXT("AutoLogin")))
 	{
+		return;
+	}
+
+	if (ShouldForceMockAccount())
+	{
+		FallbackAutoLogin(OnComplete);
 		return;
 	}
 
@@ -471,17 +518,29 @@ void UDBAOnlineAccountService::AutoLogin(FDBAOnLoginComplete OnComplete)
 		FString Error;
 		if (HttpResponse.IsValid() && FDBAOnlineAccountJson::ParseLoginResponse(HttpResponse->GetContentAsString(), Response, Error) && Response.bSuccess)
 		{
-			if (Response.PlayerId.IsEmpty() && CurrentAccountInfo.IsValid())
+			if (CurrentAccountInfo.IsValid())
 			{
-				Response.AccountInfo = CurrentAccountInfo;
-				Response.PlayerId = CurrentAccountInfo.AccountId.ToString();
+				FDBAAccountInfo RefreshedAccountInfo = CurrentAccountInfo;
+				if (!Response.AccountInfo.DisplayName.IsEmpty())
+				{
+					RefreshedAccountInfo.DisplayName = Response.AccountInfo.DisplayName;
+				}
+				if (Response.AccountInfo.Level > 0)
+				{
+					RefreshedAccountInfo.Level = Response.AccountInfo.Level;
+				}
+				Response.AccountInfo = RefreshedAccountInfo;
+				if (Response.PlayerId.IsEmpty())
+				{
+					Response.PlayerId = CurrentAccountInfo.AccountId.ToString();
+				}
 			}
 			CacheLoginSuccess(Response);
 			OnComplete.ExecuteIfBound(Response);
 			return;
 		}
 
-		Response.ErrorMessage = Error.IsEmpty() ? TEXT("Auto login failed") : Error;
+		Response.ErrorMessage = Error.IsEmpty() ? TEXT("自动登录失败。") : Error;
 		OnComplete.ExecuteIfBound(Response);
 	});
 	Request->ProcessRequest();
@@ -526,6 +585,12 @@ void UDBAOnlineAccountService::Logout(FDBAOnLogoutComplete OnComplete)
 
 void UDBAOnlineAccountService::GetCharacterList(FDBAOnCharacterListLoaded OnComplete)
 {
+	if (ShouldForceMockAccount())
+	{
+		FallbackCharacterList(OnComplete);
+		return;
+	}
+
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateJsonRequest(TEXT("GET"), TEXT("/api/account/characters"), TEXT(""));
 	Request->OnProcessRequestComplete().BindWeakLambda(this, [this, OnComplete](FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded)
 	{
@@ -540,6 +605,11 @@ void UDBAOnlineAccountService::GetCharacterList(FDBAOnCharacterListLoaded OnComp
 				return;
 			}
 
+			LogSubsystemWarning(FString::Printf(
+				TEXT("在线角色列表请求失败：URL=%s HTTP=%d 请求成功=%s"),
+				*HttpRequest->GetURL(),
+				HttpResponse.IsValid() ? HttpResponse->GetResponseCode() : 0,
+				bSucceeded ? TEXT("是") : TEXT("否")));
 			TArray<FDBACharacterSummary> Empty;
 			OnComplete.ExecuteIfBound(Empty);
 			return;
@@ -550,6 +620,9 @@ void UDBAOnlineAccountService::GetCharacterList(FDBAOnCharacterListLoaded OnComp
 		if (!FDBAOnlineAccountJson::ParseCharacterListResponse(HttpResponse->GetContentAsString(), Characters, Error))
 		{
 			LogSubsystemWarning(Error);
+			TArray<FDBACharacterSummary> Empty;
+			OnComplete.ExecuteIfBound(Empty);
+			return;
 		}
 		SaveOnlineAccountState(&Characters);
 		OnComplete.ExecuteIfBound(Characters);
@@ -565,6 +638,12 @@ void UDBAOnlineAccountService::CreateCharacter(const FDBACharacterCreateRequest&
 		FDBACharacterCreateResponse Response;
 		Response.ErrorMessage = ValidationError;
 		OnComplete.ExecuteIfBound(Response);
+		return;
+	}
+
+	if (ShouldForceMockAccount())
+	{
+		FallbackCreateCharacter(RequestData, OnComplete);
 		return;
 	}
 
@@ -584,7 +663,7 @@ void UDBAOnlineAccountService::CreateCharacter(const FDBACharacterCreateRequest&
 			}
 
 			FDBACharacterCreateResponse Response;
-			Response.ErrorMessage = TEXT("Online character creation failed");
+			Response.ErrorMessage = TEXT("在线角色创建失败。");
 			OnComplete.ExecuteIfBound(Response);
 			return;
 		}
@@ -617,6 +696,12 @@ void UDBAOnlineAccountService::SelectCharacter(const FDBACharacterId& CharacterI
 		return;
 	}
 
+	if (ShouldForceMockAccount())
+	{
+		FallbackSelectCharacter(CharacterId, OnComplete);
+		return;
+	}
+
 	const FString Body = FDBAOnlineAccountJson::BuildSelectCharacterRequest(CharacterId);
 	const FString Path = FString::Printf(TEXT("/api/account/characters/%s/select"), *CharacterId.ToString());
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateJsonRequest(TEXT("POST"), Path, Body);
@@ -626,6 +711,11 @@ void UDBAOnlineAccountService::SelectCharacter(const FDBACharacterId& CharacterI
 
 		if (!bSucceeded || !HttpResponse.IsValid() || !EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
 		{
+			LogSubsystemWarning(FString::Printf(
+				TEXT("在线角色选择请求失败：URL=%s HTTP=%d 请求成功=%s"),
+				*HttpRequest->GetURL(),
+				HttpResponse.IsValid() ? HttpResponse->GetResponseCode() : 0,
+				bSucceeded ? TEXT("是") : TEXT("否")));
 			OnComplete.ExecuteIfBound(FDBACharacterId());
 			return;
 		}
@@ -634,7 +724,7 @@ void UDBAOnlineAccountService::SelectCharacter(const FDBACharacterId& CharacterI
 		FString Error;
 		if (!FDBAOnlineAccountJson::ParseSelectCharacterResponse(HttpResponse->GetContentAsString(), SelectedId, Error) || !SelectedId.IsValid())
 		{
-			LogSubsystemWarning(Error.IsEmpty() ? TEXT("Online character selection failed") : Error);
+			LogSubsystemWarning(Error.IsEmpty() ? TEXT("在线角色选择失败。") : Error);
 			OnComplete.ExecuteIfBound(FDBACharacterId());
 			return;
 		}
@@ -651,11 +741,11 @@ void UDBAOnlineAccountService::FallbackLogin(FDBAOnLoginComplete OnComplete)
 	if (!MockService)
 	{
 		FDBALoginResponse Response;
-		Response.ErrorMessage = TEXT("Mock fallback unavailable");
+		Response.ErrorMessage = TEXT("模拟账号兜底不可用。");
 		OnComplete.ExecuteIfBound(Response);
 		return;
 	}
-	LogSubsystemWarning(TEXT("Online login unavailable, fallback to mock guest login"));
+	LogSubsystemWarning(TEXT("在线登录不可用，回退到模拟游客登录。"));
 	MockService->GuestLogin(FDBAOnLoginComplete::CreateWeakLambda(this, [this, OnComplete](const FDBALoginResponse& Response)
 	{
 		if (Response.bSuccess)
@@ -682,7 +772,7 @@ void UDBAOnlineAccountService::FallbackAutoLogin(FDBAOnLoginComplete OnComplete)
 	}
 
 	FDBALoginResponse Response;
-	Response.ErrorMessage = TEXT("Mock fallback unavailable");
+	Response.ErrorMessage = TEXT("模拟账号兜底不可用。");
 	OnComplete.ExecuteIfBound(Response);
 }
 
@@ -707,6 +797,25 @@ void UDBAOnlineAccountService::FallbackCreateCharacter(const FDBACharacterCreate
 	}
 
 	FDBACharacterCreateResponse Response;
-	Response.ErrorMessage = TEXT("Mock fallback unavailable");
+	Response.ErrorMessage = TEXT("模拟账号兜底不可用。");
 	OnComplete.ExecuteIfBound(Response);
+}
+
+void UDBAOnlineAccountService::FallbackSelectCharacter(const FDBACharacterId& CharacterId, FDBAOnCharacterSelected OnComplete)
+{
+	if (MockService)
+	{
+		MockService->SelectCharacter(CharacterId, FDBAOnCharacterSelected::CreateWeakLambda(this, [this, OnComplete](const FDBACharacterId& SelectedId)
+		{
+			if (SelectedId.IsValid())
+			{
+				CurrentCharacterId = SelectedId;
+				SaveOnlineAccountState();
+			}
+			OnComplete.ExecuteIfBound(SelectedId);
+		}));
+		return;
+	}
+
+	OnComplete.ExecuteIfBound(FDBACharacterId());
 }

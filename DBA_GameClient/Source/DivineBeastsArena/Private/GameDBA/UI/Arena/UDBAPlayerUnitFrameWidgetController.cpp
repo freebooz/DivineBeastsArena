@@ -9,6 +9,7 @@
 
 
 #include "GameDBA/UI/Arena/UDBAPlayerUnitFrameWidgetController.h"
+#include "GameFramework/PlayerController.h"
 
 /**
  * 鏋勯€犲嚱鏁? * 鍒濆鍖栫帺瀹跺崟鍏冩鎺у埗鍣? */
@@ -17,12 +18,39 @@ UDBAPlayerUnitFrameWidgetController::UDBAPlayerUnitFrameWidgetController(const F
 {
 }
 
+void UDBAPlayerUnitFrameWidgetController::SetOwningPlayerController(APlayerController* InPlayerController)
+{
+	OwningPlayerController = InPlayerController;
+}
+
+APlayerController* UDBAPlayerUnitFrameWidgetController::GetOwningPlayerController() const
+{
+	return OwningPlayerController.Get();
+}
+
+void UDBAPlayerUnitFrameWidgetController::SetVitals(float InCurrentHP, float InMaxHP, float InCurrentEnergy, float InMaxEnergy)
+{
+	CurrentHP = FMath::Max(0.0f, InCurrentHP);
+	MaxHP = FMath::Max(0.0f, InMaxHP);
+	CurrentEnergy = FMath::Max(0.0f, InCurrentEnergy);
+	MaxEnergy = FMath::Max(0.0f, InMaxEnergy);
+
+	OnHPUpdated.Broadcast(CurrentHP, MaxHP);
+	OnEnergyUpdated.Broadcast(CurrentEnergy, MaxEnergy);
+}
+
+void UDBAPlayerUnitFrameWidgetController::SetCurrentLevel(int32 InLevel)
+{
+	CurrentLevel = FMath::Max(1, InLevel);
+	OnLevelUpdated.Broadcast(CurrentLevel);
+}
+
 /**
  * 鑾峰彇褰撳墠鐢熷懡鍊? * @return 褰撳墠 HP锛堝緟浠?GAS 灞炴€х郴缁熻幏鍙栵級
  */
 float UDBAPlayerUnitFrameWidgetController::GetCurrentHP() const
 {
-	return 850.0f;
+	return CurrentHP;
 }
 
 /**
@@ -30,7 +58,7 @@ float UDBAPlayerUnitFrameWidgetController::GetCurrentHP() const
  */
 float UDBAPlayerUnitFrameWidgetController::GetMaxHP() const
 {
-	return 1000.0f;
+	return MaxHP;
 }
 
 /**
@@ -38,7 +66,7 @@ float UDBAPlayerUnitFrameWidgetController::GetMaxHP() const
  */
 float UDBAPlayerUnitFrameWidgetController::GetCurrentEnergy() const
 {
-	return 70.0f;
+	return CurrentEnergy;
 }
 
 /**
@@ -46,7 +74,7 @@ float UDBAPlayerUnitFrameWidgetController::GetCurrentEnergy() const
  */
 float UDBAPlayerUnitFrameWidgetController::GetMaxEnergy() const
 {
-	return 100.0f;
+	return MaxEnergy;
 }
 
 /**
@@ -55,6 +83,5 @@ float UDBAPlayerUnitFrameWidgetController::GetMaxEnergy() const
  */
 int32 UDBAPlayerUnitFrameWidgetController::GetCurrentLevel() const
 {
-	return 12;
+	return CurrentLevel;
 }
-

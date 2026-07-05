@@ -86,10 +86,13 @@ protected:
 	bool bAutoBindOwningPawn = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|UI|AbilityBar")
-	bool bRefreshCooldownsEveryTick = true;
+	bool bRefreshCooldownsEveryTick = false;
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "DBA|UI|AbilityBar")
 	TWeakObjectPtr<ADBAZodiacCharacterBase> BoundCharacter;
+
+	UPROPERTY(Transient)
+	TWeakObjectPtr<ADBAZodiacCharacterBase> CooldownEventCharacter;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UDBAAbilitySlotWidget>> SkillSlotWidgets;
@@ -100,6 +103,13 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "DBA|UI|AbilityBar")
 	FDBAPlayableSkillCatalogSummary CachedSkillCatalogSummary;
 
+	UFUNCTION()
+	void HandleSkillCooldownsChanged(const TArray<float>& Cooldowns);
+
 	void CacheSkillSlotWidgets();
+	void UnbindFromCooldownEvents();
+	void ApplyRuntimeConfigToSkillSpec(FDBAPlayableSkillRuntimeSpec& InOutSkillSpec) const;
+	int32 MapSkillSlotToAbilityInputID(int32 SkillSlot) const;
+	void RequestSkillIconAsync(UDBAAbilitySlotWidget* SlotWidget, const FDBAPlayableSkillRuntimeSpec& SkillSpec);
 	FKey ResolveHotkeyForSlot(int32 SkillSlot) const;
 };

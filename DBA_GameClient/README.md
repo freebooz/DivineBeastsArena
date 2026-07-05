@@ -1,12 +1,12 @@
-# 神兽竞技场 / Divine Beasts Arena
+﻿# 神兽竞技场 / Divine Beasts Arena
 
-UE5.7 C++ MOBA 游戏项目
+UE5.8 C++ MOBA 游戏项目
 
 ## 快速开始
 
 ### 环境要求
 
-- Unreal Engine 5.7
+- Unreal Engine 5.8
 - Visual Studio 2022 (17.8+) / Rider 2024.3+ / VS Code 1.85+
 - Git 2.40+ with Git LFS 3.4+
 - Android Studio Hedgehog (Android 开发)
@@ -80,6 +80,6 @@ code --install-extension llvm-vs-code-extensions.vscode-clangd
 ## 开发规范
 
 - C++ 类前缀：DBA
-- 遵循 UE5.7 编码规范
+- 遵循 UE5.8 编码规范
 - 所有代码必须有中文注释
 - Dedicated Server 优先架构

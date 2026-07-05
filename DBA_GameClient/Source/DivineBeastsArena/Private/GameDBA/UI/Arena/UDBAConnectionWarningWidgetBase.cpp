@@ -10,6 +10,21 @@
 
 #include "GameDBA/UI/Arena/UDBAConnectionWarningWidgetBase.h"
 
+namespace
+{
+	bool NormalizeConnectionWarningText(const FText& Text, FText& OutText)
+	{
+		const FString NormalizedText = Text.ToString().TrimStartAndEnd();
+		if (NormalizedText.IsEmpty())
+		{
+			return false;
+		}
+
+		OutText = FText::FromString(NormalizedText);
+		return true;
+	}
+}
+
 UDBAConnectionWarningWidgetBase::UDBAConnectionWarningWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -18,6 +33,14 @@ UDBAConnectionWarningWidgetBase::UDBAConnectionWarningWidgetBase(const FObjectIn
 void UDBAConnectionWarningWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+	if (bCachedWarningVisible && !CachedWarningMessage.IsEmpty())
+	{
+		BP_OnWarningShown(CachedWarningMessage);
+	}
+	else
+	{
+		BP_OnWarningHidden();
+	}
 }
 
 void UDBAConnectionWarningWidgetBase::NativeDestruct()
@@ -27,9 +50,20 @@ void UDBAConnectionWarningWidgetBase::NativeDestruct()
 
 void UDBAConnectionWarningWidgetBase::ShowWarning(const FText& Message)
 {
+	FText NormalizedMessage;
+	if (!NormalizeConnectionWarningText(Message, NormalizedMessage))
+	{
+		return;
+	}
+
+	CachedWarningMessage = NormalizedMessage;
+	bCachedWarningVisible = true;
+	BP_OnWarningShown(CachedWarningMessage);
 }
 
 void UDBAConnectionWarningWidgetBase::HideWarning()
 {
+	CachedWarningMessage = FText::GetEmpty();
+	bCachedWarningVisible = false;
+	BP_OnWarningHidden();
 }
-

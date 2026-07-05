@@ -20,23 +20,23 @@ UDBAAbilitySlotWidget::UDBAAbilitySlotWidget(const FObjectInitializer& ObjectIni
 {
 }
 
+void UDBAAbilitySlotWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	UpdateIconDisplay();
+	UpdateHotkeyDisplay();
+	SetAvailable(AbilityInfo.bEnabled);
+	UpdateCooldownDisplay();
+}
+
 void UDBAAbilitySlotWidget::SetAbilityInfo(const FDBAAbilityInfo& Info)
 {
 	AbilityInfo = Info;
+	AbilityInfo.Cooldown = FMath::Max(0.0f, AbilityInfo.Cooldown);
+	AbilityInfo.CurrentCooldown = FMath::Clamp(AbilityInfo.CurrentCooldown, 0.0f, AbilityInfo.Cooldown);
 	UpdateIconDisplay();
-
-	if (HotkeyText)
-	{
-		if (Info.Hotkey.IsValid())
-		{
-			HotkeyText->SetText(FText::FromString(Info.Hotkey.ToString()));
-		}
-		else
-		{
-			HotkeyText->SetText(FText::GetEmpty());
-		}
-	}
-
+	UpdateHotkeyDisplay();
 	SetAvailable(Info.bEnabled);
 	UpdateCooldownDisplay();
 }
@@ -45,6 +45,7 @@ void UDBAAbilitySlotWidget::SetAbilityFromPlayableSkill(const FDBAPlayableSkillR
 {
 	FDBAAbilityInfo Info;
 	Info.AbilityName = SkillSpec.DisplayName.IsEmpty() ? FText::FromName(SkillSpec.SkillId) : SkillSpec.DisplayName;
+	Info.Icon = SkillSpec.Icon.Get();
 	Info.Hotkey = InHotkey;
 	Info.Cooldown = SkillSpec.Cooldown;
 	Info.CurrentCooldown = 0.0f;
@@ -54,8 +55,8 @@ void UDBAAbilitySlotWidget::SetAbilityFromPlayableSkill(const FDBAPlayableSkillR
 
 void UDBAAbilitySlotWidget::SetCooldown(float RemainingTime, float TotalTime)
 {
-	AbilityInfo.CurrentCooldown = RemainingTime;
-	AbilityInfo.Cooldown = TotalTime;
+	AbilityInfo.Cooldown = FMath::Max(0.0f, TotalTime);
+	AbilityInfo.CurrentCooldown = FMath::Clamp(RemainingTime, 0.0f, AbilityInfo.Cooldown);
 	UpdateCooldownDisplay();
 }
 
@@ -104,13 +105,40 @@ void UDBAAbilitySlotWidget::UpdateCooldownDisplay()
 	{
 		CooldownOverlay->SetVisibility(ESlateVisibility::Hidden);
 		CooldownText->SetVisibility(ESlateVisibility::Hidden);
+		CooldownText->SetText(FText::GetEmpty());
 	}
 }
 
 void UDBAAbilitySlotWidget::UpdateIconDisplay()
 {
-	if (SkillIcon && AbilityInfo.Icon)
+	if (!SkillIcon)
+	{
+		return;
+	}
+
+	if (AbilityInfo.Icon)
 	{
 		SkillIcon->SetBrushFromTexture(AbilityInfo.Icon);
+	}
+	else
+	{
+		SkillIcon->SetBrush(FSlateBrush());
+	}
+}
+
+void UDBAAbilitySlotWidget::UpdateHotkeyDisplay()
+{
+	if (!HotkeyText)
+	{
+		return;
+	}
+
+	if (AbilityInfo.Hotkey.IsValid())
+	{
+		HotkeyText->SetText(FText::FromString(AbilityInfo.Hotkey.ToString()));
+	}
+	else
+	{
+		HotkeyText->SetText(FText::GetEmpty());
 	}
 }

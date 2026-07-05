@@ -34,8 +34,7 @@ void UDBAZodiacUltimateAbility_Generic::ActivateAbility(
 		}
 	}
 
-	// 调用蓝图事件
-	OnUltimateActivatedBP(UltimateSkillID);
+	OnUltimateActivated(UltimateSkillID);
 
 	// 调用基类 ActivateAbility
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
@@ -50,9 +49,16 @@ void UDBAZodiacUltimateAbility_Generic::EndAbility(
 {
 	UE_LOG(LogDBACombat, Log, TEXT("[UDBAZodiacUltimateAbility_Generic] 结束生肖终极技能：技能ID=%s 是否取消=%s"), *UltimateSkillID.ToString(), bWasCancelled ? TEXT("是") : TEXT("否"));
 
-	// 调用蓝图事件
-	OnUltimateEndedBP(UltimateSkillID, bWasCancelled);
+	OnUltimateEnded(UltimateSkillID, bWasCancelled);
 
 	// 调用基类 EndAbility
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+void UDBAZodiacUltimateAbility_Generic::OnUltimateActivated(FName InSkillID)
+{
+}
+
+void UDBAZodiacUltimateAbility_Generic::OnUltimateEnded(FName InSkillID, bool bWasCancelled)
+{
 }

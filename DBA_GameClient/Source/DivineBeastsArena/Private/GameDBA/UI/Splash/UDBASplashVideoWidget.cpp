@@ -14,14 +14,16 @@
 #include "Components/AudioComponent.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
-#include "FileMediaSource.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/GameInstance/DBAGameInstance.h"
 #include "GameDBA/UI/DBAGameUIManager.h"
 #include "Kismet/GameplayStatics.h"
+#if !UE_SERVER
+#include "FileMediaSource.h"
 #include "MediaPlayer.h"
 #include "MediaSoundComponent.h"
 #include "MediaTexture.h"
+#endif
 #include "Sound/SoundBase.h"
 #include "Sound/SoundWaveProcedural.h"
 
@@ -54,19 +56,19 @@ void UDBASplashVideoWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] NativeConstruct"));
-	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] VideoImage: %s, SkipHintText: %s, SkipButton: %s"),
+	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 原生构造完成"));
+	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 控件绑定状态：VideoImage=%s，SkipHintText=%s，SkipButton=%s"),
 		VideoImage ? *VideoImage->GetName() : TEXT("NULL"),
 		SkipHintText ? *SkipHintText->GetName() : TEXT("NULL"),
 		SkipButton ? *SkipButton->GetName() : TEXT("NULL"));
 
 	if (SkipHintText)
 	{
-		SkipHintText->SetText(FText::FromString(TEXT("Press ESC to skip")));
+		SkipHintText->SetText(FText::FromString(TEXT("按 ESC 跳过")));
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[UDBASplashVideoWidget] SkipHintText is NULL - Blueprint binding may have failed"));
+		UE_LOG(LogDBAUI, Warning, TEXT("[UDBASplashVideoWidget] SkipHintText 为空，蓝图绑定可能失败"));
 	}
 
 	if (SkipButton)
@@ -75,7 +77,7 @@ void UDBASplashVideoWidget::NativeConstruct()
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[UDBASplashVideoWidget] SkipButton is NULL - Blueprint binding may have failed"));
+		UE_LOG(LogDBAUI, Warning, TEXT("[UDBASplashVideoWidget] SkipButton 为空，蓝图绑定可能失败"));
 	}
 
 	if (UWorld* World = GetWorld())
@@ -102,7 +104,7 @@ void UDBASplashVideoWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 		ElapsedTime += InDeltaTime;
 		if (ElapsedTime > 30.0f)
 		{
-			UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Timed out, continuing to login"));
+			UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 启动视频播放超时，继续进入登录流程"));
 			OnVideoFinished();
 		}
 	}
@@ -154,15 +156,20 @@ void UDBASplashVideoWidget::PlayVideo()
 		return;
 	}
 
-	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] PlayVideo"));
+#if UE_SERVER
+	UE_LOG(LogDBAUI, Verbose, TEXT("[UDBASplashVideoWidget] 专用服务器跳过启动视频播放"));
+	OnVideoFinished();
+	return;
+#else
+	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 开始播放启动视频"));
 
 	if (!MediaPlayer)
 	{
-		MediaPlayer = NewObject<UMediaPlayer>(this);
+		MediaPlayer = TStrongObjectPtr<UMediaPlayer>(NewObject<UMediaPlayer>(this));
 	}
 	if (!MediaPlayer)
 	{
-		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] Failed to create MediaPlayer"));
+		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] 创建 MediaPlayer 失败"));
 		OnVideoFinished();
 		return;
 	}
@@ -177,11 +184,11 @@ void UDBASplashVideoWidget::PlayVideo()
 
 	if (!FileMediaSource)
 	{
-		FileMediaSource = NewObject<UFileMediaSource>(this);
+		FileMediaSource = TStrongObjectPtr<UFileMediaSource>(NewObject<UFileMediaSource>(this));
 	}
 	if (!FileMediaSource)
 	{
-		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] Failed to create FileMediaSource"));
+		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] 创建 FileMediaSource 失败"));
 		OnVideoFinished();
 		return;
 	}
@@ -194,7 +201,7 @@ void UDBASplashVideoWidget::PlayVideo()
 		FPaths::NormalizeFilename(SourceTreePath);
 		if (FPaths::FileExists(SourceTreePath))
 		{
-			UE_LOG(LogDBAUI, Warning, TEXT("[UDBASplashVideoWidget] Staged movie missing, using source path: %s"), *SourceTreePath);
+			UE_LOG(LogDBAUI, Warning, TEXT("[UDBASplashVideoWidget] 暂存启动视频缺失，改用源码目录视频：%s"), *SourceTreePath);
 			VideoPath = SourceTreePath;
 		}
 	}
@@ -202,26 +209,26 @@ void UDBASplashVideoWidget::PlayVideo()
 	const int64 VideoFileSize = IFileManager::Get().FileSize(*VideoPath);
 	if (VideoFileSize <= 0)
 	{
-		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] Startup movie file missing or empty: %s"), *VideoPath);
+		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] 启动视频文件缺失或为空：%s"), *VideoPath);
 		OnVideoFinished();
 		return;
 	}
 
 	FileMediaSource->SetFilePath(VideoPath);
-	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Startup movie path: %s, size: %lld bytes"), *VideoPath, VideoFileSize);
+	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 启动视频路径：%s，大小：%lld 字节"), *VideoPath, VideoFileSize);
 
 	if (!MediaTexture)
 	{
-		MediaTexture = NewObject<UMediaTexture>(this);
+		MediaTexture = TStrongObjectPtr<UMediaTexture>(NewObject<UMediaTexture>(this));
 	}
 	if (!MediaTexture)
 	{
-		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] Failed to create MediaTexture"));
+		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] 创建 MediaTexture 失败"));
 		OnVideoFinished();
 		return;
 	}
 
-	MediaTexture->SetMediaPlayer(MediaPlayer);
+	MediaTexture->SetMediaPlayer(MediaPlayer.Get());
 	MediaTexture->UpdateResource();
 
 	if (VideoImage)
@@ -235,21 +242,21 @@ void UDBASplashVideoWidget::PlayVideo()
 		}
 
 		FSlateBrush Brush;
-		Brush.SetResourceObject(MediaTexture);
+		Brush.SetResourceObject(MediaTexture.Get());
 		Brush.ImageSize = FVector2D(TextureW, TextureH);
 		VideoImage->SetBrush(Brush);
 		VideoImage->SetColorAndOpacity(FLinearColor::White);
 
-		UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Video brush set, size: %dx%d"), TextureW, TextureH);
+		UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 视频画刷已设置，尺寸：%dx%d"), TextureW, TextureH);
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] VideoImage is NULL - Blueprint binding may have failed"));
+		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] VideoImage 为空，蓝图绑定可能失败"));
 	}
 
 	if (!MediaSoundComponent)
 	{
-		MediaSoundComponent = NewObject<UMediaSoundComponent>(this);
+		MediaSoundComponent = TStrongObjectPtr<UMediaSoundComponent>(NewObject<UMediaSoundComponent>(this));
 	}
 	if (MediaSoundComponent)
 	{
@@ -257,7 +264,7 @@ void UDBASplashVideoWidget::PlayVideo()
 		MediaSoundComponent->bAllowSpatialization = false;
 		MediaSoundComponent->SetEnableEnvelopeFollowing(true);
 		MediaSoundComponent->SetEnvelopeFollowingsettings(10, 100);
-		MediaSoundComponent->SetMediaPlayer(MediaPlayer);
+		MediaSoundComponent->SetMediaPlayer(MediaPlayer.Get());
 		MediaSoundComponent->AddClockSink();
 		if (UWorld* World = GetWorld())
 		{
@@ -269,58 +276,71 @@ void UDBASplashVideoWidget::PlayVideo()
 		MediaSoundComponent->Start();
 		MediaSoundComponent->SetVolumeMultiplier(0.0f);
 
-		UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] MediaSoundComponent registered: %s, playing: %s"),
+		UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 媒体音频组件状态：已注册=%s，播放中=%s"),
 			MediaSoundComponent->IsRegistered() ? TEXT("true") : TEXT("false"),
 			MediaSoundComponent->IsPlaying() ? TEXT("true") : TEXT("false"));
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] Failed to create MediaSoundComponent"));
+		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] 创建 MediaSoundComponent 失败"));
 	}
 
-	if (!MediaPlayer->OpenSource(FileMediaSource))
+	if (!MediaPlayer->OpenSource(FileMediaSource.Get()))
 	{
-		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] Failed to request media open"));
+		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] 请求打开媒体失败"));
 		OnVideoFinished();
 		return;
 	}
 
-	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Media open requested"));
+	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 已请求打开媒体"));
+#endif
 }
 
 void UDBASplashVideoWidget::HandleMediaOpened(FString OpenedUrl)
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Media opened: %s, duration: %.2fs"), *OpenedUrl, MediaPlayer ? MediaPlayer->GetDuration().GetTotalSeconds() : 0.0);
+#if UE_SERVER
+	UE_LOG(LogDBAUI, Verbose, TEXT("[UDBASplashVideoWidget] 专用服务器忽略媒体打开事件：%s"), *OpenedUrl);
+	OnVideoFinished();
+#else
+	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 媒体已打开：%s，时长：%.2f 秒"), *OpenedUrl, MediaPlayer ? MediaPlayer->GetDuration().GetTotalSeconds() : 0.0);
 	if (MediaSoundComponent)
 	{
-		MediaSoundComponent->SetMediaPlayer(MediaPlayer);
+		MediaSoundComponent->SetMediaPlayer(MediaPlayer.Get());
 		if (!MediaSoundComponent->IsPlaying())
 		{
 			MediaSoundComponent->Start();
 		}
 		MediaSoundComponent->SetVolumeMultiplier(0.0f);
-		UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Media sound after open: registered=%s, playing=%s"),
+		UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 媒体打开后的音频状态：已注册=%s，播放中=%s"),
 			MediaSoundComponent->IsRegistered() ? TEXT("true") : TEXT("false"),
 			MediaSoundComponent->IsPlaying() ? TEXT("true") : TEXT("false"));
 	}
 	PlayFallbackAudio();
 	StartPlayback();
+#endif
 }
 
 void UDBASplashVideoWidget::HandleMediaOpenFailed(FString FailedUrl)
 {
-	UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] Media open failed: %s"), *FailedUrl);
+#if UE_SERVER
+	UE_LOG(LogDBAUI, Verbose, TEXT("[UDBASplashVideoWidget] 专用服务器忽略媒体打开失败事件：%s"), *FailedUrl);
+#else
+	UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] 媒体打开失败：%s"), *FailedUrl);
+#endif
 	OnVideoFinished();
 }
 
 void UDBASplashVideoWidget::HandleMediaEndReached()
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Media end reached"));
+	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 媒体播放已结束"));
 	OnVideoFinished();
 }
 
 void UDBASplashVideoWidget::StartPlayback()
 {
+#if UE_SERVER
+	return;
+#else
 	if (!MediaPlayer)
 	{
 		return;
@@ -330,7 +350,7 @@ void UDBASplashVideoWidget::StartPlayback()
 	bIsPlaying = bPlayStarted || MediaPlayer->IsPlaying();
 	ElapsedTime = 0.0f;
 
-	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Playback started: %s, IsPlaying: %s, HasVideoImage: %s"),
+	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 启动播放请求结果：已开始=%s，播放中=%s，存在视频控件=%s"),
 		bPlayStarted ? TEXT("true") : TEXT("false"),
 		MediaPlayer->IsPlaying() ? TEXT("true") : TEXT("false"),
 		VideoImage ? TEXT("true") : TEXT("false"));
@@ -340,10 +360,14 @@ void UDBASplashVideoWidget::StartPlayback()
 		FTimerHandle VerifyTimerHandle;
 		World->GetTimerManager().SetTimer(VerifyTimerHandle, this, &UDBASplashVideoWidget::VerifyPlaybackState, 1.0f, false);
 	}
+#endif
 }
 
 void UDBASplashVideoWidget::VerifyPlaybackState()
 {
+#if UE_SERVER
+	return;
+#else
 	if (!MediaPlayer || bCompleted)
 	{
 		return;
@@ -351,22 +375,23 @@ void UDBASplashVideoWidget::VerifyPlaybackState()
 
 	if (MediaPlayer->IsReady() && !MediaPlayer->IsPlaying())
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[UDBASplashVideoWidget] Media was ready but not playing, retrying playback"));
+		UE_LOG(LogDBAUI, Warning, TEXT("[UDBASplashVideoWidget] 媒体已就绪但未播放，正在重试播放"));
 		MediaPlayer->Play();
 	}
 
-	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Playback state after delay: IsReady=%s, IsPlaying=%s, Time=%.2fs"),
+	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 延迟检查播放状态：已就绪=%s，播放中=%s，时间=%.2f 秒"),
 		MediaPlayer->IsReady() ? TEXT("true") : TEXT("false"),
 		MediaPlayer->IsPlaying() ? TEXT("true") : TEXT("false"),
 		MediaPlayer->GetTime().GetTotalSeconds());
 
 	if (MediaSoundComponent)
 	{
-		UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Sound state after delay: registered=%s, playing=%s, envelope=%.4f"),
+		UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 延迟检查音频状态：已注册=%s，播放中=%s，包络=%.4f"),
 			MediaSoundComponent->IsRegistered() ? TEXT("true") : TEXT("false"),
 			MediaSoundComponent->IsPlaying() ? TEXT("true") : TEXT("false"),
 			MediaSoundComponent->GetEnvelopeValue());
 	}
+#endif
 }
 
 void UDBASplashVideoWidget::StopVideo()
@@ -386,6 +411,12 @@ void UDBASplashVideoWidget::StopVideo()
 	::PlaySoundW(nullptr, nullptr, 0);
 #endif
 
+#if !UE_SERVER
+	if (VideoImage)
+	{
+		VideoImage->SetBrush(FSlateBrush());
+	}
+
 	if (MediaSoundComponent)
 	{
 		MediaSoundComponent->RemoveClockSink();
@@ -396,7 +427,7 @@ void UDBASplashVideoWidget::StopVideo()
 			MediaSoundComponent->UnregisterComponent();
 		}
 		MediaSoundComponent->DestroyComponent();
-		MediaSoundComponent = nullptr;
+		MediaSoundComponent.Reset();
 	}
 
 	if (MediaPlayer)
@@ -405,13 +436,28 @@ void UDBASplashVideoWidget::StopVideo()
 		MediaPlayer->OnMediaOpenFailed.RemoveAll(this);
 		MediaPlayer->OnEndReached.RemoveAll(this);
 		MediaPlayer->Close();
+		MediaPlayer.Reset();
 	}
 
+	if (MediaTexture)
+	{
+		MediaTexture->SetMediaPlayer(nullptr);
+		MediaTexture->UpdateResource();
+		MediaTexture.Reset();
+	}
+
+	FileMediaSource.Reset();
+#endif
+
+	FallbackAudioWave = nullptr;
 	bIsPlaying = false;
 }
 
 void UDBASplashVideoWidget::PlayFallbackAudio()
 {
+#if UE_SERVER
+	return;
+#else
 	if (FallbackAudioComponent)
 	{
 		return;
@@ -432,21 +478,22 @@ void UDBASplashVideoWidget::PlayFallbackAudio()
 	FallbackAudioWave = CreateSoundWaveFromPcmWav(WavPath);
 	if (!FallbackAudioWave)
 	{
-		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] Failed to create fallback audio wave: %s"), *WavPath);
+		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] 创建备用音频波形失败：%s"), *WavPath);
 		return;
 	}
 
 	FallbackAudioComponent = UGameplayStatics::SpawnSound2D(this, FallbackAudioWave, 1.0f, 1.0f, 0.0f, nullptr, true, false);
 	if (FallbackAudioComponent)
 	{
-		UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Fallback Startup.wav audio playing: %s"), FallbackAudioComponent->IsPlaying() ? TEXT("true") : TEXT("false"));
+		UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 备用 Startup.wav 音频播放中：%s"), FallbackAudioComponent->IsPlaying() ? TEXT("true") : TEXT("false"));
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] Failed to spawn fallback Startup.wav audio"));
+		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] 创建备用 Startup.wav 音频组件失败"));
 	}
 
 	PlayNativeFallbackAudio(WavPath);
+#endif
 }
 
 void UDBASplashVideoWidget::PlayNativeFallbackAudio(const FString& WavPath)
@@ -454,11 +501,11 @@ void UDBASplashVideoWidget::PlayNativeFallbackAudio(const FString& WavPath)
 #if PLATFORM_WINDOWS
 	const FString FullWavPath = FPaths::ConvertRelativePathToFull(WavPath);
 	const bool bPlayed = ::PlaySoundW(*FullWavPath, nullptr, SND_FILENAME | SND_ASYNC | SND_NODEFAULT);
-	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Native Windows Startup.wav audio playing: %s, path: %s"),
+	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Windows 原生 Startup.wav 音频播放中：%s，路径：%s"),
 		bPlayed ? TEXT("true") : TEXT("false"),
 		*FullWavPath);
 #else
-	UE_LOG(LogDBAUI, Verbose, TEXT("[UDBASplashVideoWidget] Native audio fallback is only available on Windows"));
+	UE_LOG(LogDBAUI, Verbose, TEXT("[UDBASplashVideoWidget] 原生音频备用播放仅在 Windows 平台可用"));
 #endif
 }
 
@@ -520,7 +567,7 @@ USoundWaveProcedural* UDBASplashVideoWidget::CreateSoundWaveFromPcmWav(const FSt
 
 	if (FormatTag != 1 || NumChannels == 0 || SampleRate == 0 || BitsPerSample != 16 || DataOffset == INDEX_NONE || DataSize == 0)
 	{
-		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] Unsupported WAV format: Format=%u Channels=%u SampleRate=%u Bits=%u DataSize=%u"),
+		UE_LOG(LogDBAUI, Error, TEXT("[UDBASplashVideoWidget] 不支持的 WAV 格式：格式=%u，声道=%u，采样率=%u，位深=%u，数据大小=%u"),
 			FormatTag, NumChannels, SampleRate, BitsPerSample, DataSize);
 		return nullptr;
 	}
@@ -538,7 +585,7 @@ USoundWaveProcedural* UDBASplashVideoWidget::CreateSoundWaveFromPcmWav(const FSt
 	SoundWave->bLooping = false;
 	SoundWave->QueueAudio(WavBytes.GetData() + DataOffset, DataSize);
 
-	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] Loaded fallback WAV: %s, %.2fs, %u Hz, %u channels, %u bytes"),
+	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 已加载备用 WAV：%s，%.2f 秒，%u Hz，%u 声道，%u 字节"),
 		*WavPath, SoundWave->Duration, SampleRate, NumChannels, DataSize);
 
 	return SoundWave;
@@ -551,7 +598,7 @@ void UDBASplashVideoWidget::SkipVideo()
 		return;
 	}
 
-	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] SkipVideo"));
+	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 跳过启动视频"));
 	StopVideo();
 	bCompleted = true;
 	TransitionToLogin();
@@ -566,13 +613,13 @@ void UDBASplashVideoWidget::OnVideoFinished()
 
 	StopVideo();
 	bCompleted = true;
-	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] OnVideoFinished"));
+	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 启动视频流程已完成"));
 	TransitionToLogin();
 }
 
 void UDBASplashVideoWidget::TransitionToLogin()
 {
-	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] TransitionToLogin"));
+	UE_LOG(LogDBAUI, Log, TEXT("[UDBASplashVideoWidget] 切换到登录流程"));
 	UWorld* ResolvedWorld = nullptr;
 	if (APlayerController* PC = GetOwningPlayer())
 	{
@@ -597,7 +644,7 @@ void UDBASplashVideoWidget::TransitionToLogin()
 	}
 	else
 	{
-		UE_LOG(LogDBAUI, Warning, TEXT("[UDBASplashVideoWidget] Unable to resolve DBA game instance when transitioning to login."));
+		UE_LOG(LogDBAUI, Warning, TEXT("[UDBASplashVideoWidget] 切换到登录流程时无法解析 DBA GameInstance"));
 	}
 }
 

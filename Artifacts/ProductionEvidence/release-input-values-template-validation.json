@@ -1,0 +1,90 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "release-input-values-validation",
+    "generatedAtUtc":  "2026-06-29T11:45:24.1177761Z",
+    "releaseId":  "local-production-evidence-20260629",
+    "valuesPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\release-input-values.template.json",
+    "isValid":  false,
+    "inputCount":  9,
+    "declaredInputCount":  9,
+    "actualInputCount":  9,
+    "inputCountMatches":  true,
+    "blankValueCount":  9,
+    "placeholderValueCount":  0,
+    "exampleUrlCount":  0,
+    "insecureUrlCount":  0,
+    "blankValues":  [
+                        {
+                            "input":  "real HTTPS CDN download URL",
+                            "placeholder":  "\u003creal-https-cdn-download-url\u003e",
+                            "value":  "",
+                            "primaryParameter":  "-DownloadUrl",
+                            "reason":  "value is blank"
+                        },
+                        {
+                            "input":  "real HTTPS CDN manifest URL",
+                            "placeholder":  "\u003creal-https-cdn-manifest-url\u003e",
+                            "value":  "",
+                            "primaryParameter":  "-ManifestUrl",
+                            "reason":  "value is blank"
+                        },
+                        {
+                            "input":  "release package root",
+                            "placeholder":  "\u003crelease-package-root\u003e",
+                            "value":  "",
+                            "primaryParameter":  "-PackageRoot",
+                            "reason":  "value is blank"
+                        },
+                        {
+                            "input":  "trusted Authenticode signing identity",
+                            "placeholder":  "\u003ctrusted-authenticode-signing-identity\u003e",
+                            "value":  "",
+                            "primaryParameter":  "-CertificateThumbprint",
+                            "reason":  "value is blank"
+                        },
+                        {
+                            "input":  "signtool path",
+                            "placeholder":  "\u003csigntool-path\u003e",
+                            "value":  "",
+                            "primaryParameter":  "-SignToolPath",
+                            "reason":  "value is blank"
+                        },
+                        {
+                            "input":  "public Shipping package root",
+                            "placeholder":  "\u003cpublic-shipping-package-root\u003e",
+                            "value":  "",
+                            "primaryParameter":  "-PackageRoot",
+                            "reason":  "value is blank"
+                        },
+                        {
+                            "input":  "local smoke install root",
+                            "placeholder":  "\u003clocal-smoke-install-root\u003e",
+                            "value":  "",
+                            "primaryParameter":  "-InstallRoot",
+                            "reason":  "value is blank"
+                        },
+                        {
+                            "input":  "timestamp URL",
+                            "placeholder":  "\u003ctimestamp-url\u003e",
+                            "value":  "",
+                            "primaryParameter":  "-TimestampUrl",
+                            "reason":  "value is blank"
+                        },
+                        {
+                            "input":  "public package root containing signable binaries",
+                            "placeholder":  "\u003cpublic-package-root-containing-signable-binaries\u003e",
+                            "value":  "",
+                            "primaryParameter":  "-PackageRoot",
+                            "reason":  "value is blank"
+                        }
+                    ],
+    "placeholderValues":  [
+
+                          ],
+    "exampleUrls":  [
+
+                    ],
+    "insecureUrls":  [
+
+                     ]
+}

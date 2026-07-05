@@ -31,5 +31,6 @@ public record MatchResultResponse(
     string Mode,
     string MapId,
     int DurationSeconds,
+    string ResultJson,
     DateTimeOffset CreatedAt,
     IReadOnlyList<MatchPlayerResultDto> Players);

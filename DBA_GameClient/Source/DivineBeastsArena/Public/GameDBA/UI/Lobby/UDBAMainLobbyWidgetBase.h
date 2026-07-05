@@ -22,6 +22,7 @@ class UButton;
 class UEditableTextBox;
 class UTextBlock;
 struct FDBALobbyPlayerSummary;
+struct FDBALobbyRecentMatchSummary;
 enum class EDBALobbyBackendState : uint8;
 
 /**
@@ -78,6 +79,9 @@ public:
 	void BackendRefreshRoomList();
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
+	void BackendRefreshMatchHistory();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
 	void BackendCreateRoom();
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
@@ -109,10 +113,16 @@ protected:
 	void HandlePlayerSummaryUpdated(const FDBALobbyPlayerSummary& Summary);
 
 	UFUNCTION()
+	void HandleRecentMatchSummaryUpdated(const FDBALobbyRecentMatchSummary& Summary);
+
+	UFUNCTION()
 	void HandleCreateRoomClicked();
 
 	UFUNCTION()
 	void HandleRefreshRoomsClicked();
+
+	UFUNCTION()
+	void HandleRefreshMatchHistoryClicked();
 
 	UFUNCTION()
 	void HandleJoinRoomClicked();
@@ -135,6 +145,7 @@ protected:
 	void UpdateBackendStateText(EDBALobbyBackendState NewState);
 	void UpdateBackendButtonsState(EDBALobbyBackendState NewState);
 	void UpdatePlayerSummaryText(const FDBALobbyPlayerSummary& Summary);
+	void UpdateRecentMatchSummaryText(const FDBALobbyRecentMatchSummary& Summary);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|MainLobby", meta = (DisplayName = "On Party Info Refreshed"))
 	void BP_OnPartyInfoRefreshed();
@@ -160,6 +171,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
 	TObjectPtr<UButton> RefreshRoomsButton;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UButton> RefreshMatchHistoryButton;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
 	TObjectPtr<UButton> JoinRoomButton;
@@ -199,6 +213,21 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> PlayerTicketsText;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> RecentMatchResultText;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> RecentMatchMapText;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> RecentMatchCombatText;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> RecentMatchPlayedAtText;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> RecentMatchRewardText;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby", meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> BackendStateText;

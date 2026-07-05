@@ -55,10 +55,71 @@ struct FDBALobbyPlayerSummary
 	int32 Tickets = 0;
 };
 
+USTRUCT(BlueprintType)
+struct FDBALobbyRecentMatchSummary
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	bool bHasMatch = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	FString SessionId;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	FString Mode;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	FString MapId;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	FString Team;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	FString Result;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	FString WinnerTeam;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	int32 Score = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	int32 Kills = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	int32 Deaths = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	int32 Assists = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	int32 DurationSeconds = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	FString PlayedAtUtc;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	int64 ExpDelta = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	int64 CoinReward = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	int64 HonorReward = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	FString RewardSummary;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|MainLobby|Backend")
+	FString CombatSummary;
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLobbyBackendStateChanged, EDBALobbyBackendState, NewState);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLobbyBackendError, const FString&, ErrorMessage);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLobbyRawDataUpdated, const FString&, DataJson);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLobbyPlayerSummaryUpdated, const FDBALobbyPlayerSummary&, PlayerSummary);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLobbyRecentMatchSummaryUpdated, const FDBALobbyRecentMatchSummary&, RecentMatchSummary);
 
 UCLASS(BlueprintType)
 class DIVINEBEASTSARENA_API UDBAMainLobbyWidgetController : public UDBAWidgetController
@@ -89,6 +150,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
 	void RefreshPlayerData();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
+	void RefreshMatchHistory();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
+	bool UpdateMatchHistoryFromJson(const FString& MatchHistoryJson);
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|MainLobby|Backend")
 	void RefreshRoomList();
@@ -129,6 +196,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "DBA|MainLobby|Backend")
 	const FDBALobbyPlayerSummary& GetPlayerSummary() const { return PlayerSummary; }
 
+	UFUNCTION(BlueprintPure, Category = "DBA|MainLobby|Backend")
+	const FDBALobbyRecentMatchSummary& GetRecentMatchSummary() const { return RecentMatchSummary; }
+
 public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPartyInfoReady, const FDBAPartyInfo&, PartyInfo);
 	UPROPERTY(BlueprintAssignable, Category = "DBA|MainLobby")
@@ -153,7 +223,13 @@ public:
 	FOnLobbyRawDataUpdated OnMatchTicketUpdated;
 
 	UPROPERTY(BlueprintAssignable, Category = "DBA|MainLobby|Backend")
+	FOnLobbyRawDataUpdated OnMatchHistoryUpdated;
+
+	UPROPERTY(BlueprintAssignable, Category = "DBA|MainLobby|Backend")
 	FOnLobbyPlayerSummaryUpdated OnPlayerSummaryUpdated;
+
+	UPROPERTY(BlueprintAssignable, Category = "DBA|MainLobby|Backend")
+	FOnLobbyRecentMatchSummaryUpdated OnRecentMatchSummaryUpdated;
 
 private:
 	UFUNCTION()
@@ -161,6 +237,9 @@ private:
 
 	UFUNCTION()
 	void HandleGetInventoryResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson);
+
+	UFUNCTION()
+	void HandleGetMatchHistoryResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson);
 
 	UFUNCTION()
 	void HandleGetRoomsResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson);
@@ -227,6 +306,9 @@ private:
 
 	UPROPERTY(Transient)
 	FDBALobbyPlayerSummary PlayerSummary;
+
+	UPROPERTY(Transient)
+	FDBALobbyRecentMatchSummary RecentMatchSummary;
 
 	UPROPERTY(Transient)
 	bool bReadyLocalState = false;

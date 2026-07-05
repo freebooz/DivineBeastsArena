@@ -1,0 +1,24 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "client-package-launcher",
+    "runId":  "client-package-launcher-local-20260628T071000Z",
+    "generatedAtUtc":  "2026-06-28T04:46:32.3623659Z",
+    "packageRoot":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\packaged-server\\Windows",
+    "version":  "0.1.0.0",
+    "downloadUrl":  "https://cdn.example.com/releases/0.1.0.0/",
+    "fileCount":  53,
+    "totalBytes":  3433238520,
+    "clientExecutable":  "DivineBeastsArena.exe",
+    "contentContainerCount":  5,
+    "launcherManifestPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\client\\launcher-manifest-client-package-launcher-local-20260628T071000Z.json",
+    "sha256":  {
+                   "manifest":  "4a639ea573d42f7a10b7ce1c1fe598854fc46f3cdaea068661dff3963adc249d",
+                   "clientExecutable":  "e2dd1b7d94ec6d8d92c3eeaed54ae1bf70895c9cab3b1a95d18609959af69d54"
+               },
+    "installSmoke":  {
+                         "mode":  "manifest-and-hash-contract-only",
+                         "path":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\launcher-install-smoke\\client-package-launcher-local-20260628T071000Z",
+                         "copiedFiles":  0,
+                         "versionFile":  false
+                     }
+}

@@ -79,11 +79,17 @@ public static partial class GameFeatureEndpoints
         return Results.Ok(ApiResponse<EventListResponse>.Ok(new EventListResponse(events)));
     }
 
-    private static async Task<IResult> GetMyEventProgress(Guid playerId, GameDbContext db)
+    private static async Task<IResult> GetMyEventProgress(HttpContext ctx, GameDbContext db)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         var progress = await db.PlayerEventProgresses
             .Include(x => x.Event)
-            .Where(x => x.PlayerId == playerId)
+            .Where(x => x.PlayerId == playerId.Value)
             .Where(x => x.Event!.Status == "ACTIVE")
             .Select(x => new PlayerEventProgressDto(
                 x.EventId, x.Event!.EventKey, x.Event.Title, x.Progress, x.Target, x.IsCompleted, x.IsRewarded))
@@ -94,8 +100,14 @@ public static partial class GameFeatureEndpoints
 
     // ==================== 成就系统 ====================
 
-    private static async Task<IResult> GetAchievements(Guid playerId, GameDbContext db)
+    private static async Task<IResult> GetAchievements(HttpContext ctx, GameDbContext db)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         var achievements = await db.Achievements
             .OrderBy(x => x.Order)
             .Select(x => new AchievementDto(x.Id, x.AchievementKey, x.Title, x.Description, x.Category,
@@ -103,7 +115,7 @@ public static partial class GameFeatureEndpoints
             .ToListAsync();
 
         var playerAchievements = await db.PlayerAchievements
-            .Where(x => x.PlayerId == playerId)
+            .Where(x => x.PlayerId == playerId.Value)
             .ToDictionaryAsync(x => x.AchievementId);
 
         var result = achievements.Select(x =>

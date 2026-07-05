@@ -1,0 +1,86 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "unreal-evidence-runner-diagnostic",
+    "generatedAtUtc":  "2026-06-28T04:29:56.8715958Z",
+    "repoRoot":  "E:\\work\\Game\\DivineBeastsArena",
+    "baseUrl":  "http://localhost:8080",
+    "unrealRoot":  "D:\\UnrealEngine-5.8.0-release",
+    "projectPath":  "E:\\work\\Game\\DivineBeastsArena\\DBA_GameClient\\DivineBeastsArena.uproject",
+    "checks":  [
+                   {
+                       "name":  "runner.os.windows",
+                       "status":  "PASS",
+                       "detail":  "Microsoft Windows 10.0.26200 "
+                   },
+                   {
+                       "name":  "repo.workflow.unreal-evidence",
+                       "status":  "PASS",
+                       "detail":  "E:\\work\\Game\\DivineBeastsArena\\.github\\workflows\\unreal-evidence.yml"
+                   },
+                   {
+                       "name":  "repo.script.validate-production-evidence-contracts",
+                       "status":  "PASS",
+                       "detail":  "E:\\work\\Game\\DivineBeastsArena\\scripts\\validate-production-evidence-contracts.ps1"
+                   },
+                   {
+                       "name":  "repo.script.run-unreal-evidence",
+                       "status":  "PASS",
+                       "detail":  "E:\\work\\Game\\DivineBeastsArena\\scripts\\run-unreal-evidence.ps1"
+                   },
+                   {
+                       "name":  "repo.script.start-local-ue-validation",
+                       "status":  "PASS",
+                       "detail":  "E:\\work\\Game\\DivineBeastsArena\\scripts\\start-local-ue-validation.ps1"
+                   },
+                   {
+                       "name":  "repo.script.collect-production-evidence",
+                       "status":  "PASS",
+                       "detail":  "E:\\work\\Game\\DivineBeastsArena\\scripts\\collect-production-evidence.ps1"
+                   },
+                   {
+                       "name":  "repo.script.package-unreal-dedicated-server",
+                       "status":  "PASS",
+                       "detail":  "E:\\work\\Game\\DivineBeastsArena\\scripts\\package-unreal-dedicated-server.ps1"
+                   },
+                   {
+                       "name":  "unreal.root",
+                       "status":  "PASS",
+                       "detail":  "D:\\UnrealEngine-5.8.0-release"
+                   },
+                   {
+                       "name":  "unreal.editor",
+                       "status":  "PASS",
+                       "detail":  "D:\\UnrealEngine-5.8.0-release\\Engine\\Binaries\\Win64\\UnrealEditor.exe"
+                   },
+                   {
+                       "name":  "unreal.editor_cmd",
+                       "status":  "PASS",
+                       "detail":  "D:\\UnrealEngine-5.8.0-release\\Engine\\Binaries\\Win64\\UnrealEditor-Cmd.exe"
+                   },
+                   {
+                       "name":  "unreal.runuat",
+                       "status":  "PASS",
+                       "detail":  "D:\\UnrealEngine-5.8.0-release\\Engine\\Build\\BatchFiles\\RunUAT.bat"
+                   },
+                   {
+                       "name":  "unreal.project",
+                       "status":  "PASS",
+                       "detail":  "E:\\work\\Game\\DivineBeastsArena\\DBA_GameClient\\DivineBeastsArena.uproject"
+                   },
+                   {
+                       "name":  "backend.internal_api_key",
+                       "status":  "PASS",
+                       "detail":  "configured length=33"
+                   },
+                   {
+                       "name":  "backend.health",
+                       "status":  "PASS",
+                       "detail":  "http://localhost:8080/health/live"
+                   },
+                   {
+                       "name":  "evidence.contracts",
+                       "status":  "PASS",
+                       "detail":  "validate-production-evidence-contracts.ps1"
+                   }
+               ]
+}

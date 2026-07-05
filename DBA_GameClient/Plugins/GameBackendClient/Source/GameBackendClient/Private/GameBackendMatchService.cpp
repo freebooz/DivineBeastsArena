@@ -21,7 +21,7 @@ namespace
 	void ExecuteResponse(const FDBA_GameBackendResponseDelegate& Callback, const FDBA_GameBackendHttpResult& Result)
 	{
 		const bool bSuccess = Result.IsSuccessful();
-		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("Request failed.") : Result.Message);
+		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("请求失败。") : Result.Message);
 		Callback.ExecuteIfBound(bSuccess, ErrorMessage, Result.DataJson);
 	}
 }
@@ -36,7 +36,7 @@ void UDBA_GameBackendMatchService::CreateTicket(const FString& Mode, const FStri
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Match service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("匹配服务不可用。"), TEXT("{}"));
 		return;
 	}
 
@@ -55,7 +55,7 @@ void UDBA_GameBackendMatchService::GetTicket(const FString& TicketId, const FDBA
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Match service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("匹配服务不可用。"), TEXT("{}"));
 		return;
 	}
 	HttpClient->Get(FString::Printf(TEXT("/api/matchmaking/tickets/%s"), *TicketId), [Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });
@@ -65,7 +65,7 @@ void UDBA_GameBackendMatchService::CancelTicket(const FString& TicketId, const F
 {
 	if (!HttpClient)
 	{
-		Callback.ExecuteIfBound(false, TEXT("Match service unavailable."), TEXT("{}"));
+		Callback.ExecuteIfBound(false, TEXT("匹配服务不可用。"), TEXT("{}"));
 		return;
 	}
 	HttpClient->Delete(FString::Printf(TEXT("/api/matchmaking/tickets/%s"), *TicketId), [Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });

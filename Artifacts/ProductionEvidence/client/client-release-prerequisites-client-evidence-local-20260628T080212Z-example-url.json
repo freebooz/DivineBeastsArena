@@ -1,0 +1,49 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "client-release-prerequisites",
+    "generatedAtUtc":  "2026-06-28T08:14:46.0354436Z",
+    "readyForReleaseInputs":  false,
+    "blockingIssueCount":  2,
+    "blockingIssues":  [
+                           {
+                               "code":  "download_url_example",
+                               "message":  "DownloadUrl still points at cdn.example.com: https://cdn.example.com/releases/0.1.0.0/"
+                           },
+                           {
+                               "code":  "manifest_url_example",
+                               "message":  "ManifestUrl still points at cdn.example.com: https://cdn.example.com/releases/0.1.0.0/launcher-manifest.json"
+                           }
+                       ],
+    "package":  {
+                    "root":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\client-release\\public\\client-evidence-local-20260628T080212Z",
+                    "requestedRoot":  ".tmp\\client-release\\public\\client-evidence-local-20260628T080212Z",
+                    "clientExePath":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\client-release\\public\\client-evidence-local-20260628T080212Z\\DivineBeastsArena.exe",
+                    "fileCount":  34
+                },
+    "urls":  {
+                 "downloadUrl":  {
+                                     "value":  "https://cdn.example.com/releases/0.1.0.0/",
+                                     "valid":  false,
+                                     "isHttps":  true,
+                                     "isExample":  true,
+                                     "isAllowedLocalHttp":  false
+                                 },
+                 "manifestUrl":  {
+                                     "value":  "https://cdn.example.com/releases/0.1.0.0/launcher-manifest.json",
+                                     "valid":  false,
+                                     "isHttps":  true,
+                                     "isExample":  true,
+                                     "isAllowedLocalHttp":  false
+                                 },
+                 "allowLocalHttp":  false
+             },
+    "signing":  {
+                    "required":  false,
+                    "certificateThumbprintProvided":  false,
+                    "certificateSubjectProvided":  false,
+                    "pfxPath":  "",
+                    "pfxPasswordEnvironmentVariable":  "DBA_CODE_SIGNING_PFX_PASSWORD",
+                    "certificateFound":  false,
+                    "signToolPath":  ""
+                }
+}

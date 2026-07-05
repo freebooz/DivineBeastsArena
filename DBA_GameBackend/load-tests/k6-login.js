@@ -1,22 +1,34 @@
 /*
-中文阅读说明：
-- 所属应用：DBA_GameBackend 上线前压测。
-- 文件职责：用 k6 压测玩家登录接口，验证认证链路吞吐、延迟和错误率。
-- 使用方式：BASE_URL=http://localhost:8080 k6 run load-tests/k6-login.js
-- 修改提示：如测试账号变化，请同步 DEV_USERNAME / DEV_PASSWORD 默认值或通过环境变量覆盖。
+Chinese reading notes:
+- Application: DBA_GameBackend pre-production load testing.
+- Responsibility: exercise the authentication path and collect k6 evidence.
+- Usage: BASE_URL=http://localhost:8080 AUTH_MODE=guest k6 run load-tests/k6-login.js
+- AUTH_MODE supports guest, dev, and account. Guest is the default so local
+  production-like environments do not depend on pre-seeded test accounts.
 */
 
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+
+const baseUrl = __ENV.BASE_URL || 'http://localhost:8080';
+const authMode = (__ENV.AUTH_MODE || 'guest').toLowerCase();
+const username = __ENV.DEV_USERNAME || __ENV.ACCOUNT_USERNAME || 'dba_dev_01';
+const email = __ENV.ACCOUNT_EMAIL || '';
+const password = __ENV.DEV_PASSWORD || __ENV.ACCOUNT_PASSWORD || 'Dev@123456';
+const loginRampTargetVus = Number(__ENV.LOGIN_RAMP_TARGET_VUS || 30);
+const loginRampUpDuration = __ENV.LOGIN_RAMP_UP_DURATION || '30s';
+const loginRampHoldDuration = __ENV.LOGIN_RAMP_HOLD_DURATION || '1m';
+const loginRampDownDuration = __ENV.LOGIN_RAMP_DOWN_DURATION || '30s';
+const loginSleepSeconds = Number(__ENV.LOGIN_SLEEP_SECONDS || 1);
 
 export const options = {
   scenarios: {
     login_smoke: {
       executor: 'ramping-vus',
       stages: [
-        { duration: '30s', target: 10 },
-        { duration: '1m', target: 30 },
-        { duration: '30s', target: 0 },
+        { duration: loginRampUpDuration, target: Math.max(1, Math.ceil(loginRampTargetVus / 3)) },
+        { duration: loginRampHoldDuration, target: loginRampTargetVus },
+        { duration: loginRampDownDuration, target: 0 },
       ],
     },
   },
@@ -26,14 +38,33 @@ export const options = {
   },
 };
 
-const baseUrl = __ENV.BASE_URL || 'http://localhost:8080';
-const username = __ENV.DEV_USERNAME || 'dba_dev_01';
-const password = __ENV.DEV_PASSWORD || 'Dev@123456';
+function authRequest() {
+  if (authMode === 'guest') {
+    const deviceId = `k6-login-${__VU}-${__ITER}-${Date.now()}`;
+    return {
+      url: `${baseUrl}/api/auth/guest-login`,
+      body: { deviceId, deviceName: 'k6', platform: 'docker-k6' },
+    };
+  }
+
+  if (authMode === 'account') {
+    return {
+      url: `${baseUrl}/api/auth/account/login`,
+      body: { username, email, password },
+    };
+  }
+
+  return {
+    url: `${baseUrl}/api/auth/dev-login`,
+    body: { username, password },
+  };
+}
 
 export default function () {
+  const request = authRequest();
   const response = http.post(
-    `${baseUrl}/api/auth/dev-login`,
-    JSON.stringify({ username, password }),
+    request.url,
+    JSON.stringify(request.body),
     { headers: { 'Content-Type': 'application/json' } },
   );
 
@@ -42,5 +73,5 @@ export default function () {
     'login returns access token': (r) => String(r.body).includes('accessToken'),
   });
 
-  sleep(1);
+  sleep(loginSleepSeconds);
 }

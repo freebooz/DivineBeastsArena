@@ -113,6 +113,34 @@ namespace
 	{
 		return MeshPath.Contains(TEXT("/Game/DBA/Characters/Rosales/"));
 	}
+
+	void ApplyStageSurfaceMaterial(UStaticMeshComponent* MeshComponent, UObject* Outer, const FLinearColor& BaseColor, float Roughness, float Specular, float NormalStrength, float EmissiveStrength = 0.0f)
+	{
+		if (!MeshComponent || !Outer)
+		{
+			return;
+		}
+
+		UMaterialInterface* BaseMaterial = LoadReliableFallbackMaterial();
+		if (!BaseMaterial)
+		{
+			return;
+		}
+
+		if (UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, Outer))
+		{
+			DynamicMaterial->SetVectorParameterValue(TEXT("Tint"), BaseColor);
+			DynamicMaterial->SetVectorParameterValue(TEXT("BaseColor"), BaseColor);
+			DynamicMaterial->SetVectorParameterValue(TEXT("Color"), BaseColor);
+			DynamicMaterial->SetVectorParameterValue(TEXT("PrimaryColor"), BaseColor);
+			DynamicMaterial->SetVectorParameterValue(TEXT("EmissiveColor"), BaseColor);
+			DynamicMaterial->SetScalarParameterValue(TEXT("Roughness"), Roughness);
+			DynamicMaterial->SetScalarParameterValue(TEXT("Specular"), Specular);
+			DynamicMaterial->SetScalarParameterValue(TEXT("NormalStrength"), NormalStrength);
+			DynamicMaterial->SetScalarParameterValue(TEXT("EmissiveStrength"), EmissiveStrength);
+			MeshComponent->SetMaterial(0, DynamicMaterial);
+		}
+	}
 }
 
 ADBACharacterPresentationActor::ADBACharacterPresentationActor()
@@ -174,9 +202,14 @@ ADBACharacterPresentationActor::ADBACharacterPresentationActor()
 	KeyLight->SetupAttachment(StageRoot);
 	KeyLight->SetMobility(EComponentMobility::Movable);
 	KeyLight->SetCastShadows(true);
-	KeyLight->SetLightColor(FLinearColor(1.0f, 0.86f, 0.62f));
+	KeyLight->SetUseTemperature(true);
+	KeyLight->SetTemperature(10000.0f);
+	KeyLight->SetLightSourceAngle(2.0f);
 	KeyLight->SetForwardShadingPriority(100);
 	KeyLight->SetAffectTranslucentLighting(true);
+	KeyLight->ContactShadowLength = 0.2f;
+	KeyLight->ContactShadowCastingIntensity = 1.0f;
+	KeyLight->SetVolumetricScatteringIntensity(1.0f);
 
 	FillLight = CreateDefaultSubobject<UDirectionalLightComponent>(TEXT("FillLight"));
 	FillLight->SetupAttachment(StageRoot);
@@ -198,13 +231,31 @@ ADBACharacterPresentationActor::ADBACharacterPresentationActor()
 	FaceLight->SetupAttachment(StageRoot);
 	FaceLight->SetMobility(EComponentMobility::Movable);
 	FaceLight->SetCastShadows(false);
-	FaceLight->SetLightColor(FLinearColor(1.0f, 0.80f, 0.55f));
+	FaceLight->SetLightColor(FLinearColor(0.25f, 0.45f, 1.0f));
+	FaceLight->SetVolumetricScatteringIntensity(0.3f);
+
+	LeftPillarRedLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("LeftPillarRedLight"));
+	LeftPillarRedLight->SetupAttachment(StageRoot);
+	LeftPillarRedLight->SetMobility(EComponentMobility::Movable);
+	LeftPillarRedLight->SetCastShadows(true);
+	LeftPillarRedLight->SetLightColor(FLinearColor(1.0f, 0.23f, 0.08f));
+	LeftPillarRedLight->SetVolumetricScatteringIntensity(2.5f);
+
+	RightPillarRedLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("RightPillarRedLight"));
+	RightPillarRedLight->SetupAttachment(StageRoot);
+	RightPillarRedLight->SetMobility(EComponentMobility::Movable);
+	RightPillarRedLight->SetCastShadows(true);
+	RightPillarRedLight->SetLightColor(FLinearColor(1.0f, 0.23f, 0.08f));
+	RightPillarRedLight->SetVolumetricScatteringIntensity(2.5f);
 
 	SkyLight = CreateDefaultSubobject<USkyLightComponent>(TEXT("SkyLight"));
 	SkyLight->SetupAttachment(StageRoot);
 	SkyLight->SetMobility(EComponentMobility::Movable);
 	SkyLight->SetCastShadows(false);
-	SkyLight->SetLightColor(FLinearColor(0.72f, 0.80f, 1.0f));
+	SkyLight->SetLightColor(FLinearColor(0.35f, 0.45f, 0.65f));
+	SkyLight->SetLowerHemisphereColor(FLinearColor(0.005f, 0.008f, 0.015f));
+	SkyLight->bLowerHemisphereIsBlack = true;
+	SkyLight->SetRealTimeCapture(true);
 
 	AtmosphereFog = CreateDefaultSubobject<UExponentialHeightFogComponent>(TEXT("AtmosphereFog"));
 	AtmosphereFog->SetupAttachment(StageRoot);
@@ -213,7 +264,7 @@ ADBACharacterPresentationActor::ADBACharacterPresentationActor()
 	PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcess"));
 	PostProcess->SetupAttachment(StageRoot);
 	PostProcess->SetMobility(EComponentMobility::Movable);
-	PostProcess->bUnbound = false;
+	PostProcess->bUnbound = true;
 	PostProcess->BlendWeight = 1.0f;
 
 	for (const TCHAR* MeshPath : ZodiacPreviewMeshPaths)
@@ -625,6 +676,12 @@ void ADBACharacterPresentationActor::ConfigureStageVisuals()
 	{
 		MoonDisc->SetStaticMesh(SphereMesh);
 	}
+
+	ApplyStageSurfaceMaterial(GroundPlane, this, FLinearColor(0.015f, 0.020f, 0.028f, 1.0f), 0.34f, 0.55f, 1.75f);
+	ApplyStageSurfaceMaterial(Pedestal, this, FLinearColor(0.020f, 0.025f, 0.036f, 1.0f), 0.34f, 0.55f, 1.5f);
+	ApplyStageSurfaceMaterial(BackdropPlane, this, FLinearColor(0.010f, 0.018f, 0.032f, 1.0f), 0.6f, 0.25f, 1.0f);
+	ApplyStageSurfaceMaterial(LeftPillar, this, FLinearColor(0.18f, 0.035f, 0.020f, 1.0f), 0.38f, 0.55f, 1.4f, 0.25f);
+	ApplyStageSurfaceMaterial(RightPillar, this, FLinearColor(0.18f, 0.035f, 0.020f, 1.0f), 0.38f, 0.55f, 1.4f, 0.25f);
 }
 
 void ADBACharacterPresentationActor::ApplyStageSpec()
@@ -686,42 +743,109 @@ void ADBACharacterPresentationActor::ApplyStageSpec()
 	{
 		KeyLight->SetRelativeRotation(FRotator(-42.0f, -38.0f, 0.0f));
 		KeyLight->SetIntensity(Spec.KeyLightIntensity);
+		KeyLight->SetCastShadows(true);
+		KeyLight->SetUseTemperature(true);
+		KeyLight->SetTemperature(10000.0f);
+		KeyLight->SetLightSourceAngle(2.0f);
+		KeyLight->ContactShadowLength = 0.2f;
+		KeyLight->ContactShadowCastingIntensity = 1.0f;
+		KeyLight->SetVolumetricScatteringIntensity(1.0f);
 	}
 
 	if (FillLight)
 	{
 		FillLight->SetRelativeRotation(FRotator(-14.0f, 146.0f, 0.0f));
 		FillLight->SetIntensity(Spec.FillLightIntensity);
+		FillLight->SetVisibility(false);
+		FillLight->SetHiddenInGame(true);
 	}
 
 	if (RimLight)
 	{
 		RimLight->SetRelativeRotation(FRotator(-18.0f, 218.0f, 0.0f));
 		RimLight->SetIntensity(Spec.RimLightIntensity);
+		RimLight->SetVisibility(false);
+		RimLight->SetHiddenInGame(true);
 	}
 
 	if (FaceLight)
 	{
 		FaceLight->SetRelativeLocation(FVector(205.0f, 0.0f, 126.0f));
 		FaceLight->SetIntensity(Spec.FaceLightIntensity);
-		FaceLight->SetAttenuationRadius(560.0f);
+		FaceLight->SetAttenuationRadius(220.0f);
+		FaceLight->SetSourceRadius(30.0f);
+		FaceLight->SetSoftSourceRadius(30.0f);
+		FaceLight->SetLightColor(FLinearColor(0.25f, 0.45f, 1.0f));
+		FaceLight->SetCastShadows(false);
+		FaceLight->SetVolumetricScatteringIntensity(0.3f);
+	}
+
+	if (LeftPillarRedLight)
+	{
+		LeftPillarRedLight->SetRelativeLocation(FVector(-112.0f, -150.0f, 112.0f));
+		LeftPillarRedLight->SetIntensity(Spec.PillarRedLightIntensity);
+		LeftPillarRedLight->SetAttenuationRadius(450.0f);
+		LeftPillarRedLight->SetSourceRadius(40.0f);
+		LeftPillarRedLight->SetSoftSourceRadius(100.0f);
+		LeftPillarRedLight->SetLightColor(FLinearColor(1.0f, 0.23f, 0.08f));
+		LeftPillarRedLight->SetCastShadows(true);
+		LeftPillarRedLight->SetVolumetricScatteringIntensity(2.5f);
+	}
+
+	if (RightPillarRedLight)
+	{
+		RightPillarRedLight->SetRelativeLocation(FVector(-112.0f, 150.0f, 112.0f));
+		RightPillarRedLight->SetIntensity(Spec.PillarRedLightIntensity);
+		RightPillarRedLight->SetAttenuationRadius(450.0f);
+		RightPillarRedLight->SetSourceRadius(40.0f);
+		RightPillarRedLight->SetSoftSourceRadius(100.0f);
+		RightPillarRedLight->SetLightColor(FLinearColor(1.0f, 0.23f, 0.08f));
+		RightPillarRedLight->SetCastShadows(true);
+		RightPillarRedLight->SetVolumetricScatteringIntensity(2.5f);
 	}
 
 	if (SkyLight)
 	{
 		SkyLight->SetIntensity(Spec.SkyLightIntensity);
+		SkyLight->SetLightColor(FLinearColor(0.35f, 0.45f, 0.65f));
+		SkyLight->SetLowerHemisphereColor(FLinearColor(0.005f, 0.008f, 0.015f));
+		SkyLight->bLowerHemisphereIsBlack = true;
+		SkyLight->SetRealTimeCapture(true);
 	}
 
 	if (PostProcess)
 	{
 		PostProcess->SetRelativeLocation(FVector(120.0f, 0.0f, 96.0f));
+		PostProcess->bUnbound = true;
 		FPostProcessSettings& PPS = PostProcess->Settings;
 		PPS.bOverride_AutoExposureMethod = true;
-		PPS.AutoExposureMethod = EAutoExposureMethod::AEM_Manual;
+		PPS.AutoExposureMethod = EAutoExposureMethod::AEM_Histogram;
+		PPS.bOverride_AutoExposureMinBrightness = true;
+		PPS.AutoExposureMinBrightness = -1.5f;
+		PPS.bOverride_AutoExposureMaxBrightness = true;
+		PPS.AutoExposureMaxBrightness = -1.5f;
 		PPS.bOverride_AutoExposureBias = true;
-		PPS.AutoExposureBias = -1.15f;
+		PPS.AutoExposureBias = -0.8f;
+		PPS.bOverride_WhiteTemp = true;
+		PPS.WhiteTemp = 10000.0f;
+		PPS.bOverride_WhiteTint = true;
+		PPS.WhiteTint = -0.18f;
 		PPS.bOverride_ColorSaturation = true;
-		PPS.ColorSaturation = FVector4(0.92f, 0.92f, 0.92f, 1.0f);
+		PPS.ColorSaturation = FVector4(0.82f, 0.82f, 0.82f, 1.0f);
+		PPS.bOverride_ColorContrast = true;
+		PPS.ColorContrast = FVector4(1.18f, 1.18f, 1.18f, 1.0f);
+		PPS.bOverride_ColorGamma = true;
+		PPS.ColorGamma = FVector4(0.95f, 0.95f, 0.95f, 1.0f);
+		PPS.bOverride_ColorGain = true;
+		PPS.ColorGain = FVector4(0.92f, 0.92f, 0.92f, 1.0f);
+		PPS.bOverride_BloomIntensity = true;
+		PPS.BloomIntensity = 0.25f;
+		PPS.bOverride_BloomThreshold = true;
+		PPS.BloomThreshold = 1.5f;
+		PPS.bOverride_VignetteIntensity = true;
+		PPS.VignetteIntensity = 0.45f;
+		PPS.bOverride_FilmGrainIntensity = true;
+		PPS.FilmGrainIntensity = 0.08f;
 	}
 
 	if (AtmosphereFog)
@@ -729,9 +853,16 @@ void ADBACharacterPresentationActor::ApplyStageSpec()
 		AtmosphereFog->SetVisibility(Spec.bUseAtmosphericFog);
 		AtmosphereFog->SetHiddenInGame(!Spec.bUseAtmosphericFog);
 		AtmosphereFog->SetFogDensity(0.028f);
-		AtmosphereFog->SetFogHeightFalloff(0.18f);
-		AtmosphereFog->SetFogInscatteringColor(FLinearColor(0.20f, 0.42f, 0.36f, 1.0f));
+		AtmosphereFog->SetFogHeightFalloff(0.35f);
+		AtmosphereFog->SetFogInscatteringColor(FLinearColor(0.03f, 0.06f, 0.10f, 1.0f));
+		AtmosphereFog->SetDirectionalInscatteringColor(FLinearColor(0.12f, 0.22f, 0.35f, 1.0f));
+		AtmosphereFog->SetDirectionalInscatteringExponent(12.0f);
 		AtmosphereFog->SetStartDistance(72.0f);
+		AtmosphereFog->SetVolumetricFog(true);
+		AtmosphereFog->SetVolumetricFogScatteringDistribution(0.35f);
+		AtmosphereFog->SetVolumetricFogAlbedo(FLinearColor(0.25f, 0.35f, 0.50f, 1.0f).ToFColor(false));
+		AtmosphereFog->SetVolumetricFogExtinctionScale(1.0f);
+		AtmosphereFog->SetVolumetricFogDistance(6000.0f);
 	}
 }
 
@@ -801,7 +932,7 @@ void ADBACharacterPresentationActor::ApplyPreviewAssets(EDBAZodiac Zodiac)
 	if (FaceLight)
 	{
 		FaceLight->SetLightColor(ZodiacTint);
-		FaceLight->SetIntensity(65000.0f);
+		FaceLight->SetIntensity(GetReferenceStageSpec().FaceLightIntensity);
 	}
 	if (RimLight)
 	{

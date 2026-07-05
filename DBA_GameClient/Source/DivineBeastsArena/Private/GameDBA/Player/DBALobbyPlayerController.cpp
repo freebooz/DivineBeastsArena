@@ -173,6 +173,11 @@ void ADBALobbyPlayerController::SetupInputComponent()
 		return;
 	}
 
+	if (!IsLocalController())
+	{
+		return;
+	}
+
 	// Keep both PC axis mappings and mobile virtual joystick mappings working.
 	InputComponent->BindAxis(TEXT("MoveForward"), this, &ADBALobbyPlayerController::MoveForwardAxis);
 	InputComponent->BindAxis(TEXT("MoveRight"), this, &ADBALobbyPlayerController::MoveRightAxis);
@@ -452,6 +457,11 @@ void ADBALobbyPlayerController::HandleSkill06Pressed()
 
 void ADBALobbyPlayerController::CastEquippedSkillSlot(int32 SkillSlot)
 {
+	if (!IsLocalController())
+	{
+		return;
+	}
+
 	if (ADBAZodiacCharacterBase* ZodiacPawn = Cast<ADBAZodiacCharacterBase>(GetPawn()))
 	{
 		AActor* Target = SelectedAttackTarget.IsValid() ? SelectedAttackTarget.Get() : nullptr;

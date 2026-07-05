@@ -13,7 +13,6 @@ using Game.Shared.Errors;
 using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Entities;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace Game.Api.Endpoints.GameFeatures;
 public static partial class GameFeatureEndpoints
@@ -22,7 +21,7 @@ public static partial class GameFeatureEndpoints
 
     private static Guid? GetPlayerId(HttpContext ctx)
     {
-        var claim = ctx.User.FindFirst("player_id") ?? ctx.User.FindFirst(ClaimTypes.NameIdentifier);
+        var claim = ctx.User.FindFirst("player_id");
         return claim != null && Guid.TryParse(claim.Value, out var id) ? id : null;
     }
 

@@ -9,6 +9,7 @@
 using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Game.Api.Services.Inventory;
 
@@ -157,18 +158,25 @@ public sealed class InventoryService : IInventoryService
     {
         foreach (var reward in rewards)
         {
-            if (reward.Value is long longQty)
+            var quantity = TryGetRewardQuantity(reward.Value);
+            if (quantity.HasValue)
             {
-                await AddItemAsync(playerId, reward.Key, longQty, null, "REWARD", bizType, bizId);
-            }
-            else if (reward.Value is int intQty)
-            {
-                await AddItemAsync(playerId, reward.Key, intQty, null, "REWARD", bizType, bizId);
-            }
-            else if (reward.Value is double dblQty)
-            {
-                await AddItemAsync(playerId, reward.Key, (long)dblQty, null, "REWARD", bizType, bizId);
+                await AddItemAsync(playerId, reward.Key, quantity.Value, null, "REWARD", bizType, bizId);
             }
         }
+    }
+
+    private static long? TryGetRewardQuantity(object value)
+    {
+        return value switch
+        {
+            long longQty => longQty,
+            int intQty => intQty,
+            double dblQty => (long)dblQty,
+            decimal decimalQty => (long)decimalQty,
+            JsonElement { ValueKind: JsonValueKind.Number } element when element.TryGetInt64(out var longQty) => longQty,
+            JsonElement { ValueKind: JsonValueKind.Number } element when element.TryGetDouble(out var doubleQty) => (long)doubleQty,
+            _ => null
+        };
     }
 }

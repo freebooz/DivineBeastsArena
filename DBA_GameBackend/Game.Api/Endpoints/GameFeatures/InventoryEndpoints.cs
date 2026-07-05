@@ -52,19 +52,31 @@ public static partial class GameFeatureEndpoints
 
     // ==================== 背包/物品 ====================
 
-    private static async Task<IResult> GetInventory(Guid playerId, GameDbContext db)
+    private static async Task<IResult> GetInventory(HttpContext ctx, GameDbContext db)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         var items = await db.InventoryItems
-            .Where(x => x.PlayerId == playerId && x.Quantity > 0)
+            .Where(x => x.PlayerId == playerId.Value && x.Quantity > 0)
             .Select(x => new InventoryItemDto(x.ItemId, x.Quantity, x.ExpiresAt))
             .ToListAsync();
-        return Results.Ok(ApiResponse<InventoryResponse>.Ok(new InventoryResponse(playerId, items)));
+        return Results.Ok(ApiResponse<InventoryResponse>.Ok(new InventoryResponse(playerId.Value, items)));
     }
 
-    private static async Task<IResult> GetUnlocks(Guid playerId, GameDbContext db)
+    private static async Task<IResult> GetUnlocks(HttpContext ctx, GameDbContext db)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         var unlocks = await db.PlayerUnlocks
-            .Where(x => x.PlayerId == playerId)
+            .Where(x => x.PlayerId == playerId.Value)
             .OrderByDescending(x => x.CreatedAt)
             .Select(x => new { x.UnlockType, x.UnlockId, x.Source, x.CreatedAt })
             .ToListAsync();
@@ -147,7 +159,7 @@ public static partial class GameFeatureEndpoints
         return Results.Ok(ApiResponse.Ok());
     }
 
-    private static async Task<IResult> GetInventoryLogs(int page, int pageSize, GameDbContext db)
+    private static async Task<IResult> GetInventoryLogs(GameDbContext db, int page = 1, int pageSize = 50)
     {
         (page, pageSize) = NormalizePaging(page, pageSize);
 

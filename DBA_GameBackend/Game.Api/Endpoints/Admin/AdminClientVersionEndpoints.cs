@@ -8,7 +8,7 @@ namespace Game.Api.Endpoints.Admin;
 
 public static partial class AdminEndpoints
 {
-    private static async Task<IResult> ListClientVersions(int page, int pageSize, GameDbContext db)
+    private static async Task<IResult> ListClientVersions(GameDbContext db, int page = 1, int pageSize = 50)
     {
         (page, pageSize) = NormalizePaging(page, pageSize);
 
@@ -57,6 +57,11 @@ public static partial class AdminEndpoints
             downloadUri.Scheme is not ("https" or "http"))
         {
             return Results.BadRequest(ApiResponse.Fail("downloadUrl must be an absolute HTTP/HTTPS URL."));
+        }
+
+        if (!IsValidLauncherManifestChecksum(request.Checksum))
+        {
+            return Results.BadRequest(ApiResponse.Fail("checksum must be a 64-character SHA256 hex string."));
         }
 
         if (request.SizeBytes <= 0)
@@ -126,5 +131,23 @@ public static partial class AdminEndpoints
             existing.MinOsVersion,
             existing.ReleaseNotes,
             existing.CreatedAt)));
+    }
+
+    public static bool IsValidLauncherManifestChecksum(string? checksum)
+    {
+        if (checksum is null)
+        {
+            return false;
+        }
+
+        var value = checksum.Trim();
+        return value.Length == 64 && value.All(IsHexDigit);
+    }
+
+    private static bool IsHexDigit(char value)
+    {
+        return value is >= '0' and <= '9'
+            or >= 'a' and <= 'f'
+            or >= 'A' and <= 'F';
     }
 }

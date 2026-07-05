@@ -24,10 +24,10 @@ public static class EndpointResultsExtensions
     /// 使用 ApiResponse 格式返回错误，保持格式统一
     /// </summary>
     public static IResult ToProblem(this Game.Shared.Common.ErrorResponse error) =>
-        Results.Ok(error.ToApiResponse());
+        Results.Json(error.ToApiResponse(), statusCode: error.Status);
 
     public static IResult ToValidationProblem(this Game.Shared.Common.ErrorResponse error) =>
-        Results.Ok(error.ToApiResponse());
+        Results.Json(error.ToApiResponse(), statusCode: error.Status);
 }
 
 public static class ApiResponseExtensions

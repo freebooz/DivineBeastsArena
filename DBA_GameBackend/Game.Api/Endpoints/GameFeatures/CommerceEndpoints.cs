@@ -42,8 +42,14 @@ public static partial class GameFeatureEndpoints
         return Results.Ok(ApiResponse<ShopItemsResponse>.Ok(new ShopItemsResponse(items)));
     }
 
-    private static async Task<IResult> PurchaseItem(PurchaseRequest request, Guid playerId, GameDbContext db)
+    private static async Task<IResult> PurchaseItem(PurchaseRequest request, HttpContext ctx, GameDbContext db)
     {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
         if (request.Quantity <= 0)
             return ErrorResponse.BadRequest("Quantity must be greater than zero.").ToProblem();
 
@@ -60,7 +66,7 @@ public static partial class GameFeatureEndpoints
         var order = new OrderRecord
         {
             Id = Guid.NewGuid(),
-            PlayerId = playerId,
+            PlayerId = playerId.Value,
             Platform = string.IsNullOrWhiteSpace(request.PaymentMethod) ? "MOCK" : request.PaymentMethod.ToUpperInvariant(),
             PlatformOrderId = $"mock-{Guid.NewGuid():N}",
             Status = "COMPLETED",
@@ -82,7 +88,7 @@ public static partial class GameFeatureEndpoints
         if (UsesWallet(shopItem.Currency))
         {
             var balance = await db.WalletBalances
-                .FirstOrDefaultAsync(x => x.PlayerId == playerId && x.CurrencyType == shopItem.Currency);
+                .FirstOrDefaultAsync(x => x.PlayerId == playerId.Value && x.CurrencyType == shopItem.Currency);
             if (balance == null || balance.Balance < totalAmount)
                 return ErrorResponse.BadRequest("Insufficient mock wallet balance.").ToProblem();
 
@@ -92,7 +98,7 @@ public static partial class GameFeatureEndpoints
             db.WalletLedgers.Add(new WalletLedger
             {
                 Id = Guid.NewGuid(),
-                PlayerId = playerId,
+                PlayerId = playerId.Value,
                 CurrencyType = shopItem.Currency,
                 Amount = -totalAmount,
                 BalanceBefore = before,
@@ -105,7 +111,7 @@ public static partial class GameFeatureEndpoints
         }
 
         var inventoryItem = await db.InventoryItems
-            .FirstOrDefaultAsync(x => x.PlayerId == playerId && x.ItemId == shopItem.ItemId);
+            .FirstOrDefaultAsync(x => x.PlayerId == playerId.Value && x.ItemId == shopItem.ItemId);
         var quantityBefore = inventoryItem?.Quantity ?? 0;
 
         if (inventoryItem == null)
@@ -113,7 +119,7 @@ public static partial class GameFeatureEndpoints
             inventoryItem = new InventoryItem
             {
                 Id = Guid.NewGuid(),
-                PlayerId = playerId,
+                PlayerId = playerId.Value,
                 ItemId = shopItem.ItemId,
                 Quantity = request.Quantity,
                 CreatedAt = now,
@@ -130,7 +136,7 @@ public static partial class GameFeatureEndpoints
         db.InventoryLogs.Add(new InventoryLog
         {
             Id = Guid.NewGuid(),
-            PlayerId = playerId,
+            PlayerId = playerId.Value,
             ItemId = shopItem.ItemId,
             QuantityDelta = request.Quantity,
             QuantityBefore = quantityBefore,

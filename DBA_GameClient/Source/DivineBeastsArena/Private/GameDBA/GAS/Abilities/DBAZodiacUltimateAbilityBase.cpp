@@ -10,6 +10,7 @@
 // 生肖终极能力基类实现 - 生肖大招能力的基类
 
 #include "GameDBA/GAS/Abilities/DBAZodiacUltimateAbilityBase.h"
+#include "GameDBA/Core/DBAConstants.h"
 #include "GameDBA/GAS/DBAAbilitySystemComponent.h"
 
 // 构造函数 - 初始化生肖终极能力
@@ -31,8 +32,8 @@ bool UDBAZodiacUltimateAbilityBase::CanActivateAbility(const FGameplayAbilitySpe
 	UDBAAbilitySystemComponent* ASC = Cast<UDBAAbilitySystemComponent>(ActorInfo->AbilitySystemComponent.Get());
 	if (ASC)
 	{
-		// 检查终极能量是否满 100
-		return ASC->HasEnoughUltimateEnergy(100.0f);
+		// 检查终极能量是否已达到当前大招阈值
+		return ASC->HasEnoughUltimateEnergy(DBAConstants::MaxUltimateEnergy);
 	}
 
 	return false;
@@ -51,8 +52,8 @@ bool UDBAZodiacUltimateAbilityBase::CommitAbilityCost(const FGameplayAbilitySpec
 	UDBAAbilitySystemComponent* ASC = Cast<UDBAAbilitySystemComponent>(ActorInfo->AbilitySystemComponent.Get());
 	if (ASC && ActorInfo->IsNetAuthority())
 	{
-		// 消耗100点终极能量
-		ASC->ConsumeUltimateEnergy(100.0f);
+		// 消耗当前配置的大招能量阈值
+		ASC->ConsumeUltimateEnergy(DBAConstants::MaxUltimateEnergy);
 	}
 
 	return true;

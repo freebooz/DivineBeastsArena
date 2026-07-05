@@ -57,12 +57,26 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|PlayerUnitFrame")
 	void UpdateUltimateEnergy(float Energy);
 
+	/** 使用动态上限更新终极能量 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|PlayerUnitFrame")
+	void UpdateUltimateEnergyWithMax(float Energy, float MaxEnergy);
+
 	/** 更新等级 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|PlayerUnitFrame")
 	void UpdateLevel(int32 Level);
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|PlayerUnitFrame")
 	void ApplyFiveCampTheme(uint8 FiveCamp);
+
+protected:
+	UFUNCTION()
+	void HandleControllerHPUpdated(float CurrentHP, float MaxHP);
+
+	UFUNCTION()
+	void HandleControllerEnergyUpdated(float CurrentEnergy, float MaxEnergy);
+
+	UFUNCTION()
+	void HandleControllerLevelUpdated(int32 Level);
 
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|PlayerUnitFrame", meta = (DisplayName = "On Update HP"))
@@ -124,6 +138,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|PlayerUnitFrame")
 	float CachedUltimateEnergy;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|PlayerUnitFrame")
+	float CachedMaxUltimateEnergy;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|PlayerUnitFrame")
 	int32 CurrentLevel;

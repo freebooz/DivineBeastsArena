@@ -1,0 +1,296 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "release-blocker-actions",
+    "generatedAtUtc":  "2026-06-30T10:41:22.5705292Z",
+    "releaseId":  "local-launcher-evidence-support-files-gate-20260630",
+    "readyForRelease":  false,
+    "reportPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\release-readiness-report.json",
+    "evidenceRoot":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence",
+    "blockerCount":  4,
+    "actions":  [
+                    {
+                        "key":  "client.release_prerequisites",
+                        "status":  "incomplete",
+                        "owner":  "release-engineering",
+                        "script":  "scripts\\diagnose-client-release-prerequisites.ps1",
+                        "nextCommand":  ".\\scripts\\diagnose-client-release-prerequisites.ps1 -PackageRoot \u003crelease-package-root\u003e -DownloadUrl \u003creal-https-cdn-download-url\u003e -ManifestUrl \u003creal-https-cdn-manifest-url\u003e -RequireManifestUrl -RequireSigningIdentity -CertificateThumbprint \u003ctrusted-authenticode-signing-identity\u003e -SignToolPath \u003csigntool-path\u003e -RequireSignTool -FailOnBlockingIssues",
+                        "unblockCriteria":  "Generate client-release-prerequisites evidence with readyForReleaseInputs=true using a real HTTPS CDN URL, non-example manifest URL, package root, signing identity, and signtool.",
+                        "latestEvidencePath":  "client/client-release-prerequisites-client-evidence-local-20260628T080212Z-example-url.json",
+                        "missingExternalInputs":  [
+                                                      "real HTTPS CDN download URL",
+                                                      "real HTTPS CDN manifest URL",
+                                                      "release package root",
+                                                      "trusted Authenticode signing identity",
+                                                      "signtool path"
+                                                  ],
+                        "automationBlocked":  true,
+                        "blockingExternalInputs":  [
+                                                       "real HTTPS CDN download URL",
+                                                       "real HTTPS CDN manifest URL",
+                                                       "release package root",
+                                                       "trusted Authenticode signing identity",
+                                                       "signtool path"
+                                                   ],
+                        "inputResolutionHints":  [
+                                                     {
+                                                         "input":  "real HTTPS CDN download URL",
+                                                         "parameters":  [
+                                                                            "-DownloadUrl"
+                                                                        ],
+                                                         "environmentVariables":  [
+
+                                                                                  ]
+                                                     },
+                                                     {
+                                                         "input":  "real HTTPS CDN manifest URL",
+                                                         "parameters":  [
+                                                                            "-ManifestUrl"
+                                                                        ],
+                                                         "environmentVariables":  [
+
+                                                                                  ]
+                                                     },
+                                                     {
+                                                         "input":  "release package root",
+                                                         "parameters":  [
+                                                                            "-PackageRoot"
+                                                                        ],
+                                                         "environmentVariables":  [
+
+                                                                                  ]
+                                                     },
+                                                     {
+                                                         "input":  "trusted Authenticode signing identity",
+                                                         "parameters":  [
+                                                                            "-CertificateThumbprint",
+                                                                            "-CertificateSubject",
+                                                                            "-PfxPath"
+                                                                        ],
+                                                         "environmentVariables":  [
+
+                                                                                  ]
+                                                     },
+                                                     {
+                                                         "input":  "signtool path",
+                                                         "parameters":  [
+                                                                            "-SignToolPath"
+                                                                        ],
+                                                         "environmentVariables":  [
+                                                                                      "WindowsSdkDir"
+                                                                                  ]
+                                                     }
+                                                 ],
+                        "observedReasonCount":  3,
+                        "observedReasons":  [
+                                                "client/client-release-prerequisites-client-evidence-local-20260628T080212Z-example-url.json: readyForReleaseInputs=False",
+                                                "client/client-release-prerequisites-client-evidence-local-20260628T080212Z-example-url.json: download_url_example - DownloadUrl still points at cdn.example.com: https://cdn.example.com/releases/0.1.0.0/",
+                                                "client/client-release-prerequisites-client-evidence-local-20260628T080212Z-example-url.json: manifest_url_example - ManifestUrl still points at cdn.example.com: https://cdn.example.com/releases/0.1.0.0/launcher-manifest.json"
+                                            ],
+                        "description":  "Client release input prerequisite evidence proving package root, production CDN URLs, and signing inputs are ready before release automation runs.",
+                        "fileCount":  1,
+                        "files":  [
+                                      "client/client-release-prerequisites-client-evidence-local-20260628T080212Z-example-url.json"
+                                  ]
+                    },
+                    {
+                        "key":  "client.package_launcher",
+                        "status":  "incomplete",
+                        "owner":  "client-release",
+                        "script":  "scripts\\run-client-release-evidence.ps1",
+                        "nextCommand":  ".\\scripts\\run-client-release-evidence.ps1 -PackageRoot \u003cpublic-shipping-package-root\u003e -DownloadUrl \u003creal-https-cdn-download-url\u003e -ManifestUrl \u003creal-https-cdn-manifest-url\u003e -BuildConfiguration Shipping",
+                        "unblockCriteria":  "Generate client-package-launcher evidence with releaseReady=true, public Shipping package, no debug symbols, and non-example HTTPS CDN URLs.",
+                        "latestEvidencePath":  "client/client-package-launcher-client-evidence-local-20260628T080212Z-package.json",
+                        "missingExternalInputs":  [
+                                                      "public Shipping package root",
+                                                      "real HTTPS CDN download URL",
+                                                      "real HTTPS CDN manifest URL"
+                                                  ],
+                        "automationBlocked":  true,
+                        "blockingExternalInputs":  [
+                                                       "public Shipping package root",
+                                                       "real HTTPS CDN download URL",
+                                                       "real HTTPS CDN manifest URL"
+                                                   ],
+                        "inputResolutionHints":  [
+                                                     {
+                                                         "input":  "public Shipping package root",
+                                                         "parameters":  [
+                                                                            "-PackageRoot",
+                                                                            "-StagedPackageRoot"
+                                                                        ],
+                                                         "environmentVariables":  [
+
+                                                                                  ]
+                                                     },
+                                                     {
+                                                         "input":  "real HTTPS CDN download URL",
+                                                         "parameters":  [
+                                                                            "-DownloadUrl"
+                                                                        ],
+                                                         "environmentVariables":  [
+
+                                                                                  ]
+                                                     },
+                                                     {
+                                                         "input":  "real HTTPS CDN manifest URL",
+                                                         "parameters":  [
+                                                                            "-ManifestUrl"
+                                                                        ],
+                                                         "environmentVariables":  [
+
+                                                                                  ]
+                                                     }
+                                                 ],
+                        "observedReasonCount":  14,
+                        "observedReasons":  [
+                                                "client/client-package-launcher-client-evidence-local-20260628T080212Z-package.json: releaseReady=False",
+                                                "client/client-package-launcher-client-evidence-local-20260628T080212Z-package.json: DownloadUrl is an example CDN URL, not a release CDN URL.",
+                                                "client/client-package-launcher-client-release-bundle-final-verify-20260628T104500Z-package.json: releaseReady=False",
+                                                "client/client-package-launcher-client-release-bundle-final-verify-20260628T104500Z-package.json: DownloadUrl is an example CDN URL, not a release CDN URL.",
+                                                "client/client-package-launcher-client-release-bundle-local-20260628T103500Z-package.json: releaseReady=False"
+                                            ],
+                        "description":  "Client package, launcher manifest, SHA256 file list, and local install/update repair smoke evidence.",
+                        "fileCount":  16,
+                        "files":  [
+                                      "client/client-package-launcher-client-evidence-local-20260628T080212Z-package.json",
+                                      "client/client-package-launcher-client-package-launcher-copy-smoke-20260628T072000Z.json",
+                                      "client/client-package-launcher-client-package-launcher-local-20260628T071000Z.json",
+                                      "client/client-package-launcher-client-package-release-readiness-dev-20260628T073000Z.json",
+                                      "client/client-package-launcher-client-package-shipping-public-example-cdn-20260628T084000Z.json",
+                                      "client/client-package-launcher-client-package-shipping-release-ready-20260628T083000Z.json",
+                                      "client/client-package-launcher-client-release-bundle-final-verify-20260628T104500Z-package.json",
+                                      "client/client-package-launcher-client-release-bundle-local-20260628T103500Z-package.json",
+                                      "client/launcher-manifest-client-evidence-local-20260628T080212Z-package.json",
+                                      "client/launcher-manifest-client-package-launcher-copy-smoke-20260628T072000Z.json",
+                                      "client/launcher-manifest-client-package-launcher-local-20260628T071000Z.json",
+                                      "client/launcher-manifest-client-package-release-readiness-dev-20260628T073000Z.json",
+                                      "client/launcher-manifest-client-package-shipping-public-example-cdn-20260628T084000Z.json",
+                                      "client/launcher-manifest-client-package-shipping-release-ready-20260628T083000Z.json",
+                                      "client/launcher-manifest-client-release-bundle-final-verify-20260628T104500Z-package.json",
+                                      "client/launcher-manifest-client-release-bundle-local-20260628T103500Z-package.json"
+                                  ]
+                    },
+                    {
+                        "key":  "client.cdn_launcher_smoke",
+                        "status":  "incomplete",
+                        "owner":  "release-ops",
+                        "script":  "scripts\\run-launcher-cdn-smoke.ps1",
+                        "nextCommand":  ".\\scripts\\run-launcher-cdn-smoke.ps1 -ManifestUrl \u003creal-https-cdn-manifest-url\u003e -InstallRoot \u003clocal-smoke-install-root\u003e",
+                        "unblockCriteria":  "Generate launcher CDN smoke evidence with cdnReady=true after downloading every manifest file and validating SHA256, size, and version persistence from real HTTPS CDN.",
+                        "latestEvidencePath":  "client/launcher-cdn-smoke-client-evidence-local-20260628T080212Z-local-cdn-payload-smoke.json",
+                        "missingExternalInputs":  [
+                                                      "real HTTPS CDN manifest URL",
+                                                      "local smoke install root"
+                                                  ],
+                        "automationBlocked":  true,
+                        "blockingExternalInputs":  [
+                                                       "real HTTPS CDN manifest URL",
+                                                       "local smoke install root"
+                                                   ],
+                        "inputResolutionHints":  [
+                                                     {
+                                                         "input":  "real HTTPS CDN manifest URL",
+                                                         "parameters":  [
+                                                                            "-ManifestUrl"
+                                                                        ],
+                                                         "environmentVariables":  [
+
+                                                                                  ]
+                                                     },
+                                                     {
+                                                         "input":  "local smoke install root",
+                                                         "parameters":  [
+                                                                            "-InstallRoot"
+                                                                        ],
+                                                         "environmentVariables":  [
+
+                                                                                  ]
+                                                     }
+                                                 ],
+                        "observedReasonCount":  12,
+                        "observedReasons":  [
+                                                "client/launcher-cdn-smoke-client-evidence-local-20260628T080212Z-local-cdn-payload-smoke.json: cdnReady=False",
+                                                "client/launcher-cdn-smoke-client-evidence-local-20260628T080212Z-local-cdn-payload-smoke.json: manifestUrlIsHttps=False",
+                                                "client/launcher-cdn-smoke-client-evidence-local-20260628T080212Z-local-cdn-payload-smoke.json: downloadUrlIsHttps=False",
+                                                "client/launcher-cdn-smoke-client-evidence-local-20260628T080212Z-local-cdn-payload-smoke.json: manifestUrlIsExample=False",
+                                                "client/launcher-cdn-smoke-client-evidence-local-20260628T080212Z-local-cdn-payload-smoke.json: downloadUrlIsExample=False"
+                                            ],
+                        "description":  "Launcher CDN smoke evidence proving manifest fetch, package downloads, SHA256 verification, and local install version persistence.",
+                        "fileCount":  2,
+                        "files":  [
+                                      "client/launcher-cdn-smoke-client-evidence-local-20260628T080212Z-local-cdn-payload-smoke.json",
+                                      "client/launcher-cdn-smoke-launcher-cdn-local-http-smoke-20260628T090000Z.json"
+                                  ]
+                    },
+                    {
+                        "key":  "client.code_signing",
+                        "status":  "incomplete",
+                        "owner":  "release-security",
+                        "script":  "scripts\\sign-client-release-package.ps1",
+                        "nextCommand":  ".\\scripts\\sign-client-release-package.ps1 -PackageRoot \u003cpublic-package-root-containing-signable-binaries\u003e -CertificateThumbprint \u003ctrusted-authenticode-signing-identity\u003e -TimestampUrl \u003ctimestamp-url\u003e -RequireSigned",
+                        "unblockCriteria":  "Generate code-signing evidence with signingReady=true after every public .exe, .dll, .msi, .msix, and .appx has a trusted Authenticode signature.",
+                        "latestEvidencePath":  "client/code-signing-client-evidence-local-20260628T080212Z-signing.json",
+                        "missingExternalInputs":  [
+                                                      "trusted Authenticode signing identity",
+                                                      "timestamp URL",
+                                                      "public package root containing signable binaries"
+                                                  ],
+                        "automationBlocked":  true,
+                        "blockingExternalInputs":  [
+                                                       "trusted Authenticode signing identity",
+                                                       "timestamp URL",
+                                                       "public package root containing signable binaries"
+                                                   ],
+                        "inputResolutionHints":  [
+                                                     {
+                                                         "input":  "trusted Authenticode signing identity",
+                                                         "parameters":  [
+                                                                            "-CertificateThumbprint",
+                                                                            "-CertificateSubject",
+                                                                            "-PfxPath"
+                                                                        ],
+                                                         "environmentVariables":  [
+
+                                                                                  ]
+                                                     },
+                                                     {
+                                                         "input":  "timestamp URL",
+                                                         "parameters":  [
+                                                                            "-TimestampUrl"
+                                                                        ],
+                                                         "environmentVariables":  [
+
+                                                                                  ]
+                                                     },
+                                                     {
+                                                         "input":  "public package root containing signable binaries",
+                                                         "parameters":  [
+                                                                            "-PackageRoot"
+                                                                        ],
+                                                         "environmentVariables":  [
+
+                                                                                  ]
+                                                     }
+                                                 ],
+                        "observedReasonCount":  56,
+                        "observedReasons":  [
+                                                "client/code-signing-client-evidence-local-20260628T080212Z-signing.json: signingReady=False",
+                                                "client/code-signing-client-evidence-local-20260628T080212Z-signing.json: signableFileCount=15",
+                                                "client/code-signing-client-evidence-local-20260628T080212Z-signing.json: signedFileCount=8",
+                                                "client/code-signing-client-evidence-local-20260628T080212Z-signing.json: trustedSignedFileCount=8",
+                                                "client/code-signing-client-evidence-local-20260628T080212Z-signing.json: unsignedFileCount=7"
+                                            ],
+                        "description":  "Windows Authenticode code-signing evidence proving public client executables and libraries are trusted signed.",
+                        "fileCount":  7,
+                        "files":  [
+                                      "client/code-signing-client-code-signing-final-require-signed-expected-fail-20260628T094500Z.json",
+                                      "client/code-signing-client-code-signing-final-verify-20260628T094500Z.json",
+                                      "client/code-signing-client-code-signing-require-signed-expected-fail-20260628T093000Z.json",
+                                      "client/code-signing-client-code-signing-unsigned-local-20260628T093000Z.json",
+                                      "client/code-signing-client-evidence-local-20260628T080212Z-signing.json",
+                                      "client/code-signing-client-release-bundle-final-verify-20260628T104500Z-signing.json",
+                                      "client/code-signing-client-release-bundle-local-20260628T103500Z-signing.json"
+                                  ]
+                    }
+                ]
+}

@@ -1,6 +1,6 @@
-# DivineBeastsArena 神兽竞技场 - 项目概览
+﻿# DivineBeastsArena 神兽竞技场 - 项目概览
 
-> 版本: 0.2.0 | 引擎: Unreal Engine 5.7.1 | 架构: GameCore → GameMoba → GameDBA 三层模块化
+> 版本: 0.2.0 | 引擎: Unreal Engine 5.8.0 | 架构: GameCore → GameMoba → GameDBA 三层模块化
 
 ---
 
@@ -16,13 +16,13 @@
 
 ## 项目简介
 
-**DivineBeastsArena（神兽竞技场）** 是一款基于 Unreal Engine 5.7.1 开发的多人在线竞技游戏（MOBA）。
+**DivineBeastsArena（神兽竞技场）** 是一款基于 Unreal Engine 5.8.0 开发的多人在线竞技游戏（MOBA）。
 
 ### 技术栈
 
 | 组件 | 技术 |
 |------|------|
-| 引擎 | Unreal Engine 5.7.1 (源码版) |
+| 引擎 | Unreal Engine 5.8.0 (源码版) |
 | 编程语言 | C++ / Blueprint |
 | 核心框架 | GameplayAbilitySystem (GAS) |
 | 网络模型 | 客户端预测 + 服务端权威 |

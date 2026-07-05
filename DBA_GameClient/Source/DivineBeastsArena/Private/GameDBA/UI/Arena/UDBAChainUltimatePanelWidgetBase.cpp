@@ -9,6 +9,7 @@
 
 
 #include "GameDBA/UI/Arena/UDBAChainUltimatePanelWidgetBase.h"
+#include "GameDBA/Core/DBAConstants.h"
 
 UDBAChainUltimatePanelWidgetBase::UDBAChainUltimatePanelWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -18,6 +19,7 @@ UDBAChainUltimatePanelWidgetBase::UDBAChainUltimatePanelWidgetBase(const FObject
 void UDBAChainUltimatePanelWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+	BP_OnChainCountUpdated(CachedChainCount);
 }
 
 void UDBAChainUltimatePanelWidgetBase::NativeDestruct()
@@ -27,9 +29,12 @@ void UDBAChainUltimatePanelWidgetBase::NativeDestruct()
 
 void UDBAChainUltimatePanelWidgetBase::UpdateChainCount(int32 Count)
 {
+	const int32 NormalizedChainCount = FMath::Clamp(Count, 0, DBAConstants::MaxChainLevel);
+	CachedChainCount = NormalizedChainCount;
+	BP_OnChainCountUpdated(CachedChainCount);
 }
 
 void UDBAChainUltimatePanelWidgetBase::ShowChainReady()
 {
+	BP_OnChainReady();
 }
-

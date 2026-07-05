@@ -42,4 +42,10 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|CCBar", meta = (DisplayName = "On CC Effect Removed"))
 	void BP_OnCCEffectRemoved(const FString& CCId);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|CCBar", meta = (DisplayName = "On CC Effects Cleared"))
+	void BP_OnCCEffectsCleared();
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|CCBar")
+	TMap<FString, float> CachedActiveCCEffects;
 };

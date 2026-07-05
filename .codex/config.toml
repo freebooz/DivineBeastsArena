@@ -1,0 +1,41 @@
+[mcp_servers.unreal]
+url = "http://127.0.0.1:8000/mcp"
+
+[mcp_servers.unreal.tools.describe_toolset]
+approval_mode = "approve"
+
+[mcp_servers.unreal.tools.call_tool]
+approval_mode = "approve"
+
+[mcp_servers.unreal.tools.discover_python_module]
+approval_mode = "approve"
+
+[mcp_servers.monolith]
+command = "D:/UnrealEngine-5.8.0-release/Engine/Plugins/Marketplace/Monolith/Binaries/monolith_proxy.exe"
+
+[mcp_servers.monolith.tools.describe_query]
+approval_mode = "approve"
+
+[mcp_servers.monolith.tools.ui_query]
+approval_mode = "approve"
+
+[mcp_servers.monolith.tools.gas_query]
+approval_mode = "approve"
+
+[mcp_servers.monolith.tools.material_query]
+approval_mode = "approve"
+
+[mcp_servers.monolith.tools.niagara_query]
+approval_mode = "approve"
+
+[mcp_servers.umg]
+command = "uv"
+args = [
+  "run",
+  "--directory",
+  "D:/UnrealEngine-5.8.0-release/Engine/Plugins/Marketplace/UmgMcp/Resources/Python",
+  "UmgMcpServer.py",
+]
+startup_timeout_sec = 60
+tool_timeout_sec = 240
+default_tools_approval_mode = "prompt"

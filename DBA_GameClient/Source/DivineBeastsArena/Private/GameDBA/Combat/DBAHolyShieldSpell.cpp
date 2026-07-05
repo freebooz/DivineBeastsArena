@@ -162,6 +162,11 @@ void ADBAHolyShieldSpell::ApplyShield(AActor* Target)
 		return;
 	}
 
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	if (UAbilitySystemComponent* ASC = ResolveHolyShieldASC(Target))
 	{
 		if (UDBABattleAttributeSet* AttrSet = const_cast<UDBABattleAttributeSet*>(ASC->GetSet<UDBABattleAttributeSet>()))
@@ -177,6 +182,11 @@ void ADBAHolyShieldSpell::ApplyShield(AActor* Target)
 
 void ADBAHolyShieldSpell::ReleaseShield()
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	if (ActiveBarrierVFX)
 	{
 		ActiveBarrierVFX->Deactivate();

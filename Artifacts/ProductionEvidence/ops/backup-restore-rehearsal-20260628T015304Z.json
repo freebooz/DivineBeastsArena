@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0",
+  "runId": "20260628T015304Z",
+  "status": "passed",
+  "exitCode": 0,
+  "generatedAtUtc": "2026-06-28T01:53:05Z",
+  "postgresDb": "game_platform",
+  "postgresUser": "game_app",
+  "backupFile": "./backups/postgres-game_platform-20260628T015304Z.sql.gz",
+  "restoreDatabase": "",
+  "publicTableCount": "51",
+  "logFile": "/mnt/e/work/Game/DivineBeastsArena/DBA_GameBackend/../Artifacts/ProductionEvidence/ops/backup-restore-rehearsal-20260628T015304Z.log"
+}

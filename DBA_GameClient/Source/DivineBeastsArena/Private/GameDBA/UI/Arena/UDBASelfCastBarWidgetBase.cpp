@@ -18,6 +18,14 @@ UDBASelfCastBarWidgetBase::UDBASelfCastBarWidgetBase(const FObjectInitializer& O
 void UDBASelfCastBarWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+	if (bCachedSelfCastVisible)
+	{
+		BP_OnSelfCastProgress(CachedSelfCastDuration, CachedSelfCastDuration);
+	}
+	else
+	{
+		BP_OnSelfCastProgress(0.0f, 0.0f);
+	}
 }
 
 void UDBASelfCastBarWidgetBase::NativeDestruct()
@@ -27,9 +35,15 @@ void UDBASelfCastBarWidgetBase::NativeDestruct()
 
 void UDBASelfCastBarWidgetBase::ShowSelfCastProgress(float Duration)
 {
+	const float NormalizedDuration = FMath::Max(0.0f, Duration);
+	CachedSelfCastDuration = NormalizedDuration;
+	bCachedSelfCastVisible = true;
+	BP_OnSelfCastProgress(CachedSelfCastDuration, CachedSelfCastDuration);
 }
 
 void UDBASelfCastBarWidgetBase::HideSelfCastProgress()
 {
+	CachedSelfCastDuration = 0.0f;
+	bCachedSelfCastVisible = false;
+	BP_OnSelfCastProgress(0.0f, 0.0f);
 }
-

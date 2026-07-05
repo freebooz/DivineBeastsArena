@@ -39,4 +39,7 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|UltimateReadyPrompt", meta = (DisplayName = "On Ultimate Hidden"))
 	void BP_OnUltimateHidden();
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|UltimateReadyPrompt")
+	bool bCachedUltimateReadyVisible = false;
 };

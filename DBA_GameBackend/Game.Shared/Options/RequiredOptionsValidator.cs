@@ -62,9 +62,10 @@ public static class RequiredOptionsValidator
         }
 
         if (!options.ServerMode.Equals("LocalProcess", StringComparison.OrdinalIgnoreCase) &&
-            !options.ServerMode.Equals("Docker", StringComparison.OrdinalIgnoreCase))
+            !options.ServerMode.Equals("Docker", StringComparison.OrdinalIgnoreCase) &&
+            !options.ServerMode.Equals("External", StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("GameServerManager:ServerMode must be LocalProcess or Docker.");
+            throw new InvalidOperationException("GameServerManager:ServerMode must be LocalProcess, Docker, or External.");
         }
 
         if (string.IsNullOrWhiteSpace(options.PublicIp))

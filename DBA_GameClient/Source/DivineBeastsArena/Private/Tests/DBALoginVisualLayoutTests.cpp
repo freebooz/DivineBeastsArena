@@ -22,13 +22,13 @@ bool FDBALoginVisualLayoutSpecTest::RunTest(const FString& Parameters)
 {
 	const FDBALoginVisualLayoutSpec Spec = UDBALoginFlowWidgetBase::GetReferenceVisualLayoutSpec();
 
-	TestEqual(TEXT("Panel should be centered like the approved login art"), Spec.PanelAnchorX, 0.50f);
-	TestEqual(TEXT("Panel should use the Chinese title from the reference"), Spec.TitleText.ToString(), FString(TEXT("\u795E\u517D\u7ADE\u6280\u573A")));
-	TestEqual(TEXT("Primary CTA should match the reference"), Spec.PrimaryButtonText.ToString(), FString(TEXT("\u767B\u5F55")));
-	TestEqual(TEXT("Tool entries should match the reference"), Spec.LeftToolLabels.Num(), 3);
-	TestEqual(TEXT("First tool is announcements"), Spec.LeftToolLabels[0].ToString(), FString(TEXT("\u516C\u544A")));
-	TestEqual(TEXT("Second tool is support"), Spec.LeftToolLabels[1].ToString(), FString(TEXT("\u5BA2\u670D")));
-	TestEqual(TEXT("Third tool is repair"), Spec.LeftToolLabels[2].ToString(), FString(TEXT("\u4FEE\u590D")));
+	TestEqual(TEXT("登录面板应按参考图居中"), Spec.PanelAnchorX, 0.50f);
+	TestEqual(TEXT("登录面板应使用参考图中的中文标题"), Spec.TitleText.ToString(), FString(TEXT("\u795E\u517D\u7ADE\u6280\u573A")));
+	TestEqual(TEXT("主操作按钮应匹配参考图"), Spec.PrimaryButtonText.ToString(), FString(TEXT("\u767B\u5F55")));
+	TestEqual(TEXT("工具入口数量应匹配参考图"), Spec.LeftToolLabels.Num(), 3);
+	TestEqual(TEXT("第一个工具入口应为公告"), Spec.LeftToolLabels[0].ToString(), FString(TEXT("\u516C\u544A")));
+	TestEqual(TEXT("第二个工具入口应为客服"), Spec.LeftToolLabels[1].ToString(), FString(TEXT("\u5BA2\u670D")));
+	TestEqual(TEXT("第三个工具入口应为修复"), Spec.LeftToolLabels[2].ToString(), FString(TEXT("\u4FEE\u590D")));
 	return true;
 }
 

@@ -21,7 +21,7 @@ class UDataTable;
  * UDBAZodiacUltimateAbility_Generic
  * 泛化终极技能类 (替代 R 技能 12 个)
  * 通过 SkillID 从 DataTable 读取配置
- * 必须消耗 100 点 UltimateEnergy
+ * 必须消耗当前配置的大招能量阈值
  *
  * 使用方式:
  * 1. 在蓝图中设置 SkillID 和 UltimateTable
@@ -64,15 +64,13 @@ public:
 	TObjectPtr<UDataTable> UltimateTable;
 
 protected:
-	// ==================== 可被子类重写的方法 ====================
+	// ==================== C++ 生命周期扩展点 ====================
 
-	/** 技能激活时调用 (可重写) */
-	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|Gameplay")
-	void OnUltimateActivatedBP(FName InSkillID);
+	/** 技能激活时调用，运行时逻辑必须由 C++ 子类承载。 */
+	virtual void OnUltimateActivated(FName InSkillID);
 
-	/** 技能结束时调用 (可重写) */
-	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|Gameplay")
-	void OnUltimateEndedBP(FName InSkillID, bool bWasCancelled);
+	/** 技能结束时调用，运行时逻辑必须由 C++ 子类承载。 */
+	virtual void OnUltimateEnded(FName InSkillID, bool bWasCancelled);
 
 public:
 	// ==================== 辅助方法 ====================

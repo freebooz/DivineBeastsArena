@@ -5,11 +5,9 @@
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
 #include "GameDBA/Combat/DBABloomHealingSpell.h"
 #include "GameDBA/Combat/DBAChainLightningSpell.h"
-#include "GameDBA/Combat/DBAFireballProjectile.h"
-#include "GameDBA/Combat/DBAFrostShardProjectile.h"
 #include "GameDBA/Combat/DBAHolyShieldSpell.h"
+#include "GameDBA/Combat/DBAPlayableSkillDeveloperSettings.h"
 #include "GameDBA/Combat/DBASkillProjectileBase.h"
-#include "GameDBA/Combat/DBAShadowBoltProjectile.h"
 #include "GameDBA/Services/DBASkillGroupGeneratorSubsystem.h"
 #include "GameDBA/Utilities/DBAAsyncAssetLoader.h"
 #include "GameCore/Core/DBALogChannels.h"
@@ -53,57 +51,6 @@ namespace
 		}
 	}
 
-	TSoftObjectPtr<UNiagaraSystem> NiagaraAsset(const TCHAR* Path)
-	{
-		return TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(Path));
-	}
-
-	TSoftObjectPtr<USoundBase> SoundAsset(const TCHAR* Path)
-	{
-		return TSoftObjectPtr<USoundBase>(FSoftObjectPath(Path));
-	}
-
-	FGameplayTag OptionalTag(const TCHAR* TagName)
-	{
-		return TagName && FCString::Strlen(TagName) > 0
-			? FGameplayTag::RequestGameplayTag(FName(TagName), false)
-			: FGameplayTag();
-	}
-
-	FDBAPlayableSkillRuntimeSpec MakeSkill(
-		int32 SkillSlot,
-		FName SkillId,
-		const TCHAR* DisplayName,
-		EDBAPlayableSkillEffectShape Shape,
-		float Magnitude,
-		EDBAElement Element,
-		float ProjectileSpeed,
-		float ProjectileRadius,
-		float Cooldown,
-		float CastVFXScale)
-	{
-		FDBAPlayableSkillRuntimeSpec Spec;
-		Spec.SkillSlot = SkillSlot;
-		Spec.SkillId = SkillId;
-		Spec.DisplayName = FText::FromString(DisplayName);
-		Spec.EffectShape = Shape;
-		Spec.Magnitude = Magnitude;
-		Spec.Element = Element;
-		Spec.ProjectileSpeed = ProjectileSpeed;
-		Spec.ProjectileRadius = ProjectileRadius;
-		Spec.Cooldown = Cooldown;
-		Spec.CastVFXScale = CastVFXScale;
-		Spec.NiagaraParameters = UDBANiagaraSkillParameterLibrary::MakeElementParameters(
-			Element,
-			ProjectileRadius,
-			Cooldown,
-			0.0f,
-			ProjectileRadius > 0.0f ? ProjectileRadius * 3.5f : 0.0f,
-			CastVFXScale);
-		Spec.ProjectileCueTag = OptionalTag(TEXT("GameplayCue.DBA.Skill.Projectile"));
-		Spec.ImpactCueTag = OptionalTag(TEXT("GameplayCue.DBA.Skill.Impact"));
-		return Spec;
-	}
 }
 
 UDBAPlayableSkillComponent::UDBAPlayableSkillComponent()
@@ -116,12 +63,14 @@ void UDBAPlayableSkillComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	RequestDefaultSkillCatalogAsync();
+
 	TArray<FString> ValidationErrors;
 	if (!ValidateEffectiveSkillSpecs(ValidationErrors))
 	{
 		for (const FString& ValidationError : ValidationErrors)
 		{
-			UE_LOG(LogDBACombat, Warning, TEXT("[DBAPlayableSkillComponent] Playable skill catalog validation failed: Owner=%s Error=%s"), *GetNameSafe(GetOwner()), *ValidationError);
+			UE_LOG(LogDBACombat, Warning, TEXT("[DBAPlayableSkillComponent] 可用技能目录校验失败：拥有者=%s 错误=%s"), *GetNameSafe(GetOwner()), *ValidationError);
 		}
 	}
 
@@ -202,79 +151,41 @@ void UDBAPlayableSkillComponent::ResetToDefaultSkillSpecs()
 {
 	SkillSpecs.Reset();
 
-	FDBAPlayableSkillRuntimeSpec Fireball = MakeSkill(1, TEXT("Lobby.Skill01.MageFireball"), TEXT("Mage Fireball"), EDBAPlayableSkillEffectShape::Projectile, 42.0f, EDBAElement::Fire, 1580.0f, 46.0f, 3.0f, 1.12f);
-	Fireball.NiagaraParameters = UDBANiagaraSkillParameterLibrary::MakeElementParameters(EDBAElement::Fire, 80.0f, 3.0f, 2.0f, 180.0f, 1.12f);
-	Fireball.ProjectileClass = ADBAFireballProjectile::StaticClass();
-	Fireball.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Abilities/FireLion/NS_FireLion_Q_FlameClaw_Slash.NS_FireLion_Q_FlameClaw_Slash"));
-	Fireball.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Fireball/NS_DBA_Fireball_Projectile.NS_DBA_Fireball_Projectile"));
-	Fireball.ImpactNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Fireball/NS_DBA_Fireball_Impact.NS_DBA_Fireball_Impact"));
-	Fireball.CastSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_MageFireball_PreCast.SFX_MageFireball_PreCast"));
-	Fireball.FlySFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_MageFireball_Flight.SFX_MageFireball_Flight"));
-	Fireball.ImpactSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_MageFireball_Impact.SFX_MageFireball_Impact"));
-	SkillSpecs.Add(Fireball);
-
-	FDBAPlayableSkillRuntimeSpec Frost = MakeSkill(2, TEXT("Lobby.Skill02.FrostShard"), TEXT("Frost Shard"), EDBAPlayableSkillEffectShape::Projectile, 32.0f, EDBAElement::Water, 1840.0f, 38.0f, 4.5f, 1.15f);
-	Frost.NiagaraParameters = UDBANiagaraSkillParameterLibrary::MakeElementParameters(EDBAElement::Water, 100.0f, 3.0f, 2.0f, 150.0f, 1.15f);
-	Frost.ProjectileClass = ADBAFrostShardProjectile::StaticClass();
-	Frost.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_IceCrystal.NS_IceCrystal"));
-	Frost.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_IceDart.NS_IceDart"));
-	Frost.ImpactNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Ice_01.NS_Hit_Ice_01"));
-	Frost.CastSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_FrostShard_PreCast.SFX_FrostShard_PreCast"));
-	Frost.FlySFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_FrostShard_Flight.SFX_FrostShard_Flight"));
-	Frost.ImpactSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_FrostShard_Impact.SFX_FrostShard_Impact"));
-	SkillSpecs.Add(Frost);
-
-	FDBAPlayableSkillRuntimeSpec Bloom = MakeSkill(3, TEXT("Lobby.Skill03.BloomHealing"), TEXT("Bloom Healing"), EDBAPlayableSkillEffectShape::BloomHealing, 115.0f, EDBAElement::Wood, 0.0f, 0.0f, 5.5f, 1.2f);
-	Bloom.NiagaraParameters = UDBANiagaraSkillParameterLibrary::MakeElementParameters(EDBAElement::Wood, 380.0f, 3.5f, 3.0f, 120.0f, 1.2f);
-	Bloom.BloomHealingClass = ADBABloomHealingSpell::StaticClass();
-	Bloom.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingGrove_Area.NS_WoodCrane_Q_HealingGrove_Area"));
-	Bloom.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingSeed_Projectile.NS_WoodCrane_Q_HealingSeed_Projectile"));
-	Bloom.ImpactNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/DBA/VFX/Abilities/WoodCrane/NS_WoodCrane_Q_HealingBurst_Impact.NS_WoodCrane_Q_HealingBurst_Impact"));
-	Bloom.CastSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_PreCast.SFX_BloomHealing_PreCast"));
-	Bloom.FlySFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_Flight.SFX_BloomHealing_Flight"));
-	Bloom.ImpactSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_BloomHealing_Impact.SFX_BloomHealing_Impact"));
-	SkillSpecs.Add(Bloom);
-
-	FDBAPlayableSkillRuntimeSpec Chain = MakeSkill(4, TEXT("Lobby.Skill04.ChainLightning"), TEXT("Chain Lightning"), EDBAPlayableSkillEffectShape::ChainLightning, 38.0f, EDBAElement::Gold, 0.0f, 0.0f, 6.0f, 1.2f);
-	Chain.NiagaraParameters = UDBANiagaraSkillParameterLibrary::MakeElementParameters(EDBAElement::Gold, 720.0f, 0.75f, 0.075f, 360.0f, 1.2f);
-	Chain.ChainLightningClass = ADBAChainLightningSpell::StaticClass();
-	Chain.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Eletric_01.NS_Hit_Eletric_01"));
-	Chain.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_ThunderBolt.NS_ThunderBolt"));
-	Chain.ImpactNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Thunder.NS_Hit_Thunder"));
-	Chain.CastSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_ChainLightning_PreCast.SFX_ChainLightning_PreCast"));
-	Chain.FlySFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_ChainLightning_Flight.SFX_ChainLightning_Flight"));
-	Chain.ImpactSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/Magic/SFX_ChainLightning_Impact.SFX_ChainLightning_Impact"));
-	SkillSpecs.Add(Chain);
-
-	FDBAPlayableSkillRuntimeSpec Shield = MakeSkill(5, TEXT("Lobby.Skill05.PriestShield"), TEXT("Priest Shield"), EDBAPlayableSkillEffectShape::HolyShield, 180.0f, EDBAElement::Wood, 0.0f, 0.0f, 8.0f, 1.22f);
-	Shield.NiagaraParameters = UDBANiagaraSkillParameterLibrary::MakeElementParameters(EDBAElement::Gold, 180.0f, 6.0f, 0.0f, 120.0f, 1.22f);
-	Shield.HolyShieldClass = ADBAHolyShieldSpell::StaticClass();
-	Shield.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Bless.NS_Hit_Bless"));
-	Shield.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy"));
-	Shield.ImpactNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_HolyEnergy.NS_HolyEnergy"));
-	Shield.CastSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_PreCast.SFX_PriestShield_PreCast"));
-	Shield.FlySFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_Flight.SFX_PriestShield_Flight"));
-	Shield.ImpactSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_PriestShield_Impact.SFX_PriestShield_Impact"));
-	SkillSpecs.Add(Shield);
-
-	FDBAPlayableSkillRuntimeSpec Shadow = MakeSkill(6, TEXT("Lobby.Skill06.ShadowBolt"), TEXT("Shadow Bolt"), EDBAPlayableSkillEffectShape::Projectile, 44.0f, EDBAElement::Gold, 1580.0f, 40.0f, 4.8f, 1.1f);
-	Shadow.NiagaraParameters = UDBANiagaraSkillParameterLibrary::MakeElementParameters(EDBAElement::Gold, 60.0f, 3.0f, 0.0f, 170.0f, 1.1f);
-	Shadow.NiagaraParameters.ElementColorA = FLinearColor(0.4f, 0.133f, 0.667f, 1.0f);
-	Shadow.NiagaraParameters.ElementColorB = FLinearColor(0.133f, 0.0f, 0.4f, 1.0f);
-	Shadow.NiagaraParameters.HighlightColor = FLinearColor(0.667f, 0.267f, 1.0f, 1.0f);
-	Shadow.ProjectileClass = ADBAShadowBoltProjectile::StaticClass();
-	Shadow.CastNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Magic.NS_Hit_Magic"));
-	Shadow.ProjectileNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_PoisonSkullFish.NS_PoisonSkullFish"));
-	Shadow.ImpactNiagaraVFXAsset = NiagaraAsset(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_Poison.NS_Hit_Poison"));
-	Shadow.CastSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_ShadowBolt_PreCast.SFX_ShadowBolt_PreCast"));
-	Shadow.FlySFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_ShadowBolt_Flight.SFX_ShadowBolt_Flight"));
-	Shadow.ImpactSFXAsset = SoundAsset(TEXT("/Game/DBA/Audio/SFX/Downloaded/ClassMagic/SFX_ShadowBolt_Impact.SFX_ShadowBolt_Impact"));
-	SkillSpecs.Add(Shadow);
-
 	if (HasBegunPlay())
 	{
+		RequestDefaultSkillCatalogAsync();
 		PreloadSkillPresentationAssets();
 	}
+}
+
+void UDBAPlayableSkillComponent::RequestDefaultSkillCatalogAsync()
+{
+	if (SkillCatalog || LoadedDefaultSkillCatalog)
+	{
+		return;
+	}
+
+	const TSoftObjectPtr<UDBAPlayableSkillCatalogDataAsset> CatalogAsset = ResolveDefaultSkillCatalogAsset();
+	if (CatalogAsset.IsNull())
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAPlayableSkillComponent] 默认可玩技能目录未配置：拥有者=%s。请在组件 DefaultSkillCatalog 或 DBA 可玩技能设置中配置数据资产。"), *GetNameSafe(GetOwner()));
+		return;
+	}
+
+	if (UDBAPlayableSkillCatalogDataAsset* ResolvedCatalog = CatalogAsset.Get())
+	{
+		HandleDefaultSkillCatalogLoaded(ResolvedCatalog);
+		return;
+	}
+
+	TWeakObjectPtr<UDBAPlayableSkillComponent> WeakThis(this);
+	DBAAsyncAssetLoader::RequestAsyncAsset<UDBAPlayableSkillCatalogDataAsset>(this, CatalogAsset, [WeakThis](UDBAPlayableSkillCatalogDataAsset* LoadedCatalog)
+	{
+		if (UDBAPlayableSkillComponent* StrongThis = WeakThis.Get())
+		{
+			StrongThis->HandleDefaultSkillCatalogLoaded(LoadedCatalog);
+		}
+	});
 }
 
 void UDBAPlayableSkillComponent::SetSkillCatalog(UDBAPlayableSkillCatalogDataAsset* InSkillCatalog)
@@ -301,12 +212,13 @@ bool UDBAPlayableSkillComponent::ValidateEffectiveSkillSpecs(TArray<FString>& Ou
 FDBAPlayableSkillCatalogSummary UDBAPlayableSkillComponent::GetSkillCatalogSummary() const
 {
 	FDBAPlayableSkillCatalogSummary Summary;
-	Summary.Source = SkillCatalog
-		? (bAppendDefaultSkillsWhenCatalogMissingSlots ? EDBAPlayableSkillCatalogSource::DataAssetWithDefaults : EDBAPlayableSkillCatalogSource::DataAssetOnly)
+	const UDBAPlayableSkillCatalogDataAsset* EffectiveCatalog = GetEffectiveSkillCatalog();
+	Summary.Source = EffectiveCatalog
+		? ((bAppendDefaultSkillsWhenCatalogMissingSlots && !SkillSpecs.IsEmpty()) ? EDBAPlayableSkillCatalogSource::DataAssetWithDefaults : EDBAPlayableSkillCatalogSource::DataAssetOnly)
 		: EDBAPlayableSkillCatalogSource::BuiltInDefaults;
-	Summary.CatalogId = SkillCatalog ? SkillCatalog->CatalogId : FName(TEXT("BuiltInDefaults"));
-	Summary.ConfiguredCatalogSkillCount = SkillCatalog ? SkillCatalog->GetAllSkillSpecs().Num() : 0;
-	Summary.bAppendsBuiltInDefaults = !SkillCatalog || bAppendDefaultSkillsWhenCatalogMissingSlots;
+	Summary.CatalogId = EffectiveCatalog ? EffectiveCatalog->CatalogId : NAME_None;
+	Summary.ConfiguredCatalogSkillCount = EffectiveCatalog ? EffectiveCatalog->GetAllSkillSpecs().Num() : 0;
+	Summary.bAppendsBuiltInDefaults = EffectiveCatalog && bAppendDefaultSkillsWhenCatalogMissingSlots && !SkillSpecs.IsEmpty();
 
 	TArray<FDBAPlayableSkillRuntimeSpec> EffectiveSpecs;
 	BuildEffectiveSkillSpecs(EffectiveSpecs);
@@ -319,14 +231,15 @@ void UDBAPlayableSkillComponent::BuildEffectiveSkillSpecs(TArray<FDBAPlayableSki
 {
 	OutSpecs.Reset();
 
-	if (!SkillCatalog || bAppendDefaultSkillsWhenCatalogMissingSlots)
+	const UDBAPlayableSkillCatalogDataAsset* EffectiveCatalog = GetEffectiveSkillCatalog();
+	if (!EffectiveCatalog || bAppendDefaultSkillsWhenCatalogMissingSlots)
 	{
 		OutSpecs = SkillSpecs;
 	}
 
-	if (SkillCatalog)
+	if (EffectiveCatalog)
 	{
-		const TArray<FDBAPlayableSkillRuntimeSpec> CatalogSpecs = SkillCatalog->GetAllSkillSpecs();
+		const TArray<FDBAPlayableSkillRuntimeSpec> CatalogSpecs = EffectiveCatalog->GetAllSkillSpecs();
 		for (const FDBAPlayableSkillRuntimeSpec& CatalogSpec : CatalogSpecs)
 		{
 			if (FDBAPlayableSkillRuntimeSpec* ExistingSpec = OutSpecs.FindByPredicate([&CatalogSpec](const FDBAPlayableSkillRuntimeSpec& Candidate)
@@ -347,6 +260,53 @@ void UDBAPlayableSkillComponent::BuildEffectiveSkillSpecs(TArray<FDBAPlayableSki
 	{
 		return Left.SkillSlot < Right.SkillSlot;
 	});
+}
+
+const UDBAPlayableSkillCatalogDataAsset* UDBAPlayableSkillComponent::GetEffectiveSkillCatalog() const
+{
+	return SkillCatalog ? SkillCatalog.Get() : LoadedDefaultSkillCatalog.Get();
+}
+
+TSoftObjectPtr<UDBAPlayableSkillCatalogDataAsset> UDBAPlayableSkillComponent::ResolveDefaultSkillCatalogAsset() const
+{
+	if (!DefaultSkillCatalog.IsNull())
+	{
+		return DefaultSkillCatalog;
+	}
+
+	const UDBAPlayableSkillDeveloperSettings* Settings = GetDefault<UDBAPlayableSkillDeveloperSettings>();
+	return Settings ? Settings->DefaultSkillCatalog : TSoftObjectPtr<UDBAPlayableSkillCatalogDataAsset>();
+}
+
+void UDBAPlayableSkillComponent::HandleDefaultSkillCatalogLoaded(UDBAPlayableSkillCatalogDataAsset* LoadedCatalog)
+{
+	if (!LoadedCatalog)
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[DBAPlayableSkillComponent] 默认可玩技能目录异步加载失败：拥有者=%s。"), *GetNameSafe(GetOwner()));
+		return;
+	}
+
+	if (SkillCatalog)
+	{
+		return;
+	}
+
+	LoadedDefaultSkillCatalog = LoadedCatalog;
+
+	TArray<FString> ValidationErrors;
+	if (!ValidateEffectiveSkillSpecs(ValidationErrors))
+	{
+		for (const FString& ValidationError : ValidationErrors)
+		{
+			UE_LOG(LogDBACombat, Warning, TEXT("[DBAPlayableSkillComponent] 默认可玩技能目录校验失败：目录=%s 错误=%s"), *LoadedCatalog->GetName(), *ValidationError);
+		}
+	}
+
+	if (HasBegunPlay())
+	{
+		PreloadSkillPresentationAssets();
+		QueueNiagaraWarmupAssets();
+	}
 }
 
 FName UDBAPlayableSkillComponent::ResolveEquippedSkillId(int32 SkillSlot, FName FallbackSkillId) const
@@ -454,13 +414,6 @@ void UDBAPlayableSkillComponent::QueueNiagaraWarmupAssets()
 		AddNiagaraWarmupPath(Spec.ImpactNiagaraVFXAsset);
 	}
 
-	// Slot 2 uses extra frost wake layers beyond the three catalog VFX entries.
-	// Warm them after possession so pressing 2 does not compile Niagara systems on the cast frame.
-	AddNiagaraWarmupPath(TEXT("/Game/ProjectileHitVFX/NS/NS_IceCrystal.NS_IceCrystal"));
-	AddNiagaraWarmupPath(TEXT("/Game/ProjectileHitVFX/NS/NS_Iceicle3D.NS_Iceicle3D"));
-	AddNiagaraWarmupPath(TEXT("/Game/ProjectileHitVFX/NS/NS_MagicLanceShuriken.NS_MagicLanceShuriken"));
-	AddNiagaraWarmupPath(TEXT("/Game/ProjectileHitVFX/NS/NS_Hit_ColdBlood.NS_Hit_ColdBlood"));
-
 	if (PendingNiagaraWarmupPaths.IsEmpty())
 	{
 		return;
@@ -481,14 +434,6 @@ void UDBAPlayableSkillComponent::AddNiagaraWarmupPath(const TSoftObjectPtr<UNiag
 	if (!Asset.IsNull())
 	{
 		PendingNiagaraWarmupPaths.AddUnique(Asset.ToSoftObjectPath());
-	}
-}
-
-void UDBAPlayableSkillComponent::AddNiagaraWarmupPath(const TCHAR* AssetPath)
-{
-	if (AssetPath && FCString::Strlen(AssetPath) > 0)
-	{
-		PendingNiagaraWarmupPaths.AddUnique(FSoftObjectPath(AssetPath));
 	}
 }
 

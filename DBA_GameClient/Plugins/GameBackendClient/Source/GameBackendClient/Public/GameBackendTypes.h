@@ -152,6 +152,21 @@ struct GAMEBACKENDCLIENT_API FDBA_GameBackendSessionConnection
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
 	FString PlayerId;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	int32 TeamId = 0;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString Zodiac;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString PrimaryElement;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString FiveCamp;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString FixedSkillGroupId;
 };
 
 USTRUCT(BlueprintType)
@@ -167,6 +182,75 @@ struct GAMEBACKENDCLIENT_API FDBA_GameBackendTelemetryEvent
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
 	FString TimestampUtc;
+};
+
+USTRUCT(BlueprintType)
+struct GAMEBACKENDCLIENT_API FDBA_GameBackendMatchHistoryEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString SessionId;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString Mode;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString MapId;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString Team;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString Result;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	int32 Kills = 0;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	int32 Deaths = 0;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	int32 Assists = 0;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	int32 Score = 0;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString ResultJson;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString WinnerTeam;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	int32 DurationSeconds = 0;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	int64 ExpDelta = 0;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	TMap<FString, int64> Rewards;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString PlayedAtUtc;
+};
+
+USTRUCT(BlueprintType)
+struct GAMEBACKENDCLIENT_API FDBA_GameBackendMatchHistoryPage
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	TArray<FDBA_GameBackendMatchHistoryEntry> Matches;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	int32 TotalCount = 0;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	int32 Page = 1;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	int32 PageSize = 50;
 };
 
 USTRUCT(BlueprintType)

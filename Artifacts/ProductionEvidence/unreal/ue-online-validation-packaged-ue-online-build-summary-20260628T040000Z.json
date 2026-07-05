@@ -1,0 +1,36 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "ue-online-validation",
+    "runId":  "packaged-ue-online-build-summary-20260628T040000Z",
+    "status":  "passed",
+    "errorMessage":  "",
+    "generatedAtUtc":  "2026-06-28T03:46:18.8988488Z",
+    "baseUrl":  "http://localhost:8080",
+    "usePackagedServer":  true,
+    "skipClientLaunch":  false,
+    "keepProcessesAlive":  false,
+    "serverExecutable":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\packaged-server\\WindowsServer\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer.exe",
+    "roomId":  "d5b5f26f-5cab-4cb9-9f44-d42ed7e58fa0",
+    "sessionId":  "78495dcd-f12f-42a6-80e8-e26c2a126697",
+    "serverId":  "5629ffa5-db9d-4643-9a05-c5e419ae17bd",
+    "allocatedPort":  7777,
+    "clientConnectPort":  7878,
+    "processIds":  {
+                       "server":  2892,
+                       "clientA":  43164,
+                       "clientB":  44684
+                   },
+    "logPaths":  {
+                     "server":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\server-packaged-ue-online-build-summary-20260628T040000Z.log",
+                     "clientA":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\client-a-packaged-ue-online-build-summary-20260628T040000Z.log",
+                     "clientB":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\client-b-packaged-ue-online-build-summary-20260628T040000Z.log"
+                 },
+    "safeLogEvidence":  {
+                            "runtimePlayerJoined":  [
+                                                        "[2026.06.28-03.45.42:173][351]LogDBACore: [DBAGameModeBase] Runtime player-joined 请求已发送：PlayerId=f217a4a3-59f2-45e7-bea5-60f25731ad0c",
+                                                        "[2026.06.28-03.45.46:817][490]LogDBACore: [DBAGameModeBase] Runtime player-joined 请求已发送：PlayerId=40b448ab-df80-45cc-b235-b5a3f44879c0"
+                                                    ],
+                            "clientATravelCompleted":  "[2026.06.28-03.45.42:159][ 54]LogGlobalStatus: UPendingNetGame::TravelCompleted Pending net game travel completed",
+                            "clientBTravelCompleted":  "[2026.06.28-03.45.46:787][ 69]LogGlobalStatus: UPendingNetGame::TravelCompleted Pending net game travel completed"
+                        }
+}

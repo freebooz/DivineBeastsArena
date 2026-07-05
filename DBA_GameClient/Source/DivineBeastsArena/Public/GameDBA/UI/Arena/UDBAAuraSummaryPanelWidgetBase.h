@@ -36,4 +36,10 @@ public:
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|AuraSummaryPanel", meta = (DisplayName = "On Aura Count Updated"))
 	void BP_OnAuraCountUpdated(int32 Count);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|AuraSummaryPanel", meta = (DisplayName = "On Aura Details Requested"))
+	void BP_OnAuraDetailsRequested();
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|AuraSummaryPanel")
+	int32 CachedAuraCount = 0;
 };

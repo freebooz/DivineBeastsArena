@@ -260,7 +260,7 @@ void UDBALobbyPlayerHUDWidgetBase::NativeConstruct()
 	BindButtonClickAudio();
 	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	RefreshFromCurrentCharacterData();
-	UE_LOG(LogDBACore, Log, TEXT("[LobbyPlayerHUD] Constructed: Avatar=%s Skills=%d Minimap=%s Viewport=%s AvatarSize=%s SkillSlotSize=%s SkillBarSize=%s"),
+	UE_LOG(LogDBACore, Log, TEXT("[LobbyPlayerHUD] 构建完成：头像=%s 技能数=%d 小地图=%s 视口=%s 头像尺寸=%s 技能槽尺寸=%s 技能栏尺寸=%s"),
 		AvatarRootBorder ? TEXT("true") : TEXT("false"),
 		SkillSlotBorders.Num(),
 		MinimapRootBorder ? TEXT("true") : TEXT("false"),
@@ -1297,7 +1297,7 @@ void UDBALobbyPlayerHUDWidgetBase::ResolveSkillHotkeysForSummary(const FDBAChara
 	if (const UDBAFixedSkillGroupDataAsset* SkillGroupAsset = UDBAFixedSkillGroupLibrary::GetFixedSkillGroupById(Summary.FixedSkillGroupId))
 	{
 		ApplyFixedSkillGroupAssetHotkeys(SkillGroupAsset, OutSkillHotkeys);
-		UE_LOG(LogDBACore, Log, TEXT("[LobbyPlayerHUD] Loaded skill hotkeys from FixedSkillGroup asset: %s"),
+		UE_LOG(LogDBACore, Log, TEXT("[LobbyPlayerHUD] 已从 FixedSkillGroup 资产加载技能热键：%s"),
 			*Summary.FixedSkillGroupId.ToString());
 		return;
 	}

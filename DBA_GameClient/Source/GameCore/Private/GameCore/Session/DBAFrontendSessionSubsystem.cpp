@@ -110,8 +110,34 @@ void UDBAFrontendSessionSubsystem::ClearCurrentMatchSessionInfo()
 
 void UDBAFrontendSessionSubsystem::SetCurrentTravelContext(const FDBATravelContext& Context)
 {
+	TrySetCurrentTravelContext(Context);
+}
+
+bool UDBAFrontendSessionSubsystem::TrySetCurrentTravelContext(const FDBATravelContext& Context)
+{
+	if (!Context.IsValid())
+	{
+		LogSubsystemWarning(FString::Printf(TEXT("拒绝无效 Travel 上下文：Map=%s Server=%s:%d"),
+			*Context.MapName,
+			*Context.ServerAddress,
+			Context.ServerPort));
+		return false;
+	}
+
+	if (!Context.HasValidCharacterBuildSummary())
+	{
+		LogSubsystemWarning(FString::Printf(TEXT("拒绝无效 Travel 构建摘要：Zodiac=%d Element=%d FiveCamp=%d FixedSkillGroup=%s"),
+			static_cast<int32>(Context.SelectedZodiac),
+			static_cast<int32>(Context.SelectedElement),
+			static_cast<int32>(Context.SelectedFiveCamp),
+			*Context.FixedSkillGroupId.ToString()));
+		return false;
+	}
+
 	CurrentTravelContext = Context;
 	LogSubsystemInfo(FString::Printf(TEXT("设置当前 Travel 上下文：%s"), *Context.MapName));
+	SetState(EDBAFrontendSessionState::Loading);
+	return true;
 }
 
 void UDBAFrontendSessionSubsystem::ClearCurrentTravelContext()

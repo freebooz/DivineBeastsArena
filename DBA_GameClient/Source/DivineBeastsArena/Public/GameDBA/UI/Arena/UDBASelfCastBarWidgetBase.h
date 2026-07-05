@@ -36,4 +36,10 @@ public:
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|SelfCastBar", meta = (DisplayName = "On Self Cast Progress"))
 	void BP_OnSelfCastProgress(float Duration, float RemainingTime);
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|SelfCastBar")
+	float CachedSelfCastDuration = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|SelfCastBar")
+	bool bCachedSelfCastVisible = false;
 };

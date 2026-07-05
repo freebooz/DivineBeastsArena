@@ -10,14 +10,45 @@
 
 #include "GameDBA/Combat/DBAClientPredictionComponent.h"
 
+#include "Engine/World.h"
 #include "GameDBA/Character/DBAZodiacCharacterBase.h"
+#include "GameDBA/GAS/DBAAbilitySystemComponent.h"
 #include "GameDBA/RPC/DBARpcHandler.h"
+
+namespace
+{
+	int32 ResolvePredictionAbilityInputID(FName SkillId)
+	{
+		if (SkillId == TEXT("Skill01") || SkillId == TEXT("Skill1"))
+		{
+			return static_cast<int32>(EDBAAbilityInputID::Skill01);
+		}
+		if (SkillId == TEXT("Skill02") || SkillId == TEXT("Skill2"))
+		{
+			return static_cast<int32>(EDBAAbilityInputID::Skill02);
+		}
+		if (SkillId == TEXT("Skill03") || SkillId == TEXT("Skill3"))
+		{
+			return static_cast<int32>(EDBAAbilityInputID::Skill03);
+		}
+		if (SkillId == TEXT("Skill04") || SkillId == TEXT("Skill4"))
+		{
+			return static_cast<int32>(EDBAAbilityInputID::Skill04);
+		}
+		if (SkillId == TEXT("Ultimate") || SkillId == TEXT("Skill05") || SkillId == TEXT("Skill5"))
+		{
+			return static_cast<int32>(EDBAAbilityInputID::Ultimate);
+		}
+
+		return static_cast<int32>(EDBAAbilityInputID::None);
+	}
+}
 
 UDBAClientPredictionComponent::UDBAClientPredictionComponent()
 	: Super()
 {
-	PrimaryComponentTick.bCanEverTick = true;
-	PrimaryComponentTick.bStartWithTickEnabled = true;
+	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bStartWithTickEnabled = false;
 }
 
 void UDBAClientPredictionComponent::InitializeComponent()
@@ -30,23 +61,70 @@ void UDBAClientPredictionComponent::UninitializeComponent()
 	Super::UninitializeComponent();
 }
 
+bool UDBAClientPredictionComponent::IsPredictionRuntimeAllowed() const
+{
+	const UWorld* World = GetWorld();
+	if (!World || World->GetNetMode() == NM_DedicatedServer)
+	{
+		return false;
+	}
+
+	const ADBAZodiacCharacterBase* Character = Cast<ADBAZodiacCharacterBase>(GetOwner());
+	return Character && Character->IsLocallyControlled();
+}
+
 void UDBAClientPredictionComponent::TryPredictAbility(FName SkillId, AActor* Target, FVector TargetLocation)
 {
+	if (!IsPredictionRuntimeAllowed())
+	{
+		return;
+	}
+
+	const int32 AbilityInputID = ResolvePredictionAbilityInputID(SkillId);
+	if (AbilityInputID == static_cast<int32>(EDBAAbilityInputID::None))
+	{
+		return;
+	}
+
 	if (ADBAZodiacCharacterBase* Character = Cast<ADBAZodiacCharacterBase>(GetOwner()))
 	{
+		UDBAAbilitySystemComponent* ASC = Character->GetDBAAbilitySystemComponent();
+		if (!ASC)
+		{
+			return;
+		}
+
+		const FGameplayAbilitySpecHandle AbilityHandle = ASC->FindAbilitySpecHandleByInputID(AbilityInputID);
+		if (!AbilityHandle.IsValid())
+		{
+			return;
+		}
+
 		if (ADBARpcHandler* RpcHandler = Character->GetRpcHandler())
 		{
 			FDBAAbilityRpcParams Params;
-			Params.AbilityHandle = FGameplayAbilitySpecHandle();
+			Params.AbilityHandle = AbilityHandle;
 			Params.TargetActor = Target;
 			Params.TargetLocation = TargetLocation;
-			RpcHandler->ServerTryActivateAbility(Params);
+			if (AbilityInputID == static_cast<int32>(EDBAAbilityInputID::Ultimate))
+			{
+				RpcHandler->ServerUltimateAbility(Params);
+			}
+			else
+			{
+				RpcHandler->ServerTryActivateAbility(Params);
+			}
 		}
 	}
 }
 
 void UDBAClientPredictionComponent::TryPredictMove(FVector TargetLocation)
 {
+	if (!IsPredictionRuntimeAllowed())
+	{
+		return;
+	}
+
 	if (ADBAZodiacCharacterBase* Character = Cast<ADBAZodiacCharacterBase>(GetOwner()))
 	{
 		if (ADBARpcHandler* RpcHandler = Character->GetRpcHandler())
@@ -59,6 +137,13 @@ void UDBAClientPredictionComponent::TryPredictMove(FVector TargetLocation)
 
 void UDBAClientPredictionComponent::ApplyServerCorrection(FVector ServerLocation, float ServerTime)
 {
+	static_cast<void>(ServerTime);
+
+	if (!IsPredictionRuntimeAllowed())
+	{
+		return;
+	}
+
 	LastCorrectedLocation = ServerLocation;
 	PredictionError = FVector::Dist(PredictedLocation, ServerLocation);
 	OnMoveCorrected(ServerLocation);
@@ -70,6 +155,11 @@ void UDBAClientPredictionComponent::OnAbilityActivated(FGameplayAbilitySpecHandl
 
 void UDBAClientPredictionComponent::OnMoveCorrected(FVector CorrectedLocation)
 {
+	if (!IsPredictionRuntimeAllowed())
+	{
+		return;
+	}
+
 	if (AActor* Owner = GetOwner())
 	{
 		Owner->SetActorLocation(CorrectedLocation);

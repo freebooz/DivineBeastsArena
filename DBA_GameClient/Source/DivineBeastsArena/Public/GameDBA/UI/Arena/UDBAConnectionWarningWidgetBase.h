@@ -39,4 +39,10 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|UI|ConnectionWarning", meta = (DisplayName = "On Warning Hidden"))
 	void BP_OnWarningHidden();
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ConnectionWarning")
+	FText CachedWarningMessage;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DBA|UI|ConnectionWarning")
+	bool bCachedWarningVisible = false;
 };

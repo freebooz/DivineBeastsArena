@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Entities;
+using Game.Shared.Contracts.Character;
 
 namespace Game.Infrastructure.Database.Seed;
 
@@ -911,7 +912,7 @@ public class DevelopmentDataSeeder
                 Zodiac = "Tiger",
                 PrimaryElement = "Fire",
                 FiveCamp = "South",
-                FixedSkillGroupId = "Tiger_Fire_Default",
+                FixedSkillGroupId = CharacterBuildRules.BuildFixedSkillGroupId("Tiger", "Fire"),
                 CoreAttributesJson = CoreAttributes(1850, 115, 36, 390),
                 Level = 1,
                 IsSelected = true,
@@ -926,7 +927,7 @@ public class DevelopmentDataSeeder
                 Zodiac = "Dragon",
                 PrimaryElement = "Water",
                 FiveCamp = "North",
-                FixedSkillGroupId = "Dragon_Water_Default",
+                FixedSkillGroupId = CharacterBuildRules.BuildFixedSkillGroupId("Dragon", "Water"),
                 CoreAttributesJson = CoreAttributes(1900, 105, 42, 380),
                 Level = 1,
                 IsSelected = true,
@@ -941,7 +942,7 @@ public class DevelopmentDataSeeder
                 Zodiac = "Rat",
                 PrimaryElement = "Wood",
                 FiveCamp = "East",
-                FixedSkillGroupId = "Rat_Wood_Default",
+                FixedSkillGroupId = CharacterBuildRules.BuildFixedSkillGroupId("Rat", "Wood"),
                 CoreAttributesJson = CoreAttributes(1700, 98, 34, 420),
                 Level = 1,
                 IsSelected = true,
@@ -1713,7 +1714,7 @@ public class DevelopmentDataSeeder
                 Channel = "stable",
                 Platform = "Windows",
                 DownloadUrl = "http://localhost:8080/downloads/DivineBeastsArena-1.2.5.0.zip",
-                Checksum = "dev-checksum-placeholder",
+                Checksum = "0000000000000000000000000000000000000000000000000000000000000000",
                 SizeBytes = 2147483648,
                 IsMandatory = false,
                 IsActive = true,

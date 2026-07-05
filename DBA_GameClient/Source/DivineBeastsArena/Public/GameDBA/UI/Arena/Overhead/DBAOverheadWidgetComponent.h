@@ -30,6 +30,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
 	/** 头顶Widget类 */
@@ -73,6 +75,9 @@ protected:
 	/** 创建头顶Widget */
 	void CreateOverheadWidget();
 
+	/** 应用头顶Widget显示配置 */
+	void ApplyWidgetConfig();
+
 	/** 更新Widget位置 */
 	void UpdateWidgetPosition();
 
@@ -85,4 +90,10 @@ private:
 
 	UPROPERTY(Transient)
 	float CachedHealthPercent = 1.0f;
+
+	UPROPERTY(Transient)
+	FText CachedCharacterName;
+
+	UPROPERTY(Transient)
+	bool bCachedOverheadVisible = true;
 };

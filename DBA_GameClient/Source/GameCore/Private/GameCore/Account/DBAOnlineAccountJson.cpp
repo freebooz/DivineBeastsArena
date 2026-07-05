@@ -23,7 +23,7 @@ bool ParseObject(const FString& Json, TSharedPtr<FJsonObject>& OutObject, FStrin
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Json);
 	if (!FJsonSerializer::Deserialize(Reader, OutObject) || !OutObject.IsValid())
 	{
-		OutError = TEXT("Malformed JSON response");
+		OutError = TEXT("JSON 响应格式错误");
 		return false;
 	}
 
@@ -159,6 +159,15 @@ FString FDBAOnlineAccountJson::BuildLoginRequest(const FDBALoginRequest& Request
 	return WriteObject(Object);
 }
 
+FString FDBAOnlineAccountJson::BuildGuestLoginRequest(const FString& DeviceId, const FString& DeviceName, const FString& Platform)
+{
+	TSharedRef<FJsonObject> Object = MakeShared<FJsonObject>();
+	Object->SetStringField(TEXT("deviceId"), DeviceId);
+	Object->SetStringField(TEXT("deviceName"), DeviceName.IsEmpty() ? TEXT("UnrealClient") : DeviceName);
+	Object->SetStringField(TEXT("platform"), Platform.IsEmpty() ? TEXT("Windows") : Platform);
+	return WriteObject(Object);
+}
+
 FString FDBAOnlineAccountJson::BuildCreateCharacterRequest(const FDBACharacterCreateRequest& Request)
 {
 	TSharedRef<FJsonObject> Object = MakeShared<FJsonObject>();
@@ -209,7 +218,11 @@ bool FDBAOnlineAccountJson::ParseLoginResponse(const FString& Json, FDBALoginRes
 		OutResponse.PlayerId = GetStringField(Data, TEXT("playerId"));
 		OutResponse.AccountInfo.AccountId = FDBAAccountId(OutResponse.PlayerId);
 		OutResponse.AccountInfo.DisplayName = GetStringField(Data, TEXT("nickname"));
-		OutResponse.AccountInfo.LoginType = EDBALoginType::Guest;
+		if (OutResponse.AccountInfo.DisplayName.IsEmpty())
+		{
+			OutResponse.AccountInfo.DisplayName = GetStringField(Data, TEXT("displayName"));
+		}
+		OutResponse.AccountInfo.LoginType = ParseLoginType(GetStringField(Data, TEXT("loginType")));
 		OutResponse.AccountInfo.Status = EDBAAccountStatus::Normal;
 		OutResponse.AccountInfo.Level = 1;
 		return true;
@@ -260,7 +273,7 @@ bool FDBAOnlineAccountJson::ParseCharacterListResponse(const FString& Json, TArr
 	if ((!PayloadObject.IsValid() || (!PayloadObject->TryGetArrayField(TEXT("characters"), Items) && !PayloadObject->TryGetArrayField(TEXT("items"), Items)))
 		&& !Object->TryGetArrayField(TEXT("data"), Items))
 	{
-		OutError = TEXT("Missing characters array");
+		OutError = TEXT("响应缺少 characters 数组");
 		return false;
 	}
 

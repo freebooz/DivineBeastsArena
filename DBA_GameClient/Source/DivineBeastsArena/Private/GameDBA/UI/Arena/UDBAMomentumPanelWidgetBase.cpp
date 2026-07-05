@@ -18,6 +18,7 @@ UDBAMomentumPanelWidgetBase::UDBAMomentumPanelWidgetBase(const FObjectInitialize
 void UDBAMomentumPanelWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+	BP_OnMomentumUpdated(CachedMomentumLevel, CachedMomentumProgress);
 }
 
 void UDBAMomentumPanelWidgetBase::NativeDestruct()
@@ -27,9 +28,12 @@ void UDBAMomentumPanelWidgetBase::NativeDestruct()
 
 void UDBAMomentumPanelWidgetBase::UpdateMomentumLevel(int32 Level)
 {
+	CachedMomentumLevel = FMath::Max(0, Level);
+	BP_OnMomentumUpdated(CachedMomentumLevel, CachedMomentumProgress);
 }
 
 void UDBAMomentumPanelWidgetBase::UpdateMomentumProgress(float Progress)
 {
+	CachedMomentumProgress = FMath::Clamp(Progress, 0.0f, 1.0f);
+	BP_OnMomentumUpdated(CachedMomentumLevel, CachedMomentumProgress);
 }
-

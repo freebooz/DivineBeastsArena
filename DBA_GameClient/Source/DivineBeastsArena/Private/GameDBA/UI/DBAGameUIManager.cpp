@@ -21,6 +21,8 @@
 #include "GameCore/Session/DBALoginFlowSubsystem.h"
 #include "GameFramework/PlayerController.h"
 #include "GameDBA/UI/Arena/UDBAArenaHUDRootWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBAArenaHUDWidgetController.h"
+#include "GameDBA/Character/DBAZodiacCharacterBase.h"
 #include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetBase.h"
 #include "GameDBA/UI/Lobby/UDBALobbyPlayerHUDWidgetBase.h"
 #include "GameDBA/UI/Lobby/Login/UDBALoginFlowWidgetBase.h"
@@ -358,7 +360,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	});
 	if (!ArenaHUDWidgetClass)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 竞技场 HUD 控件蓝图不可用。"));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 竞技场界面控件蓝图不可用。"));
 	}
 
 	LoginWidgetClass = ResolveWidgetClassPath<UDBALoginFlowWidgetBase>({
@@ -408,7 +410,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	if (!LobbyPlayerHUDWidgetClass)
 	{
 		LobbyPlayerHUDWidgetClass = UDBALobbyPlayerHUDWidgetBase::StaticClass();
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 大厅玩家 HUD 控件蓝图不可用，使用 C++ 原生兜底控件。"));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 大厅玩家界面控件蓝图不可用，使用 C++ 原生兜底控件。"));
 	}
 
 	GameSettingsWidgetClass = ResolveWidgetClassPath<UDBAGameSettingsWidgetBase>({
@@ -439,7 +441,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	});
 	if (!PartyPanelWidgetClass)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Party panel widget blueprint is unavailable."));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 队伍面板控件蓝图不可用。"));
 	}
 
 	InvitePanelWidgetClass = ResolveWidgetClassPath<UDBAInvitePanelWidgetBase>({
@@ -448,7 +450,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	});
 	if (!InvitePanelWidgetClass)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Invite panel widget blueprint is unavailable."));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 邀请面板控件蓝图不可用。"));
 	}
 
 	QueueModeSelectWidgetClass = ResolveWidgetClassPath<UDBAQueueModeSelectWidgetBase>({
@@ -457,7 +459,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	});
 	if (!QueueModeSelectWidgetClass)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Queue mode select widget blueprint is unavailable."));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 队列模式选择控件蓝图不可用。"));
 	}
 
 	QueueStatusWidgetClass = ResolveWidgetClassPath<UDBAQueueStatusWidgetBase>({
@@ -466,7 +468,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	});
 	if (!QueueStatusWidgetClass)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Queue status widget blueprint is unavailable."));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 队列状态控件蓝图不可用。"));
 	}
 
 	ReadyCheckWidgetClass = ResolveWidgetClassPath<UDBAReadyCheckWidgetBase>({
@@ -475,7 +477,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	});
 	if (!ReadyCheckWidgetClass)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Ready check widget blueprint is unavailable."));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 准备确认控件蓝图不可用。"));
 	}
 
 	MatchFoundWidgetClass = ResolveWidgetClassPath<UDBAMatchFoundWidgetBase>({
@@ -484,7 +486,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	});
 	if (!MatchFoundWidgetClass)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Match found widget blueprint is unavailable."));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 匹配成功提示控件蓝图不可用。"));
 	}
 
 	PortalConfirmWidgetClass = ResolveWidgetClassPath<UDBAPortalConfirmWidgetBase>({
@@ -493,7 +495,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	});
 	if (!PortalConfirmWidgetClass)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Portal confirm widget blueprint is unavailable."));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 传送门确认控件蓝图不可用。"));
 	}
 
 	InteractionPromptWidgetClass = ResolveWidgetClassPath<UDBAInteractionPromptWidgetBase>({
@@ -502,7 +504,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	});
 	if (!InteractionPromptWidgetClass)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Interaction prompt widget blueprint is unavailable."));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 交互提示控件蓝图不可用。"));
 	}
 
 	NewbieVillageMainWidgetClass = ResolveWidgetClassPath<UDBANewbieVillageMainWidgetBase>({
@@ -511,7 +513,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	});
 	if (!NewbieVillageMainWidgetClass)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Newbie village main widget blueprint is unavailable."));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 新手村主界面控件蓝图不可用。"));
 	}
 
 	NewbieTaskTrackerWidgetClass = ResolveWidgetClassPath<UDBANewbieTaskTrackerWidgetBase>({
@@ -520,7 +522,7 @@ UDBAGameUIManager::UDBAGameUIManager()
 	});
 	if (!NewbieTaskTrackerWidgetClass)
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] Newbie task tracker widget blueprint is unavailable."));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 新手任务追踪控件蓝图不可用。"));
 	}
 
 	static ConstructorHelpers::FClassFinder<UDBASplashVideoWidget> SplashVideoWidgetFinder(TEXT("/Game/UI/Splash/WBP_DBA_SplashVideo"));
@@ -539,7 +541,8 @@ void UDBAGameUIManager::OnSubsystemInitialize()
 {
 	Super::OnSubsystemInitialize();
 
-	if (IsServerLikeRuntime(GetWorld()))
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
 	{
 		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 服务器运行环境跳过前端 UI 初始化。"));
 		return;
@@ -575,37 +578,25 @@ void UDBAGameUIManager::OnSubsystemInitialize()
 	}
 
 	// 延迟显示启动视频，等待世界加载完成
-	GetWorld()->GetTimerManager().SetTimer(SplashVideoTimerHandle, this, &UDBAGameUIManager::TryShowSplashVideo, 0.5f, true);
+	World->GetTimerManager().SetTimer(SplashVideoTimerHandle, this, &UDBAGameUIManager::TryShowSplashVideo, 0.5f, true);
 }
 
 void UDBAGameUIManager::TryShowSplashVideo()
 {
 	UWorld* World = GetWorld();
-	if (IsServerLikeRuntime(World))
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
 	{
-		if (World)
-		{
-			World->GetTimerManager().ClearTimer(SplashVideoTimerHandle);
-		}
 		return;
 	}
 	if (FParse::Param(FCommandLine::Get(), TEXT("DBASkipFrontendFlow")))
 	{
-		if (World)
-		{
-			World->GetTimerManager().ClearTimer(SplashVideoTimerHandle);
-		}
-		return;
-	}
-	if (!World)
-	{
-		EnsureLoginFlowStartedFromManager();
+		World->GetTimerManager().ClearTimer(SplashVideoTimerHandle);
 		return;
 	}
 
 	if (!SplashVideoWidgetClass)
 	{
-		GetWorld()->GetTimerManager().ClearTimer(SplashVideoTimerHandle);
+		World->GetTimerManager().ClearTimer(SplashVideoTimerHandle);
 		EnsureLoginFlowStartedFromManager();
 		return;
 	}
@@ -620,18 +611,24 @@ void UDBAGameUIManager::TryShowSplashVideo()
 	if (PC)
 	{
 		// PlayerController 已存在，停止重试并显示视频
-		GetWorld()->GetTimerManager().ClearTimer(SplashVideoTimerHandle);
+		World->GetTimerManager().ClearTimer(SplashVideoTimerHandle);
 		ShowSplashVideo();
 	}
 	else
 	{
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 正在等待 PlayerController，世界=%s"), *World->GetName());
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 正在等待玩家控制器，世界=%s"), *World->GetName());
 	}
 }
 
 void UDBAGameUIManager::EnsureLoginFlowStartedFromManager()
 {
 	if (bLoginFlowStartRequested)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
 	{
 		return;
 	}
@@ -723,10 +720,16 @@ void UDBAGameUIManager::RegisterStateChangeCallback(const FOnUIStateChanged& Del
 
 void UDBAGameUIManager::ShowMainLobby()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	StopLoginFlowBackgroundMusic();
 	HideAllFlowWidgets();
 
-	if (IsLobbyGameplayWorldForUIManager(GetWorld()))
+	if (IsLobbyGameplayWorldForUIManager(World))
 	{
 		HideLobbyLoadingScreen();
 		if (MainLobbyWidget && bMainLobbyVisible)
@@ -736,18 +739,17 @@ void UDBAGameUIManager::ShowMainLobby()
 		}
 
 		ShowLobbyPlayerHUD();
-		ApplyLobbyGameplayInputMode(GetWorld());
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 已为大厅地图显示游戏 HUD。"));
+		ApplyLobbyGameplayInputMode(World);
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 已为大厅地图显示游戏界面。"));
 		return;
 	}
 
 	if (MainLobbyWidget)
 	{
-		const UWorld* CurrentWorld = GetWorld();
 		const UWorld* WidgetWorld = MainLobbyWidget->GetWorld();
 		const APlayerController* OwningPC = MainLobbyWidget->GetOwningPlayer();
 		const UWorld* OwningPlayerWorld = OwningPC ? OwningPC->GetWorld() : nullptr;
-		const bool bWidgetWorldMatches = CurrentWorld && (WidgetWorld == CurrentWorld || OwningPlayerWorld == CurrentWorld);
+		const bool bWidgetWorldMatches = WidgetWorld == World || OwningPlayerWorld == World;
 		if (!bWidgetWorldMatches)
 		{
 			MainLobbyWidget->RemoveFromParent();
@@ -768,11 +770,17 @@ void UDBAGameUIManager::ShowMainLobby()
 	}
 
 	ShowLobbyPlayerHUD();
-	ApplyLobbyGameplayInputMode(GetWorld());
+	ApplyLobbyGameplayInputMode(World);
 }
 
 void UDBAGameUIManager::HideMainLobby()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (MainLobbyWidget && bMainLobbyVisible)
 	{
 		MainLobbyWidget->RemoveFromParent();
@@ -797,11 +805,23 @@ void UDBAGameUIManager::ShowLoginFlowWidget()
 
 void UDBAGameUIManager::HideLoginFlowWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	HideAllFlowWidgets();
 }
 
 void UDBAGameUIManager::ShowArenaHUD()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!ArenaHUDWidget)
 	{
 		CreateArenaHUDWidget();
@@ -815,10 +835,265 @@ void UDBAGameUIManager::ShowArenaHUD()
 
 void UDBAGameUIManager::HideArenaHUD()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (ArenaHUDWidget && bArenaHUDVisible)
 	{
 		ArenaHUDWidget->RemoveFromParent();
 		bArenaHUDVisible = false;
+	}
+}
+
+void UDBAGameUIManager::UpdateArenaHUDPlayerVitals(float CurrentHP, float MaxHP, float CurrentEnergy, float MaxEnergy)
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->UpdatePlayerHP(CurrentHP, MaxHP);
+		Controller->UpdatePlayerEnergy(CurrentEnergy, MaxEnergy);
+	}
+
+	if (ArenaHUDWidget && ArenaHUDWidgetController)
+	{
+		ArenaHUDWidget->SetWidgetController(ArenaHUDWidgetController);
+	}
+}
+
+void UDBAGameUIManager::UpdateArenaHUDPlayerLevel(int32 Level)
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->UpdatePlayerLevel(Level);
+	}
+
+	if (ArenaHUDWidget && ArenaHUDWidgetController)
+	{
+		ArenaHUDWidget->SetWidgetController(ArenaHUDWidgetController);
+	}
+}
+
+void UDBAGameUIManager::UpdateArenaHUDUltimateEnergy(float CurrentEnergy, float MaxEnergy)
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->UpdateUltimateEnergy(CurrentEnergy, MaxEnergy);
+	}
+
+	if (ArenaHUDWidget && ArenaHUDWidgetController)
+	{
+		ArenaHUDWidget->SetWidgetController(ArenaHUDWidgetController);
+	}
+}
+
+void UDBAGameUIManager::UpdateArenaHUDCombatState(int32 ChainLevel, int32 ResonanceLevel)
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->UpdateChainLevel(ChainLevel);
+		Controller->UpdateResonanceLevel(ResonanceLevel);
+	}
+
+	if (ArenaHUDWidget && ArenaHUDWidgetController)
+	{
+		ArenaHUDWidget->SetWidgetController(ArenaHUDWidgetController);
+	}
+}
+
+void UDBAGameUIManager::UpdateArenaHUDMomentum(int32 MomentumLevel, float MomentumProgress)
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->UpdateMomentum(MomentumLevel, MomentumProgress);
+	}
+
+	if (ArenaHUDWidget && ArenaHUDWidgetController)
+	{
+		ArenaHUDWidget->SetWidgetController(ArenaHUDWidgetController);
+	}
+}
+
+void UDBAGameUIManager::AddArenaHUDBuff(const FString& BuffId, float Duration)
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->AddStatusBuff(BuffId, Duration);
+	}
+}
+
+void UDBAGameUIManager::RemoveArenaHUDBuff(const FString& BuffId)
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->RemoveStatusBuff(BuffId);
+	}
+}
+
+void UDBAGameUIManager::ClearArenaHUDBuffs()
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->ClearStatusBuffs();
+	}
+}
+
+void UDBAGameUIManager::AddArenaHUDDebuff(const FString& DebuffId, float Duration)
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->AddStatusDebuff(DebuffId, Duration);
+	}
+}
+
+void UDBAGameUIManager::RemoveArenaHUDDebuff(const FString& DebuffId)
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->RemoveStatusDebuff(DebuffId);
+	}
+}
+
+void UDBAGameUIManager::ClearArenaHUDDebuffs()
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->ClearStatusDebuffs();
+	}
+}
+
+void UDBAGameUIManager::AddArenaHUDCCEffect(const FString& CCId, float Duration)
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->AddStatusCCEffect(CCId, Duration);
+	}
+}
+
+void UDBAGameUIManager::RemoveArenaHUDCCEffect(const FString& CCId)
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->RemoveStatusCCEffect(CCId);
+	}
+}
+
+void UDBAGameUIManager::ClearArenaHUDCCEffects()
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->ClearStatusCCEffects();
+	}
+}
+
+void UDBAGameUIManager::ShowArenaHUDCombatAnnouncement(const FText& Text, float Duration)
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->ShowCombatAnnouncement(Text, Duration);
+	}
+}
+
+void UDBAGameUIManager::ClearArenaHUDCombatAnnouncement()
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->ClearCombatAnnouncement();
+	}
+}
+
+void UDBAGameUIManager::UpdateArenaHUDCriticalStateHints(bool bLowHP, bool bLowEnergy)
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->UpdateCriticalStateHints(bLowHP, bLowEnergy);
+	}
+}
+
+void UDBAGameUIManager::UpdateArenaHUDObjective(const FText& ObjectiveText, float Progress)
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->UpdateArenaObjective(ObjectiveText, Progress);
+	}
+}
+
+void UDBAGameUIManager::CompleteArenaHUDObjective()
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->CompleteArenaObjective();
+	}
+}
+
+void UDBAGameUIManager::AddArenaHUDEventFeedEntry(const FText& Text, float Duration)
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->AddEventFeedEntry(Text, Duration);
+	}
+}
+
+void UDBAGameUIManager::ClearArenaHUDEventFeed()
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->ClearEventFeed();
+	}
+}
+
+void UDBAGameUIManager::ShowArenaHUDUltimateReadyPrompt()
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->ShowUltimateReadyPrompt();
+	}
+}
+
+void UDBAGameUIManager::HideArenaHUDUltimateReadyPrompt()
+{
+	APlayerController* PC = GetArenaHUDLocalPlayerController();
+	if (UDBAArenaHUDWidgetController* Controller = EnsureArenaHUDWidgetController(PC))
+	{
+		Controller->HideUltimateReadyPrompt();
+	}
+}
+
+void UDBAGameUIManager::BindArenaHUDToCharacter(ADBAZodiacCharacterBase* Character)
+{
+	if (!GetArenaHUDLocalPlayerController())
+	{
+		return;
+	}
+
+	ArenaHUDCharacter = Character;
+
+	if (ArenaHUDWidget)
+	{
+		ArenaHUDWidget->BindArenaHUDToCharacter(Character);
 	}
 }
 
@@ -1270,6 +1545,12 @@ void UDBAGameUIManager::ShowInteractionPrompt(EDBAInteractionType Type, const FT
 
 void UDBAGameUIManager::HideInteractionPrompt()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (InteractionPromptWidget && bInteractionPromptVisible)
 	{
 		InteractionPromptWidget->HidePrompt();
@@ -1280,6 +1561,12 @@ void UDBAGameUIManager::HideInteractionPrompt()
 
 void UDBAGameUIManager::UpdateInteractionProgress(float Progress)
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (InteractionPromptWidget && bInteractionPromptVisible)
 	{
 		InteractionPromptWidget->UpdateInteractionProgress(Progress);
@@ -1358,9 +1645,15 @@ void UDBAGameUIManager::ToggleNewbieTaskTracker()
 
 void UDBAGameUIManager::ShowLobbyPlayerHUD()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (LobbyPlayerHUDWidget)
 	{
-		const UWorld* CurrentWorld = GetWorld();
+		const UWorld* CurrentWorld = World;
 		const UWorld* WidgetWorld = LobbyPlayerHUDWidget->GetWorld();
 		const APlayerController* OwningPC = LobbyPlayerHUDWidget->GetOwningPlayer();
 		const UWorld* OwningPlayerWorld = OwningPC ? OwningPC->GetWorld() : nullptr;
@@ -1385,14 +1678,14 @@ void UDBAGameUIManager::ShowLobbyPlayerHUD()
 		LobbyPlayerHUDWidget->RefreshFromCurrentCharacterData();
 		bLobbyPlayerHUDVisible = true;
 		ResetLobbyHUDRefreshRetry();
-		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 大厅玩家 HUD 已添加到视口：%s"),
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 大厅玩家界面已添加到视口：%s"),
 			*LobbyPlayerHUDWidget->GetClass()->GetName());
 	}
 	else if (LobbyPlayerHUDWidget && bLobbyPlayerHUDVisible)
 	{
 		LobbyPlayerHUDWidget->RefreshFromCurrentCharacterData();
 	}
-	else if (!LobbyPlayerHUDWidget && IsLobbyGameplayWorldForUIManager(GetWorld()))
+	else if (!LobbyPlayerHUDWidget && IsLobbyGameplayWorldForUIManager(World))
 	{
 		ScheduleLobbyHUDRefreshRetry();
 	}
@@ -1409,221 +1702,326 @@ void UDBAGameUIManager::HideLobbyPlayerHUD()
 
 void UDBAGameUIManager::CreateMainLobbyWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!MainLobbyWidgetClass)
 	{
 		return;
 	}
-	if (UWorld* World = GetWorld())
+
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			MainLobbyWidget = CreateWidget<UDBAMainLobbyWidgetBase>(PC, MainLobbyWidgetClass);
-		}
+		MainLobbyWidget = CreateWidget<UDBAMainLobbyWidgetBase>(PC, MainLobbyWidgetClass);
 	}
 }
 
 void UDBAGameUIManager::CreateArenaHUDWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!ArenaHUDWidgetClass)
 	{
 		return;
 	}
-	if (UWorld* World = GetWorld())
+
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
+		ArenaHUDWidget = CreateWidget<UDBAArenaHUDRootWidgetBase>(PC, ArenaHUDWidgetClass);
+		if (ArenaHUDWidget)
 		{
-			ArenaHUDWidget = CreateWidget<UDBAArenaHUDRootWidgetBase>(PC, ArenaHUDWidgetClass);
+			ArenaHUDWidgetController = EnsureArenaHUDWidgetController(PC);
+			ArenaHUDWidget->SetWidgetController(ArenaHUDWidgetController);
+			ArenaHUDWidget->BindArenaHUDToCharacter(ArenaHUDCharacter.Get());
 		}
 	}
 }
 
+APlayerController* UDBAGameUIManager::GetArenaHUDLocalPlayerController() const
+{
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return nullptr;
+	}
+
+	return World->GetFirstPlayerController();
+}
+
+UDBAArenaHUDWidgetController* UDBAGameUIManager::EnsureArenaHUDWidgetController(APlayerController* InPlayerController)
+{
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return nullptr;
+	}
+
+	if (!InPlayerController || InPlayerController->GetWorld() != World)
+	{
+		return nullptr;
+	}
+
+	if (!ArenaHUDWidgetController)
+	{
+		ArenaHUDWidgetController = NewObject<UDBAArenaHUDWidgetController>(this);
+	}
+
+	if (ArenaHUDWidgetController)
+	{
+		ArenaHUDWidgetController->InitializeController(InPlayerController);
+	}
+
+	return ArenaHUDWidgetController;
+}
+
 void UDBAGameUIManager::CreateGameSettingsWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!GameSettingsWidgetClass)
 	{
 		return;
 	}
-	if (UWorld* World = GetWorld())
+
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			GameSettingsWidget = CreateWidget<UDBAGameSettingsWidgetBase>(PC, GameSettingsWidgetClass);
-		}
+		GameSettingsWidget = CreateWidget<UDBAGameSettingsWidgetBase>(PC, GameSettingsWidgetClass);
 	}
 }
 
 void UDBAGameUIManager::CreateInventoryWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!InventoryWidgetClass)
 	{
 		return;
 	}
-	if (UWorld* World = GetWorld())
+
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			InventoryWidget = CreateWidget<UDBAInventoryWidgetBase>(PC, InventoryWidgetClass);
-		}
+		InventoryWidget = CreateWidget<UDBAInventoryWidgetBase>(PC, InventoryWidgetClass);
 	}
 }
 
 void UDBAGameUIManager::CreatePartyPanelWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!PartyPanelWidgetClass)
 	{
 		return;
 	}
-	if (UWorld* World = GetWorld())
+
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			PartyPanelWidget = CreateWidget<UDBAPartyPanelWidgetBase>(PC, PartyPanelWidgetClass);
-		}
+		PartyPanelWidget = CreateWidget<UDBAPartyPanelWidgetBase>(PC, PartyPanelWidgetClass);
 	}
 }
 
 void UDBAGameUIManager::CreateInvitePanelWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!InvitePanelWidgetClass)
 	{
 		return;
 	}
-	if (UWorld* World = GetWorld())
+
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			InvitePanelWidget = CreateWidget<UDBAInvitePanelWidgetBase>(PC, InvitePanelWidgetClass);
-		}
+		InvitePanelWidget = CreateWidget<UDBAInvitePanelWidgetBase>(PC, InvitePanelWidgetClass);
 	}
 }
 
 void UDBAGameUIManager::CreateQueueModeSelectWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!QueueModeSelectWidgetClass)
 	{
 		return;
 	}
-	if (UWorld* World = GetWorld())
+
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			QueueModeSelectWidget = CreateWidget<UDBAQueueModeSelectWidgetBase>(PC, QueueModeSelectWidgetClass);
-		}
+		QueueModeSelectWidget = CreateWidget<UDBAQueueModeSelectWidgetBase>(PC, QueueModeSelectWidgetClass);
 	}
 }
 
 void UDBAGameUIManager::CreateQueueStatusWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!QueueStatusWidgetClass)
 	{
 		return;
 	}
-	if (UWorld* World = GetWorld())
+
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			QueueStatusWidget = CreateWidget<UDBAQueueStatusWidgetBase>(PC, QueueStatusWidgetClass);
-		}
+		QueueStatusWidget = CreateWidget<UDBAQueueStatusWidgetBase>(PC, QueueStatusWidgetClass);
 	}
 }
 
 void UDBAGameUIManager::CreateReadyCheckWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!ReadyCheckWidgetClass)
 	{
 		return;
 	}
-	if (UWorld* World = GetWorld())
+
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			ReadyCheckWidget = CreateWidget<UDBAReadyCheckWidgetBase>(PC, ReadyCheckWidgetClass);
-		}
+		ReadyCheckWidget = CreateWidget<UDBAReadyCheckWidgetBase>(PC, ReadyCheckWidgetClass);
 	}
 }
 
 void UDBAGameUIManager::CreateMatchFoundWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!MatchFoundWidgetClass)
 	{
 		return;
 	}
-	if (UWorld* World = GetWorld())
+
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			MatchFoundWidget = CreateWidget<UDBAMatchFoundWidgetBase>(PC, MatchFoundWidgetClass);
-		}
+		MatchFoundWidget = CreateWidget<UDBAMatchFoundWidgetBase>(PC, MatchFoundWidgetClass);
 	}
 }
 
 void UDBAGameUIManager::CreatePortalConfirmWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!PortalConfirmWidgetClass)
 	{
 		return;
 	}
-	if (UWorld* World = GetWorld())
+
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			PortalConfirmWidget = CreateWidget<UDBAPortalConfirmWidgetBase>(PC, PortalConfirmWidgetClass);
-		}
+		PortalConfirmWidget = CreateWidget<UDBAPortalConfirmWidgetBase>(PC, PortalConfirmWidgetClass);
 	}
 }
 
 void UDBAGameUIManager::CreateInteractionPromptWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!InteractionPromptWidgetClass)
 	{
 		return;
 	}
-	if (UWorld* World = GetWorld())
+
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			InteractionPromptWidget = CreateWidget<UDBAInteractionPromptWidgetBase>(PC, InteractionPromptWidgetClass);
-		}
+		InteractionPromptWidget = CreateWidget<UDBAInteractionPromptWidgetBase>(PC, InteractionPromptWidgetClass);
 	}
 }
 
 void UDBAGameUIManager::CreateNewbieVillageMainWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!NewbieVillageMainWidgetClass)
 	{
 		return;
 	}
-	if (UWorld* World = GetWorld())
+
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			NewbieVillageMainWidget = CreateWidget<UDBANewbieVillageMainWidgetBase>(PC, NewbieVillageMainWidgetClass);
-		}
+		NewbieVillageMainWidget = CreateWidget<UDBANewbieVillageMainWidgetBase>(PC, NewbieVillageMainWidgetClass);
 	}
 }
 
 void UDBAGameUIManager::CreateNewbieTaskTrackerWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!NewbieTaskTrackerWidgetClass)
 	{
 		return;
 	}
-	if (UWorld* World = GetWorld())
+
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			NewbieTaskTrackerWidget = CreateWidget<UDBANewbieTaskTrackerWidgetBase>(PC, NewbieTaskTrackerWidgetClass);
-		}
+		NewbieTaskTrackerWidget = CreateWidget<UDBANewbieTaskTrackerWidgetBase>(PC, NewbieTaskTrackerWidgetClass);
 	}
 }
 
 void UDBAGameUIManager::HandleLoginFlowStateChanged(EDBALoginFlowState NewState)
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 登录流程状态已变化：%d"), static_cast<int32>(NewState));
 	CachedLoginFlowState = NewState;
 	RefreshLoginFlowWidgetVisibility();
 
-	if (NewState == EDBALoginFlowState::MainLobby && IsLobbyGameplayWorldForUIManager(GetWorld()))
+	if (NewState == EDBALoginFlowState::MainLobby && IsLobbyGameplayWorldForUIManager(World))
 	{
 		TransitionTo(EDBAUIState::Lobby);
 	}
@@ -1631,6 +2029,12 @@ void UDBAGameUIManager::HandleLoginFlowStateChanged(EDBALoginFlowState NewState)
 
 void UDBAGameUIManager::RefreshLoginFlowWidgetVisibility()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	switch (CachedLoginFlowState)
 	{
 	case EDBALoginFlowState::Startup:
@@ -1739,6 +2143,12 @@ void UDBAGameUIManager::RestoreInputModeAfterOverlayClosed()
 		return;
 	}
 
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	UUserWidget* FocusWidget = nullptr;
 	if (ReadyCheckWidget && bReadyCheckVisible)
 	{
@@ -1779,42 +2189,47 @@ void UDBAGameUIManager::RestoreInputModeAfterOverlayClosed()
 
 	if (FocusWidget)
 	{
-		ApplyFrontendInputMode(GetWorld(), FocusWidget);
+		ApplyFrontendInputMode(World, FocusWidget);
 	}
 	else
 	{
-		ApplyLobbyGameplayInputMode(GetWorld());
+		ApplyLobbyGameplayInputMode(World);
 	}
 }
 
 void UDBAGameUIManager::HandleReadyCheckCompleted(bool bAccepted)
 {
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Ready check completed: %s"), bAccepted ? TEXT("accepted") : TEXT("declined"));
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 准备确认已完成：%s"), bAccepted ? TEXT("已接受") : TEXT("已拒绝"));
 	HideReadyCheck();
 }
 
 void UDBAGameUIManager::HandlePortalConfirmed(FName DestinationId)
 {
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Portal confirmed: %s"), *DestinationId.ToString());
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 传送门已确认：%s"), *DestinationId.ToString());
 	HidePortalConfirm();
 }
 
 void UDBAGameUIManager::HandlePortalCancelled()
 {
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] Portal cancelled."));
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 传送门已取消。"));
 	HidePortalConfirm();
 }
 
 template<typename WidgetType>
 WidgetType* UDBAGameUIManager::EnsureFlowWidgetCreated(TSubclassOf<WidgetType> WidgetClass, TObjectPtr<WidgetType>& WidgetInstance)
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return nullptr;
+	}
+
 	if (WidgetInstance)
 	{
-		const UWorld* CurrentWorld = GetWorld();
 		const UWorld* WidgetWorld = WidgetInstance->GetWorld();
 		const APlayerController* OwningPC = WidgetInstance->GetOwningPlayer();
 		const UWorld* OwningPlayerWorld = OwningPC ? OwningPC->GetWorld() : nullptr;
-		const bool bWidgetWorldMatches = CurrentWorld && (WidgetWorld == CurrentWorld || OwningPlayerWorld == CurrentWorld);
+		const bool bWidgetWorldMatches = WidgetWorld == World || OwningPlayerWorld == World;
 		if (bWidgetWorldMatches)
 		{
 			return WidgetInstance;
@@ -1827,17 +2242,14 @@ WidgetType* UDBAGameUIManager::EnsureFlowWidgetCreated(TSubclassOf<WidgetType> W
 	{
 		return nullptr;
 	}
-	if (UWorld* World = GetWorld())
+	APlayerController* PC = World->GetFirstPlayerController();
+	if (!PC && World->GetGameInstance())
 	{
-		APlayerController* PC = World->GetFirstPlayerController();
-		if (!PC && World->GetGameInstance())
-		{
-			PC = World->GetGameInstance()->GetPrimaryPlayerController();
-		}
-		if (PC)
-		{
-			WidgetInstance = CreateWidget<WidgetType>(PC, WidgetClass);
-		}
+		PC = World->GetGameInstance()->GetPrimaryPlayerController();
+	}
+	if (PC)
+	{
+		WidgetInstance = CreateWidget<WidgetType>(PC, WidgetClass);
 	}
 	return WidgetInstance;
 }
@@ -1845,7 +2257,7 @@ WidgetType* UDBAGameUIManager::EnsureFlowWidgetCreated(TSubclassOf<WidgetType> W
 void UDBAGameUIManager::ScheduleFlowWidgetRefreshRetry()
 {
 	UWorld* World = GetWorld();
-	if (!World)
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
 	{
 		return;
 	}
@@ -1882,7 +2294,7 @@ void UDBAGameUIManager::ResetFlowWidgetRefreshRetry()
 void UDBAGameUIManager::ScheduleLobbyHUDRefreshRetry()
 {
 	UWorld* World = GetWorld();
-	if (!World)
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
 	{
 		return;
 	}
@@ -1895,11 +2307,11 @@ void UDBAGameUIManager::ScheduleLobbyHUDRefreshRetry()
 	++LobbyHUDRefreshRetryCount;
 	if (LobbyHUDRefreshRetryCount > 60)
 	{
-		UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] 大厅 HUD 重试超过上限。"));
+		UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] 大厅界面重试超过上限。"));
 		return;
 	}
 
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 大厅 HUD 尚未就绪，准备第 %d 次重试。"), LobbyHUDRefreshRetryCount);
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 大厅界面尚未就绪，准备第 %d 次重试。"), LobbyHUDRefreshRetryCount);
 	World->GetTimerManager().SetTimer(
 		LobbyHUDRefreshRetryTimerHandle,
 		this,
@@ -1919,33 +2331,49 @@ void UDBAGameUIManager::ResetLobbyHUDRefreshRetry()
 
 void UDBAGameUIManager::CreateLobbyPlayerHUDWidget()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!LobbyPlayerHUDWidgetClass)
 	{
 		return;
 	}
-	if (UWorld* World = GetWorld())
+
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			LobbyPlayerHUDWidget = CreateWidget<UDBALobbyPlayerHUDWidgetBase>(PC, LobbyPlayerHUDWidgetClass);
-			UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 大厅玩家 HUD 控件已创建：类=%s 成功=%s"),
-				*LobbyPlayerHUDWidgetClass->GetName(),
-				LobbyPlayerHUDWidget ? TEXT("是") : TEXT("否"));
-		}
-		else
-		{
-			UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 大厅玩家 HUD 正在等待 PlayerController。"));
-		}
+		LobbyPlayerHUDWidget = CreateWidget<UDBALobbyPlayerHUDWidgetBase>(PC, LobbyPlayerHUDWidgetClass);
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 大厅玩家界面控件已创建：类=%s 成功=%s"),
+			*LobbyPlayerHUDWidgetClass->GetName(),
+			LobbyPlayerHUDWidget ? TEXT("是") : TEXT("否"));
+	}
+	else
+	{
+		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 大厅玩家界面正在等待玩家控制器。"));
 	}
 }
 
 void UDBAGameUIManager::HandleFlowWidgetRefreshRetry()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	RefreshLoginFlowWidgetVisibility();
 }
 
 void UDBAGameUIManager::SetFlowWidgetVisible(UUserWidget* WidgetToShow)
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (!WidgetToShow)
 	{
 		return;
@@ -1953,13 +2381,14 @@ void UDBAGameUIManager::SetFlowWidgetVisible(UUserWidget* WidgetToShow)
 
 	HideAllFlowWidgets();
 	WidgetToShow->AddToViewport(10);
-	ApplyFrontendInputMode(GetWorld(), WidgetToShow);
+	ApplyFrontendInputMode(World, WidgetToShow);
 	bFlowWidgetVisible = true;
 }
 
 void UDBAGameUIManager::ShowSplashVideo()
 {
-	if (IsServerLikeRuntime(GetWorld()))
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
 	{
 		return;
 	}
@@ -1973,9 +2402,9 @@ void UDBAGameUIManager::ShowSplashVideo()
 			UE_LOG(LogDBACore, Error, TEXT("[DBAGameUIManager] 启动视频控件类为空。"));
 			return;
 		}
-		if (UWorld* World = GetWorld())
+		if (World)
 		{
-			UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 世界=%s URL=%s PlayerController数量=%d"), *World->GetName(), *World->URL.ToString(), World->GetNumPlayerControllers());
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 世界=%s 关卡地址=%s 玩家控制器数量=%d"), *World->GetName(), *World->URL.ToString(), World->GetNumPlayerControllers());
 			APlayerController* PC = World->GetGameInstance() ? World->GetGameInstance()->GetPrimaryPlayerController() : nullptr;
 			if (!PC)
 			{
@@ -1988,7 +2417,7 @@ void UDBAGameUIManager::ShowSplashVideo()
 			}
 			else
 			{
-				UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 世界 %s 中没有找到 PlayerController，当前数量=%d"), *World->GetName(), World->GetNumPlayerControllers());
+				UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 世界 %s 中没有找到玩家控制器，当前数量=%d"), *World->GetName(), World->GetNumPlayerControllers());
 				return;
 			}
 		}
@@ -1999,7 +2428,7 @@ void UDBAGameUIManager::ShowSplashVideo()
 	}
 	if (SplashVideoWidget)
 	{
-		RemoveAllViewportLoginWidgets(GetWorld());
+		RemoveAllViewportLoginWidgets(World);
 		if (CharacterSelectWidget)
 		{
 			CharacterSelectWidget->RemoveFromParent();
@@ -2014,12 +2443,18 @@ void UDBAGameUIManager::ShowSplashVideo()
 		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 启动视频控件已添加到视口。"));
 
 		// 设置键盘焦点到启动视频控件，以便接收 ESC 按键
-		ApplySplashInputMode(GetWorld(), SplashVideoWidget);
+		ApplySplashInputMode(World, SplashVideoWidget);
 	}
 }
 
 void UDBAGameUIManager::HideSplashVideo()
 {
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
+	{
+		return;
+	}
+
 	if (SplashVideoWidget && SplashVideoWidget->IsInViewport())
 	{
 		SplashVideoWidget->RemoveFromParent();
@@ -2028,7 +2463,8 @@ void UDBAGameUIManager::HideSplashVideo()
 
 void UDBAGameUIManager::EnsureLoginFlowBackgroundMusic()
 {
-	if (IsServerLikeRuntime(GetWorld()))
+	UWorld* World = GetWorld();
+	if (!IsWorldSafeForWidgetCreation(World) || IsServerLikeRuntime(World))
 	{
 		return;
 	}
@@ -2047,13 +2483,13 @@ void UDBAGameUIManager::EnsureLoginFlowBackgroundMusic()
 		}
 	}
 
-	if (!LoginFlowBackgroundMusicSound || !GetWorld())
+	if (!LoginFlowBackgroundMusicSound)
 	{
 		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 登录流程背景音乐不可用。"));
 		return;
 	}
 
-	LoginFlowBackgroundMusicComponent = UGameplayStatics::SpawnSound2D(GetWorld(), LoginFlowBackgroundMusicSound, 0.72f, 1.0f, 0.0f, nullptr, false, false);
+	LoginFlowBackgroundMusicComponent = UGameplayStatics::SpawnSound2D(World, LoginFlowBackgroundMusicSound, 0.72f, 1.0f, 0.0f, nullptr, false, false);
 	if (!LoginFlowBackgroundMusicComponent)
 	{
 		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameUIManager] 启动登录流程背景音乐失败。"));

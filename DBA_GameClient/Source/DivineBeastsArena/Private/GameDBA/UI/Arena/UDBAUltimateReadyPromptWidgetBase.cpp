@@ -18,6 +18,14 @@ UDBAUltimateReadyPromptWidgetBase::UDBAUltimateReadyPromptWidgetBase(const FObje
 void UDBAUltimateReadyPromptWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+	if (bCachedUltimateReadyVisible)
+	{
+		BP_OnUltimateReady();
+	}
+	else
+	{
+		BP_OnUltimateHidden();
+	}
 }
 
 void UDBAUltimateReadyPromptWidgetBase::NativeDestruct()
@@ -27,9 +35,12 @@ void UDBAUltimateReadyPromptWidgetBase::NativeDestruct()
 
 void UDBAUltimateReadyPromptWidgetBase::ShowUltimateReady()
 {
+	bCachedUltimateReadyVisible = true;
+	BP_OnUltimateReady();
 }
 
 void UDBAUltimateReadyPromptWidgetBase::HideUltimateReady()
 {
+	bCachedUltimateReadyVisible = false;
+	BP_OnUltimateHidden();
 }
-

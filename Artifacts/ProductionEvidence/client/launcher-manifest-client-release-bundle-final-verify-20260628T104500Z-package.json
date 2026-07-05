@@ -1,0 +1,181 @@
+﻿{
+    "version":  "0.1.0.0",
+    "downloadUrl":  "https://cdn.example.com/releases/0.1.0.0/",
+    "files":  [
+                  {
+                      "name":  "DivineBeastsArena.exe",
+                      "sha256":  "2c4ccf494afd4f29baf4fb395e51b9fa9c0f235b45be51be93e5534a5909e450",
+                      "size":  171520
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Binaries/Win64/D3D12/x64/D3D12Core.dll",
+                      "sha256":  "560f9574372a52ab66ad95ee1222f1eb4c9f6161d8f6b7b025d89f684b07246c",
+                      "size":  4821064
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Binaries/Win64/D3D12/x64/d3d12SDKLayers.dll",
+                      "sha256":  "bcec9e1315fb4dbc767371926fb5eb8281de1b3ab1fb530a636b3c193a9a2bbd",
+                      "size":  4932640
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Binaries/Win64/DivineBeastsArena-Win64-Shipping.exe",
+                      "sha256":  "7061b7e24152d88e06fdc6f1c95deaeec98a762328276abc81da1cb5800396a4",
+                      "size":  182293504
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Binaries/Win64/DML/x64/DirectML.dll",
+                      "sha256":  "9c9e6d822561c6c41b90e6994b3e8857cf1d66dbfb1e0c4c799c7c89b4e92da1",
+                      "size":  18527776
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Binaries/Win64/tbb12.dll",
+                      "sha256":  "e6856cefe45a067aaa5fdf033e6fe9704dafe8cf96e648c02230cf0cef0e745f",
+                      "size":  331776
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Binaries/Win64/tbbmalloc.dll",
+                      "sha256":  "af20d7ca563e542432b856f6628d9481247197d1853bd4057caaf6c449749d42",
+                      "size":  106496
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Content/Movies/Startup.mp4",
+                      "sha256":  "d9fecc08b14c963fe69c8308967a887f66396e95fb0a40bbf39c4f01473b1521",
+                      "size":  7624542
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Content/Movies/Startup.uasset",
+                      "sha256":  "e2052bccddd52b865f03c08354e54249e424718a07705a460f868a7381283095",
+                      "size":  6232
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Content/Movies/Startup.wav",
+                      "sha256":  "6990ed4c3f316b36a1a4c175f4413591b377c806ba4ca11f7d34d8db96fcc872",
+                      "size":  7017338
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Content/Paks/DivineBeastsArena-Windows.pak",
+                      "sha256":  "0801933b30af6e00926fc49c3684de6e658dfb06435157312028f39c1502d67e",
+                      "size":  16200733
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Content/Paks/DivineBeastsArena-Windows.ucas",
+                      "sha256":  "a5c11e1170ff22a8c1167789035e61dca284fa4f4e61112e63b388b76efaec63",
+                      "size":  206674112
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Content/Paks/DivineBeastsArena-Windows.utoc",
+                      "sha256":  "2397df118a4efcb2b5033c99423f3796eab7bcac900a0b79e055729b2cac78f6",
+                      "size":  205162
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Content/Paks/global.ucas",
+                      "sha256":  "53e480f0c262fcdd9069934c6e6103c6745e910ffc4704706a18e113a41cc934",
+                      "size":  3623520
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Content/Paks/global.utoc",
+                      "sha256":  "79ce68833aa4f940b39a51929a91aec20f76b8d089cf79dcb8916f0230efa40e",
+                      "size":  866
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Content/Splash/EdSplash.bmp",
+                      "sha256":  "66484e10bae0f73b7dcda80bffb07d5cc75461e946329cca7a147e32e9db1fe9",
+                      "size":  3686454
+                  },
+                  {
+                      "name":  "DivineBeastsArena/Content/Splash/Splash.bmp",
+                      "sha256":  "66484e10bae0f73b7dcda80bffb07d5cc75461e946329cca7a147e32e9db1fe9",
+                      "size":  3686454
+                  },
+                  {
+                      "name":  "Engine/Binaries/ThirdParty/DbgHelp/dbghelp.dll",
+                      "sha256":  "4b803d0bfa5d360cfcb3237d260226743d2255eacf6a98615334fb55deb7cf88",
+                      "size":  2221984
+                  },
+                  {
+                      "name":  "Engine/Binaries/ThirdParty/MsQuic/v220/win64/msquic.dll",
+                      "sha256":  "150963f4a05ffddc9a8498ae0ec4ddf5bed762a83b6ad089d2fd8d499101c7ea",
+                      "size":  2536368
+                  },
+                  {
+                      "name":  "Engine/Binaries/ThirdParty/NVIDIA/NVaftermath/Win64/GFSDK_Aftermath_Lib.x64.dll",
+                      "sha256":  "4177e09de4bbcc168deeb4f2d88f8961fe98009fae8046d08b418e725414de42",
+                      "size":  5788312
+                  },
+                  {
+                      "name":  "Engine/Binaries/ThirdParty/Ogg/Win64/VS2015/libogg_64.dll",
+                      "sha256":  "284a6e70a6dce01f8a02d93e1bb78baf0efb6140459c587d8986d59fb6bd675b",
+                      "size":  49152
+                  },
+                  {
+                      "name":  "Engine/Binaries/ThirdParty/Vorbis/Win64/VS2015/libvorbis_64.dll",
+                      "sha256":  "0f66dcb5837e9b59c499277fd272b862043356aa9145802cf0a63e00a1bcca59",
+                      "size":  1714176
+                  },
+                  {
+                      "name":  "Engine/Binaries/ThirdParty/Vorbis/Win64/VS2015/libvorbisfile_64.dll",
+                      "sha256":  "a9d6f5538f44011c1f65d7ace64216a237636717cb0c8c59f4f89cc08dd3d24f",
+                      "size":  37888
+                  },
+                  {
+                      "name":  "Engine/Binaries/ThirdParty/Windows/XAudio2_9/x64/xaudio2_9redist.dll",
+                      "sha256":  "0e01f400baa09694cacfd2cfbff0d721c17b56785d2d6e29b6fdd117f70ccc1e",
+                      "size":  847440
+                  },
+                  {
+                      "name":  "Engine/Config/StagedBuild_DivineBeastsArena.ini",
+                      "sha256":  "f1945cd6c19e56b3c1c78943ef5ec18116907a4ca1efc40a57d48ab1db7adfc5",
+                      "size":  3
+                  },
+                  {
+                      "name":  "Engine/Content/Renderer/TessellationTable.bin",
+                      "sha256":  "edc4f3b628a139c5e185bbaeca661c95c1f427368d3b92892c5cff36c56dd941",
+                      "size":  259568
+                  },
+                  {
+                      "name":  "Engine/Content/Slate/Cursor/invisible.cur",
+                      "sha256":  "fef3980fa567e9c45d5d8dcaa432a2c1a3f3bb17fe67d7ab198164f56c142aa1",
+                      "size":  326
+                  },
+                  {
+                      "name":  "Engine/Content/SlateDebug/Fonts/LastResort.tps",
+                      "sha256":  "1a89a055e643272d999b80b89e7ae84083bd2bbd5fdd5c131b386fb1056be0d9",
+                      "size":  916
+                  },
+                  {
+                      "name":  "Engine/Content/SlateDebug/Fonts/LastResort.ttf",
+                      "sha256":  "fff0f8de0b868b964950fe97c9b60f893e9bc85a4f90b3629c5693db058b97b9",
+                      "size":  5395052
+                  },
+                  {
+                      "name":  "Engine/Plugins/NNE/NNERuntimeORT/Binaries/ThirdParty/Onnxruntime/Win64/onnxruntime.dll",
+                      "sha256":  "8fba9fd33466c722a077731d46947d009ae20756b18977bb13158a29dd93d80a",
+                      "size":  17328672
+                  },
+                  {
+                      "name":  "launcher-manifest-local-cdn-smoke.json",
+                      "sha256":  "ae0de0d07fe07aab5017dcf15284c34df4fd7a9fe2806e9706815b53d424e784",
+                      "size":  9276
+                  },
+                  {
+                      "name":  "Manifest_DebugFiles_Win64.txt",
+                      "sha256":  "0b782c855daa9a9b0ccae893532f303ef0606d5c14aa57e6f78dddae39a6aebd",
+                      "size":  242
+                  },
+                  {
+                      "name":  "Manifest_NonUFSFiles_Win64.txt",
+                      "sha256":  "2d00b1be3effc242586ea708fd42d6505913f41a60e8a5f32ef55957a3b98408",
+                      "size":  1884
+                  },
+                  {
+                      "name":  "Manifest_UFSFiles_Win64.txt",
+                      "sha256":  "23523bea7eca90584103792a3286300efd65505c6af9c528cfdf7f9b68e058f4",
+                      "size":  256170
+                  },
+                  {
+                      "name":  "NOTICES.txt",
+                      "sha256":  "ba49ae5586f817b36a2772269f71f899cb1f54b5f2720fad951319edd5e140b8",
+                      "size":  111
+                  }
+              ]
+}

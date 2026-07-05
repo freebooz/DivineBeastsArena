@@ -10,7 +10,7 @@
 
 #include "GameCore/Queue/DBAQueueServiceBase.h"
 
-#include "GameCore/Account/DBAAccountServiceBase.h"
+#include "GameCore/Account/DBAOnlineAccountService.h"
 #include "GameCore/Party/DBAPartyServiceBase.h"
 #include "GameCore/Session/DBAFrontendSessionSubsystem.h"
 #include "Misc/DateTime.h"
@@ -23,13 +23,13 @@ UDBAQueueServiceBase::UDBAQueueServiceBase()
 void UDBAQueueServiceBase::OnSubsystemInitialize()
 {
 	Super::OnSubsystemInitialize();
-	LogSubsystemInfo(TEXT("Queue service initialized"));
+	LogSubsystemInfo(TEXT("队列服务已初始化。"));
 	bIsInitialized = true;
 }
 
 void UDBAQueueServiceBase::OnSubsystemDeinitialize()
 {
-	LogSubsystemInfo(TEXT("Queue service deinitialized"));
+	LogSubsystemInfo(TEXT("队列服务已反初始化。"));
 	Super::OnSubsystemDeinitialize();
 }
 
@@ -50,11 +50,11 @@ void UDBAQueueServiceBase::StartQueue(EDBAQueueType QueueType, FDBAOnQueueStarte
 		return;
 	}
 
-	UDBAAccountServiceBase* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAAccountServiceBase>() : nullptr;
+	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
 	UDBAPartyServiceBase* PartyService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAPartyServiceBase>() : nullptr;
 	if (!AccountService || !AccountService->IsLoggedIn() || !PartyService || !PartyService->IsInParty())
 	{
-		LogSubsystemError(TEXT("StartQueue failed: missing logged-in account or party"));
+		LogSubsystemError(TEXT("启动队列失败：缺少已登录账号或队伍。"));
 		FDBAQueueInfo EmptyQueue;
 		OnComplete.ExecuteIfBound(EmptyQueue);
 		return;
@@ -136,7 +136,7 @@ void UDBAQueueServiceBase::CancelQueue(FDBAOnQueueCancelled OnComplete)
 		FrontendSession->SetState(EDBAFrontendSessionState::InParty);
 	}
 
-	LogSubsystemInfo(TEXT("CancelQueue succeeded"));
+	LogSubsystemInfo(TEXT("取消队列成功。"));
 	OnComplete.ExecuteIfBound();
 }
 
@@ -153,7 +153,7 @@ void UDBAQueueServiceBase::ConfirmReady(const FDBAReadyCheckId& ReadyCheckId, FD
 		return;
 	}
 
-	UDBAAccountServiceBase* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAAccountServiceBase>() : nullptr;
+	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
 	if (!AccountService || !AccountService->IsLoggedIn())
 	{
 		OnComplete.ExecuteIfBound(false);
@@ -219,4 +219,3 @@ FDBAMatchSessionId UDBAQueueServiceBase::GenerateMatchSessionId()
 {
 	return FDBAMatchSessionId(FGuid::NewGuid().ToString());
 }
-

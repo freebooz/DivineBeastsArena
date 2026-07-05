@@ -9,6 +9,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using Game.Api.Extensions;
 using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Entities;
@@ -153,7 +154,7 @@ public static partial class AdminEndpoints
             : Results.Ok(ApiResponse<AdminProfileResponse>.Ok(admin));
     }
 
-    private static async Task<IResult> ListPlayers(int page, int pageSize, GameDbContext db)
+    private static async Task<IResult> ListPlayers(GameDbContext db, int page = 1, int pageSize = 50)
     {
         (page, pageSize) = NormalizePaging(page, pageSize);
 
@@ -239,7 +240,7 @@ public static partial class AdminEndpoints
         return Results.Ok(ApiResponse<PlayerDetailResponse>.Ok(response));
     }
 
-    private static async Task<IResult> ListAuditLogs(int page, int pageSize, GameDbContext db)
+    private static async Task<IResult> ListAuditLogs(GameDbContext db, int page = 1, int pageSize = 50)
     {
         (page, pageSize) = NormalizePaging(page, pageSize);
 
@@ -266,7 +267,7 @@ public static partial class AdminEndpoints
             new AdminAuditLogListResponse(items, total, page, pageSize)));
     }
 
-    private static async Task<IResult> ListFeedback(int page, int pageSize, string? status, GameDbContext db)
+    private static async Task<IResult> ListFeedback(GameDbContext db, string? status = null, int page = 1, int pageSize = 50)
     {
         (page, pageSize) = NormalizePaging(page, pageSize);
 
@@ -297,7 +298,7 @@ public static partial class AdminEndpoints
             new AdminFeedbackListResponse(items, total, page, pageSize)));
     }
 
-    private static async Task<IResult> ListSupportTickets(int page, int pageSize, string? status, GameDbContext db)
+    private static async Task<IResult> ListSupportTickets(GameDbContext db, string? status = null, int page = 1, int pageSize = 50)
     {
         (page, pageSize) = NormalizePaging(page, pageSize);
 
@@ -331,7 +332,7 @@ public static partial class AdminEndpoints
             new AdminSupportTicketListResponse(items, total, page, pageSize)));
     }
 
-private static async Task<IResult> ListMatches(int page, int pageSize, GameDbContext db)
+    private static async Task<IResult> ListMatches(GameDbContext db, int page = 1, int pageSize = 50)
     {
         (page, pageSize) = NormalizePaging(page, pageSize);
 
@@ -340,9 +341,11 @@ private static async Task<IResult> ListMatches(int page, int pageSize, GameDbCon
             .OrderByDescending(x => x.CreatedAt);
 
         var total = await query.CountAsync();
-        var items = await query
+        var matches = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .ToListAsync();
+        var items = matches
             .Select(x => new AdminMatchListItem(
                 x.Id,
                 x.SessionId,
@@ -351,8 +354,9 @@ private static async Task<IResult> ListMatches(int page, int pageSize, GameDbCon
                 x.DurationSeconds,
                 x.PlayerResults.Count,
                 x.ResultJson,
+                ExtractWinnerTeam(x.ResultJson),
                 x.CreatedAt))
-            .ToListAsync();
+            .ToList();
 
         return Results.Ok(ApiResponse<AdminMatchListResponse>.Ok(
             new AdminMatchListResponse(items, total, page, pageSize)));
@@ -360,37 +364,129 @@ private static async Task<IResult> ListMatches(int page, int pageSize, GameDbCon
 
     private static async Task<IResult> GetMatch(Guid matchId, GameDbContext db)
     {
-        var match = await db.MatchResults.AsNoTracking()
+        var matchEntity = await db.MatchResults.AsNoTracking()
             .Include(x => x.PlayerResults)
             .Where(x => x.Id == matchId)
-            .Select(x => new AdminMatchDetailResponse(
-                x.Id,
-                x.SessionId,
-                x.Mode,
-                x.MapId,
-                x.DurationSeconds,
-                x.ResultJson,
-                x.CreatedAt,
-                x.PlayerResults
-                    .OrderByDescending(p => p.Score)
-                    .Select(p => new AdminMatchPlayerItem(
-                        p.PlayerId,
-                        p.Team,
-                        p.Result,
-                        p.Kills,
-                        p.Deaths,
-                        p.Assists,
-                        p.Score,
-                        p.ExpDelta))
-                    .ToList()))
             .FirstOrDefaultAsync();
 
-        return match is null
-            ? Results.NotFound(ApiResponse.Fail("Match result not found."))
-            : Results.Ok(ApiResponse<AdminMatchDetailResponse>.Ok(match));
+        if (matchEntity is null)
+        {
+            return Results.NotFound(ApiResponse.Fail("Match result not found."));
+        }
+
+        var match = new AdminMatchDetailResponse(
+            matchEntity.Id,
+            matchEntity.SessionId,
+            matchEntity.Mode,
+            matchEntity.MapId,
+            matchEntity.DurationSeconds,
+            matchEntity.ResultJson,
+            ExtractWinnerTeam(matchEntity.ResultJson),
+            BuildTeamDistribution(matchEntity.PlayerResults),
+            matchEntity.CreatedAt,
+            matchEntity.PlayerResults
+                .OrderByDescending(p => p.Score)
+                .Select(p => new AdminMatchPlayerItem(
+                    p.PlayerId,
+                    p.Team,
+                    p.Result,
+                    p.Kills,
+                    p.Deaths,
+                    p.Assists,
+                    p.Score,
+                    p.ExpDelta,
+                    ParseRewardJson(p.RewardJson)))
+                .ToList());
+
+        return Results.Ok(ApiResponse<AdminMatchDetailResponse>.Ok(match));
     }
 
-private static string CreateToken(AdminUser admin, JwtOptions options)
+    private static string? ExtractWinnerTeam(string resultJson)
+    {
+        if (string.IsNullOrWhiteSpace(resultJson))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var payload = JsonDocument.Parse(resultJson);
+            var root = payload.RootElement;
+            return TryGetNonEmptyString(root, "winnerTeam")
+                ?? TryGetNonEmptyString(root, "winner_team");
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static IReadOnlyDictionary<string, int> BuildTeamDistribution(IEnumerable<MatchPlayerResult> players)
+    {
+        return players
+            .Select(player => string.IsNullOrWhiteSpace(player.Team) ? "-" : player.Team.Trim())
+            .GroupBy(team => team, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Count(),
+                StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string? TryGetNonEmptyString(JsonElement root, string propertyName)
+    {
+        if (!root.TryGetProperty(propertyName, out var property) ||
+            property.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var value = property.GetString();
+        return string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim();
+    }
+
+    private static IReadOnlyDictionary<string, object> ParseRewardJson(string rewardJson)
+    {
+        if (string.IsNullOrWhiteSpace(rewardJson))
+        {
+            return new Dictionary<string, object>();
+        }
+
+        try
+        {
+            var rewards = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(rewardJson);
+            if (rewards is null)
+            {
+                return new Dictionary<string, object>();
+            }
+
+            return rewards.ToDictionary(
+                pair => pair.Key,
+                pair => NormalizeRewardValue(pair.Value));
+        }
+        catch (JsonException)
+        {
+            return new Dictionary<string, object>();
+        }
+    }
+
+    private static object NormalizeRewardValue(JsonElement value)
+    {
+        return value.ValueKind switch
+        {
+            JsonValueKind.Number when value.TryGetInt64(out var longValue) => longValue,
+            JsonValueKind.Number when value.TryGetDouble(out var doubleValue) => doubleValue,
+            JsonValueKind.String => value.GetString() ?? string.Empty,
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Null => string.Empty,
+            _ => value.GetRawText()
+        };
+    }
+
+    private static string CreateToken(AdminUser admin, JwtOptions options)
     {
         var claims = new List<Claim>
         {

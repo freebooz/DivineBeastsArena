@@ -9,6 +9,9 @@
 
 
 #include "GameDBA/UI/Arena/UDBAPlayerUnitFrameWidgetBase.h"
+#include "GameCore/Types/DBACommonEnums.h"
+#include "GameDBA/Core/DBAConstants.h"
+#include "GameDBA/UI/Arena/UDBAPlayerUnitFrameWidgetController.h"
 
 /**
  * 鏋勯€犲嚱鏁? * 鍒濆鍖栫帺瀹跺崟鍏冩 Widget
@@ -20,6 +23,10 @@ UDBAPlayerUnitFrameWidgetBase::UDBAPlayerUnitFrameWidgetBase(const FObjectInitia
 	, CachedMaxHP(1000.0f)
 	, CachedCurrentEnergy(100.0f)
 	, CachedMaxEnergy(100.0f)
+	, CachedCurrentXP(0.0f)
+	, CachedMaxXP(100.0f)
+	, CachedUltimateEnergy(0.0f)
+	, CachedMaxUltimateEnergy(DBAConstants::MaxUltimateEnergy)
 	, CurrentLevel(1)
 {
 }
@@ -31,6 +38,11 @@ UDBAPlayerUnitFrameWidgetBase::UDBAPlayerUnitFrameWidgetBase(const FObjectInitia
 void UDBAPlayerUnitFrameWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+	UpdateHP(CachedCurrentHP, CachedMaxHP);
+	UpdateEnergy(CachedCurrentEnergy, CachedMaxEnergy);
+	UpdateXP(CachedCurrentXP, CachedMaxXP);
+	UpdateUltimateEnergyWithMax(CachedUltimateEnergy, CachedMaxUltimateEnergy);
+	UpdateLevel(CurrentLevel);
 }
 
 /**
@@ -67,7 +79,42 @@ void UDBAPlayerUnitFrameWidgetBase::NativeOnDeactivated()
  */
 void UDBAPlayerUnitFrameWidgetBase::SetWidgetController(UDBAPlayerUnitFrameWidgetController* InController)
 {
+	if (WidgetController)
+	{
+		WidgetController->OnHPUpdated.RemoveDynamic(this, &ThisClass::HandleControllerHPUpdated);
+		WidgetController->OnEnergyUpdated.RemoveDynamic(this, &ThisClass::HandleControllerEnergyUpdated);
+		WidgetController->OnLevelUpdated.RemoveDynamic(this, &ThisClass::HandleControllerLevelUpdated);
+	}
+
 	WidgetController = InController;
+
+	if (!WidgetController)
+	{
+		return;
+	}
+
+	WidgetController->OnHPUpdated.AddDynamic(this, &ThisClass::HandleControllerHPUpdated);
+	WidgetController->OnEnergyUpdated.AddDynamic(this, &ThisClass::HandleControllerEnergyUpdated);
+	WidgetController->OnLevelUpdated.AddDynamic(this, &ThisClass::HandleControllerLevelUpdated);
+
+	UpdateHP(WidgetController->GetCurrentHP(), WidgetController->GetMaxHP());
+	UpdateEnergy(WidgetController->GetCurrentEnergy(), WidgetController->GetMaxEnergy());
+	UpdateLevel(WidgetController->GetCurrentLevel());
+}
+
+void UDBAPlayerUnitFrameWidgetBase::HandleControllerHPUpdated(float CurrentHP, float MaxHP)
+{
+	UpdateHP(CurrentHP, MaxHP);
+}
+
+void UDBAPlayerUnitFrameWidgetBase::HandleControllerEnergyUpdated(float CurrentEnergy, float MaxEnergy)
+{
+	UpdateEnergy(CurrentEnergy, MaxEnergy);
+}
+
+void UDBAPlayerUnitFrameWidgetBase::HandleControllerLevelUpdated(int32 Level)
+{
+	UpdateLevel(Level);
 }
 
 /**
@@ -75,12 +122,18 @@ void UDBAPlayerUnitFrameWidgetBase::SetWidgetController(UDBAPlayerUnitFrameWidge
  * @param InCachedCurrentHP 褰撳墠鐢熷懡鍊? * @param InCachedMaxHP 鏈€澶х敓鍛藉€? */
 void UDBAPlayerUnitFrameWidgetBase::UpdateHP(float InCachedCurrentHP, float InCachedMaxHP)
 {
-	CachedCurrentHP = InCachedCurrentHP;
-	CachedMaxHP = InCachedMaxHP;
+	CachedCurrentHP = FMath::Max(0.0f, InCachedCurrentHP);
+	CachedMaxHP = FMath::Max(0.0f, InCachedMaxHP);
 
 	// 璁＄畻琛€鏉＄櫨鍒嗘瘮
-	float Percentage = CachedMaxHP > 0.0f ? CachedCurrentHP / CachedMaxHP : 0.0f;
+	float Percentage = FMath::Clamp(CachedMaxHP > 0.0f ? CachedCurrentHP / CachedMaxHP : 0.0f, 0.0f, 1.0f);
 	BP_OnUpdateHP(CachedCurrentHP, CachedMaxHP, Percentage);
+
+	// 鏇存柊鐢熷懡鏉idget
+	if (HealthBar)
+	{
+		HealthBar->SetPercent(Percentage);
+	}
 }
 
 /**
@@ -88,11 +141,11 @@ void UDBAPlayerUnitFrameWidgetBase::UpdateHP(float InCachedCurrentHP, float InCa
  * @param InCachedCurrentEnergy 褰撳墠鑳介噺鍊? * @param InCachedMaxEnergy 鏈€澶ц兘閲忓€? */
 void UDBAPlayerUnitFrameWidgetBase::UpdateEnergy(float InCachedCurrentEnergy, float InCachedMaxEnergy)
 {
-	CachedCurrentEnergy = InCachedCurrentEnergy;
-	CachedMaxEnergy = InCachedMaxEnergy;
+	CachedCurrentEnergy = FMath::Max(0.0f, InCachedCurrentEnergy);
+	CachedMaxEnergy = FMath::Max(0.0f, InCachedMaxEnergy);
 
 	// 璁＄畻鑳介噺鏉＄櫨鍒嗘瘮
-	float Percentage = CachedMaxEnergy > 0.0f ? CachedCurrentEnergy / CachedMaxEnergy : 0.0f;
+	float Percentage = FMath::Clamp(CachedMaxEnergy > 0.0f ? CachedCurrentEnergy / CachedMaxEnergy : 0.0f, 0.0f, 1.0f);
 	BP_OnUpdateEnergy(CachedCurrentEnergy, CachedMaxEnergy, Percentage);
 
 	// 鏇存柊鑳介噺鏉idget
@@ -104,11 +157,11 @@ void UDBAPlayerUnitFrameWidgetBase::UpdateEnergy(float InCachedCurrentEnergy, fl
 
 void UDBAPlayerUnitFrameWidgetBase::UpdateXP(float InCachedCurrentXP, float InCachedMaxXP)
 {
-	CachedCurrentXP = InCachedCurrentXP;
-	CachedMaxXP = InCachedMaxXP;
+	CachedCurrentXP = FMath::Max(0.0f, InCachedCurrentXP);
+	CachedMaxXP = FMath::Max(0.0f, InCachedMaxXP);
 
 	// 璁＄畻缁忛獙鏉＄櫨鍒嗘瘮
-	float Percentage = CachedMaxXP > 0.0f ? CachedCurrentXP / CachedMaxXP : 0.0f;
+	float Percentage = FMath::Clamp(CachedMaxXP > 0.0f ? CachedCurrentXP / CachedMaxXP : 0.0f, 0.0f, 1.0f);
 	BP_OnUpdateXP(CachedCurrentXP, CachedMaxXP, Percentage);
 
 	// 鏇存柊缁忛獙鏉idget
@@ -120,9 +173,15 @@ void UDBAPlayerUnitFrameWidgetBase::UpdateXP(float InCachedCurrentXP, float InCa
 
 void UDBAPlayerUnitFrameWidgetBase::UpdateUltimateEnergy(float Energy)
 {
-	CachedUltimateEnergy = FMath::Clamp(Energy, 0.0f, 100.0f);
+	UpdateUltimateEnergyWithMax(Energy, DBAConstants::MaxUltimateEnergy);
+}
 
-		float Percentage = CachedUltimateEnergy / 100.0f;
+void UDBAPlayerUnitFrameWidgetBase::UpdateUltimateEnergyWithMax(float Energy, float MaxEnergy)
+{
+	CachedMaxUltimateEnergy = FMath::Max(1.0f, MaxEnergy);
+	CachedUltimateEnergy = FMath::Clamp(Energy, 0.0f, CachedMaxUltimateEnergy);
+
+	float Percentage = CachedUltimateEnergy / CachedMaxUltimateEnergy;
 	BP_OnUpdateUltimateEnergy(CachedUltimateEnergy, Percentage);
 
 	// 鏇存柊缁堟瀬鑳介噺鏉idget
@@ -134,13 +193,16 @@ void UDBAPlayerUnitFrameWidgetBase::UpdateUltimateEnergy(float Energy)
 
 void UDBAPlayerUnitFrameWidgetBase::UpdateLevel(int32 Level)
 {
-	CurrentLevel = Level;
+	CurrentLevel = FMath::Max(1, Level);
 	BP_OnUpdateLevel(CurrentLevel);
 }
 
 void UDBAPlayerUnitFrameWidgetBase::ApplyFiveCampTheme(uint8 FiveCamp)
 {
-	BP_OnApplyFiveCampTheme(FiveCamp);
+	const uint8 NormalizedFiveCamp = FMath::Clamp(
+		FiveCamp,
+		static_cast<uint8>(EDBAFiveCamp::None),
+		static_cast<uint8>(EDBAFiveCamp::Center));
+
+	BP_OnApplyFiveCampTheme(NormalizedFiveCamp);
 }
-
-

@@ -1,0 +1,104 @@
+{
+  "asset_path": "/Game/FrostMage/UI/WBP_FrostboltDebugHUD",
+  "parent_class": "UserWidget",
+  "root": {
+    "name": "CanvasPanel",
+    "class": "CanvasPanel",
+    "visibility": "ESlateVisibility::SelfHitTestInvisible",
+    "render_opacity": 1,
+    "is_variable": false,
+    "children": [
+      {
+        "name": "DebugRoot",
+        "class": "Border",
+        "visibility": "ESlateVisibility::Visible",
+        "render_opacity": 1,
+        "is_variable": false,
+        "slot": {
+          "slot_type": "CanvasPanelSlot",
+          "anchors": {
+            "min_x": 0,
+            "min_y": 0,
+            "max_x": 0,
+            "max_y": 0
+          },
+          "offsets": {
+            "left": 32,
+            "top": 32,
+            "right": 360,
+            "bottom": 140
+          },
+          "alignment": {
+            "x": 0,
+            "y": 0
+          },
+          "z_order": 0,
+          "auto_size": false
+        },
+        "children": [
+          {
+            "name": "DebugVBox",
+            "class": "VerticalBox",
+            "visibility": "ESlateVisibility::SelfHitTestInvisible",
+            "render_opacity": 1,
+            "is_variable": false,
+            "slot": {
+              "slot_type": "BorderSlot"
+            },
+            "children": [
+              {
+                "name": "HeaderText",
+                "class": "TextBlock",
+                "visibility": "ESlateVisibility::Visible",
+                "render_opacity": 1,
+                "is_variable": false,
+                "slot": {
+                  "slot_type": "VerticalBoxSlot",
+                  "h_align": "HAlign_Fill",
+                  "v_align": "VAlign_Fill"
+                }
+              },
+              {
+                "name": "FlightStatus",
+                "class": "TextBlock",
+                "visibility": "ESlateVisibility::Visible",
+                "render_opacity": 1,
+                "is_variable": false,
+                "slot": {
+                  "slot_type": "VerticalBoxSlot",
+                  "h_align": "HAlign_Fill",
+                  "v_align": "VAlign_Fill"
+                }
+              },
+              {
+                "name": "ImpactStatus",
+                "class": "TextBlock",
+                "visibility": "ESlateVisibility::Visible",
+                "render_opacity": 1,
+                "is_variable": false,
+                "slot": {
+                  "slot_type": "VerticalBoxSlot",
+                  "h_align": "HAlign_Fill",
+                  "v_align": "VAlign_Fill"
+                }
+              },
+              {
+                "name": "HintText",
+                "class": "TextBlock",
+                "visibility": "ESlateVisibility::Visible",
+                "render_opacity": 1,
+                "is_variable": false,
+                "slot": {
+                  "slot_type": "VerticalBoxSlot",
+                  "h_align": "HAlign_Fill",
+                  "v_align": "VAlign_Fill"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "widget_count": 7
+}

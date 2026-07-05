@@ -12,13 +12,11 @@ using Game.Shared.Common;
 using Game.Api.Extensions;
 using Game.Shared.Errors;
 using Game.Infrastructure.Database;
+using Game.Api.Services.Runtime;
 using Game.Api.Services.Settlement;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
-using SettlementSubmitMatchResultRequest = Game.Shared.Contracts.Settlement.SubmitMatchResultRequest;
-using SettlementMatchPlayerResultDto = Game.Shared.Contracts.Settlement.MatchPlayerResultDto;
 
 namespace Game.Api.Endpoints.Runtime;
 
@@ -165,15 +163,23 @@ GET /internal/runtime/servers/{serverId}
             .FirstOrDefaultAsync(x => x.GameSessionId == request.SessionId && x.PlayerId == request.PlayerId);
         if (playerSession is null) return ErrorResponse.NotFound(ErrorCodes.SessionPlayerNotInSession).ToProblem();
 
-        if (!string.IsNullOrWhiteSpace(request.PlayerSessionToken) &&
+        if (string.IsNullOrWhiteSpace(playerSession.SessionTokenHash) ||
+            playerSession.SessionTokenExpiresAt <= DateTimeOffset.UtcNow ||
+            string.IsNullOrWhiteSpace(request.PlayerSessionToken) ||
             !string.Equals(playerSession.SessionTokenHash, HashToken(request.PlayerSessionToken), StringComparison.Ordinal))
         {
             return ErrorResponse.Unauthorized("Invalid player session token").ToProblem();
         }
 
+        var buildSummaryValidation = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request);
+        if (!buildSummaryValidation.IsValid)
+        {
+            return ErrorResponse.BadRequest(buildSummaryValidation.ErrorMessage ?? RuntimePlayerJoinValidator.BuildSummaryMismatchMessage).ToProblem();
+        }
+
         playerSession.Status = "JOINED";
         playerSession.JoinedAt = DateTimeOffset.UtcNow;
-        AddSessionEvent(db, request.SessionId, "PLAYER_JOINED", $$"""{"playerId":"{{request.PlayerId}}"}""");
+        AddSessionEvent(db, request.SessionId, "PLAYER_JOINED", RuntimePlayerJoinValidator.BuildPlayerJoinedEventPayload(playerSession));
         await db.SaveChangesAsync();
         return Results.Ok(ApiResponse.Ok());
     }
@@ -185,11 +191,20 @@ GET /internal/runtime/servers/{serverId}
 
         var playerSession = await db.PlayerSessions
             .FirstOrDefaultAsync(x => x.GameSessionId == request.SessionId && x.PlayerId == request.PlayerId);
-        if (playerSession is not null)
+        if (playerSession is null) return ErrorResponse.NotFound(ErrorCodes.SessionPlayerNotInSession).ToProblem();
+
+        if (playerSession.LeftAt is not null)
         {
-            playerSession.Status = "LEFT";
-            playerSession.LeftAt = DateTimeOffset.UtcNow;
+            return Results.Ok(ApiResponse.Ok());
         }
+
+        if (playerSession.JoinedAt is null || playerSession.Status != "JOINED")
+        {
+            return ErrorResponse.BadRequest("Player has not joined session").ToProblem();
+        }
+
+        playerSession.Status = "LEFT";
+        playerSession.LeftAt = DateTimeOffset.UtcNow;
 
         AddSessionEvent(db, request.SessionId, "PLAYER_LEFT", $$"""{"playerId":"{{request.PlayerId}}"}""");
         await db.SaveChangesAsync();
@@ -201,18 +216,9 @@ GET /internal/runtime/servers/{serverId}
         var server = await ValidateRuntimeAsync(db, request.ServerId, request.SessionId, request.RuntimeToken);
         if (server is null) return ErrorResponse.Unauthorized("Invalid runtime token").ToProblem();
 
-        var session = await db.GameSessions.FindAsync(request.SessionId);
-        if (session is null) return ErrorResponse.NotFound(ErrorCodes.SessionNotFound).ToProblem();
-
-        session.Status = "IN_PROGRESS";
-        session.StartedAt ??= DateTimeOffset.UtcNow;
-        session.UpdatedAt = DateTimeOffset.UtcNow;
-        server.Status = "IN_PROGRESS";
-        server.LastHeartbeatAt = DateTimeOffset.UtcNow;
-        AddSessionEvent(db, request.SessionId, "MATCH_STARTED", "{}");
-        AddServerEvent(db, request.ServerId, "MATCH_STARTED", "{}");
-        await db.SaveChangesAsync();
-        return Results.Ok(ApiResponse.Ok());
+        return await RuntimeLifecycleService.MarkMatchStartedAsync(db, request.ServerId, request.SessionId)
+            ? Results.Ok(ApiResponse.Ok())
+            : ErrorResponse.NotFound(ErrorCodes.SessionNotFound).ToProblem();
     }
 
     private static async Task<IResult> RuntimeMatchEnded(RuntimeMatchEndedRequest request, GameDbContext db)
@@ -220,16 +226,9 @@ GET /internal/runtime/servers/{serverId}
         var server = await ValidateRuntimeAsync(db, request.ServerId, request.SessionId, request.RuntimeToken);
         if (server is null) return ErrorResponse.Unauthorized("Invalid runtime token").ToProblem();
 
-        var session = await db.GameSessions.FindAsync(request.SessionId);
-        if (session is null) return ErrorResponse.NotFound(ErrorCodes.SessionNotFound).ToProblem();
-
-        session.Status = "SETTLING";
-        session.UpdatedAt = DateTimeOffset.UtcNow;
-        server.Status = "ENDING";
-        AddSessionEvent(db, request.SessionId, "MATCH_ENDED", "{}");
-        AddServerEvent(db, request.ServerId, "MATCH_ENDED", "{}");
-        await db.SaveChangesAsync();
-        return Results.Ok(ApiResponse.Ok());
+        return await RuntimeLifecycleService.MarkMatchEndedAsync(db, request.ServerId, request.SessionId)
+            ? Results.Ok(ApiResponse.Ok())
+            : ErrorResponse.NotFound(ErrorCodes.SessionNotFound).ToProblem();
     }
 
     private static async Task<IResult> RuntimeMatchResults(RuntimeMatchResultsRequest request, GameDbContext db, ISettlementService settlement)
@@ -237,23 +236,17 @@ GET /internal/runtime/servers/{serverId}
         var server = await ValidateRuntimeAsync(db, request.ServerId, request.SessionId, request.RuntimeToken);
         if (server is null) return ErrorResponse.Unauthorized("Invalid runtime token").ToProblem();
 
-        var playerIds = await db.PlayerSessions
+        var sessionPlayerTeams = await db.PlayerSessions
             .Where(x => x.GameSessionId == request.SessionId)
-            .Select(x => x.PlayerId)
-            .ToListAsync();
-        if (request.Players.Any(x => !playerIds.Contains(x.PlayerId)))
+            .Select(x => new { x.PlayerId, x.Team })
+            .ToDictionaryAsync(x => x.PlayerId, x => x.Team);
+        var validation = RuntimeMatchResultsValidator.ValidateAndBuildPayload(request, sessionPlayerTeams);
+        if (!validation.IsValid || validation.Payload is null)
         {
-            return ErrorResponse.BadRequest("Match result contains players not in session").ToProblem();
+            return ErrorResponse.BadRequest(validation.ErrorMessage ?? "Invalid match result").ToProblem();
         }
 
-        var payload = new SettlementSubmitMatchResultRequest(
-            request.SessionId,
-            request.IdempotencyKey,
-            string.IsNullOrWhiteSpace(request.ResultJson) ? JsonSerializer.Serialize(request) : request.ResultJson,
-            request.Players.Select(x => new SettlementMatchPlayerResultDto(
-                x.PlayerId, x.Team, x.Result, x.Kills, x.Deaths, x.Assists, x.Score, x.ExpDelta, x.Rewards)).ToList());
-
-        var result = await settlement.SubmitMatchResultAsync(payload);
+        var result = await settlement.SubmitMatchResultAsync(validation.Payload);
         return result is null
             ? ErrorResponse.BadRequest("Failed to settle match result").ToProblem()
             : Results.Ok(ApiResponse<object>.Ok(new { matchResultId = result.Id }));
@@ -304,8 +297,14 @@ GET /internal/runtime/servers/{serverId}
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
 
-    private static async Task<IResult> AllocateServer(AllocateServerRequest request, Services.Runtime.IGameServerService svc)
+    private static async Task<IResult> AllocateServer(
+        AllocateServerRequest request,
+        Services.Runtime.IGameServerService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var server = await svc.AllocateServerAsync(request);
         return server == null
             ? ErrorResponse.BadRequest("Failed to allocate server").ToProblem()
@@ -313,8 +312,14 @@ GET /internal/runtime/servers/{serverId}
                 server.Id, server.Ip, server.Port, "", server.RuntimeTokenExpiresAt!.Value)));
     }
 
-    private static async Task<IResult> GetServer(Guid serverId, Services.Runtime.IGameServerService svc)
+    private static async Task<IResult> GetServer(
+        Guid serverId,
+        Services.Runtime.IGameServerService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var server = await svc.GetServerByIdAsync(serverId);
         return server == null
             ? ErrorResponse.NotFound(ErrorCodes.GameServerNotFound).ToProblem()
@@ -322,8 +327,15 @@ GET /internal/runtime/servers/{serverId}
                 server.Id, server.Ip, server.Port, "", server.RuntimeTokenExpiresAt!.Value)));
     }
 
-    private static async Task<IResult> Heartbeat(Guid serverId, HeartbeatRequest request, Services.Runtime.IGameServerService svc)
+    private static async Task<IResult> Heartbeat(
+        Guid serverId,
+        HeartbeatRequest request,
+        Services.Runtime.IGameServerService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var server = await svc.HeartbeatAsync(serverId, request);
         return server == null
             ? ErrorResponse.NotFound(ErrorCodes.GameServerNotFound).ToProblem()
@@ -331,8 +343,14 @@ GET /internal/runtime/servers/{serverId}
                 server.Id, server.Ip, server.Port, "", server.RuntimeTokenExpiresAt!.Value)));
     }
 
-    private static async Task<IResult> MarkReady(Guid serverId, Services.Runtime.IGameServerService svc)
+    private static async Task<IResult> MarkReady(
+        Guid serverId,
+        Services.Runtime.IGameServerService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var server = await svc.MarkReadyAsync(serverId);
         return server == null
             ? ErrorResponse.NotFound(ErrorCodes.GameServerNotFound).ToProblem()
@@ -340,8 +358,15 @@ GET /internal/runtime/servers/{serverId}
                 server.Id, server.Ip, server.Port, "", server.RuntimeTokenExpiresAt!.Value)));
     }
 
-    private static async Task<IResult> MarkStopped(Guid serverId, StoppedServerRequest request, Services.Runtime.IGameServerService svc)
+    private static async Task<IResult> MarkStopped(
+        Guid serverId,
+        StoppedServerRequest request,
+        Services.Runtime.IGameServerService svc,
+        HttpContext httpContext)
     {
+        var unauthorized = InternalApiKeyEndpointFilter.Validate(httpContext);
+        if (unauthorized is not null) return unauthorized;
+
         var server = await svc.MarkStoppedAsync(serverId, request.ExitCode, request.CrashReason);
         return server == null
             ? ErrorResponse.NotFound(ErrorCodes.GameServerNotFound).ToProblem()

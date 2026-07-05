@@ -23,7 +23,10 @@
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Snake.h"
 #include "GameDBA/Character/Zodiac/DBAZodiacCharacter_Tiger.h"
 #include "GameDBA/Character/Monster/DBALobbyTrainingMonster.h"
+#include "GameDBA/Character/DBAZodiacCharacterBase.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/Framework/DBAUrlOptions.h"
+#include "GameDBA/Player/DBAPlayerState.h"
 #include "GameDBA/Player/DBALobbyPlayerController.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPreviewActor.h"
 #include "GameDBA/UI/Lobby/Login/DBACharacterPresentationActor.h"
@@ -57,32 +60,6 @@ namespace
 		EDBAZodiac::Dog,
 		EDBAZodiac::Pig
 	};
-
-	FString ExtractUrlOption(const FString& Options, const FString& Key)
-	{
-		TArray<FString> Parts;
-		Options.ParseIntoArray(Parts, TEXT("?"), true);
-
-		TArray<FString> AmpersandParts;
-		for (const FString& Part : Parts)
-		{
-			TArray<FString> SplitParts;
-			Part.ParseIntoArray(SplitParts, TEXT("&"), true);
-			AmpersandParts.Append(SplitParts);
-		}
-
-		const FString Prefix = Key + TEXT("=");
-		for (FString Part : AmpersandParts)
-		{
-			Part.TrimStartAndEndInline();
-			if (Part.StartsWith(Prefix, ESearchCase::IgnoreCase))
-			{
-				return Part.RightChop(Prefix.Len()).TrimStartAndEnd();
-			}
-		}
-
-		return FString();
-	}
 
 	EDBAZodiac ParseZodiacValue(const FString& RawValue)
 	{
@@ -133,6 +110,25 @@ namespace
 		return EDBAZodiac::None;
 	}
 
+	const TCHAR* ToStableFiveCampName(EDBAFiveCamp FiveCamp)
+	{
+		switch (FiveCamp)
+		{
+		case EDBAFiveCamp::East:
+			return TEXT("East");
+		case EDBAFiveCamp::West:
+			return TEXT("West");
+		case EDBAFiveCamp::South:
+			return TEXT("South");
+		case EDBAFiveCamp::North:
+			return TEXT("North");
+		case EDBAFiveCamp::Center:
+			return TEXT("Center");
+		default:
+			return TEXT("None");
+		}
+	}
+
 	bool IsLobbyMapWorld(const UWorld* World)
 	{
 		if (!World || !World->PersistentLevel)
@@ -142,6 +138,272 @@ namespace
 
 		const FString LevelPath = World->PersistentLevel->GetOutermost()->GetName();
 		return LevelPath.Contains(TEXT("LobbyMap")) || LevelPath.Contains(TEXT("MainLobby"));
+	}
+
+	int32 CompareBackendMatchResultRank(
+		const FDBA_GameBackendRuntimePlayerResult& Left,
+		const FDBA_GameBackendRuntimePlayerResult& Right)
+	{
+		if (Left.Score != Right.Score)
+		{
+			return Left.Score > Right.Score ? 1 : -1;
+		}
+		if (Left.Kills != Right.Kills)
+		{
+			return Left.Kills > Right.Kills ? 1 : -1;
+		}
+		if (Left.Deaths != Right.Deaths)
+		{
+			return Left.Deaths < Right.Deaths ? 1 : -1;
+		}
+		return 0;
+	}
+
+	bool HasBackendMatchResultActivity(const FDBA_GameBackendRuntimePlayerResult& PlayerResult)
+	{
+		return PlayerResult.Score > 0
+			|| PlayerResult.Kills > 0
+			|| PlayerResult.Assists > 0
+			|| PlayerResult.Deaths > 0;
+	}
+
+	int32 ResolveBackendMatchTeamIdFromOptions(const FString& Options)
+	{
+		int32 TeamId = 0;
+		return DBAUrlOptions::TryExtractTeamId(Options, TeamId) ? TeamId : 0;
+	}
+
+	int32 ResolveBackendMatchTeamId(const APlayerController* PlayerController, const TMap<TObjectKey<APlayerController>, int32>& StoredTeamIds)
+	{
+		if (!PlayerController)
+		{
+			return 0;
+		}
+
+		const int32 StoredTeamId = StoredTeamIds.FindRef(TObjectKey<APlayerController>(PlayerController));
+		if (StoredTeamId > 0)
+		{
+			return StoredTeamId;
+		}
+
+		if (const ADBAZodiacCharacterBase* ZodiacCharacter = Cast<ADBAZodiacCharacterBase>(PlayerController->GetPawn()))
+		{
+			return FMath::Max(0, ZodiacCharacter->GetTeamID());
+		}
+
+		return 0;
+	}
+
+	FString BuildBackendRuntimeTeamName(int32 TeamId)
+	{
+		switch (TeamId)
+		{
+		case 1:
+			return TEXT("blue");
+		case 2:
+			return TEXT("red");
+		default:
+			return TeamId > 0 ? FString::FromInt(TeamId) : FString();
+		}
+	}
+
+	struct FBackendMatchTeamScore
+	{
+		int32 Score = 0;
+		int32 Kills = 0;
+		int32 Deaths = 0;
+		bool bHasActivity = false;
+	};
+
+	struct FBackendMatchTeamOutcome
+	{
+		FString WinnerPlayerId;
+		FString WinnerTeam;
+		bool bUsedTeamOutcome = false;
+	};
+
+	int32 CompareBackendMatchTeamScore(const FBackendMatchTeamScore& Left, const FBackendMatchTeamScore& Right)
+	{
+		if (Left.Score != Right.Score)
+		{
+			return Left.Score > Right.Score ? 1 : -1;
+		}
+		if (Left.Kills != Right.Kills)
+		{
+			return Left.Kills > Right.Kills ? 1 : -1;
+		}
+		if (Left.Deaths != Right.Deaths)
+		{
+			return Left.Deaths < Right.Deaths ? 1 : -1;
+		}
+		return 0;
+	}
+
+	FBackendMatchTeamOutcome BuildBackendMatchTeamOutcome(TArray<FDBA_GameBackendRuntimePlayerResult>& PlayerResults)
+	{
+		FBackendMatchTeamOutcome Outcome;
+		TMap<FString, FBackendMatchTeamScore> TeamScores;
+
+		for (const FDBA_GameBackendRuntimePlayerResult& PlayerResult : PlayerResults)
+		{
+			if (PlayerResult.Team.IsEmpty())
+			{
+				continue;
+			}
+
+			FBackendMatchTeamScore& TeamScore = TeamScores.FindOrAdd(PlayerResult.Team);
+			TeamScore.Score += PlayerResult.Score;
+			TeamScore.Kills += PlayerResult.Kills;
+			TeamScore.Deaths += PlayerResult.Deaths;
+			TeamScore.bHasActivity = TeamScore.bHasActivity || HasBackendMatchResultActivity(PlayerResult);
+		}
+
+		if (TeamScores.Num() < 2)
+		{
+			return Outcome;
+		}
+
+		FString BestTeam;
+		FBackendMatchTeamScore BestScore;
+		bool bHasActivity = false;
+		bool bHasTie = false;
+		bool bHasBestTeam = false;
+
+		for (const TPair<FString, FBackendMatchTeamScore>& Entry : TeamScores)
+		{
+			bHasActivity = bHasActivity || Entry.Value.bHasActivity;
+			if (!bHasBestTeam)
+			{
+				BestTeam = Entry.Key;
+				BestScore = Entry.Value;
+				bHasBestTeam = true;
+				bHasTie = false;
+				continue;
+			}
+
+			const int32 RankComparison = CompareBackendMatchTeamScore(Entry.Value, BestScore);
+			if (RankComparison > 0)
+			{
+				BestTeam = Entry.Key;
+				BestScore = Entry.Value;
+				bHasTie = false;
+			}
+			else if (RankComparison == 0)
+			{
+				bHasTie = true;
+			}
+		}
+
+		Outcome.bUsedTeamOutcome = true;
+		if (!bHasActivity || bHasTie)
+		{
+			for (FDBA_GameBackendRuntimePlayerResult& PlayerResult : PlayerResults)
+			{
+				PlayerResult.Result = TEXT("draw");
+			}
+			return Outcome;
+		}
+
+		Outcome.WinnerTeam = BestTeam;
+		for (FDBA_GameBackendRuntimePlayerResult& PlayerResult : PlayerResults)
+		{
+			if (PlayerResult.Team == BestTeam)
+			{
+				PlayerResult.Result = TEXT("win");
+				if (Outcome.WinnerPlayerId.IsEmpty())
+				{
+					Outcome.WinnerPlayerId = PlayerResult.PlayerId;
+				}
+			}
+			else
+			{
+				PlayerResult.Result = TEXT("loss");
+			}
+		}
+		return Outcome;
+	}
+
+	FBackendMatchTeamOutcome ApplyBackendMatchResultsOutcome(TArray<FDBA_GameBackendRuntimePlayerResult>& PlayerResults)
+	{
+		FBackendMatchTeamOutcome TeamOutcome = BuildBackendMatchTeamOutcome(PlayerResults);
+		if (TeamOutcome.bUsedTeamOutcome)
+		{
+			return TeamOutcome;
+		}
+
+		int32 BestIndex = INDEX_NONE;
+		bool bHasActivity = false;
+		bool bHasTie = false;
+
+		for (int32 Index = 0; Index < PlayerResults.Num(); ++Index)
+		{
+			const FDBA_GameBackendRuntimePlayerResult& PlayerResult = PlayerResults[Index];
+			bHasActivity = bHasActivity || HasBackendMatchResultActivity(PlayerResult);
+
+			if (BestIndex == INDEX_NONE)
+			{
+				BestIndex = Index;
+				bHasTie = false;
+				continue;
+			}
+
+			const int32 RankComparison = CompareBackendMatchResultRank(PlayerResult, PlayerResults[BestIndex]);
+			if (RankComparison > 0)
+			{
+				BestIndex = Index;
+				bHasTie = false;
+			}
+			else if (RankComparison == 0)
+			{
+				bHasTie = true;
+			}
+		}
+
+		if (!bHasActivity || BestIndex == INDEX_NONE || bHasTie)
+		{
+			for (FDBA_GameBackendRuntimePlayerResult& PlayerResult : PlayerResults)
+			{
+				PlayerResult.Result = TEXT("draw");
+			}
+			return FBackendMatchTeamOutcome();
+		}
+
+		FBackendMatchTeamOutcome Outcome;
+		Outcome.WinnerPlayerId = PlayerResults[BestIndex].PlayerId;
+		for (FDBA_GameBackendRuntimePlayerResult& PlayerResult : PlayerResults)
+		{
+			if (PlayerResult.PlayerId == Outcome.WinnerPlayerId)
+			{
+				PlayerResult.Result = TEXT("win");
+			}
+			else
+			{
+				PlayerResult.Result = TEXT("loss");
+			}
+		}
+		return Outcome;
+	}
+
+	FString EscapeBackendMatchResultsJsonString(const FString& Value)
+	{
+		FString Escaped = Value;
+		Escaped.ReplaceInline(TEXT("\\"), TEXT("\\\\"));
+		Escaped.ReplaceInline(TEXT("\""), TEXT("\\\""));
+		return Escaped;
+	}
+
+	FString BuildBackendMatchResultsJson(const FBackendMatchTeamOutcome& Outcome)
+	{
+		const FString WinnerPlayerValue = Outcome.WinnerPlayerId.IsEmpty()
+			? TEXT("null")
+			: FString::Printf(TEXT("\"%s\""), *EscapeBackendMatchResultsJsonString(Outcome.WinnerPlayerId));
+		const FString WinnerTeamValue = Outcome.WinnerTeam.IsEmpty()
+			? TEXT("null")
+			: FString::Printf(TEXT("\"%s\""), *EscapeBackendMatchResultsJsonString(Outcome.WinnerTeam));
+		return FString::Printf(
+			TEXT("{\"winnerPlayerId\":%s,\"winnerTeam\":%s,\"source\":\"DedicatedServer\",\"schema\":\"mvp-stat-outcome\"}"),
+			*WinnerPlayerValue,
+			*WinnerTeamValue);
 	}
 
 	bool IsListenServerLocalControllerOptions(const FString& Options)
@@ -169,12 +431,13 @@ namespace
 ADBAGameModeBase::ADBAGameModeBase()
 {
 	PlayerControllerClass = ADBALobbyPlayerController::StaticClass();
+	PlayerStateClass = ADBAPlayerState::StaticClass();
 	DefaultPawnClass = nullptr;
 }
 
 EDBAZodiac ADBAGameModeBase::ResolveLobbyDisplayZodiac(const FString& Options, int32 JoinIndex)
 {
-	const EDBAZodiac OptionZodiac = ParseZodiacValue(ExtractUrlOption(Options, TEXT("DBALobbyZodiac")));
+	const EDBAZodiac OptionZodiac = ParseZodiacValue(DBAUrlOptions::ExtractUrlOption(Options, TEXT("DBALobbyZodiac")));
 	if (OptionZodiac != EDBAZodiac::None)
 	{
 		return OptionZodiac;
@@ -274,6 +537,7 @@ FString ADBAGameModeBase::InitNewPlayer(APlayerController* NewPlayerController, 
 	if (NewPlayerController && GetNetMode() == NM_DedicatedServer)
 	{
 		BackendRuntimePlayerOptions.Add(TObjectKey<APlayerController>(NewPlayerController), Options);
+		BackendRuntimePlayerTeamIds.Add(TObjectKey<APlayerController>(NewPlayerController), ResolveBackendMatchTeamIdFromOptions(Options));
 	}
 
 	if (NewPlayerController && IsLobbyMapWorld(GetWorld()) && !IsListenServerLocalControllerOptions(Options))
@@ -303,6 +567,7 @@ void ADBAGameModeBase::PostLogin(APlayerController* NewPlayer)
 			Options = *StoredOptions;
 		}
 	}
+	SyncBackendMatchTeamId(NewPlayer);
 	ReportBackendPlayerJoined(NewPlayer, Options);
 }
 
@@ -326,9 +591,37 @@ void ADBAGameModeBase::Logout(AController* Exiting)
 		LobbyJoinZodiacs.Remove(PlayerKey);
 		BackendRuntimePlayerIds.Remove(PlayerKey);
 		BackendRuntimePlayerOptions.Remove(PlayerKey);
+		BackendRuntimePlayerTeamIds.Remove(PlayerKey);
 	}
 
 	Super::Logout(Exiting);
+}
+
+void ADBAGameModeBase::HandleMatchHasStarted()
+{
+	Super::HandleMatchHasStarted();
+	ReportBackendMatchStarted();
+}
+
+void ADBAGameModeBase::HandleMatchHasEnded()
+{
+	Super::HandleMatchHasEnded();
+
+	if (GetNetMode() == NM_DedicatedServer && bBackendRuntimeReadySent && !bBackendMatchEndedSent)
+	{
+		if (UDBA_GameBackendClientSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBA_GameBackendClientSubsystem>() : nullptr)
+		{
+			if (UDBA_GameBackendRuntimeService* RuntimeService = Backend->GetRuntimeService())
+			{
+				FDBA_GameBackendResponseDelegate EmptyCallback;
+				RuntimeService->NotifyMatchEnded(EmptyCallback);
+				bBackendMatchEndedSent = true;
+				UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] 运行时比赛结束请求已发送。"));
+			}
+		}
+	}
+
+	ReportBackendMatchResults();
 }
 
 void ADBAGameModeBase::TryInitializeBackendRuntime()
@@ -337,7 +630,7 @@ void ADBAGameModeBase::TryInitializeBackendRuntime()
 	UDBA_GameBackendRuntimeService* RuntimeService = Backend ? Backend->GetRuntimeService() : nullptr;
 	if (!RuntimeService || !RuntimeService->ConfigureFromCommandLine())
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameModeBase] Dedicated Server 未配置 Runtime 参数，跳过后端 Runtime 注册。"));
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameModeBase] 专用服务器未配置运行时参数，跳过后端运行时注册。"));
 		return;
 	}
 
@@ -345,7 +638,7 @@ void ADBAGameModeBase::TryInitializeBackendRuntime()
 	RuntimeService->RegisterServer(EmptyCallback);
 	RuntimeService->MarkReady(EmptyCallback);
 	bBackendRuntimeReadySent = true;
-	UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Runtime 注册和 Ready 请求已发送。"));
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] 运行时注册和就绪请求已发送。"));
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(
@@ -370,6 +663,25 @@ void ADBAGameModeBase::SendBackendHeartbeat()
 	RuntimeService->SendHeartbeat(EmptyCallback);
 }
 
+void ADBAGameModeBase::ReportBackendMatchStarted()
+{
+	if (GetNetMode() != NM_DedicatedServer || !bBackendRuntimeReadySent || bBackendMatchStartedSent)
+	{
+		return;
+	}
+
+	if (UDBA_GameBackendClientSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBA_GameBackendClientSubsystem>() : nullptr)
+	{
+		if (UDBA_GameBackendRuntimeService* RuntimeService = Backend->GetRuntimeService())
+		{
+			FDBA_GameBackendResponseDelegate EmptyCallback;
+			RuntimeService->NotifyMatchStarted(EmptyCallback);
+			bBackendMatchStartedSent = true;
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] 运行时比赛开始请求已发送。"));
+		}
+	}
+}
+
 void ADBAGameModeBase::ReportBackendPlayerJoined(APlayerController* PlayerController, const FString& Options)
 {
 	if (!PlayerController || GetNetMode() != NM_DedicatedServer || !bBackendRuntimeReadySent)
@@ -377,11 +689,11 @@ void ADBAGameModeBase::ReportBackendPlayerJoined(APlayerController* PlayerContro
 		return;
 	}
 
-	const FString PlayerId = ExtractUrlOption(Options, TEXT("PlayerId"));
-	const FString PlayerSessionToken = ExtractUrlOption(Options, TEXT("PlayerSessionToken"));
+	const FString PlayerId = DBAUrlOptions::ExtractUrlOption(Options, TEXT("PlayerId"));
+	const FString PlayerSessionToken = DBAUrlOptions::ExtractUrlOption(Options, TEXT("PlayerSessionToken"));
 	if (PlayerId.IsEmpty() || PlayerSessionToken.IsEmpty())
 	{
-		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameModeBase] 玩家缺少后端连接参数，无法上报 Runtime player-joined：Options=%s"), *Options);
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameModeBase] 玩家缺少后端连接参数，无法上报运行时玩家加入：启动参数=%s"), *Options);
 		return;
 	}
 
@@ -390,12 +702,64 @@ void ADBAGameModeBase::ReportBackendPlayerJoined(APlayerController* PlayerContro
 		if (UDBA_GameBackendRuntimeService* RuntimeService = Backend->GetRuntimeService())
 		{
 			const TObjectKey<APlayerController> PlayerKey(PlayerController);
+
+			FDBACharacterBuildSummary AdmissionBuildSummary;
+			if (!DBAUrlOptions::TryExtractCharacterBuildSummary(Options, AdmissionBuildSummary))
+			{
+				UE_LOG(LogDBACore, Warning, TEXT("[DBAGameModeBase] 玩家构筑摘要无效，拒绝上报运行时玩家加入：玩家=%s 启动参数=%s"), *PlayerId, *Options);
+				return;
+			}
+
+			const int32 BackendTeamId = ResolveBackendMatchTeamId(PlayerController, BackendRuntimePlayerTeamIds);
+			if (BackendTeamId <= 0)
+			{
+				UE_LOG(LogDBACore, Warning, TEXT("[DBAGameModeBase] 玩家队伍参数无效，拒绝上报运行时玩家加入：玩家=%s 启动参数=%s"), *PlayerId, *Options);
+				return;
+			}
+
 			BackendRuntimePlayerIds.Add(PlayerKey, PlayerId);
 
+			FDBA_GameBackendRuntimePlayerBuildSummary BuildSummary;
+			BuildSummary.Zodiac = DBACharacterBuild::ToStableZodiacName(AdmissionBuildSummary.Zodiac);
+			BuildSummary.PrimaryElement = DBACharacterBuild::ToStableElementName(AdmissionBuildSummary.PrimaryElement);
+			BuildSummary.FiveCamp = ToStableFiveCampName(AdmissionBuildSummary.FiveCamp);
+			BuildSummary.FixedSkillGroupId = AdmissionBuildSummary.FixedSkillGroupId.ToString();
+
 			FDBA_GameBackendResponseDelegate EmptyCallback;
-			RuntimeService->NotifyPlayerJoined(PlayerId, PlayerSessionToken, TEXT(""), 0, EmptyCallback);
-			UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Runtime player-joined 请求已发送：PlayerId=%s"), *PlayerId);
+			const FString BackendRuntimeTeam = BuildBackendRuntimeTeamName(BackendTeamId);
+			RuntimeService->NotifyPlayerJoined(PlayerId, PlayerSessionToken, BackendRuntimeTeam, 0, BuildSummary, EmptyCallback);
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] 运行时玩家加入请求已发送：玩家=%s 队伍=%s 生肖=%s 元素=%s 固定技能组=%s"),
+				*PlayerId,
+				*BackendRuntimeTeam,
+				*BuildSummary.Zodiac,
+				*BuildSummary.PrimaryElement,
+				*BuildSummary.FixedSkillGroupId);
 		}
+	}
+}
+
+void ADBAGameModeBase::SyncBackendMatchTeamId(APlayerController* PlayerController)
+{
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	const TObjectKey<APlayerController> PlayerKey(PlayerController);
+	const int32 StoredTeamId = BackendRuntimePlayerTeamIds.FindRef(PlayerKey);
+	if (StoredTeamId <= 0)
+	{
+		return;
+	}
+
+	if (ADBAPlayerState* DBAPlayerState = Cast<ADBAPlayerState>(PlayerController->PlayerState))
+	{
+		DBAPlayerState->SetMatchTeamId(StoredTeamId);
+	}
+
+	if (ADBAZodiacCharacterBase* ZodiacCharacter = Cast<ADBAZodiacCharacterBase>(PlayerController->GetPawn()))
+	{
+		ZodiacCharacter->SetTeamID(StoredTeamId);
 	}
 }
 
@@ -419,9 +783,83 @@ void ADBAGameModeBase::ReportBackendPlayerLeft(APlayerController* PlayerControll
 		{
 			FDBA_GameBackendResponseDelegate EmptyCallback;
 			RuntimeService->NotifyPlayerLeft(*PlayerId, EmptyCallback);
-			UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] Runtime player-left 请求已发送：PlayerId=%s"), **PlayerId);
+			UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] 运行时玩家离开请求已发送：玩家=%s"), **PlayerId);
 		}
 	}
+}
+
+void ADBAGameModeBase::ReportBackendMatchResults()
+{
+	if (GetNetMode() != NM_DedicatedServer || !bBackendRuntimeReadySent || bBackendMatchResultsSent)
+	{
+		return;
+	}
+
+	if (BackendRuntimePlayerIds.IsEmpty())
+	{
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameModeBase] 运行时比赛结果跳过：没有已上报玩家加入的玩家。"));
+		return;
+	}
+
+	UDBA_GameBackendClientSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBA_GameBackendClientSubsystem>() : nullptr;
+	UDBA_GameBackendRuntimeService* RuntimeService = Backend ? Backend->GetRuntimeService() : nullptr;
+	if (!RuntimeService || !RuntimeService->IsConfigured())
+	{
+		return;
+	}
+
+	if (BackendMatchResultIdempotencyKey.IsEmpty())
+	{
+		BackendMatchResultIdempotencyKey = FString::Printf(TEXT("ue-match-result-%s"), *FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens));
+	}
+
+	TArray<FDBA_GameBackendRuntimePlayerResult> PlayerResults;
+	PlayerResults.Reserve(BackendRuntimePlayerIds.Num());
+	for (const TPair<TObjectKey<APlayerController>, FString>& Entry : BackendRuntimePlayerIds)
+	{
+		if (Entry.Value.IsEmpty())
+		{
+			continue;
+		}
+
+		FDBA_GameBackendRuntimePlayerResult PlayerResult;
+		if (APlayerController* PlayerController = Entry.Key.ResolveObjectPtr())
+		{
+			if (ADBAPlayerState* DBAPlayerState = Cast<ADBAPlayerState>(PlayerController->PlayerState))
+			{
+				DBAPlayerState->SetMatchTeamId(ResolveBackendMatchTeamId(PlayerController, BackendRuntimePlayerTeamIds));
+				PlayerResult = DBAPlayerState->BuildRuntimePlayerResult(Entry.Value);
+			}
+		}
+
+		if (PlayerResult.PlayerId.IsEmpty())
+		{
+			PlayerResult.PlayerId = Entry.Value;
+			PlayerResult.Team = TEXT("");
+			PlayerResult.Result = TEXT("draw");
+			PlayerResult.Kills = 0;
+			PlayerResult.Deaths = 0;
+			PlayerResult.Assists = 0;
+			PlayerResult.Score = 0;
+			PlayerResult.ExpDelta = 0;
+		}
+		PlayerResults.Add(PlayerResult);
+	}
+
+	if (PlayerResults.IsEmpty())
+	{
+		UE_LOG(LogDBACore, Warning, TEXT("[DBAGameModeBase] 运行时比赛结果跳过：玩家结果为空。"));
+		return;
+	}
+
+	const FBackendMatchTeamOutcome MatchOutcome = ApplyBackendMatchResultsOutcome(PlayerResults);
+	const FString ResultJson = BuildBackendMatchResultsJson(MatchOutcome);
+	FDBA_GameBackendResponseDelegate EmptyCallback;
+	RuntimeService->NotifyMatchResults(BackendMatchResultIdempotencyKey, ResultJson, PlayerResults, EmptyCallback);
+	bBackendMatchResultsSent = true;
+	UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] 运行时比赛结果请求已发送：玩家数=%d 幂等键=%s"),
+		PlayerResults.Num(),
+		*BackendMatchResultIdempotencyKey);
 }
 
 void ADBAGameModeBase::SpawnOrUpdateLobbyDisplayForPlayer(APlayerController* PlayerController)
@@ -543,6 +981,11 @@ APawn* ADBAGameModeBase::SpawnDefaultPawnAtTransform_Implementation(AController*
 			}
 
 			ApplyLobbyPawnVisuals(SpawnedCharacter, PawnZodiac);
+		}
+
+		if (APlayerController* PC = Cast<APlayerController>(NewPlayer))
+		{
+			SyncBackendMatchTeamId(PC);
 		}
 
 		UE_LOG(LogDBACore, Log, TEXT("[DBAGameModeBase] 已生成默认 Pawn（强制生成）：玩家=%s Pawn=%s 类=%s"),

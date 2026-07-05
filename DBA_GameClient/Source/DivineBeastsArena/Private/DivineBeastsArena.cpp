@@ -29,19 +29,19 @@ void FDivineBeastsArenaModule::StartupModule()
     // 初始化 GameplayTag
     InitializeGameplayTags();
 
-    // Dedicated Server 特定初始化
+    // 专用服务器特定初始化
 #if UE_SERVER
-    UE_LOG(LogDBA, Log, TEXT("[DivineBeastsArena] 运行在 Dedicated Server 模式"));
+    UE_LOG(LogDBA, Log, TEXT("[DivineBeastsArena] 运行在专用服务器模式"));
 #endif
 
-    // Client 特定初始化
+    // 客户端特定初始化
 #if !UE_SERVER
-    UE_LOG(LogDBA, Log, TEXT("[DivineBeastsArena] 运行在 Client 模式"));
+    UE_LOG(LogDBA, Log, TEXT("[DivineBeastsArena] 运行在客户端模式"));
 #endif
 
-    // Editor 特定初始化
+    // 编辑器特定初始化
 #if WITH_EDITOR
-    UE_LOG(LogDBA, Log, TEXT("[DivineBeastsArena] 运行在 Editor 模式"));
+    UE_LOG(LogDBA, Log, TEXT("[DivineBeastsArena] 运行在编辑器模式"));
 #endif
 }
 

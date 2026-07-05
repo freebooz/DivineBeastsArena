@@ -9,6 +9,24 @@
 
 
 #include "GameDBA/UI/Arena/UDBAArenaHUDRootWidgetBase.h"
+#include "GameCore/Types/DBACommonEnums.h"
+#include "GameDBA/Core/DBAConstants.h"
+#include "GameDBA/UI/Arena/UDBAArenaHUDWidgetController.h"
+#include "GameDBA/UI/Arena/UDBAAbilityBarWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBAArenaObjectiveTrackerWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBABuffBarWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBACCBarWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBAChainUltimatePanelWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBACombatAnnouncementWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBACriticalStateHintWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBADebuffBarWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBAArenaEventFeedWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBAMomentumPanelWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBAPassiveAndResonancePanelWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBAPlayerUnitFrameWidgetBase.h"
+#include "GameDBA/UI/Arena/UDBAPlayerUnitFrameWidgetController.h"
+#include "GameDBA/UI/Arena/UDBAUltimateReadyPromptWidgetBase.h"
+#include "GameDBA/Character/DBAZodiacCharacterBase.h"
 
 /**
  * 鏋勯€犲嚱鏁? * 鍒濆鍖?HUD 鏍?Widget
@@ -33,6 +51,32 @@ void UDBAArenaHUDRootWidgetBase::NativeConstruct()
  */
 void UDBAArenaHUDRootWidgetBase::NativeDestruct()
 {
+	if (WidgetController)
+	{
+		WidgetController->OnUltimateEnergyChanged.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerUltimateEnergyUpdated);
+		WidgetController->OnChainLevelChanged.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerChainLevelUpdated);
+		WidgetController->OnResonanceLevelChanged.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerResonanceLevelUpdated);
+		WidgetController->OnMomentumChanged.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerMomentumUpdated);
+		WidgetController->OnStatusBuffAdded.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusBuffAdded);
+		WidgetController->OnStatusBuffRemoved.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusBuffRemoved);
+		WidgetController->OnStatusBuffsCleared.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusBuffsCleared);
+		WidgetController->OnStatusDebuffAdded.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusDebuffAdded);
+		WidgetController->OnStatusDebuffRemoved.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusDebuffRemoved);
+		WidgetController->OnStatusDebuffsCleared.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusDebuffsCleared);
+		WidgetController->OnStatusCCEffectAdded.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusCCEffectAdded);
+		WidgetController->OnStatusCCEffectRemoved.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusCCEffectRemoved);
+		WidgetController->OnStatusCCEffectsCleared.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusCCEffectsCleared);
+		WidgetController->OnCombatAnnouncementShown.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerCombatAnnouncementShown);
+		WidgetController->OnCombatAnnouncementCleared.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerCombatAnnouncementCleared);
+		WidgetController->OnCriticalStateHintsChanged.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerCriticalStateHintsChanged);
+		WidgetController->OnArenaObjectiveUpdated.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerArenaObjectiveUpdated);
+		WidgetController->OnArenaObjectiveCompleted.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerArenaObjectiveCompleted);
+		WidgetController->OnEventFeedEntryAdded.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerEventFeedEntryAdded);
+		WidgetController->OnEventFeedCleared.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerEventFeedCleared);
+		WidgetController->OnUltimateReadyPromptShown.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerUltimateReadyPromptShown);
+		WidgetController->OnUltimateReadyPromptHidden.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerUltimateReadyPromptHidden);
+	}
+
 	Super::NativeDestruct();
 }
 
@@ -64,7 +108,325 @@ void UDBAArenaHUDRootWidgetBase::NativeOnDeactivated()
  * @param InController HUD Widget 鎺у埗鍣ㄦ寚閽? */
 void UDBAArenaHUDRootWidgetBase::SetWidgetController(UDBAArenaHUDWidgetController* InController)
 {
+	if (WidgetController)
+	{
+		WidgetController->OnUltimateEnergyChanged.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerUltimateEnergyUpdated);
+		WidgetController->OnChainLevelChanged.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerChainLevelUpdated);
+		WidgetController->OnResonanceLevelChanged.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerResonanceLevelUpdated);
+		WidgetController->OnMomentumChanged.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerMomentumUpdated);
+		WidgetController->OnStatusBuffAdded.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusBuffAdded);
+		WidgetController->OnStatusBuffRemoved.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusBuffRemoved);
+		WidgetController->OnStatusBuffsCleared.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusBuffsCleared);
+		WidgetController->OnStatusDebuffAdded.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusDebuffAdded);
+		WidgetController->OnStatusDebuffRemoved.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusDebuffRemoved);
+		WidgetController->OnStatusDebuffsCleared.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusDebuffsCleared);
+		WidgetController->OnStatusCCEffectAdded.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusCCEffectAdded);
+		WidgetController->OnStatusCCEffectRemoved.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusCCEffectRemoved);
+		WidgetController->OnStatusCCEffectsCleared.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusCCEffectsCleared);
+		WidgetController->OnCombatAnnouncementShown.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerCombatAnnouncementShown);
+		WidgetController->OnCombatAnnouncementCleared.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerCombatAnnouncementCleared);
+		WidgetController->OnCriticalStateHintsChanged.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerCriticalStateHintsChanged);
+		WidgetController->OnArenaObjectiveUpdated.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerArenaObjectiveUpdated);
+		WidgetController->OnArenaObjectiveCompleted.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerArenaObjectiveCompleted);
+		WidgetController->OnEventFeedEntryAdded.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerEventFeedEntryAdded);
+		WidgetController->OnEventFeedCleared.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerEventFeedCleared);
+		WidgetController->OnUltimateReadyPromptShown.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerUltimateReadyPromptShown);
+		WidgetController->OnUltimateReadyPromptHidden.RemoveDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerUltimateReadyPromptHidden);
+	}
+
 	WidgetController = InController;
+	if (WidgetController)
+	{
+		WidgetController->OnUltimateEnergyChanged.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerUltimateEnergyUpdated);
+		WidgetController->OnChainLevelChanged.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerChainLevelUpdated);
+		WidgetController->OnResonanceLevelChanged.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerResonanceLevelUpdated);
+		WidgetController->OnMomentumChanged.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerMomentumUpdated);
+		WidgetController->OnStatusBuffAdded.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusBuffAdded);
+		WidgetController->OnStatusBuffRemoved.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusBuffRemoved);
+		WidgetController->OnStatusBuffsCleared.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusBuffsCleared);
+		WidgetController->OnStatusDebuffAdded.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusDebuffAdded);
+		WidgetController->OnStatusDebuffRemoved.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusDebuffRemoved);
+		WidgetController->OnStatusDebuffsCleared.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusDebuffsCleared);
+		WidgetController->OnStatusCCEffectAdded.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusCCEffectAdded);
+		WidgetController->OnStatusCCEffectRemoved.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusCCEffectRemoved);
+		WidgetController->OnStatusCCEffectsCleared.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerStatusCCEffectsCleared);
+		WidgetController->OnCombatAnnouncementShown.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerCombatAnnouncementShown);
+		WidgetController->OnCombatAnnouncementCleared.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerCombatAnnouncementCleared);
+		WidgetController->OnCriticalStateHintsChanged.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerCriticalStateHintsChanged);
+		WidgetController->OnArenaObjectiveUpdated.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerArenaObjectiveUpdated);
+		WidgetController->OnArenaObjectiveCompleted.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerArenaObjectiveCompleted);
+		WidgetController->OnEventFeedEntryAdded.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerEventFeedEntryAdded);
+		WidgetController->OnEventFeedCleared.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerEventFeedCleared);
+		WidgetController->OnUltimateReadyPromptShown.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerUltimateReadyPromptShown);
+		WidgetController->OnUltimateReadyPromptHidden.AddDynamic(this, &UDBAArenaHUDRootWidgetBase::HandleControllerUltimateReadyPromptHidden);
+		HandleControllerUltimateEnergyUpdated(WidgetController->GetCurrentUltimateEnergy(), WidgetController->GetMaxUltimateEnergy());
+		HandleControllerChainLevelUpdated(WidgetController->GetCurrentChainLevel());
+		HandleControllerResonanceLevelUpdated(WidgetController->GetCurrentResonanceLevel());
+		HandleControllerMomentumUpdated(WidgetController->GetCurrentMomentumLevel(), WidgetController->GetCurrentMomentumProgress());
+
+		HandleControllerStatusBuffsCleared();
+		for (const FDBAArenaStatusEffectEntry& ActiveBuff : WidgetController->GetActiveStatusBuffs())
+		{
+			HandleControllerStatusBuffAdded(ActiveBuff.EffectId, ActiveBuff.Duration);
+		}
+
+		HandleControllerStatusDebuffsCleared();
+		for (const FDBAArenaStatusEffectEntry& ActiveDebuff : WidgetController->GetActiveStatusDebuffs())
+		{
+			HandleControllerStatusDebuffAdded(ActiveDebuff.EffectId, ActiveDebuff.Duration);
+		}
+
+		HandleControllerStatusCCEffectsCleared();
+		for (const FDBAArenaStatusEffectEntry& ActiveCCEffect : WidgetController->GetActiveStatusCCEffects())
+		{
+			HandleControllerStatusCCEffectAdded(ActiveCCEffect.EffectId, ActiveCCEffect.Duration);
+		}
+
+		const FDBAArenaCriticalStateHintState& LastCriticalStateHints = WidgetController->GetLastCriticalStateHints();
+		if (LastCriticalStateHints.bIsValid)
+		{
+			HandleControllerCriticalStateHintsChanged(LastCriticalStateHints.bLowHP, LastCriticalStateHints.bLowEnergy);
+		}
+
+		const FDBAArenaUltimateReadyPromptState& LastUltimateReadyPromptState = WidgetController->GetLastUltimateReadyPromptState();
+		if (LastUltimateReadyPromptState.bIsValid)
+		{
+			if (LastUltimateReadyPromptState.bIsShown)
+			{
+				HandleControllerUltimateReadyPromptShown();
+			}
+			else
+			{
+				HandleControllerUltimateReadyPromptHidden();
+			}
+		}
+
+		const FDBAArenaCombatAnnouncementEntry& LastCombatAnnouncement = WidgetController->GetLastCombatAnnouncement();
+		if (LastCombatAnnouncement.bIsValid)
+		{
+			HandleControllerCombatAnnouncementShown(LastCombatAnnouncement.Text, LastCombatAnnouncement.Duration);
+		}
+
+		const FDBAArenaObjectiveState& LastArenaObjectiveState = WidgetController->GetLastArenaObjectiveState();
+		if (LastArenaObjectiveState.bIsValid)
+		{
+			HandleControllerArenaObjectiveUpdated(LastArenaObjectiveState.ObjectiveText, LastArenaObjectiveState.Progress);
+			if (LastArenaObjectiveState.bIsCompleted)
+			{
+				HandleControllerArenaObjectiveCompleted();
+			}
+		}
+
+		const FDBAArenaEventFeedEntry& LastEventFeedEntry = WidgetController->GetLastEventFeedEntry();
+		if (LastEventFeedEntry.bIsValid)
+		{
+			HandleControllerEventFeedEntryAdded(LastEventFeedEntry.Text, LastEventFeedEntry.Duration);
+		}
+	}
+
+	SetPlayerUnitFrameWidgetController(WidgetController ? WidgetController->GetPlayerUnitFrameWidgetController() : nullptr);
+}
+
+void UDBAArenaHUDRootWidgetBase::SetPlayerUnitFrameWidgetController(UDBAPlayerUnitFrameWidgetController* InController)
+{
+	PlayerUnitFrameWidgetController = InController;
+
+	if (PlayerUnitFrame)
+	{
+		PlayerUnitFrame->SetWidgetController(PlayerUnitFrameWidgetController);
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::BindArenaHUDToCharacter(ADBAZodiacCharacterBase* InCharacter)
+{
+	BoundArenaHUDCharacter = InCharacter;
+
+	if (AbilityBar)
+	{
+		AbilityBar->BindToCharacter(InCharacter);
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerUltimateEnergyUpdated(float CurrentEnergy, float MaxEnergy)
+{
+	if (PlayerUnitFrame)
+	{
+		PlayerUnitFrame->UpdateUltimateEnergyWithMax(CurrentEnergy, MaxEnergy);
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerChainLevelUpdated(int32 ChainLevel)
+{
+	if (ChainUltimatePanel)
+	{
+		ChainUltimatePanel->UpdateChainCount(ChainLevel);
+		if (ChainLevel >= DBAConstants::MaxChainLevel)
+		{
+			ChainUltimatePanel->ShowChainReady();
+		}
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerResonanceLevelUpdated(int32 ResonanceLevel)
+{
+	if (PassiveAndResonancePanel)
+	{
+		PassiveAndResonancePanel->UpdateResonanceLevel(ResonanceLevel);
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerMomentumUpdated(int32 MomentumLevel, float MomentumProgress)
+{
+	if (MomentumPanel)
+	{
+		MomentumPanel->UpdateMomentumLevel(MomentumLevel);
+		MomentumPanel->UpdateMomentumProgress(MomentumProgress);
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerStatusBuffAdded(const FString& BuffId, float Duration)
+{
+	if (BuffBar)
+	{
+		BuffBar->AddBuff(BuffId, Duration);
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerStatusBuffRemoved(const FString& BuffId)
+{
+	if (BuffBar)
+	{
+		BuffBar->RemoveBuff(BuffId);
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerStatusBuffsCleared()
+{
+	if (BuffBar)
+	{
+		BuffBar->ClearAllBuffs();
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerStatusDebuffAdded(const FString& DebuffId, float Duration)
+{
+	if (DebuffBar)
+	{
+		DebuffBar->AddDebuff(DebuffId, Duration);
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerStatusDebuffRemoved(const FString& DebuffId)
+{
+	if (DebuffBar)
+	{
+		DebuffBar->RemoveDebuff(DebuffId);
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerStatusDebuffsCleared()
+{
+	if (DebuffBar)
+	{
+		DebuffBar->ClearAllDebuffs();
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerStatusCCEffectAdded(const FString& CCId, float Duration)
+{
+	if (CCBar)
+	{
+		CCBar->AddCCEffect(CCId, Duration);
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerStatusCCEffectRemoved(const FString& CCId)
+{
+	if (CCBar)
+	{
+		CCBar->RemoveCCEffect(CCId);
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerStatusCCEffectsCleared()
+{
+	if (CCBar)
+	{
+		CCBar->ClearAllCCEffects();
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerCombatAnnouncementShown(const FText& Text, float Duration)
+{
+	if (CombatAnnouncement)
+	{
+		CombatAnnouncement->ShowAnnouncement(Text, Duration);
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerCombatAnnouncementCleared()
+{
+	if (CombatAnnouncement)
+	{
+		CombatAnnouncement->ClearAnnouncement();
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerCriticalStateHintsChanged(bool bLowHP, bool bLowEnergy)
+{
+	if (CriticalStateHint)
+	{
+		CriticalStateHint->ShowCriticalHP(bLowHP);
+		CriticalStateHint->ShowCriticalEnergy(bLowEnergy);
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerArenaObjectiveUpdated(const FText& ObjectiveText, float Progress)
+{
+	if (ObjectiveTracker)
+	{
+		ObjectiveTracker->UpdateObjective(ObjectiveText, Progress);
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerArenaObjectiveCompleted()
+{
+	if (ObjectiveTracker)
+	{
+		ObjectiveTracker->CompleteObjective();
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerEventFeedEntryAdded(const FText& Text, float Duration)
+{
+	if (EventFeed)
+	{
+		EventFeed->AddEventEntry(Text, Duration);
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerEventFeedCleared()
+{
+	if (EventFeed)
+	{
+		EventFeed->ClearEventFeed();
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerUltimateReadyPromptShown()
+{
+	if (UltimateReadyPrompt)
+	{
+		UltimateReadyPrompt->ShowUltimateReady();
+	}
+}
+
+void UDBAArenaHUDRootWidgetBase::HandleControllerUltimateReadyPromptHidden()
+{
+	if (UltimateReadyPrompt)
+	{
+		UltimateReadyPrompt->HideUltimateReady();
+	}
 }
 
 /**
@@ -89,6 +451,10 @@ void UDBAArenaHUDRootWidgetBase::SetHUDEditMode(bool bEditMode)
  * @param FiveCamp 闃佃惀绫诲瀷锛?-4 瀵瑰簲浜斿ぇ闃佃惀锛? */
 void UDBAArenaHUDRootWidgetBase::ApplyFiveCampTheme(uint8 FiveCamp)
 {
-	BP_OnApplyFiveCampTheme(FiveCamp);
-}
+	const uint8 NormalizedFiveCamp = FMath::Clamp(
+		FiveCamp,
+		static_cast<uint8>(EDBAFiveCamp::None),
+		static_cast<uint8>(EDBAFiveCamp::Center));
 
+	BP_OnApplyFiveCampTheme(NormalizedFiveCamp);
+}

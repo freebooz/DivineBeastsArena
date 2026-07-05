@@ -1,4 +1,4 @@
-# 前端登录闭环 UI 设计
+﻿# 前端登录闭环 UI 设计
 
 日期：2026-05-06
 
@@ -15,7 +15,7 @@
 本阶段所有编译与运行验证统一使用：
 
 ```text
-E:\UnrealEngine-5.7.1-release
+D:\UnrealEngine-5.8.0-release
 ```
 
 ## 范围
@@ -200,15 +200,15 @@ WBP_DBA_MainLobby          -> UDBAMainLobbyWidgetController
 编译命令：
 
 ```powershell
-& 'E:\UnrealEngine-5.7.1-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaServer Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
-& 'E:\UnrealEngine-5.7.1-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaServer Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project="$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
 ```
 
 运行命令：
 
 ```powershell
-& 'E:\UnrealEngine-5.7.1-release\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' "$PWD\DivineBeastsArena.uproject" LobbyMap -server -log
-& 'E:\UnrealEngine-5.7.1-release\Engine\Binaries\Win64\UnrealEditor.exe' "$PWD\DivineBeastsArena.uproject" 127.0.0.1 -game -log
+& 'D:\UnrealEngine-5.8.0-release\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' "$PWD\DivineBeastsArena.uproject" LobbyMap -server -log
+& 'D:\UnrealEngine-5.8.0-release\Engine\Binaries\Win64\UnrealEditor.exe' "$PWD\DivineBeastsArena.uproject" 127.0.0.1 -game -log
 ```
 
 如果 `LobbyMap` 不适合当前前端启动流，则改用项目内实际承载前端的地图，例如 `FrontendMap`。地图选择以能进入启动页并触发登录流为准。
@@ -254,3 +254,4 @@ http://127.0.0.1:8080
 - C++ 与蓝图职责边界明确。
 - Dedicated Server 验证使用指定引擎路径。
 - 编译阻断被明确列为第 0 阶段，不假设当前项目已经可完整构建。
+

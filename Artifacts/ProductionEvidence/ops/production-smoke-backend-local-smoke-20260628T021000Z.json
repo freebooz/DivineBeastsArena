@@ -1,0 +1,43 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "runId":  "local-smoke-20260628T021000Z",
+    "status":  "passed",
+    "exitCode":  0,
+    "generatedAtUtc":  "2026-06-28T02:12:50.8882692Z",
+    "baseUrl":  "http://localhost:8080",
+    "guestLogin":  true,
+    "timeoutSec":  15,
+    "logFile":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\ops\\production-smoke-backend-local-smoke-20260628T021000Z.log",
+    "checks":  [
+                   {
+                       "name":  "live health",
+                       "status":  "passed",
+                       "durationMs":  2089
+                   },
+                   {
+                       "name":  "ready health",
+                       "status":  "passed",
+                       "durationMs":  16
+                   },
+                   {
+                       "name":  "version api",
+                       "status":  "passed",
+                       "durationMs":  35
+                   },
+                   {
+                       "name":  "launcher manifest",
+                       "status":  "passed",
+                       "durationMs":  19
+                   },
+                   {
+                       "name":  "metrics endpoint",
+                       "status":  "passed",
+                       "durationMs":  135
+                   },
+                   {
+                       "name":  "guest login",
+                       "status":  "passed",
+                       "durationMs":  62
+                   }
+               ]
+}

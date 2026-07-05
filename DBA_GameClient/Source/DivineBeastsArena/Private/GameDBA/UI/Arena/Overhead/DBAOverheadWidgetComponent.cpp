@@ -24,25 +24,49 @@ UDBAOverheadWidgetComponent::UDBAOverheadWidgetComponent()
 void UDBAOverheadWidgetComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (UWorld* World = GetWorld(); World && World->GetNetMode() == NM_DedicatedServer)
+	{
+		SetComponentTickEnabled(false);
+		return;
+	}
+
 	CreateOverheadWidget();
+}
+
+void UDBAOverheadWidgetComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (OverheadWidget)
+	{
+		OverheadWidget->RemoveFromParent();
+		OverheadWidget = nullptr;
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
+void UDBAOverheadWidgetComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	UpdateWidgetPosition();
 }
 
 void UDBAOverheadWidgetComponent::CreateOverheadWidget()
 {
-	if (!OverheadWidgetClass)
+	UWorld* World = GetWorld();
+	if (!OverheadWidgetClass || !World || World->GetNetMode() == NM_DedicatedServer)
 	{
 		return;
 	}
 
-	if (UWorld* World = GetWorld())
+	OverheadWidget = CreateWidget<UUserWidget>(World, OverheadWidgetClass);
+	if (OverheadWidget)
 	{
-		OverheadWidget = CreateWidget<UUserWidget>(World, OverheadWidgetClass);
-		if (OverheadWidget)
-		{
-			OverheadWidget->AddToViewport();
-			OverheadWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
-			SetHealthBarPercent(CachedHealthPercent);
-		}
+		OverheadWidget->AddToViewport();
+		SetHealthBarPercent(CachedHealthPercent);
+		SetCharacterName(CachedCharacterName);
+		SetOverheadVisible(bCachedOverheadVisible);
+		ApplyWidgetConfig();
 	}
 }
 
@@ -62,6 +86,13 @@ void UDBAOverheadWidgetComponent::SetHealthBarPercent(float Percent)
 
 void UDBAOverheadWidgetComponent::SetCharacterName(const FText& Name)
 {
+	CachedCharacterName = Name;
+
+	if (!OverheadWidget)
+	{
+		return;
+	}
+
 	if (UTextBlock* NameText = Cast<UTextBlock>(OverheadWidget->GetWidgetFromName(TEXT("NameText"))))
 	{
 		NameText->SetText(Name);
@@ -70,9 +101,29 @@ void UDBAOverheadWidgetComponent::SetCharacterName(const FText& Name)
 
 void UDBAOverheadWidgetComponent::SetOverheadVisible(bool bShouldBeVisible)
 {
+	bCachedOverheadVisible = bShouldBeVisible;
+
 	if (OverheadWidget)
 	{
-		OverheadWidget->SetVisibility(bShouldBeVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+		OverheadWidget->SetVisibility(bShouldBeVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+	}
+}
+
+void UDBAOverheadWidgetComponent::ApplyWidgetConfig()
+{
+	if (!OverheadWidget)
+	{
+		return;
+	}
+
+	if (UWidget* HealthBarWidget = OverheadWidget->GetWidgetFromName(TEXT("HealthBar")))
+	{
+		HealthBarWidget->SetVisibility(bShowHealthBar ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	}
+
+	if (UWidget* NameTextWidget = OverheadWidget->GetWidgetFromName(TEXT("NameText")))
+	{
+		NameTextWidget->SetVisibility(bShowName ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	}
 }
 
@@ -96,14 +147,23 @@ void UDBAOverheadWidgetComponent::UpdateWidgetPosition()
 	}
 
 	FVector WorldPosition = GetOwnerBoundingBoxCenter();
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
 
-	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+	if (APlayerController* PC = World->GetFirstPlayerController())
 	{
 		FVector2D ScreenPosition;
 		if (PC->ProjectWorldLocationToScreen(WorldPosition, ScreenPosition))
 		{
+			SetOverheadVisible(bCachedOverheadVisible);
 			OverheadWidget->SetPositionInViewport(ScreenPosition, false);
+		}
+		else
+		{
+			OverheadWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 }
-

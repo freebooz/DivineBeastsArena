@@ -1,0 +1,40 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "ue-online-validation",
+    "runId":  "packaged-ue-online-url-decode-20260628T064000Z",
+    "status":  "passed",
+    "errorMessage":  "",
+    "generatedAtUtc":  "2026-06-28T04:39:24.8526061Z",
+    "baseUrl":  "http://localhost:8080",
+    "usePackagedServer":  true,
+    "skipClientLaunch":  false,
+    "keepProcessesAlive":  false,
+    "serverExecutable":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\packaged-server\\WindowsServer\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer.exe",
+    "roomId":  "125a330e-75e0-45b7-b4f8-f7bb41508e94",
+    "sessionId":  "2e762c2b-3dda-4abe-9fad-930b30661a9f",
+    "serverId":  "db9c959a-5cf9-4fbf-a6be-32121308333b",
+    "allocatedPort":  7777,
+    "clientConnectPort":  7878,
+    "processIds":  {
+                       "server":  40252,
+                       "clientA":  52668,
+                       "clientB":  17292
+                   },
+    "logPaths":  {
+                     "server":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\server-packaged-ue-online-url-decode-20260628T064000Z.log",
+                     "clientA":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\client-a-packaged-ue-online-url-decode-20260628T064000Z.log",
+                     "clientB":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\client-b-packaged-ue-online-url-decode-20260628T064000Z.log"
+                 },
+    "safeLogEvidence":  {
+                            "runtimePlayerJoined":  [
+                                                        "[2026.06.28-04.38.47:107][341]LogDBACore: [DBAGameModeBase] Runtime player-joined 请求已发送：PlayerId=d0899276-efeb-4aab-bdc6-26297083bbc0 Zodiac=Rat Element=Water FixedSkillGroupId=Rat_Water",
+                                                        "[2026.06.28-04.38.51:633][476]LogDBACore: [DBAGameModeBase] Runtime player-joined 请求已发送：PlayerId=a799183b-1679-4981-b7a2-799284005137 Zodiac=Tiger Element=Fire FixedSkillGroupId=Tiger_Fire"
+                                                    ],
+                            "runtimePlayerJoinedOk":  [
+                                                          "[2026.06.28-04.38.47:133][342]LogDBA_GameBackendClient: HTTP 请求：方法=POST 地址=http://localhost:8080/runtime/servers/player-joined 追踪ID=9a612816-4edf-fcbd-e50d-dca746d108a7 状态码=200 业务码=OK 耗时毫秒=27.10",
+                                                          "[2026.06.28-04.38.51:715][479]LogDBA_GameBackendClient: HTTP 请求：方法=POST 地址=http://localhost:8080/runtime/servers/player-joined 追踪ID=38f78020-45a8-268d-2fed-c9be6cfc8166 状态码=200 业务码=OK 耗时毫秒=82.28"
+                                                      ],
+                            "clientATravelCompleted":  "[2026.06.28-04.38.47:091][ 37]LogGlobalStatus: UPendingNetGame::TravelCompleted Pending net game travel completed",
+                            "clientBTravelCompleted":  "[2026.06.28-04.38.51:570][ 35]LogGlobalStatus: UPendingNetGame::TravelCompleted Pending net game travel completed"
+                        }
+}

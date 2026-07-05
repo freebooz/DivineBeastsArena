@@ -142,17 +142,6 @@ public:
 	virtual void OnRep_EnergyRegen(const FGameplayAttributeData& OldEnergyRegen);
 
 	// ========================================
-	// 终极能量属性
-	// ========================================
-
-	UPROPERTY(BlueprintReadOnly, Category = "Battle|UltimateEnergy", ReplicatedUsing = OnRep_UltimateEnergy)
-	FGameplayAttributeData UltimateEnergy;
-	BATTLE_ATTRIBUTE_ACCESSORS(UDBABattleAttributeSet, UltimateEnergy)
-
-	UFUNCTION()
-	virtual void OnRep_UltimateEnergy(const FGameplayAttributeData& OldUltimateEnergy);
-
-	// ========================================
 	// 暴击属性
 	// ========================================
 

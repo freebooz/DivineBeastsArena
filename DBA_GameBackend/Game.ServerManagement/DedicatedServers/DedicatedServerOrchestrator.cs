@@ -270,6 +270,14 @@ public sealed class DedicatedServerOrchestrator : IDedicatedServerOrchestrator
             return;
         }
 
+        if (_options.ServerMode.Equals("External", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogInformation("Dedicated server allocation {ServerId} is waiting for an external runner on port {Port}", server.Id, server.Port);
+            _db.GameServerEvents.Add(NewEvent(server.Id, "LAUNCH_SKIPPED_EXTERNAL", $$"""{"port":{{server.Port}}}"""));
+            await _db.SaveChangesAsync(cancellationToken);
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(_options.UeServerExecutablePath) || !File.Exists(_options.UeServerExecutablePath))
         {
             if (_options.AllowMockServerAllocation)
