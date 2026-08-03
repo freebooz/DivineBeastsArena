@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "monolith": {
+      "command": "D:/UnrealEngine-5.8.0-release/Engine/Plugins/Marketplace/Monolith/Binaries/monolith_proxy.exe",
+      "args": []
+    },
+    "UmgMcp": {
+      "command": "C:/Users/Administrator/.local/bin/uv.exe",
+      "args": [
+        "run",
+        "--directory",
+        "D:/UnrealEngine-5.8.0-release/Engine/Plugins/Marketplace/UmgMcp/Resources/Python",
+        "UmgMcpServer.py"
+      ]
+    },
+    "unreal-vibeue": {
+      "type": "http",
+      "url": "http://127.0.0.1:8000/mcp"
+    }
+  }
+}

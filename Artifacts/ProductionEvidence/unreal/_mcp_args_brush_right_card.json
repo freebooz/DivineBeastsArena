@@ -1,0 +1,9 @@
+{
+  "action": "set_brush",
+  "asset_path": "/Game/DBA/UI/Lobby/Character/WBP_DBA_CharacterSelect",
+  "widget_name": "RightInfoCard",
+  "property_name": "Background",
+  "draw_type": "RoundedBox",
+  "tint_color": "0.02,0.04,0.08,0.45",
+  "compile": true
+}

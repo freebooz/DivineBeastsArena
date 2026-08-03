@@ -30,6 +30,14 @@ using Game.Api.Services.Inventory;
 using Game.Api.Validators;
 using FluentValidation;
 using Game.ServerManagement.DedicatedServers;
+using Game.Application.Sessions;
+using Game.Application.Characters;
+using Game.Application.Auth;
+using Game.Infrastructure.Database.Admissions;
+using Game.Infrastructure.Database.Characters;
+using Game.Infrastructure.Database.Sessions;
+using Game.Infrastructure.Database.Auth;
+using Game.Infrastructure.Security;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Threading.RateLimiting;
 
@@ -46,6 +54,16 @@ public static class ServiceCollectionExtensions
         var redisOptions = configuration.GetSection(RedisOptions.Section).Get<RedisOptions>() ?? new();
         var jwtOptions = configuration.GetSection(JwtOptions.Section).Get<JwtOptions>() ?? new();
         var dedicatedServerOptions = configuration.GetSection(DedicatedServerOrchestrationOptions.Section).Get<DedicatedServerOrchestrationOptions>() ?? new();
+        var characterCreationOptions = configuration.GetSection(CharacterCreationOptions.Section).Get<CharacterCreationOptions>() ?? new();
+        var sessionAdmissionOptions = configuration.GetSection(SessionAdmissionOptions.Section).Get<SessionAdmissionOptions>() ?? new();
+        var villageSessionOptions = configuration.GetSection(VillageSessionOptions.Section).Get<VillageSessionOptions>() ?? new();
+        var authenticationPolicyOptions = configuration.GetSection(AuthenticationPolicyOptions.Section).Get<AuthenticationPolicyOptions>() ?? new();
+        if (string.IsNullOrWhiteSpace(authenticationPolicyOptions.PasswordResetBootstrapToken))
+        {
+            authenticationPolicyOptions.PasswordResetBootstrapToken =
+                configuration["Auth:PasswordResetBootstrapToken"] ??
+                configuration["PasswordReset:BootstrapToken"];
+        }
 
         RequiredOptionsValidator.ValidateDatabase(databaseOptions);
         RequiredOptionsValidator.ValidateRedis(redisOptions);
@@ -54,6 +72,10 @@ public static class ServiceCollectionExtensions
         RequiredOptionsValidator.ValidateDedicatedServerOrchestration(
             dedicatedServerOptions,
             environment?.IsProduction() ?? false);
+        RequiredOptionsValidator.ValidateCharacterCreation(characterCreationOptions);
+        RequiredOptionsValidator.ValidateSessionAdmission(sessionAdmissionOptions);
+        RequiredOptionsValidator.ValidateVillageSession(villageSessionOptions);
+        RequiredOptionsValidator.ValidateAuthenticationPolicy(authenticationPolicyOptions);
 
         services.AddDbContext<GameDbContext>(options =>
             options
@@ -64,8 +86,13 @@ public static class ServiceCollectionExtensions
             new RedisConnectionFactory(redisOptions.ConnectionString));
 
         services.AddSingleton(jwtOptions);
+        services.AddSingleton(characterCreationOptions);
+        services.AddSingleton(sessionAdmissionOptions);
+        services.AddSingleton(authenticationPolicyOptions);
+        services.AddSingleton<TimeProvider>(TimeProvider.System);
         services.Configure<DedicatedServerOrchestrationOptions>(configuration.GetSection(DedicatedServerOrchestrationOptions.Section));
-        services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.Configure<VillageSessionOptions>(configuration.GetSection(VillageSessionOptions.Section));
+        services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -104,11 +131,56 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Services.Room.IRoomService, RoomService>();
         services.AddScoped<Services.Match.IMatchService, MatchService>();
         services.AddScoped<Services.Session.ISessionService, SessionService>();
+        services.AddScoped<Services.Session.IVillageAllocationService, Services.Session.VillageAllocationService>();
         services.AddScoped<Services.Runtime.IGameServerService, GameServerService>();
         services.AddScoped<Services.Settlement.ISettlementService, SettlementService>();
         services.AddScoped<IGameServerRegistryService, GameServerRegistryService>();
         services.AddScoped<Services.Inventory.IInventoryService, InventoryService>();
         services.AddScoped<IDedicatedServerOrchestrator, DedicatedServerOrchestrator>();
+        services.AddScoped<IJoinTicketStore, EfJoinTicketStore>();
+        services.AddScoped<ISessionAdmissionStore, EfSessionAdmissionStore>();
+        services.AddScoped<ISessionLifecycleStore, EfSessionLifecycleStore>();
+        services.AddScoped<ISessionServerAllocationStore, EfSessionServerAllocationStore>();
+        services.AddScoped<ISessionCreationStore, EfSessionCreationStore>();
+        services.AddScoped<ISessionQueryStore, EfSessionQueryStore>();
+        services.AddSingleton<ISessionCredentialIssuer, CryptographicSessionCredentialIssuer>();
+        services.AddScoped<IIssueSessionConnectionUseCase, IssueSessionConnectionUseCase>();
+        services.AddScoped<IChangeSessionLifecycleUseCase, ChangeSessionLifecycleUseCase>();
+        services.AddScoped<IAllocateSessionServerUseCase, AllocateSessionServerUseCase>();
+        services.AddScoped<ICreateSessionFromRoomUseCase, CreateSessionFromRoomUseCase>();
+        services.AddScoped<ICreateSessionFromMatchUseCase, CreateSessionFromMatchUseCase>();
+        services.AddScoped<IGetSessionUseCase, GetSessionUseCase>();
+        services.AddScoped<IAuthenticatedAccountQueryStore, EfAuthenticatedAccountQueryStore>();
+        services.AddScoped<IGetAuthenticatedAccountUseCase, GetAuthenticatedAccountUseCase>();
+        services.AddScoped<IAuthenticationCredentialStore, EfAuthenticationCredentialStore>();
+        services.AddSingleton<IPasswordCredentialVerifier, BcryptPasswordCredentialVerifier>();
+        services.AddScoped<IAuthenticateCredentialsUseCase, AuthenticateCredentialsUseCase>();
+        services.AddSingleton<ILoginCredentialIssuer, JwtLoginCredentialIssuer>();
+        services.AddScoped<ILoginCredentialStore, EfLoginCredentialStore>();
+        services.AddScoped<IIssueLoginCredentialsUseCase, IssueLoginCredentialsUseCase>();
+        services.AddSingleton<IRefreshCredentialHasher, JwtRefreshCredentialHasher>();
+        services.AddScoped<EfRefreshCredentialStore>();
+        services.AddScoped<IRefreshCredentialRotationStore>(provider =>
+            provider.GetRequiredService<EfRefreshCredentialStore>());
+        services.AddScoped<ILogoutCredentialStore>(provider =>
+            provider.GetRequiredService<EfRefreshCredentialStore>());
+        services.AddScoped<IRotateRefreshCredentialUseCase, RotateRefreshCredentialUseCase>();
+        services.AddScoped<ILogoutUseCase, LogoutUseCase>();
+        services.AddScoped<IPasswordAccountStore, EfPasswordAccountStore>();
+        services.AddSingleton<ISecureCredentialComparer, FixedTimeCredentialComparer>();
+        services.AddScoped<IChangePasswordUseCase, ChangePasswordUseCase>();
+        services.AddScoped<IResetPasswordUseCase, ResetPasswordUseCase>();
+        services.AddSingleton<IDeviceIdentifierHasher, Sha256DeviceIdentifierHasher>();
+        services.AddScoped<IAccountOnboardingStore, EfAccountOnboardingStore>();
+        services.AddScoped<IGuestLoginUseCase, GuestLoginUseCase>();
+        services.AddScoped<IRegisterAccountUseCase, RegisterAccountUseCase>();
+        services.AddScoped<IConsumeJoinTicketUseCase, ConsumeJoinTicketUseCase>();
+        services.AddScoped<IPlayerCharacterStore, EfPlayerCharacterStore>();
+        services.AddSingleton<ICharacterBuildPolicy, CharacterBuildPolicy>();
+        services.AddScoped<IGetPlayerCharactersUseCase, GetPlayerCharactersUseCase>();
+        services.AddScoped<ICreatePlayerCharacterUseCase, CreatePlayerCharacterUseCase>();
+        services.AddScoped<ISelectPlayerCharacterUseCase, SelectPlayerCharacterUseCase>();
+        services.AddHostedService<Services.Match.MatchmakingBackgroundService>();
 
         return services;
     }
@@ -252,4 +324,3 @@ public static class ServiceCollectionExtensions
         return $"{policy}:{ip ?? "unknown"}";
     }
 }
-

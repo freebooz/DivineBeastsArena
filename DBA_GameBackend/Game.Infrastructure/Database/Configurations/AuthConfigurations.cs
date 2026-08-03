@@ -55,7 +55,7 @@ public class PlayerIdentityConfiguration : IEntityTypeConfiguration<PlayerIdenti
 
         b.HasIndex(x => x.AccountId).IsUnique();
         b.HasIndex(x => x.PlayerId).IsUnique();
-        b.HasIndex(x => x.DisplayName);
+        b.HasIndex(x => x.DisplayName).IsUnique();
 
         b.HasOne(x => x.Account).WithOne(x => x.PlayerIdentity).HasForeignKey<PlayerIdentity>(x => x.AccountId);
         b.HasOne(x => x.PlayerProfile).WithOne(x => x.PlayerIdentity).HasForeignKey<PlayerIdentity>(x => x.PlayerId);
@@ -97,7 +97,7 @@ public class DeviceLoginConfiguration : IEntityTypeConfiguration<DeviceLogin>
         b.Property(x => x.LastLoginAt).HasColumnName("last_login_at").IsRequired();
         b.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
 
-        b.HasIndex(x => new { x.AccountId, x.DeviceIdHash }).IsUnique();
+        b.HasIndex(x => x.DeviceIdHash).IsUnique();
     }
 }
 

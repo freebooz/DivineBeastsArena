@@ -9,7 +9,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-#include "GameDBA/UI/Lobby/UDBAMainLobbyWidgetController.h"
+#include "GameDBA/Frontend/Lobby/UDBAMainLobbyWidgetController.h"
 #include "Misc/AutomationTest.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(

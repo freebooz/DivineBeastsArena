@@ -1,4 +1,4 @@
-﻿/*
+/*
 中文阅读说明：
 - 所属应用：DBA_GameBackend 后端 API / Worker。
 - 文件职责：定义跨进程/跨项目传输 DTO，客户端、后台和服务端都应以这里的字段契约为准。
@@ -221,3 +221,131 @@ public record MatchAdminResponse(
 public record AuditLogResponse(
     Guid Id, string Action, string TargetType, string? TargetId,
     string? Reason, string? IpAddress, DateTimeOffset CreatedAt);
+
+// ==================== 支付订单管理 / Admin Payment ====================
+
+public record AdminPaymentOrderListResponse(
+    IReadOnlyList<AdminPaymentOrderListItem> Items,
+    int TotalCount,
+    int Page,
+    int PageSize);
+
+public record AdminPaymentOrderListItem(
+    Guid Id,
+    Guid PlayerId,
+    string Platform,
+    string PlatformOrderId,
+    string Status,
+    long Amount,
+    string Currency,
+    string ProductId,
+    string ProductName,
+    long VirtualAmount,
+    string VirtualCurrency,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? PaidAt,
+    DateTimeOffset? UpdatedAt);
+
+public record AdminPaymentOrderDetailResponse(
+    Guid Id,
+    Guid PlayerId,
+    string Platform,
+    string PlatformOrderId,
+    string Status,
+    long Amount,
+    string Currency,
+    string ProductId,
+    string ProductName,
+    long VirtualAmount,
+    string VirtualCurrency,
+    string? CallbackJson,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? PaidAt,
+    DateTimeOffset? UpdatedAt);
+
+public record AdminRefundPaymentRequest(string Reason);
+
+// ==================== 任务管理 / Admin Quest ====================
+
+public record AdminQuestListResponse(
+    IReadOnlyList<AdminQuestItem> Items,
+    int TotalCount,
+    int Page,
+    int PageSize);
+
+public record AdminQuestItem(
+    Guid Id,
+    string QuestKey,
+    string Title,
+    string Description,
+    string QuestType,
+    string Category,
+    int TargetProgress,
+    string RewardJson,
+    int SortOrder,
+    bool IsActive,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? UpdatedAt);
+
+public record AdminCreateQuestRequest(
+    string QuestKey,
+    string Title,
+    string? Description,
+    string QuestType,
+    string? Category,
+    int TargetProgress,
+    string? RewardJson,
+    int SortOrder);
+
+public record AdminUpdateQuestRequest(
+    string QuestKey,
+    string Title,
+    string? Description,
+    string QuestType,
+    string? Category,
+    int TargetProgress,
+    string? RewardJson,
+    int SortOrder) : AdminCreateQuestRequest(
+        QuestKey, Title, Description, QuestType, Category, TargetProgress, RewardJson, SortOrder);
+
+public record AdminDeactivateQuestRequest(string Reason);
+
+// ==================== 钱包管理 / Admin Wallet ====================
+
+public record AdminWalletBalanceListResponse(
+    IReadOnlyList<AdminWalletBalanceItem> Items,
+    int TotalCount,
+    int Page,
+    int PageSize);
+
+public record AdminWalletBalanceItem(
+    Guid Id,
+    Guid PlayerId,
+    string CurrencyType,
+    long Balance,
+    DateTimeOffset UpdatedAt);
+
+public record AdminWalletLedgerListResponse(
+    IReadOnlyList<AdminWalletLedgerItem> Items,
+    int TotalCount,
+    int Page,
+    int PageSize);
+
+public record AdminWalletLedgerItem(
+    Guid Id,
+    Guid PlayerId,
+    string CurrencyType,
+    long Amount,
+    long BalanceBefore,
+    long BalanceAfter,
+    string BizType,
+    string BizId,
+    string IdempotencyKey,
+    Guid? OperatorId,
+    DateTimeOffset CreatedAt);
+
+public record AdminAdjustWalletRequest(
+    Guid PlayerId,
+    string CurrencyType,
+    long Amount,
+    string Reason);

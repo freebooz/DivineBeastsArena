@@ -1,0 +1,27 @@
+﻿{
+    "kind":  "frontend-match-validation",
+    "runId":  "frontend-match-20260709T163452Z",
+    "generatedAtUtc":  "2026-07-09T16:37:39.0804736Z",
+    "status":  "failed",
+    "error":  "frontend match validation assertions failed: {\"clientAMatchTicket\":2,\"clientBMatchTicket\":2,\"clientAMatched\":12,\"clientBMatched\":16,\"clientAConnectIssued\":0,\"clientBConnectIssued\":0,\"clientATravel\":0,\"clientBTravel\":0,\"serverJoin\":0,\"serverPlayerJoinedOk\":4,\"allocationPort\":7777,\"listenPort\":7878,\"clientConnectPort\":7878}",
+    "baseUrl":  "http://localhost:8080",
+    "sessionId":  "7ccee8d4-0853-4c69-8447-5aa5f6f0f1d0",
+    "serverId":  "cbe5c6c9-3297-4790-b221-9793f0800a25",
+    "logs":  {
+                 "server":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-frontend-match\\server-frontend-match-20260709T163452Z.log",
+                 "clientB":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-frontend-match\\client-b-frontend-match-20260709T163452Z.log",
+                 "clientA":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-frontend-match\\client-a-frontend-match-20260709T163452Z.log"
+             },
+    "counts":  {
+                   "clientAMatchTicket":  2,
+                   "clientBMatchTicket":  2,
+                   "clientAMatched":  12,
+                   "clientBMatched":  16,
+                   "clientAConnectIssued":  0,
+                   "clientBConnectIssued":  0,
+                   "clientATravel":  0,
+                   "clientBTravel":  0,
+                   "serverJoin":  0,
+                   "serverPlayerJoinedOk":  4
+               }
+}

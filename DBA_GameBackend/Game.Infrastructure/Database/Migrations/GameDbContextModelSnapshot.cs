@@ -555,7 +555,9 @@ namespace Game.Infrastructure.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AccountId", "DeviceIdHash")
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("DeviceIdHash")
                         .IsUnique();
 
                     b.ToTable("device_login", (string)null);
@@ -1154,6 +1156,11 @@ namespace Game.Infrastructure.Database.Migrations
 
                     b.HasIndex("Mode", "Region");
 
+                    b.HasIndex("SourceType", "SourceId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_game_session_source_type_source_id")
+                        .HasFilter("source_id IS NOT NULL");
+
                     b.ToTable("game_session", (string)null);
                 });
 
@@ -1594,6 +1601,94 @@ namespace Game.Infrastructure.Database.Migrations
                     b.ToTable("order_record", (string)null);
                 });
 
+            modelBuilder.Entity("Game.Infrastructure.Database.Entities.PaymentOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long>("Amount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("CallbackJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("callback_json");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("currency");
+
+                    b.Property<DateTimeOffset?>("PaidAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paid_at");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("platform");
+
+                    b.Property<string>("PlatformOrderId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("platform_order_id");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<string>("ProductId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("product_id");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("product_name");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long>("VirtualAmount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("virtual_amount");
+
+                    b.Property<string>("VirtualCurrency")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("virtual_currency");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlatformOrderId");
+
+                    b.HasIndex("PlayerId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("payment_order", (string)null);
+                });
+
             modelBuilder.Entity("Game.Infrastructure.Database.Entities.PlayerAchievement", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1877,7 +1972,8 @@ namespace Game.Infrastructure.Database.Migrations
                     b.HasIndex("AccountId")
                         .IsUnique();
 
-                    b.HasIndex("DisplayName");
+                    b.HasIndex("DisplayName")
+                        .IsUnique();
 
                     b.HasIndex("PlayerId")
                         .IsUnique();
@@ -1995,6 +2091,61 @@ namespace Game.Infrastructure.Database.Migrations
                     b.ToTable("player_profile", (string)null);
                 });
 
+            modelBuilder.Entity("Game.Infrastructure.Database.Entities.PlayerQuest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("accepted_at");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset?>("ExpiredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expired_at");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<int>("Progress")
+                        .HasColumnType("integer")
+                        .HasColumnName("progress");
+
+                    b.Property<Guid>("QuestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quest_id");
+
+                    b.Property<DateTimeOffset?>("RewardedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("rewarded_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayerId");
+
+                    b.HasIndex("QuestId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("PlayerId", "QuestId")
+                        .IsUnique();
+
+                    b.ToTable("player_quest", (string)null);
+                });
+
             modelBuilder.Entity("Game.Infrastructure.Database.Entities.PlayerRanking", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2049,6 +2200,10 @@ namespace Game.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("CharacterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("character_id");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -2072,6 +2227,7 @@ namespace Game.Infrastructure.Database.Migrations
                         .HasColumnName("joined_at");
 
                     b.Property<DateTimeOffset?>("LeftAt")
+                        .IsConcurrencyToken()
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("left_at");
 
@@ -2093,15 +2249,25 @@ namespace Game.Infrastructure.Database.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("reconnect_token_hash");
 
+                    b.Property<string>("SessionTokenBuildId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("session_token_build_id");
+
                     b.Property<DateTimeOffset>("SessionTokenExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("session_token_expires_at");
 
                     b.Property<string>("SessionTokenHash")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("session_token_hash");
+
+                    b.Property<Guid?>("SessionTokenServerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("session_token_server_id");
 
                     b.Property<int?>("SlotIndex")
                         .HasColumnType("integer")
@@ -2124,6 +2290,8 @@ namespace Game.Infrastructure.Database.Migrations
                         .HasColumnName("zodiac");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CharacterId");
 
                     b.HasIndex("SessionTokenHash")
                         .IsUnique();
@@ -2276,6 +2444,79 @@ namespace Game.Infrastructure.Database.Migrations
                     b.HasKey("Port");
 
                     b.ToTable("port_allocation", (string)null);
+                });
+
+            modelBuilder.Entity("Game.Infrastructure.Database.Entities.Quest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("category");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("QuestKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("quest_key");
+
+                    b.Property<string>("QuestType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("quest_type");
+
+                    b.Property<string>("RewardJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("reward_json");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<int>("TargetProgress")
+                        .HasColumnType("integer")
+                        .HasColumnName("target_progress");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("QuestKey")
+                        .IsUnique();
+
+                    b.HasIndex("QuestType");
+
+                    b.ToTable("quest", (string)null);
                 });
 
             modelBuilder.Entity("Game.Infrastructure.Database.Entities.RefreshToken", b =>
@@ -2827,6 +3068,25 @@ namespace Game.Infrastructure.Database.Migrations
                         .IsRequired();
 
                     b.Navigation("Player");
+                });
+
+            modelBuilder.Entity("Game.Infrastructure.Database.Entities.PlayerQuest", b =>
+                {
+                    b.HasOne("Game.Infrastructure.Database.Entities.PlayerProfile", "Player")
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Game.Infrastructure.Database.Entities.Quest", "Quest")
+                        .WithMany()
+                        .HasForeignKey("QuestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Player");
+
+                    b.Navigation("Quest");
                 });
 
             modelBuilder.Entity("Game.Infrastructure.Database.Entities.PlayerRanking", b =>

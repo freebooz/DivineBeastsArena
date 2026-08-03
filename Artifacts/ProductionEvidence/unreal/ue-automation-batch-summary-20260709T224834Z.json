@@ -1,0 +1,54 @@
+﻿[
+    {
+        "kind":  "fallback-policy-automation",
+        "runId":  "20260709T224834Z",
+        "status":  "passed",
+        "testFilter":  "DivineBeastsArena.GameCore.Account.OnlineService.FallbackPolicy",
+        "exitCode":  0,
+        "elapsedSeconds":  51.6,
+        "found":  1,
+        "passed":  1,
+        "failed":  0,
+        "logPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\unreal\\fallback-policy-automation-20260709T224834Z.log",
+        "timestampUtc":  "2026-07-09T14:49:25.6986849Z"
+    },
+    {
+        "kind":  "online-json-automation",
+        "runId":  "20260709T224834Z",
+        "status":  "passed",
+        "testFilter":  "DivineBeastsArena.GameCore.Account.OnlineJson",
+        "exitCode":  0,
+        "elapsedSeconds":  11.8,
+        "found":  6,
+        "passed":  6,
+        "failed":  0,
+        "logPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\unreal\\online-json-automation-20260709T224834Z.log",
+        "timestampUtc":  "2026-07-09T14:49:37.6007773Z"
+    },
+    {
+        "kind":  "login-flow-automation",
+        "runId":  "20260709T224834Z",
+        "status":  "passed",
+        "testFilter":  "DivineBeastsArena.GameCore.Session.LoginFlow",
+        "exitCode":  0,
+        "elapsedSeconds":  11.9,
+        "found":  3,
+        "passed":  3,
+        "failed":  0,
+        "logPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\unreal\\login-flow-automation-20260709T224834Z.log",
+        "timestampUtc":  "2026-07-09T14:49:49.5241472Z"
+    },
+    {
+        "kind":  "character-presentation-automation",
+        "runId":  "20260709T224834Z",
+        "status":  "passed",
+        "testFilter":  "DivineBeastsArena.UI.CharacterPresentation",
+        "exitCode":  0,
+        "elapsedSeconds":  12.2,
+        "found":  8,
+        "passed":  8,
+        "failed":  0,
+        "logPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\unreal\\character-presentation-automation-20260709T224834Z.log",
+        "timestampUtc":  "2026-07-09T14:50:01.7547383Z"
+    }
+]

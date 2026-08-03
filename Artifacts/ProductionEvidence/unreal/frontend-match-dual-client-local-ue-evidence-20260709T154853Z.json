@@ -1,0 +1,23 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "frontend-match-dual-client-no-skip",
+    "runId":  "frontend-match-20260709T154853Z",
+    "status":  "matched_waiting_server",
+    "generatedAtUtc":  "2026-07-09T16:04:11.0286236Z",
+    "baseUrl":  "http://localhost:8080",
+    "skipFrontendFlow":  false,
+    "autoLobbyFlow":  true,
+    "autoMatchFlow":  true,
+    "sessionId":  "9ff271a3-24d0-4bfa-9b19-90f18f089ecd",
+    "note":  "双客户端无 SkipFrontendFlow 已完成登录/选角/匹配到同一 session；脚本因中文日志编码未识别匹配而未分配 DS，客户端 GetConnection 持续 SESSION_PLAYER_NOT_IN_SESSION（DS 未 Ready）。后续已修脚本 ASCII 检测与 SESSION_SERVER_NOT_READY 错误码。",
+    "logPaths":  {
+                     "clientB":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-frontend-match\\client-b-frontend-match-20260709T154853Z.log",
+                     "clientA":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-frontend-match\\client-a-frontend-match-20260709T154853Z.log"
+                 },
+    "counts":  {
+                   "clientBSessionId":  1,
+                   "clientATickets":  4,
+                   "clientASessionId":  1,
+                   "clientBTickets":  2
+               }
+}

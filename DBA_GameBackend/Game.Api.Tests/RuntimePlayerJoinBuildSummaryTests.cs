@@ -15,6 +15,9 @@ namespace Game.Api.Tests;
 
 public class RuntimePlayerJoinBuildSummaryTests
 {
+    private static readonly Game.Application.Characters.ICharacterBuildPolicy BuildPolicy =
+        TestCharacterBuildFactory.CreatePolicy();
+
     [Fact]
     public void ValidateBuildSummary_WhenFixedSkillGroupIsTampered_ReturnsFalse()
     {
@@ -40,7 +43,7 @@ public class RuntimePlayerJoinBuildSummaryTests
             "East",
             "Rat_Fire");
 
-        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request);
+        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request, BuildPolicy);
 
         Assert.False(result.IsValid);
         Assert.Equal("Runtime player build summary does not match the frozen session build.", result.ErrorMessage);
@@ -71,7 +74,7 @@ public class RuntimePlayerJoinBuildSummaryTests
             "North",
             "Rat_Water");
 
-        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request);
+        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request, BuildPolicy);
 
         Assert.True(result.IsValid);
     }
@@ -101,7 +104,7 @@ public class RuntimePlayerJoinBuildSummaryTests
             "North",
             "Rat_Water");
 
-        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request);
+        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request, BuildPolicy);
 
         Assert.True(result.IsValid);
     }
@@ -131,10 +134,10 @@ public class RuntimePlayerJoinBuildSummaryTests
             "East",
             "Rat_Water");
 
-        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request);
+        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request, BuildPolicy);
 
         Assert.False(result.IsValid);
-        Assert.Equal(RuntimePlayerJoinValidator.FrozenBuildSummaryInvalidMessage, result.ErrorMessage);
+        Assert.Equal(TestCharacterBuildFactory.Options.Messages.FrozenBuildSummaryInvalid, result.ErrorMessage);
     }
 
     [Fact]
@@ -158,7 +161,7 @@ public class RuntimePlayerJoinBuildSummaryTests
             null,
             null);
 
-        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request);
+        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request, BuildPolicy);
 
         Assert.True(result.IsValid);
     }
@@ -194,10 +197,10 @@ public class RuntimePlayerJoinBuildSummaryTests
             "East",
             "Rat_Water");
 
-        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request);
+        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request, BuildPolicy);
 
         Assert.False(result.IsValid);
-        Assert.Equal(RuntimePlayerJoinValidator.FrozenBuildSummaryInvalidMessage, result.ErrorMessage);
+        Assert.Equal(TestCharacterBuildFactory.Options.Messages.FrozenBuildSummaryInvalid, result.ErrorMessage);
     }
 
     [Fact]
@@ -225,10 +228,10 @@ public class RuntimePlayerJoinBuildSummaryTests
             "East",
             null);
 
-        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request);
+        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request, BuildPolicy);
 
         Assert.False(result.IsValid);
-        Assert.Equal(RuntimePlayerJoinValidator.BuildSummaryMissingMessage, result.ErrorMessage);
+        Assert.Equal(TestCharacterBuildFactory.Options.Messages.BuildSummaryMissing, result.ErrorMessage);
     }
 
     [Theory]
@@ -265,10 +268,10 @@ public class RuntimePlayerJoinBuildSummaryTests
             "East",
             fixedSkillGroupId);
 
-        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request);
+        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request, BuildPolicy);
 
         Assert.False(result.IsValid);
-        Assert.Equal(RuntimePlayerJoinValidator.BuildSummaryMissingMessage, result.ErrorMessage);
+        Assert.Equal(TestCharacterBuildFactory.Options.Messages.BuildSummaryMissing, result.ErrorMessage);
     }
 
     [Theory]
@@ -305,10 +308,10 @@ public class RuntimePlayerJoinBuildSummaryTests
             "East",
             "Rat_Water");
 
-        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request);
+        var result = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request, BuildPolicy);
 
         Assert.False(result.IsValid);
-        Assert.Equal(RuntimePlayerJoinValidator.FrozenBuildSummaryInvalidMessage, result.ErrorMessage);
+        Assert.Equal(TestCharacterBuildFactory.Options.Messages.FrozenBuildSummaryInvalid, result.ErrorMessage);
     }
 
     [Fact]

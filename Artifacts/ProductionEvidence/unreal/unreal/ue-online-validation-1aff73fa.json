@@ -1,0 +1,40 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "ue-online-validation",
+    "runId":  "1aff73fa",
+    "status":  "failed",
+    "errorMessage":  "client A failure scan found blocked pattern \"NetworkFailure\" in E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\client-a-1aff73fa.log: [2026.07.09-14.57.17:000][ 71]LogNet: Error: UEngine::BroadcastNetworkFailure: FailureType = NetChecksumMismatch, ErrorString = GetObjectFromNetGUID: Network checksum mismatch. FullNetGUIDPath: [11]/Script/DivineBeastsArena.[25]Default__DBALobbyTrainingMonster, 3633704250, 4016853413, Driver = Name:GameNetDriver Def:GameNetDriver IpNetDriver_0",
+    "generatedAtUtc":  "2026-07-09T14:57:54.7881012Z",
+    "baseUrl":  "http://localhost:8080",
+    "usePackagedServer":  true,
+    "skipClientLaunch":  false,
+    "keepProcessesAlive":  false,
+    "serverExecutable":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\packaged-server\\WindowsServer\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer.exe",
+    "roomId":  "d8a6243f-0b6f-4e27-8e08-c40d31b5d78c",
+    "sessionId":  "7b6a4640-b18d-4e72-92fe-fe1eda1cb468",
+    "serverId":  "e1b89049-4e8d-4a09-8044-6037b5d1aa22",
+    "allocatedPort":  7777,
+    "clientConnectPort":  7878,
+    "processIds":  {
+                       "server":  42796,
+                       "clientA":  34868,
+                       "clientB":  24756
+                   },
+    "logPaths":  {
+                     "server":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\server-1aff73fa.log",
+                     "clientA":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\client-a-1aff73fa.log",
+                     "clientB":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\client-b-1aff73fa.log"
+                 },
+    "safeLogEvidence":  {
+                            "runtimePlayerJoined":  [
+                                                        "[2026.07.09-14.57.16:879][338]LogDBACore: [DBAGameModeBase] Runtime player-joined 请求已发送：PlayerId=30fa0462-7d28-406c-934a-0fa234a7254e Zodiac=Rat Element=Water FixedSkillGroupId=Rat_Water",
+                                                        "[2026.07.09-14.57.20:083][434]LogDBACore: [DBAGameModeBase] Runtime player-joined 请求已发送：PlayerId=33c33cda-7502-4072-8ea9-99818942c7e4 Zodiac=Tiger Element=Fire FixedSkillGroupId=Tiger_Fire"
+                                                    ],
+                            "runtimePlayerJoinedOk":  [
+                                                          "[2026.07.09-14.57.16:906][339]LogDBA_GameBackendClient: HTTP 请求：方法=POST 地址=http://localhost:8080/runtime/servers/player-joined 追踪ID=98e01c32-48c2-de49-16de-3d9337a96130 状态码=200 业务码=OK 耗时毫秒=27.84",
+                                                          "[2026.07.09-14.57.20:113][435]LogDBA_GameBackendClient: HTTP 请求：方法=POST 地址=http://localhost:8080/runtime/servers/player-joined 追踪ID=909f25c3-49fb-1b86-39dc-0c850293a537 状态码=200 业务码=OK 耗时毫秒=30.88"
+                                                      ],
+                            "clientATravelCompleted":  "[2026.07.09-14.57.16:864][ 68]LogGlobalStatus: UPendingNetGame::TravelCompleted Pending net game travel completed",
+                            "clientBTravelCompleted":  "[2026.07.09-14.57.20:065][ 33]LogGlobalStatus: UPendingNetGame::TravelCompleted Pending net game travel completed"
+                        }
+}

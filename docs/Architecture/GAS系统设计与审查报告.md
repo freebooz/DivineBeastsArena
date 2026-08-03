@@ -1,10 +1,10 @@
 # GAS 系统设计与审查报告
 
-版本：v1.4
-日期：2026-07-04
+版本：v1.9
+日期：2026-07-10
 适用范围：`DBA_GameClient/Source/DivineBeastsArena`、`DBA_GameClient/Source/GameMoba` 中与 Gameplay Ability System、战斗属性、技能激活、客户端预测、RPC 校验、竞技场 HUD 同步相关的 C++ 实现。
 
-## 零、v1.4 当前审查结论
+## 零、v1.8 当前审查结论
 
 本轮复核以当前源码为准，重点检查了 `ADBAPlayerState`、`ADBAZodiacCharacterBase`、`UDBAAbilitySystemComponent`、`UDBABattleAttributeSet`、`UDBAElementAbilityBase` 与 `UDBAAbilitySetDataAsset`。结论是：当前 GAS 主干方向正确，已经具备继续工程化的 C++ 权威基础；当前最需要推进的不是重做 ASC 架构，而是把运行数据、表现资源和同步加载路径继续收敛到 DataAsset、DataTable、DeveloperSettings、本地化表和异步缓存流程。
 
@@ -18,20 +18,29 @@
 
 当前必须继续收敛的风险：
 
-1. `UDBABattleAttributeSet` 构造函数仍直接初始化生命、攻击、防御、移速、能量、暴击等默认值；这些真实运行数值应迁移到战斗属性初始化 DataAsset 或服务器权威配置，构造函数只保留安全兜底。
-2. `ADBAZodiacCharacterBase` 的大厅装配技能 C++ 兜底表已移除，施法规格、技能类、数值和表现资源现在必须来自 `UDBAPlayableSkillComponent` 解析出的技能目录规格；剩余风险是真实 `UDBAPlayableSkillCatalogDataAsset` 资产和默认目录配置尚未在 Editor 中创建、保存并运行验证。
-3. `ADBAZodiacCharacterBase::GetMaxEnergy()` 仍返回固定 `100.0f`；后续应由 AttributeSet、角色属性 DataAsset 或服务器配置驱动。
-4. `UDBAAbilitySetDataAsset::LoadDataTable()` 当前使用 `LoadSynchronous()`，不符合外部及资源访问异步策略；后续应迁移到 Asset Manager、GameInstance Subsystem 或 GAS 数据缓存的异步预加载流程。
+1. `UDBABattleAttributeSet` 构造函数已不再写生命、攻击、防御、移速、能量、暴击等运行默认值；源码侧已建立 `UDBABattleAttributeDefaultsDataAsset`、`UDBABattleAttributeDeveloperSettings` 和 `ADBAPlayerState` 异步加载应用路径。剩余风险是真实默认战斗属性 `.uasset` 尚未在 Editor 中创建、配置、保存并验证。
+2. `ADBAZodiacCharacterBase::GetMaxEnergy()` 与观战快照最大能量已改为读取 `UDBABattleAttributeSet::MaxEnergy`；后续新增能量上限读取必须继续走 GAS 属性或数据资产，不得回退到固定数值。
+3. `ADBAZodiacCharacterBase` 的大厅装配技能 C++ 兜底表已移除，施法规格、技能类、数值和表现资源现在必须来自 `UDBAPlayableSkillComponent` 解析出的技能目录规格；剩余风险是真实 `UDBAPlayableSkillCatalogDataAsset` 资产和默认目录配置尚未在 Editor 中创建、保存并运行验证。
+4. `UDBAAbilitySetDataAsset::LoadDataTable()`、`UDBAStaticDataAsset` 与 `UDBAZodiacHeroDataAsset` 的核心数据表入口已移除 `LoadSynchronous()`，改为“已加载缓存读取 + 未加载时发起异步请求”的边界。
 5. 固定技能组源码字段、CSV 和导入脚本已具备，但真实 `DT_FixedSkillGroups.uasset` 字段仍需要在 Editor 中导入、保存和复验，源码契约通过不等同于运行资产闭环完成。
 6. Character 中仍存在历史兼容复制字段，后续新增代码只能通过 ASC、Getter、Delegate 或观战 DTO 读取状态，不得直接读写 Character 字段绕过 ASC。
 
-v1.3 后续执行路线：
+v1.8 后续执行路线：
 
 1. 保持 PlayerState 持 ASC、Character 作为 AvatarActor 的归属策略，继续用契约脚本防止 OwnerActor/AvatarActor 语义回归。
-2. 建立或复用战斗属性初始化 DataAsset，迁移 AttributeSet 默认数值与 `GetMaxEnergy()` 一类运行配置。
+2. 在 Editor 中创建并配置真实 `UDBABattleAttributeDefaultsDataAsset`，通过 `DBA 战斗属性设置` 的 `DefaultBattleAttributeDefaults` 软引用接入，保存后执行 PIE/自动化验证。
 3. 在 Editor 中创建、导入并配置真实 PlayableSkillCatalog 默认目录资产，补齐大厅技能类、数值、图标、GameplayCue、Niagara、SFX 和文案软引用。
-4. 将 AbilitySet DataTable 同步加载迁移为异步预加载和缓存读取，提供完成、失败、降级与中文错误上报。
+4. 已完成 AbilitySet DataTable、StaticDataAsset DataTable 与 ZodiacHeroDataAsset DataTable 同步加载迁移；这些核心数据资产入口现在均采用异步请求和已加载缓存读取边界。
 5. 在 Editor 中完成真实固定技能组 DataTable 导入、保存和 PIE 验证，确认技能栏展示、能量消耗、冷却、战斗公告和事件流均由数据配置驱动。
+
+## 零点一、2026-07-10 运行默认资产与技能目录事件闭环
+
+- 已在 Editor 中创建并保存 `DA_DBA_HeroGrowthDefaults`、`DA_DBA_ZodiacCharacterRegistry` 与 `DT_ZodiacPlaceholderTints`；前者承载英雄等级、经验、复活与金币默认值，注册表完整映射十二生肖至通用 C++ 角色类，染色表由现有 CSV 导入十二行数据。
+- `UDBAHeroGrowthDefaultsDataAsset` 的五个纯配置字段已调整为 `EditAnywhere`，使 DataAsset 实例可被正常配置，避免出现“声明了数据驱动但资产不可编辑”的伪闭环。
+- `DBAGameModeBase` 的生肖注册表改为 `Config=Game` 软引用，由 `DefaultGame.ini` 指向真实 DataAsset；Dedicated Server 显式 Cook 范围补充 `/Game/DBA/Data/Tables`，不再依赖缺失的 DataTable 包回退。
+- `UDBAPlayableSkillComponent` 不再在发起异步加载后立即校验空目录；目录完成加载或配置变化时广播 `OnSkillCatalogChanged`，`UDBAAbilityBarWidgetBase` 订阅该事件刷新技能栏并订阅 `OnPossessedPawnChanged` 处理 Pawn 切换，移除了自身 `NativeTick` 轮询和逐帧冷却刷新开关。
+- 验证证据：`DivineBeastsArenaEditor Win64 Development` 编译通过；`DivineBeastsArena.Combat.PlayableSkillCatalog` 四项自动化测试全部通过；Editor Python 只读核验确认三项资产字段、十二条注册表映射和十二条染色表行均有效。
+- 新 Dedicated Server 包已完成 Cook 与归档，AutomationTool 记录 `BUILD SUCCESSFUL`；`local-ue-online-runtime-defaults-20260711-001800` 双客户端联机验证通过，两个客户端均完成网络旅行，服务端两次 `runtime/servers/player-joined` 返回 `200/OK`，且未再出现空技能目录、英雄成长未配置、生肖注册表未配置或 `DT_ZodiacPlaceholderTints` 缺包告警。
 
 ## 一、审查结论
 
@@ -166,11 +175,12 @@ ASC 装配路径的首要风险已经消除。剩余风险集中在后续新增 
 2. HUD 只消费冷却事件和 Attribute Delegate，不直接从 Tick 拉取状态。
 3. 保持固定技能组运行配置接入 GAS 执行路径；AbilityBar 已消费 DisplayName/Icon/Cooldown，后续继续把事件流、战斗提示和更完整的 HUD 文案接入 DataAsset/本地化表，并输出中文诊断日志。
 
-### P1：运行数值仍存在硬编码入口
+### P1：运行数值硬编码入口已开始收敛，剩余平衡常量需继续迁移
 
 证据：
 
-- `UDBABattleAttributeSet` 构造函数直接初始化生命、攻击、防御、移速等默认数值，见 `DBABattleAttributeSet.cpp:19` 到 `DBABattleAttributeSet.cpp:31`。
+- `UDBABattleAttributeSet` 构造函数已不再直接初始化生命、攻击、防御、移速、能量、暴击和护盾默认数值；初始值改由 `UDBABattleAttributeDefaultsDataAsset` 经 `ADBAPlayerState` 异步加载后调用 `ApplyDefaultAttributes()` 应用。
+- `ADBAZodiacCharacterBase::GetMaxEnergy()` 与观战数据最大能量已改为读取 `UDBABattleAttributeSet::MaxEnergy`，不再返回固定 `100.0f`。
 - 固定技能组数据结构已经具备技能 ID、输入键、共鸣、AbilitySet、图标和文案配置入口，见 `DBAFixedSkillGroupData.h` 中 `ElementSkill1Id`、`ZodiacUltimateSkillId`、`AbilitySetAsset`、`DisplayName` 等字段。
 - `DBAConstants` 中仍承载大量连锁、共鸣、终极能量阈值和恢复量。部分属于技术边界常量可以保留，但技能、角色、成长、平衡数值应优先迁移到 DataAsset/DataTable。
 
@@ -180,9 +190,9 @@ ASC 装配路径的首要风险已经消除。剩余风险集中在后续新增 
 
 建议：
 
-1. 为角色基础属性建立 `UDBACombatAttributeInitDataAsset` 或复用现有 Hero/AbilitySet 数据资产。
-2. AttributeSet 构造函数只保留安全兜底值，真实运行值由服务器权威初始化流程写入。
-3. 增加数据校验：缺字段、非法范围、软引用失效、版本不兼容全部输出中文错误日志。
+1. 在 Editor 中创建真实 `UDBABattleAttributeDefaultsDataAsset`，配置生命、能量、攻击、防御、移速、暴击和护盾默认值，并通过 `DBA 战斗属性设置` 接入。
+2. 继续将技能消耗、技能冷却、伤害倍率、范围、链式触发阈值、共鸣倍率迁移到数据资产、数据表或服务器权威配置。
+3. C++ 只读取、校验和应用数据，不再直接写业务平衡数值；必要技术边界常量需要在文档和契约中明确归类。
 
 ### P1：UI 战斗提示英文文案已收敛到中文展示数据路径
 
@@ -674,11 +684,160 @@ flowchart TD
 
 当前剩余风险：
 
-- 真实 `UDBAPlayableSkillCatalogDataAsset` 资产尚未在 Editor 中创建、填充、保存和 PIE 验证；运行时如果未配置默认目录，会按当前 C++ 路径输出中文缺配置诊断并停止施放旧兜底技能。
+- 项目级 `DA_PlayableSkillCatalog` 已在 Editor 中创建、保存并配置为 `DefaultSkillCatalog`，六个技能槽位已通过数据资产完整性校验；剩余表现风险是技能图标和 GameplayCue 标签尚未逐技能补齐，以及真实 PIE 施法表现仍需继续验证。
 - 既有蓝图资产如果曾配置或依赖已移除的角色级大厅技能字段，后续打开 Editor 时需要迁移到 PlayableSkillCatalog 数据资产。
-- `UDBABattleAttributeSet`、`GetMaxEnergy()`、部分 `DBAConstants` 平衡数值和 `UDBAAbilitySetDataAsset::LoadDataTable()` 同步加载仍是下一轮 GAS 数据资产化与异步化重点。
+- `UDBABattleAttributeSet` 默认值与 `GetMaxEnergy()` 已在 v1.8 增量中迁移为数据资产/GAS 属性读取边界；剩余风险是真实战斗属性默认值资产尚未创建，且部分 `DBAConstants` 平衡数值仍需继续归类或数据资产化。
 
-## 九、下一步建议
+## 八点一、2026-07-10 可玩技能目录真实资产闭环
+
+- 已创建 `/Game/DBA/Data/SkillCatalog/DA_PlayableSkillCatalog`，目录包含炎弹、霜晶、影矢、连锁雷击、繁花疗愈和圣佑护盾六个数据化技能槽位。
+- 每个规格均配置 C++ 技能类、数值、冷却、现有 Niagara 特效与音效软引用；运行时仍通过 `UDBAPlayableSkillComponent` 的异步路径读取该目录，不恢复 C++ 默认技能表。
+- `DefaultGame.ini` 的 `UDBAPlayableSkillDeveloperSettings::DefaultSkillCatalog` 已指向真实资产，Dedicated Server 打包附加 Cook 范围已纳入 `/Game/DBA/Data/SkillCatalog`。
+- 已通过 `test-playable-skill-catalog-defaults-data-asset-contract.ps1`、`DivineBeastsArena.Combat.PlayableSkillCatalog.DefaultConfiguredAsset`、Editor 构建、Dedicated Server 构建、Cook/Stage 与大厅服务器 smoke 验证。
+
+## 九、2026-07-05 AbilitySet 数据表异步加载边界审查
+
+本轮继续审查 GAS 数据入口与全局“外部及资源访问异步”策略的符合度。此前 `UDBAAbilitySetDataAsset::LoadDataTable()` 会在技能组数据查询和完整性校验中直接 `LoadSynchronous()`，会把技能组、技能表和汇总表软引用加载压力压到调用线程上，不符合项目要求的异步资源访问边界。本轮已将该风险从“待处理”改为“源码闭环并有契约保护”。
+
+落实内容：
+
+- `UDBAAbilitySetDataAsset` 新增 `PreloadAllDataTablesAsync()`，用于批量预热元素被动、元素主动、大招模板、共鸣、生肖大招、技能表和技能组汇总表。
+- `LoadDataTable()` 现在只返回已经加载完成的 `DataTablePtr.Get()`；如果数据表尚未加载，则调用 `RequestDataTableAsync()` 发起异步请求并返回空指针，不再阻塞线程。
+- `RequestDataTableAsync()` 使用 `DBAAsyncAssetLoader::RequestAsyncAsset<UDataTable>`，并通过 `RequestedDataTableLoads` 去重，避免同一软引用反复发起异步加载。
+- `ValidateDataIntegrity()` 的数据表行数检查改为 `ValidateLoadedTableRowCount()`；表未加载完成时输出中文诊断“尚未加载完成，已发起异步加载；请等待加载完成后重试校验。”，而不是同步拉取资产。
+- 新增 `scripts/test-ability-set-datatable-async-contract.ps1`，并接入 `scripts/test-production-evidence-automation.ps1` 与 `scripts/validate-production-evidence-contracts.ps1`，锁定 `UDBAAbilitySetDataAsset` 不得回退到 `LoadSynchronous()`。
+- 为通过 Unreal Unity Build，已将多个 Arena HUD Widget 私有辅助函数拆成唯一命名：`NormalizeBuffWidgetId`、`NormalizeDebuffWidgetId`、`NormalizeCCWidgetId`、`NormalizeCombatAnnouncementWidgetText`、`NormalizeObjectiveTrackerWidgetText`、`NormalizeEventFeedWidgetText`，并同步对应契约脚本，避免匿名命名空间同名函数在 Unity 合并编译下冲突。
+
+本轮验证：
+
+```powershell
+.\scripts\test-ability-set-datatable-async-contract.ps1
+.\scripts\test-arena-hud-status-effects-sync.ps1
+.\scripts\test-arena-hud-event-feedback-sync.ps1
+.\scripts\test-arena-hud-event-feed-widget-sync.ps1
+.\scripts\validate-production-evidence-contracts.ps1
+.\scripts\test-production-evidence-automation.ps1
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project='E:\work\Game\DivineBeastsArena\DBA_GameClient\DivineBeastsArena.uproject' -WaitMutex -NoHotReloadFromIDE
+```
+
+验证结论：
+
+- Editor 目标编译通过，Unity Build 下的 HUD Widget 辅助函数重名问题已消除。
+- `test-production-evidence-automation.ps1` 最终退出码为 0；输出中的发布输入、缺失包体、反向依赖和证据缺失等负例 fixture 属于测试内预期失败，用于证明诊断路径有效。
+- AbilitySet 数据表加载边界已符合“资源访问异步、C++ 读取校验、中文诊断输出”的全局策略。
+
+当前剩余风险：
+
+- `UDBAZodiacHeroDataAsset` 的 `LoadSynchronous()` 路径已在后续 v1.7 增量中迁移为异步预加载、缓存读取和中文未加载诊断。
+- 真实固定技能组 `DataTable`、真实 `UDBAPlayableSkillCatalogDataAsset` 和旧蓝图属性迁移仍需通过 Editor 流程导入、保存、编译和 PIE 验证；本轮没有直接修改 `.uasset` 或 `.umap`。
+- `UDBABattleAttributeSet` 构造默认值与 `GetMaxEnergy()` 已在 v1.8 增量中闭环；部分 `DBAConstants` 平衡数值仍需继续迁移到 DataAsset、DataTable 或服务器权威配置。
+
+## 十、2026-07-05 StaticDataAsset 数据表异步加载边界审查
+
+本轮继续沿用 AbilitySet 的异步边界模式，处理 `UDBAStaticDataAsset` 中的同步数据表加载。旧实现会在 `PreloadAllTables()`、各个 Getter 与编辑器 `IsDataValid()` 中直接 `LoadSynchronous()`，覆盖生肖、元素、五营、地图和模式静态数据表。该路径会在启动、校验或运行时访问中阻塞调用线程，不符合全局“资源访问异步、C++ 读取校验、中文诊断输出”的策略。
+
+落实内容：
+
+- `PreloadAllTables()` 保留为兼容入口，但现在只委托 `PreloadAllTablesAsync()`。
+- 新增 `PreloadAllTablesAsync()`，统一请求预热 `ZodiacStaticTable`、`ElementDefinitionTable`、`FiveCampDisplayTable`、`MapDefinitionTable` 和 `ModeDefinitionTable`。
+- 新增 `LoadDataTable()`、`RequestDataTableAsync()` 与 `RequestedDataTableLoads`，Getter 只返回 `DataTablePtr.Get()` 已加载缓存；未加载时发起 `DBAAsyncAssetLoader::RequestAsyncAsset<UDataTable>` 并返回空指针。
+- `IsDataValid()` 改为通过 `ValidateLoadedTableRowCount()` 检查已加载数据表；表未加载完成时输出中文诊断“尚未加载完成，已发起异步加载；请等待加载完成后重试校验。”。
+- 新增 `scripts/test-static-data-asset-async-contract.ps1`，并接入 `scripts/test-production-evidence-automation.ps1`、PowerShell 语法解析列表和 `scripts/validate-production-evidence-contracts.ps1`，防止该路径回退到同步加载。
+
+本轮验证：
+
+```powershell
+.\scripts\test-static-data-asset-async-contract.ps1
+.\scripts\validate-production-evidence-contracts.ps1
+.\scripts\test-production-evidence-automation.ps1
+rg -n "LoadSynchronous\s*\(" DBA_GameClient\Source\DivineBeastsArena\Private\GameDBA\Data\DBAStaticDataAsset.cpp DBA_GameClient\Source\DivineBeastsArena\Public\GameDBA\Data\DBAStaticDataAsset.h
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project='E:\work\Game\DivineBeastsArena\DBA_GameClient\DivineBeastsArena.uproject' -WaitMutex -NoHotReloadFromIDE
+```
+
+验证结论：
+
+- `UDBAStaticDataAsset` 头文件和实现文件中已查不到 `LoadSynchronous()`。
+- 生产证据总入口包含 `StaticDataAsset DataTable async load boundary contract`，并最终通过。
+- Editor 目标编译通过，`DBAStaticDataAsset.cpp` 已被重新编译并链接进 `UnrealEditor-DivineBeastsArena.dll`。
+
+后续记录：
+
+- `UDBAZodiacHeroDataAsset` 已在 v1.7 增量中完成 DataTable 同步加载迁移。
+
+当前剩余风险：
+
+- StaticDataAsset 的真实 `.uasset` 配置、静态数据表资产加载完成后的 Editor 校验和 PIE 验证仍需后续 Editor 流程确认；本轮只修改 C++ 源码和自动化契约，没有保存二进制资产。
+
+## 十一、2026-07-05 ZodiacHeroDataAsset 数据表异步加载边界审查
+
+本轮继续处理最后一个已知核心数据资产同步加载入口：`UDBAZodiacHeroDataAsset`。旧实现通过 `LoadDataTable()` 对生肖显示表、生肖配置表、固定技能组表和技能组汇总表执行 `LoadSynchronous()`；这些表又被生肖选择、固定技能组、技能组汇总和完整性校验共同使用。该路径已经迁移为异步请求和缓存读取。
+
+落实内容：
+
+- 新增 `PreloadAllDataTablesAsync()`，统一预热 `ZodiacHeroDisplayTable`、`ZodiacHeroConfigTable`、`FixedSkillGroupTable` 与 `AbilitySetSummaryTable`。
+- `LoadDataTable()` 只返回已经加载完成的 `DataTablePtr.Get()`；未加载时调用 `RequestDataTableAsync()` 发起异步加载并返回空指针。
+- `RequestDataTableAsync()` 使用 `DBAAsyncAssetLoader::RequestAsyncAsset<UDataTable>`，并通过 `RequestedDataTableLoads` 去重，避免重复请求同一软引用。
+- `ValidateDataIntegrity()` 的行数检查改为 `ValidateLoadedTableRowCount()`；数据表尚未加载完成时输出中文“尚未加载完成，已发起异步加载；请等待加载完成后重试校验。”诊断。
+- 新增 `scripts/test-zodiac-hero-data-asset-async-contract.ps1`，并接入 `scripts/test-production-evidence-automation.ps1`、PowerShell 语法解析列表和 `scripts/validate-production-evidence-contracts.ps1`。
+
+本轮验证：
+
+```powershell
+.\scripts\test-zodiac-hero-data-asset-async-contract.ps1
+.\scripts\validate-production-evidence-contracts.ps1
+.\scripts\test-production-evidence-automation.ps1
+rg -n "LoadSynchronous\s*\(" DBA_GameClient\Source\DivineBeastsArena\Private\GameDBA\Data\DBAZodiacHeroDataAsset.cpp DBA_GameClient\Source\DivineBeastsArena\Public\GameDBA\Data\DBAZodiacHeroDataAsset.h
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project='E:\work\Game\DivineBeastsArena\DBA_GameClient\DivineBeastsArena.uproject' -WaitMutex -NoHotReloadFromIDE
+```
+
+验证结论：
+
+- `UDBAZodiacHeroDataAsset` 头文件和实现文件中已查不到 `LoadSynchronous()`。
+- 生产证据总入口包含 `ZodiacHeroDataAsset DataTable async load boundary contract`，并最终通过。
+- Editor 目标编译通过，`DBAZodiacHeroDataAsset.cpp` 已被重新编译并链接进 `UnrealEditor-DivineBeastsArena.dll`。
+
+当前剩余风险：
+
+- 真实 `UDBAZodiacHeroDataAsset` `.uasset` 配置、关联 DataTable 资产加载完成后的 Editor 校验和 PIE 验证仍需后续 Editor 流程确认；本轮未保存任何二进制资产。
+- `UDBABattleAttributeSet` 默认值与 `GetMaxEnergy()` 已在 v1.8 增量中闭环；后续 GAS 数据资产化重点转向真实默认战斗属性资产创建、Editor 验证，以及部分 `DBAConstants` 平衡数值的数据资产/服务器配置驱动。
+
+## 十二、2026-07-05 BattleAttribute 默认值数据资产化审查
+
+本轮继续处理 GAS 运行数值硬编码风险。旧实现中 `UDBABattleAttributeSet` 构造函数直接写入生命、攻击、防御、移速、普通能量、能量回复、暴击和护盾默认值；`ADBAZodiacCharacterBase::GetMaxEnergy()` 与观战快照也直接使用固定最大能量。这些数值属于运行平衡数据，不应由 C++ 构造函数承载。
+
+落实内容：
+
+- 新增 `FDBABattleAttributeDefaults` 与 `UDBABattleAttributeDefaultsDataAsset`，将 MaxHealth、CurrentHealth、AttackPower、Defense、MoveSpeed、MaxEnergy、CurrentEnergy、EnergyRegen、CriticalRate、CriticalMultiplier、MaxShield、CurrentShield 暴露为 DataAsset 配置字段。
+- `UDBABattleAttributeDefaultsDataAsset::ValidateData_Implementation()` 已提供中文数据完整性校验，覆盖最大值必须大于 0、当前值不能超过最大值、暴击率范围、暴击倍率下限、护盾范围等约束。
+- 新增 `UDBABattleAttributeDeveloperSettings`，通过 `DefaultBattleAttributeDefaults` 软引用提供项目级默认战斗属性数据资产入口。
+- `ADBAPlayerState::BeginPlay()` 现在调用 `RequestDefaultBattleAttributeDefaultsAsync()`，使用 `DBAAsyncAssetLoader::RequestAsyncAsset<UDBABattleAttributeDefaultsDataAsset>` 异步加载默认属性数据资产；加载完成后调用 `BattleAttributeSet->ApplyDefaultAttributes(LoadedDefaults)`。
+- `UDBABattleAttributeSet` 构造函数已清空运行默认值写入，新增 `ApplyDefaultAttributes()`，只负责校验并应用 DataAsset 中的属性初始值。
+- `ADBAZodiacCharacterBase::GetMaxEnergy()` 改为读取 `ASC->GetNumericAttributeBase(UDBABattleAttributeSet::GetMaxEnergyAttribute())`，观战快照 `OutData.MaxEnergy` 也改为 `GetMaxEnergy()`。
+- 新增 `scripts/test-battle-attribute-defaults-data-asset-contract.ps1`，并接入 `scripts/test-production-evidence-automation.ps1`、PowerShell 语法解析列表和 `scripts/validate-production-evidence-contracts.ps1`，防止构造函数默认值、同步加载或固定 `100.0f` 能量上限回归。
+
+本轮验证：
+
+```powershell
+.\scripts\test-battle-attribute-defaults-data-asset-contract.ps1
+.\scripts\validate-production-evidence-contracts.ps1
+.\scripts\test-production-evidence-automation.ps1
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project='E:\work\Game\DivineBeastsArena\DBA_GameClient\DivineBeastsArena.uproject' -WaitMutex -NoHotReloadFromIDE
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaServer Win64 Development -Project='E:\work\Game\DivineBeastsArena\DBA_GameClient\DivineBeastsArena.uproject' -WaitMutex -NoHotReloadFromIDE
+```
+
+验证结论：
+
+- 战斗属性默认值契约、生产证据契约和生产证据总入口均通过。
+- Editor 与 Dedicated Server 目标编译均通过，新增 DataAsset、DeveloperSettings 和异步加载路径可被客户端/服务端共同编译。
+- 本轮未创建、修改或保存任何 `.uasset`、`.umap` 或项目设置。
+
+当前剩余风险：
+
+- 真实 `UDBABattleAttributeDefaultsDataAsset` 资产尚未在 Editor 中创建、填值、保存并配置到 `DBA 战斗属性设置` 的 `DefaultBattleAttributeDefaults`。
+- 如果默认战斗属性资产未配置，当前运行时会输出中文缺配置诊断，属性初始值保持未应用状态；后续 Editor 阶段必须补齐真实资产并做 PIE/自动化验证。
+- `DBAConstants` 中部分连锁、共鸣、终极能量阈值和恢复量仍需继续按技术边界常量或运行平衡数据分类，运行平衡数据应继续迁移到 DataAsset/DataTable/服务器配置。
+
+## 十三、下一步建议
 
 优先执行顺序：
 
@@ -699,8 +858,10 @@ flowchart TD
 15. 已完成“固定技能组 DataTable 导入工具中文诊断”：包装脚本与 Unreal Python 导入脚本的人类可见失败信息和完成日志已中文化，并由契约保护禁止旧英文诊断回归。
 16. 已完成“固定技能组 DataTable 只读诊断工具中文诊断”：诊断脚本的人类可见失败信息和状态输出已中文化，并由契约保护禁止旧英文诊断回归。
 17. 已完成“可玩技能默认目录与角色大厅装配技能数据资产化源码边界”：组件默认技能目录、角色施法规格和大厅装配技能类不再由 C++ 兜底表提供。
-18. 后续推进“真实 PlayableSkillCatalog 默认目录资产创建与配置”：在 Editor 中创建真实技能目录资产，填充技能类、数值、图标、GameplayCue、Niagara、SFX 和中文文案软引用，并配置到组件或 DeveloperSettings。
-19. 后续推进“真实固定技能组资产字段与完整 HUD 文案闭环”：在 Editor 导入/保存真实 `DT_FixedSkillGroups` 资产后，继续补齐 `.uasset` 运行配置字段，让击杀/助攻/目标状态/异常提示等更多 HUD 区域使用 DataAsset/本地化文案，不再显示内部技能 ID 或英文占位。
-20. 最后推进“技能和属性 DataAsset 化、中文本地化、HUD 文案数据化”。
+18. 已完成“战斗属性默认值数据资产化源码边界”：`UDBABattleAttributeSet` 构造函数不再写运行默认值，`ADBAPlayerState` 异步加载 `UDBABattleAttributeDefaultsDataAsset` 并应用，`GetMaxEnergy()` 读取 GAS 属性。
+19. 后续推进“真实 BattleAttribute 默认属性资产创建与配置”：在 Editor 中创建真实 `UDBABattleAttributeDefaultsDataAsset`，填充生命、能量、攻击、防御、移速、暴击和护盾默认值，并配置到 `DBA 战斗属性设置`。
+20. 后续推进“真实 PlayableSkillCatalog 默认目录资产创建与配置”：在 Editor 中创建真实技能目录资产，填充技能类、数值、图标、GameplayCue、Niagara、SFX 和中文文案软引用，并配置到组件或 DeveloperSettings。
+21. 后续推进“真实固定技能组资产字段与完整 HUD 文案闭环”：在 Editor 导入/保存真实 `DT_FixedSkillGroups` 资产后，继续补齐 `.uasset` 运行配置字段，让击杀/助攻/目标状态/异常提示等更多 HUD 区域使用 DataAsset/本地化文案，不再显示内部技能 ID 或英文占位。
+22. 最后推进“剩余技能平衡常量 DataAsset 化、中文本地化、HUD 文案数据化”。
 
 所有后续逻辑改动必须继续遵守项目全局策略：逻辑由 C++ 实现，Blueprint 只做参数配置和表现绑定；运行数据、UI 文案和资源引用使用 DataAsset/DataTable/本地化表驱动；UI 更新使用事件驱动；日志、调试和开发者可见信息使用中文输出。

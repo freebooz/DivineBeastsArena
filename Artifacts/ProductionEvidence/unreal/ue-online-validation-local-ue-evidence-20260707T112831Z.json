@@ -1,0 +1,40 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "ue-online-validation",
+    "runId":  "local-ue-evidence-20260707T112831Z",
+    "status":  "passed",
+    "errorMessage":  "",
+    "generatedAtUtc":  "2026-07-07T11:30:09.2598075Z",
+    "baseUrl":  "http://localhost:8080",
+    "usePackagedServer":  true,
+    "skipClientLaunch":  false,
+    "keepProcessesAlive":  false,
+    "serverExecutable":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\packaged-server\\WindowsServer\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer.exe",
+    "roomId":  "4d229d8c-06c8-4dd9-afd5-aa7880b90ae1",
+    "sessionId":  "4d114e5e-f88c-42e0-981b-c9387c28ac04",
+    "serverId":  "87c2e067-ad3c-49f5-a04f-328c4c7213a3",
+    "allocatedPort":  7777,
+    "clientConnectPort":  7878,
+    "processIds":  {
+                       "server":  36048,
+                       "clientA":  34016,
+                       "clientB":  33432
+                   },
+    "logPaths":  {
+                     "server":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\server-local-ue-evidence-20260707T112831Z.log",
+                     "clientA":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\client-a-local-ue-evidence-20260707T112831Z.log",
+                     "clientB":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\client-b-local-ue-evidence-20260707T112831Z.log"
+                 },
+    "safeLogEvidence":  {
+                            "runtimePlayerJoined":  [
+                                                        "[2026.07.07-11.29.30:547][293]LogDBACore: [DBAGameModeBase] Runtime player-joined 请求已发送：PlayerId=7401681b-748b-4bf4-a427-87b97c3d0122 Zodiac=Rat Element=Water FixedSkillGroupId=Rat_Water",
+                                                        "[2026.07.07-11.29.43:661][686]LogDBACore: [DBAGameModeBase] Runtime player-joined 请求已发送：PlayerId=2bceb78b-e8e9-498f-b822-9aeabc3b89ca Zodiac=Tiger Element=Fire FixedSkillGroupId=Tiger_Fire"
+                                                    ],
+                            "runtimePlayerJoinedOk":  [
+                                                          "[2026.07.07-11.29.31:061][309]LogDBA_GameBackendClient: HTTP 请求：方法=POST 地址=http://localhost:8080/runtime/servers/player-joined 追踪ID=225ee6a2-4b61-3c8e-0cc4-cdb2bb415e85 状态码=200 业务码=OK 耗时毫秒=514.13",
+                                                          "[2026.07.07-11.29.43:759][689]LogDBA_GameBackendClient: HTTP 请求：方法=POST 地址=http://localhost:8080/runtime/servers/player-joined 追踪ID=71645ac2-486c-d509-cdae-b6b6ff6e9201 状态码=200 业务码=OK 耗时毫秒=98.19"
+                                                      ],
+                            "clientATravelCompleted":  "[2026.07.07-11.29.30:502][ 54]LogGlobalStatus: UPendingNetGame::TravelCompleted Pending net game travel completed",
+                            "clientBTravelCompleted":  "[2026.07.07-11.29.43:626][ 20]LogGlobalStatus: UPendingNetGame::TravelCompleted Pending net game travel completed"
+                        }
+}

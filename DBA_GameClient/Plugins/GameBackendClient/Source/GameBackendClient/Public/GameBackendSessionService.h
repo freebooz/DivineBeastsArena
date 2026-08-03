@@ -32,22 +32,44 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Session")
 	void GetConnection(const FString& SessionId, const FDBA_GameBackendResponseDelegate& Callback);
 
+	/** 为当前已认证玩家和已选择角色申请共享新手村会话。 */
+	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Session")
+	void AllocateVillage(const FString& CharacterId, const FDBA_GameBackendResponseDelegate& Callback);
+
 	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Session")
 	void RequestReconnectToken(const FString& SessionId, const FDBA_GameBackendResponseDelegate& Callback);
 
+	/**
+	 * 使用重连令牌执行断线重连。
+	 * 客户端应先通过 GetConnection 获取并持久化 ReconnectToken，断线后调用本方法重新获取连接信息。
+	 * @param SessionId 会话 ID
+	 * @param ReconnectToken GetConnection 返回的重连令牌明文
+	 * @param Callback 完成回调
+	 */
 	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Session")
-	void ConnectToDedicatedServer(const FString& SessionId, const FDBA_GameBackendResponseDelegate& Callback);
-
-	void ConnectToDedicatedServer(const FString& SessionId, const FString& ConnectionDataJson, const FDBA_GameBackendResponseDelegate& Callback);
+	void Reconnect(const FString& SessionId, const FString& ReconnectToken, const FDBA_GameBackendResponseDelegate& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Session")
-	static FString BuildTravelUrl(const FString& Ip, int32 Port, const FString& SessionId, const FString& PlayerSessionToken);
+	static FString BuildTravelUrl(const FString& Ip, int32 Port, const FString& SessionId, const FString& JoinTicket);
 
 	static FString BuildTravelUrl(
 		const FString& Ip,
 		int32 Port,
 		const FString& SessionId,
-		const FString& PlayerSessionToken,
+		const FString& JoinTicket,
+		int32 TeamId,
+		const FString& Zodiac,
+		const FString& PrimaryElement,
+		const FString& FiveCamp,
+		const FString& FixedSkillGroupId);
+
+	static FString BuildTravelUrl(
+		const FString& Ip,
+		int32 Port,
+		const FString& SessionId,
+		const FString& JoinTicket,
+		const FString& PlayerId,
+		const FString& CharacterId,
 		int32 TeamId,
 		const FString& Zodiac,
 		const FString& PrimaryElement,
@@ -59,7 +81,7 @@ public:
 		const FString& OverrideSessionId,
 		FString& OutTravelUrl);
 
-private:
+	/** 只解析后台连接 DTO，不执行旅行或修改业务状态。 */
 	static bool ParseConnectionData(const FString& DataJson, FDBA_GameBackendSessionConnection& OutConnection);
 
 private:

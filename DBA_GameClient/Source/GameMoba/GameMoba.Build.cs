@@ -21,6 +21,7 @@ public class GameMoba : ModuleRules
 			"Core",
 			"CoreUObject",
 			"Engine",
+			"DeveloperSettings",
 			"GameplayAbilities",
 			"GameplayTags",
 			"GameplayTasks",

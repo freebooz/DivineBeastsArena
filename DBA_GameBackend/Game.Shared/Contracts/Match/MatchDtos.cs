@@ -6,11 +6,16 @@
 - 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
 */
 
+using System.Text.Json.Serialization;
 using Game.Shared.Common;
 
 namespace Game.Shared.Contracts.Match;
 
-public record CreateMatchmakingTicketRequest(string Mode, string Region, int Mmr);
+public record CreateMatchmakingTicketRequest(string Mode, string Region, int Mmr = 1000);
+
+/// <summary>
+/// 匹配票据响应。SessionId 与 MatchedSessionId 同值，兼容 UE 客户端只解析 sessionId 的路径。
+/// </summary>
 public record MatchmakingTicketResponse(
     Guid Id,
     Guid PlayerId,
@@ -20,4 +25,9 @@ public record MatchmakingTicketResponse(
     string Status,
     Guid? MatchedSessionId,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? TimeoutAt);
+    DateTimeOffset? TimeoutAt)
+{
+    /// <summary>与 MatchedSessionId 同值，供客户端按 sessionId 字段读取。</summary>
+    [JsonPropertyName("sessionId")]
+    public Guid? SessionId => MatchedSessionId;
+}

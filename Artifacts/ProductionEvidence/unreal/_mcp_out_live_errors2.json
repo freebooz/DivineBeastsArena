@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"error_count\":0,\"errors\":[],\"compile_error_count\":0,\"compile_errors\":[],\"other_error_count\":0,\"other_errors\":[],\"warning_count\":0,\"warnings\":[],\"since\":\"2026-07-10T00:06:12.561Z\",\"since_source\":\"last_compile\",\"excluded_categories\":[\"LogPython\",\"LogMonolith\"],\"fix_hints\":[]}"
+      }
+    ]
+  }
+}

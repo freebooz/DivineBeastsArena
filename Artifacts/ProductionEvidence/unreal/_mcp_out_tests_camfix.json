@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"prefix\":\"DivineBeastsArena.UI.CharacterPresentation\",\"success\":true,\"total\":8,\"passed\":8,\"failed\":0,\"skipped\":0,\"results\":[{\"full_path\":\"DivineBeastsArena.UI.CharacterPresentation.StageSpec\",\"test_name\":\"FDBACharacterPresentationStageSpecTest\",\"status\":\"passed\",\"duration_seconds\":7.2978436946868896e-06,\"error_count\":0,\"warning_count\":0},{\"full_path\":\"DivineBeastsArena.UI.CharacterPresentation.HallLighting\",\"test_name\":\"FDBACharacterPresentationHallLightingTest\",\"status\":\"passed\",\"duration_seconds\":0.0045049972832202911,\"error_count\":0,\"warning_count\":0},{\"full_path\":\"DivineBeastsArena.UI.CharacterPresentation.StageLifecycle\",\"test_name\":\"FDBACharacterPresentationStageLifecycleTest\",\"status\":\"passed\",\"duration_seconds\":0.0029289014637470245,\"error_count\":0,\"warning_count\":0},{\"full_path\":\"DivineBeastsArena.UI.CharacterPresentation.ZodiacVisuals\",\"test_name\":\"FDBACharacterPresentationZodiacVisualsTest\",\"status\":\"passed\",\"duration_seconds\":0.00089510157704353333,\"error_count\":0,\"warning_count\":0},{\"full_path\":\"DivineBeastsArena.UI.CharacterPresentation.FacesPlayer\",\"test_name\":\"FDBACharacterPresentationFacingTest\",\"status\":\"passed\",\"duration_seconds\":0.0042508020997047424,\"error_count\":0,\"warning_count\":0},{\"full_path\":\"DivineBeastsArena.UI.CharacterPresentation.MaterialApplication\",\"test_name\":\"FDBACharacterPresentationMaterialApplicationTest\",\"status\":\"passed\",\"duration_seconds\":0.0037083998322486877,\"error_count\":0,\"warning_count\":0},{\"full_path\":\"DivineBeastsArena.UI.CharacterPresentation.UsesLobbyModel\",\"test_name\":\"FDBACharacterPresentationUsesLobbyModelTest\",\"status\":\"passed\",\"duration_seconds\":0.0034977979958057404,\"error_count\":0,\"warning_count\":0},{\"full_path\":\"DivineBeastsArena.UI.CharacterPresentation.LobbyDisplaySpec\",\"test_name\":\"FDBALobbyDisplaySpecTest\",\"status\":\"passed\",\"duration_seconds\":9.5032155513763428e-06,\"error_count\":0,\"warning_count\":0}]}"
+      }
+    ]
+  }
+}

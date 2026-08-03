@@ -62,4 +62,12 @@ public:
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "HTTP", meta = (ClampMin = "0"))
 	int32 HttpRetryCount = 1;
+
+	/** Dedicated Server 启动期间，客户端获取大厅连接信息的有界重试间隔。 */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Lobby", meta = (ClampMin = "0.1"))
+	float VillageConnectionRetryDelaySeconds = 1.0f;
+
+	/** 获取大厅连接信息的最大尝试次数，禁止无限轮询。 */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Lobby", meta = (ClampMin = "1", ClampMax = "120"))
+	int32 VillageConnectionMaxAttempts = 30;
 };

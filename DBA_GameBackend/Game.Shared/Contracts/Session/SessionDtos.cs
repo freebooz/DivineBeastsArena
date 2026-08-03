@@ -1,4 +1,4 @@
-﻿/*
+/*
 中文阅读说明：
 - 所属应用：DBA_GameBackend 后端 API / Worker。
 - 文件职责：定义跨进程/跨项目传输 DTO，客户端、后台和服务端都应以这里的字段契约为准。
@@ -28,12 +28,25 @@ public record SessionConnectionResponse(
     Guid SessionId,
     string ServerIp,
     int ServerPort,
-    string SessionToken,
-    DateTimeOffset TokenExpiresAt,
-    string PlayerSessionToken,
+    string JoinTicket,
+    DateTimeOffset JoinTicketExpiresAt,
     Guid PlayerId,
+    Guid CharacterId,
+    Guid ServerInstanceId,
+    string BuildId,
     int TeamId,
-    CharacterBuildSummaryDto? CharacterBuildSummary = null);
+    CharacterBuildSummaryDto? CharacterBuildSummary = null,
+    string? ReconnectToken = null,
+    DateTimeOffset? ReconnectTokenExpiresAt = null)
+{
+    // 兼容旧客户端；新客户端只读取 JoinTicket。
+    public string SessionToken => JoinTicket;
+    public DateTimeOffset TokenExpiresAt => JoinTicketExpiresAt;
+    public string PlayerSessionToken => JoinTicket;
+}
+
+public record VillageAllocationRequest(Guid CharacterId);
+public record VillageAllocationResponse(Guid SessionId, string Status);
 
 public record ReconnectTokenResponse(string ReconnectToken, DateTimeOffset ExpiresAt);
 

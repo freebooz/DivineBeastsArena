@@ -48,6 +48,11 @@ Header: Authorization: Bearer <access-token>
 ")
             .RequireAuthorization();
 
+        group.MapPost("/village-allocation", AllocateVillage)
+            .WithSummary("分配新手村服务器")
+            .WithDescription("为已认证且已选择角色的玩家分配共享新手村会话，并异步触发 Dedicated Server 编排。")
+            .RequireAuthorization();
+
         // 内部接口
         internalGroup.MapPost("/from-room", CreateFromRoom)
             .WithSummary("从房间创建会话（内部）")
@@ -111,10 +116,45 @@ Header: Authorization: Bearer <access-token>
     {
         var playerId = GetPlayerId(ctx);
         if (!playerId.HasValue) return ErrorResponse.Unauthorized().ToProblem();
+
         var conn = await svc.GetConnectionInfoAsync(sessionId, playerId.Value);
-        return conn == null
+        if (conn is not null)
+        {
+            return Results.Ok(ApiResponse<SessionConnectionResponse>.Ok(conn));
+        }
+
+        // 区分“玩家不在会话”与“会话已匹配但 DS 尚未 Ready”，避免客户端误判。
+        var session = await svc.GetSessionAsync(sessionId);
+        if (session is null)
+        {
+            return ErrorResponse.NotFound(ErrorCodes.SessionNotFound).ToProblem();
+        }
+
+        var serverReady = !string.IsNullOrWhiteSpace(session.ServerIp)
+            && session.ServerPort is > 0
+            && session.Status is "WAITING_PLAYERS" or "IN_PROGRESS";
+        return serverReady
             ? ErrorResponse.NotFound(ErrorCodes.SessionPlayerNotInSession).ToProblem()
-            : Results.Ok(ApiResponse<SessionConnectionResponse>.Ok(conn));
+            : ErrorResponse.NotFound(ErrorCodes.SessionServerNotReady).ToProblem();
+    }
+
+    private static async Task<IResult> AllocateVillage(
+        VillageAllocationRequest request,
+        Services.Session.IVillageAllocationService svc,
+        HttpContext ctx,
+        CancellationToken cancellationToken)
+    {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue) return ErrorResponse.Unauthorized().ToProblem();
+        if (request.CharacterId == Guid.Empty)
+        {
+            return ErrorResponse.BadRequest("角色标识无效。").ToProblem();
+        }
+
+        var allocation = await svc.AllocateAsync(playerId.Value, request.CharacterId, cancellationToken);
+        return allocation is null
+            ? ErrorResponse.BadRequest("新手村分配失败，请确认角色已选择且服务器资源可用。").ToProblem()
+            : Results.Ok(ApiResponse<VillageAllocationResponse>.Ok(allocation));
     }
 
     private static async Task<IResult> CreateFromRoom(

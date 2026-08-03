@@ -8,8 +8,169 @@
 
 namespace Game.Shared.Options;
 
+using System.Text.RegularExpressions;
+
 public static class RequiredOptionsValidator
 {
+	public static void ValidateVillageSession(VillageSessionOptions options)
+	{
+		if (string.IsNullOrWhiteSpace(options.Mode)
+			|| string.IsNullOrWhiteSpace(options.MapId)
+			|| string.IsNullOrWhiteSpace(options.Region))
+		{
+			throw new InvalidOperationException("VillageSession 的模式、地图和区域必须完整配置。");
+		}
+
+		if (options.MaxPlayers is < 1 or > 128)
+		{
+			throw new InvalidOperationException("VillageSession:MaxPlayers 必须介于 1 和 128 之间。");
+		}
+	}
+
+	public static void ValidateSessionAdmission(SessionAdmissionOptions options)
+	{
+		if (options.TokenByteLength is < 16 or > 128)
+		{
+			throw new InvalidOperationException("SessionAdmission:TokenByteLength 必须介于 16 和 128 之间。");
+		}
+
+		if (options.ConnectionTokenLifetimeMinutes <= 0
+			|| options.ReconnectTokenLifetimeMinutes <= 0
+			|| options.ProvisionalTokenLifetimeMinutes <= 0)
+		{
+			throw new InvalidOperationException("SessionAdmission 的凭证有效期必须大于 0 分钟。");
+		}
+
+		if (string.IsNullOrWhiteSpace(options.MatchMapId))
+		{
+			throw new InvalidOperationException("必须配置 SessionAdmission:MatchMapId。");
+		}
+
+		if (options.MatchMaxPlayers is < 1 or > 128)
+		{
+			throw new InvalidOperationException("SessionAdmission:MatchMaxPlayers 必须介于 1 和 128 之间。");
+		}
+	}
+
+	public static void ValidateCharacterCreation(CharacterCreationOptions options)
+	{
+		if (string.IsNullOrWhiteSpace(options.GeneratedNamePrefix))
+		{
+			throw new InvalidOperationException("必须配置 CharacterCreation:GeneratedNamePrefix。");
+		}
+
+		if (options.GeneratedNameSuffixLength is < 1 or > 32)
+		{
+			throw new InvalidOperationException("CharacterCreation:GeneratedNameSuffixLength 必须介于 1 和 32 之间。");
+		}
+
+		if (string.IsNullOrWhiteSpace(options.NamePattern))
+		{
+			throw new InvalidOperationException("必须配置 CharacterCreation:NamePattern。");
+		}
+
+		if (string.IsNullOrWhiteSpace(options.DefaultZodiac)
+			|| string.IsNullOrWhiteSpace(options.DefaultPrimaryElement)
+			|| string.IsNullOrWhiteSpace(options.DefaultFiveCamp))
+		{
+			throw new InvalidOperationException("CharacterCreation 的默认生肖、元素和阵营必须完整配置。");
+		}
+
+		try
+		{
+			_ = new Regex(options.NamePattern, RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(250));
+		}
+		catch (ArgumentException exception)
+		{
+			throw new InvalidOperationException("CharacterCreation:NamePattern 不是有效的正则表达式。", exception);
+		}
+
+		if (options.InitialLevel <= 0)
+		{
+			throw new InvalidOperationException("CharacterCreation:InitialLevel 必须大于 0。");
+		}
+
+		var attributes = options.CoreAttributes;
+		if (attributes.MaxHealth <= 0
+			|| attributes.AttackPower < 0
+			|| attributes.Defense < 0
+			|| attributes.MoveSpeed <= 0
+			|| attributes.MaxEnergy < 0
+			|| attributes.EnergyRegen < 0
+			|| attributes.CriticalRate < 0
+			|| attributes.CriticalMultiplier <= 0)
+		{
+			throw new InvalidOperationException("CharacterCreation:CoreAttributes 包含非法初始属性。");
+		}
+
+		var messages = options.Messages;
+		if (string.IsNullOrWhiteSpace(messages.InvalidPlayer)
+			|| string.IsNullOrWhiteSpace(messages.InvalidName)
+			|| string.IsNullOrWhiteSpace(messages.DuplicateName)
+			|| string.IsNullOrWhiteSpace(messages.InvalidCharacterId)
+			|| string.IsNullOrWhiteSpace(messages.CharacterNotFound)
+			|| string.IsNullOrWhiteSpace(messages.BuildSummaryMismatch)
+			|| string.IsNullOrWhiteSpace(messages.BuildSummaryMissing)
+			|| string.IsNullOrWhiteSpace(messages.FrozenBuildSummaryInvalid))
+		{
+			throw new InvalidOperationException("CharacterCreation:Messages 必须完整配置中文错误文案。");
+		}
+	}
+
+	public static void ValidateAuthenticationPolicy(AuthenticationPolicyOptions options)
+	{
+		if (options.MinimumPasswordLength is < 6 or > 128)
+		{
+			throw new InvalidOperationException("AuthenticationPolicy:MinimumPasswordLength 必须介于 6 和 128 之间。");
+		}
+
+		if (string.IsNullOrWhiteSpace(options.ActiveAccountStatus)
+			|| string.IsNullOrWhiteSpace(options.GuestAccountType)
+			|| string.IsNullOrWhiteSpace(options.RegisteredAccountType)
+			|| string.IsNullOrWhiteSpace(options.GuestDisplayNamePrefix)
+			|| string.IsNullOrWhiteSpace(options.InitialPlayerSettingsJson))
+		{
+			throw new InvalidOperationException("AuthenticationPolicy 的账号类型、状态、访客名称和初始设置必须完整配置。");
+		}
+
+		if (options.GuestDisplayNameSuffixLength is < 1 or > 32)
+		{
+			throw new InvalidOperationException("AuthenticationPolicy:GuestDisplayNameSuffixLength 必须介于 1 和 32 之间。");
+		}
+
+		if (options.InitialPlayerLevel <= 0 || options.InitialPlayerExperience < 0)
+		{
+			throw new InvalidOperationException("AuthenticationPolicy 的初始玩家等级和经验配置无效。");
+		}
+
+		var messages = options.Messages;
+		if (string.IsNullOrWhiteSpace(messages.PasswordFieldsRequired)
+			|| string.IsNullOrWhiteSpace(messages.EmailAndPasswordRequired)
+			|| string.IsNullOrWhiteSpace(messages.PasswordTooShort)
+			|| string.IsNullOrWhiteSpace(messages.AccountNotFound)
+			|| string.IsNullOrWhiteSpace(messages.AccountBanned)
+			|| string.IsNullOrWhiteSpace(messages.PasswordCredentialMissing)
+			|| string.IsNullOrWhiteSpace(messages.OldPasswordIncorrect)
+			|| string.IsNullOrWhiteSpace(messages.PasswordUnchanged)
+			|| string.IsNullOrWhiteSpace(messages.ResetServiceUnavailable)
+			|| string.IsNullOrWhiteSpace(messages.ResetTokenInvalid)
+			|| string.IsNullOrWhiteSpace(messages.PasswordChanged)
+			|| string.IsNullOrWhiteSpace(messages.PasswordResetCompleted)
+			|| string.IsNullOrWhiteSpace(messages.UsernameOrEmailRequired)
+			|| string.IsNullOrWhiteSpace(messages.UsernameTaken)
+			|| string.IsNullOrWhiteSpace(messages.IdentityConflict)
+			|| string.IsNullOrWhiteSpace(messages.InvalidOnboarding)
+			|| string.IsNullOrWhiteSpace(messages.InvalidCredentials)
+			|| string.IsNullOrWhiteSpace(messages.DevelopmentLoginDisabled)
+			|| string.IsNullOrWhiteSpace(messages.RefreshTokenInvalid)
+			|| string.IsNullOrWhiteSpace(messages.SteamLoginUnavailable)
+			|| string.IsNullOrWhiteSpace(messages.EosLoginUnavailable)
+			|| string.IsNullOrWhiteSpace(messages.WeChatLoginUnavailable))
+		{
+			throw new InvalidOperationException("AuthenticationPolicy:Messages 必须完整配置中文响应文案。");
+		}
+	}
+
     public static void ValidateDatabase(DatabaseOptions options)
     {
         if (string.IsNullOrWhiteSpace(options.ConnectionString))

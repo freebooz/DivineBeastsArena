@@ -14,9 +14,11 @@ using Game.Shared.Errors;
 using Game.Infrastructure.Database;
 using Game.Api.Services.Runtime;
 using Game.Api.Services.Settlement;
+using Game.Application.Sessions;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 
 namespace Game.Api.Endpoints.Runtime;
 
@@ -35,6 +37,7 @@ public static class RuntimeEndpoints
         runtimeServers.MapPost("/ready", RuntimeReady);
         runtimeServers.MapPost("/heartbeat", RuntimeHeartbeat);
         runtimeServers.MapPost("/player-joined", RuntimePlayerJoined);
+        runtimeServers.MapPost("/validate-join-ticket", RuntimePlayerJoined);
         runtimeServers.MapPost("/player-left", RuntimePlayerLeft);
         runtimeServers.MapPost("/match-started", RuntimeMatchStarted);
         runtimeServers.MapPost("/match-ended", RuntimeMatchEnded);
@@ -154,32 +157,43 @@ GET /internal/runtime/servers/{serverId}
         return Results.Ok(ApiResponse.Ok());
     }
 
-    private static async Task<IResult> RuntimePlayerJoined(RuntimePlayerJoinedRequest request, GameDbContext db)
+    private static async Task<IResult> RuntimePlayerJoined(
+        RuntimePlayerJoinedRequest request,
+        GameDbContext db,
+        IConsumeJoinTicketUseCase consumeJoinTicket)
     {
         var server = await ValidateRuntimeAsync(db, request.ServerId, request.SessionId, request.RuntimeToken);
-        if (server is null) return ErrorResponse.Unauthorized("Invalid runtime token").ToProblem();
+        if (server is null) return ErrorResponse.Unauthorized("运行时令牌无效。").ToProblem();
 
-        var playerSession = await db.PlayerSessions
-            .FirstOrDefaultAsync(x => x.GameSessionId == request.SessionId && x.PlayerId == request.PlayerId);
-        if (playerSession is null) return ErrorResponse.NotFound(ErrorCodes.SessionPlayerNotInSession).ToProblem();
-
-        if (string.IsNullOrWhiteSpace(playerSession.SessionTokenHash) ||
-            playerSession.SessionTokenExpiresAt <= DateTimeOffset.UtcNow ||
-            string.IsNullOrWhiteSpace(request.PlayerSessionToken) ||
-            !string.Equals(playerSession.SessionTokenHash, HashToken(request.PlayerSessionToken), StringComparison.Ordinal))
+        var joinTicket = string.IsNullOrWhiteSpace(request.JoinTicket)
+            ? request.PlayerSessionToken
+            : request.JoinTicket;
+        var consumed = await consumeJoinTicket.ExecuteAsync(new ConsumeJoinTicketCommand(
+            request.PlayerId,
+            request.CharacterId ?? Guid.Empty,
+            request.SessionId,
+            server.Id,
+            request.BuildId ?? string.Empty,
+            joinTicket ?? string.Empty,
+            request.Zodiac ?? string.Empty,
+            request.PrimaryElement ?? string.Empty,
+            request.FiveCamp,
+            request.FixedSkillGroupId ?? string.Empty));
+        if (consumed is null)
         {
-            return ErrorResponse.Unauthorized("Invalid player session token").ToProblem();
+            return ErrorResponse.Unauthorized("一次性入服票据无效、已过期、已使用或与入服上下文不匹配。").ToProblem();
         }
 
-        var buildSummaryValidation = RuntimePlayerJoinValidator.ValidateBuildSummary(playerSession, request);
-        if (!buildSummaryValidation.IsValid)
+        AddSessionEvent(db, request.SessionId, "PLAYER_JOINED", JsonSerializer.Serialize(new
         {
-            return ErrorResponse.BadRequest(buildSummaryValidation.ErrorMessage ?? RuntimePlayerJoinValidator.BuildSummaryMismatchMessage).ToProblem();
-        }
-
-        playerSession.Status = "JOINED";
-        playerSession.JoinedAt = DateTimeOffset.UtcNow;
-        AddSessionEvent(db, request.SessionId, "PLAYER_JOINED", RuntimePlayerJoinValidator.BuildPlayerJoinedEventPayload(playerSession));
+            playerId = consumed.AccountId,
+            characterId = consumed.CharacterId,
+            team = consumed.Team,
+            zodiac = consumed.Zodiac,
+            primaryElement = consumed.PrimaryElement,
+            fiveCamp = consumed.FiveCamp,
+            fixedSkillGroupId = consumed.FixedSkillGroupId
+        }));
         await db.SaveChangesAsync();
         return Results.Ok(ApiResponse.Ok());
     }

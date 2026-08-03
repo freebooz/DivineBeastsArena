@@ -16,6 +16,82 @@
 | `P3` 客户端交付 | 部分完成 | 本地微软视窗客户端暂存包已有启动器清单与哈希证据；真实发行包、签名、内容分发网络和启动器界面安装更新仍需验证。 |
 | `P4` 生产交付 | 未完成 | 真实包体、部署、压测、持续集成/运维闭环仍未完成。 |
 
+## 2026-07-10 运行配置收敛与重复逻辑清理
+
+- 已删除技能栏的 `NativeTick` 轮询与逐帧冷却刷新开关，改为订阅角色冷却事件、技能目录加载完成事件和控制器 Pawn 切换事件；UI 不再依靠轮询补偿异步资源加载。
+- 已修复 `UDBAPlayableSkillComponent` 在默认目录异步请求后立即校验空数组的问题，加载完成后才校验、预热并广播 `OnSkillCatalogChanged`。
+- 已创建并保存 `DA_DBA_HeroGrowthDefaults`、`DA_DBA_ZodiacCharacterRegistry`、`DT_ZodiacPlaceholderTints`，同步补齐 `DefaultGame.ini` 软引用与 Dedicated Server 的 DataTable Cook 范围。
+- 已将英雄成长数据资产字段调整为可在 DataAsset 实例中配置，避免无效的 `EditDefaultsOnly` 元数据阻塞运行配置。
+
+本轮验证：
+
+- `DivineBeastsArenaEditor Win64 Development` 编译通过。
+- `DivineBeastsArena.Combat.PlayableSkillCatalog` 四项自动化测试全部通过。
+- Editor 只读核验确认英雄成长默认值、十二条生肖注册映射和十二条生肖染色行均有效。
+- Dedicated Server 已重新 Cook 并归档，AutomationTool 记录 `BUILD SUCCESSFUL`；`Artifacts/ProductionEvidence/unreal/ue-online-validation-local-ue-online-runtime-defaults-20260711-001800.json` 记录双客户端联机通过、两次服务端入场业务码 `200/OK` 与两个客户端网络旅行完成。该轮日志未发现空技能目录、默认英雄成长未配置、生肖注册表未配置或生肖染色表缺包告警。
+
+## 2026-07-11 运行数据表与空界面 Tick 清理
+
+- 已从权威 CSV 导入并保存 `DT_HeroBalance`（十二条生肖平衡记录）与 `DT_SkillNames`（十二生肖乘六槽位，共七十二条中文技能名称记录），并在 `DefaultGame.ini` 配置 `DBAHeroBalanceDeveloperSettings`、`DBASkillNameDeveloperSettings` 的项目级软引用。
+- 新增 `DivineBeastsArena.Data.RuntimeDefaults.HeroBalanceAndSkillNames` 自动化契约，验证两项 DeveloperSettings、真实资产加载、`12` 条英雄平衡行、`72` 条技能名称行以及关键首尾行。
+- 已删除 `UDBAArenaHUDRootWidgetBase`、`UDBAPlayerUnitFrameWidgetBase`、`UDBALoadingScreenWidgetBase` 三个仅调用 `Super::NativeTick` 的空覆盖；这些界面已由 Controller Delegate 或显式更新接口驱动，不再额外产生逐帧调用。
+- `DivineBeastsArenaEditor Win64 Development` 已在上述变更后编译通过。输入资产与完整 Enhanced Input 异步加载迁移已单列后续工作，当前不以空 InputConfig 掩盖该缺口。
+- Dedicated Server 已重新 Cook 并归档，`Artifacts/ProductionEvidence/unreal/ue-online-validation-local-ue-online-runtime-tables-20260711-002900.json` 记录双客户端联机通过、两次服务端入场业务码 `200/OK` 与两个客户端网络旅行完成；服务端及两客户端均输出英雄平衡表 `12` 行、技能名称表 `72` 行的异步加载完成日志。当前唯一同类配置告警为 Enhanced Input 默认资产未创建，已隔离为下一批输入迁移任务。
+
+## 2026-07-11 Enhanced Input 单一路径清理
+
+- 已创建并保存 `DA_LobbyInputConfig`、`DA_ArenaInputConfig`、`IMC_Lobby`、`IMC_Arena` 与十九个 `InputAction` 资产；资产级命令行核验确认两个配置资产均具备十九个动作引用，大厅映射为 `17` 条、竞技场映射为 `20` 条。
+- `UDBAEnhancedInputDeveloperSettings` 的大厅/竞技场软引用已改为项目级 `Config` 配置，并在 `DefaultGame.ini` 指向真实输入资产；`ADBALobbyPlayerController` 通过 C++ 异步加载配置与映射上下文，在占有角色后以事件方式绑定输入。
+- 已删除控制器内冗余的 `BindKey` 硬编码、`IsInputKeyDown` 轮询、临时 GameplayTag 移动缓存及开发降级路径。输入配置加载失败时只输出中文错误，不再静默切换至第二套键位逻辑。
+- Dedicated Server 打包脚本已将 `/Game/DBA/Input` 纳入显式 Cook 目录。`DivineBeastsArenaEditor Win64 Development` 和清理版 Dedicated Server 均构建成功。
+- 清理版双客户端联机证据为 `Artifacts/ProductionEvidence/unreal/ue-online-validation-local-ue-online-input-cleanup-20260711-005200.json`：两名客户端均完成网络旅行、服务端两次入场业务码均为 `200/OK`，并分别输出“Enhanced Input 异步加载并绑定完成：模式=大厅”。
+
+## 2026-07-11 CommonUI 视口输入路由修复
+
+- 已将 `DefaultEngine.ini` 的全局视口客户端从原生 `GameViewportClient` 切换为 `/Script/CommonUI.CommonGameViewportClient`，并在 `DivineBeastsArena.uproject` 显式启用 `CommonUI` 插件，统一 CommonUI 与大厅/登录界面输入路由。
+- `validate-unreal-source-guardrails.ps1` 新增 CommonUI 视口配置契约，要求项目持续使用 `CommonGameViewportClient` 且插件显式启用，防止后续配置回退。
+- Dedicated Server 已重新 Cook 并归档；`Artifacts/ProductionEvidence/unreal/ue-online-validation-local-ue-online-commonui-20260711-010000.json` 记录双客户端网络旅行、两次服务端入场 `200/OK` 和大厅输入异步绑定均通过。两份客户端日志均未再出现 CommonUI Viewport/Input routing 错误。
+- 另执行了不带 `DBAAutoMatchFlow` 的前端自动大厅状态机烟测：游客登录后依次经过角色列表、角色创建并到达主大厅，未出现自动匹配或 CommonUI 路由错误。结构化证据：`Artifacts/ProductionEvidence/unreal/frontend-flow-autolobby-no-match-20260711-011500.json`。
+
+## 2026-07-11 通用 UI 默认资源配置化
+
+- 新增 `UDBAUserWidgetDeveloperSettings`，将 GameCore 通用 Widget 默认点击音效从 C++ 构造函数迁移至 `DefaultGame.ini` 软引用配置；默认音效仍由既有异步加载流程获取。
+- 删除 GameMoba 与 DivineBeastsArena 两个 UI DeveloperSettings 构造函数中的资源路径、背景纹理和提示文案默认值，统一改由 `DefaultGame.ini` 配置，避免“配置类中继续硬编码资源”的伪数据驱动。
+- `validate-unreal-source-guardrails.ps1` 新增 UI 默认资源配置契约，要求三组 UI 配置节存在，且禁止这些默认资源路径回流到 C++ 构造函数。
+- `DivineBeastsArenaEditor Win64 Development` 编译和全仓库守卫均通过。前端无自动匹配回归已确认默认点击音效异步缓存、角色创建背景音乐异步播放并到达主大厅；证据：`Artifacts/ProductionEvidence/unreal/frontend-ui-config-autolobby-20260711-012700.json`。
+
+## 2026-07-11 冗余运行时数据源清理
+
+- 固定技能组子系统不再在 DataTable 尚未加载或缺行时拼装技能 ID、共鸣数值和显示文案；现在仅从 `DBASkillGroupDeveloperSettings` 配置的主表异步读取，未就绪时返回失败，由已有可玩技能目录 DataAsset 负责调用侧的配置兜底。
+- 删除无调用的 `LoadLobbyAnimation` 私有同步加载函数，避免大厅角色保留一条绕过异步资源预加载链的旧路径。
+- 删除未被任何资产、配置或运行时调用引用的 `UDBAHeroBalanceConfig` 与 `DBAAbilityBalance.cpp`：12 个英雄的 CDO 硬编码平衡数据已由 `DT_HeroBalance + UDBAHeroBalanceSubsystem` 完整替代；保留业务结构体以供 DataTable 行和查询接口使用。
+- `validate-unreal-source-guardrails.ps1` 新增固定技能组与英雄平衡的单一数据源契约，防止硬编码路径、运行时伪造技能组和旧 CDO 平衡表回流。
+- 验证已覆盖：`DivineBeastsArena.GameDBA.Data.FixedSkillGroup` 5 项测试、`DivineBeastsArena.Data.RuntimeDefaults` 2 项测试、基线入口检查和源码守卫均通过；`DivineBeastsArenaEditor Win64 Development` 编译成功。
+
+## 2026-07-10 登录、角色与本地大厅主流程修复
+
+- 已收敛登录主流程为 `登录 -> 角色列表 -> 创建角色或选择角色 -> 本地大厅地图 -> 大厅玩家界面`；登录、角色创建、角色选择和旅行状态均由 `UDBALoginFlowSubsystem` 的 C++ 状态机权威管理，界面仅订阅状态事件并转发按钮交互。
+- 已修复本地开发环境被 `SharedLobbyServerAddress=127.0.0.1:7777` 抢占的问题：共享大厅连接现在必须通过 `-DBAUseSharedLobby` 或 `bUseSharedLobbyServer=true` 显式启用；未显式启用时，客户端稳定打开 `/Game/Maps/Lobby/LobbyMap`。
+- 已移除登录旅行路径中与自动匹配相关的保留分支；本阶段不包含自动匹配逻辑。
+- 已补充 `ShouldTravelToSharedLobby` 自动化契约，验证未启用共享大厅时进入本地大厅、显式启用且地址有效时才连接共享大厅。
+- 已确认角色创建与已有角色选择两条真实无人值守流程均加载 `LobbyMap`，并由 `UDBAGameUIManager` 创建 `WBP_DBA_LobbyPlayerHUD`。
+
+本轮验证：
+
+```powershell
+& 'D:\UnrealEngine-5.8.0-release\Engine\Build\BatchFiles\Build.bat' DivineBeastsArenaEditor Win64 Development -Project='E:\work\Game\DivineBeastsArena\DBA_GameClient\DivineBeastsArena.uproject' -WaitMutex -NoHotReloadFromIDE
+```
+
+- Editor 目标编译通过。
+- `DivineBeastsArena.GameCore.Session.LoginFlow.GuestCreateToLobby` 通过。
+- `DivineBeastsArena.GameCore.Session.LoginFlow.GuestSelectToLobby` 通过。
+- `DivineBeastsArena.GameCore.Session.LoginFlow.Transitions` 通过。
+- `DivineBeastsArena.UI.Login.ReferenceVisualLayoutSpec` 通过，覆盖登录面板居中、中文标题与按钮、1920x1080/960x540 布局缩放契约。
+- 新建角色本地大厅证据：`Artifacts/ProductionEvidence/unreal/frontend-local-lobby-20260710T194212Z.log`。
+- 已有角色选择本地大厅证据：`Artifacts/ProductionEvidence/unreal/frontend-local-lobby-select-20260710T194503Z.log`。
+
+当前非阻断风险：大厅仍会输出生肖角色注册表、默认大厅输入配置、默认战斗属性数据资产和训练怪物网格未配置的中文警告。这些不阻断登录、角色创建/选择、地图旅行或大厅玩家界面显示，但应在后续数据资产补齐阶段处理。
+
 ## 2026-07-02 `P1` 全局 `C++` 逻辑边界门禁
 
 - 已将“所有逻辑相关实现必须使用 `C++`、蓝图只作参数配置和表现承接”的全局策略从文档约束升级为自动化契约。
@@ -74,7 +150,7 @@
 - `test-unreal-ui-runtime-chinese-output-contract.ps1` 已覆盖 `DBACharacterPreviewActor` 的预览骨骼网格加载失败、预览网格加载成功和缺少骨骼跳过待机动画日志；对应运行时信息已迁移为中文输出。
 - `test-unreal-ui-runtime-chinese-output-contract.ps1` 已覆盖 `UDBACharacterSelectFlowWidgetBase` 的角色列表更新、角色选择、`C++` 原生兜底布局、世界三维展示舞台、按钮音效、背景音乐资源与背景音乐组件创建诊断日志；对应运行时信息已迁移为中文输出。
 - `test-unreal-ui-runtime-chinese-output-contract.ps1` 已覆盖 `UDBACharacterCreateFlowWidgetBase` 的角色创建提交、`C++` 原生兜底布局、世界三维展示舞台、按钮音效、背景音乐资源与背景音乐组件创建诊断日志；对应运行时信息已迁移为中文输出。
-- `test-unreal-ui-runtime-chinese-output-contract.ps1` 已覆盖 `UDBALoginFlowWidgetBase` 的登录控件绑定状态、游客登录点击、调试登录点击、流程状态变更与缺失按钮绑定诊断日志；对应运行时信息已迁移为中文输出。
+- `test-unreal-ui-runtime-chinese-output-contract.ps1` 已覆盖 `UDBALoginFlowWidgetBase` 的登录控件绑定状态、游客登录点击、流程状态变更与缺失按钮绑定诊断日志；旧调试登录入口已删除，对应运行时信息已迁移为中文输出。
 - `test-unreal-ui-runtime-chinese-output-contract.ps1` 已覆盖 `DBALoginFlowSubsystem` 的流程状态切换、客户端旅行进入大厅、打开关卡进入大厅、账号服务不可用、角色选择/创建状态非法和角色选择失败提示，修正“流浪状态切换”“大厳”等错字/乱码风险；对应登录流程用户可见错误已迁移为中文输出。
 - `test-unreal-ui-runtime-chinese-output-contract.ps1` 已覆盖 `DBAOnlineAccountService` 的在线账号服务初始化、在线登录/注册/自动登录失败、角色列表/创建/选择失败与模拟兜底不可用诊断日志；对应外部接口运行时信息已迁移为中文输出。
 - `test-unreal-ui-runtime-chinese-output-contract.ps1` 已覆盖 `DBAOnlineAccountJson` 的 `JSON` 数据格式错误和角色列表响应结构缺失错误；对应本地接口解析失败信息已迁移为中文输出。
@@ -1644,7 +1720,15 @@
 - 已更新 `DBAPlayableSkillCatalogTests.cpp`，默认组件预期从“6 个内置技能有效”改为“未配置数据资产时无技能且报告 `SkillSpecs 为空`”；数据资产覆盖测试改为验证不追加 C++ 内置默认技能。
 - 已新增 `scripts/test-playable-skill-catalog-defaults-data-asset-contract.ps1`，并接入 `scripts/test-production-evidence-automation.ps1`、`scripts/validate-production-evidence-contracts.ps1` 与 PowerShell 语法解析列表，防止默认技能目录回退到源码硬编码。
 - 已执行并通过 `scripts/test-playable-skill-catalog-defaults-data-asset-contract.ps1`、`scripts/validate-production-evidence-contracts.ps1`、`scripts/test-unreal-data-asset-no-hardcoding-policy.ps1`、`scripts/test-production-evidence-automation.ps1` 与 `DivineBeastsArenaEditor Win64 Development` 编译。
-- 剩余风险：真实 `UDBAPlayableSkillCatalogDataAsset` 资产和 `DefaultSkillCatalog` 配置尚未在 Editor 中创建/保存；当前运行时会中文提示缺配置。后续应在 `/Game/DBA/...` 或约定数据目录创建真实技能目录资产，并把大厅技能表现资源、图标、音效、特效和数值全部由该数据资产驱动。
+- 该项历史风险已由 2026-07-10 的真实目录资产与默认配置闭环；当前后续工作转为逐技能图标、GameplayCue、旧蓝图字段迁移和真实 PIE 施法表现验证。
+
+## 2026-07-10 `P1` 可玩技能真实目录资产与打包闭环
+
+- 已通过 Editor 事务创建 `/Game/DBA/Data/SkillCatalog/DA_PlayableSkillCatalog`，写入炎弹、霜晶、影矢、连锁雷击、繁花疗愈与圣佑护盾六个有效技能规格；每项均由数据资产提供数值、冷却、技能类、Niagara 与音效软引用。
+- `DefaultGame.ini` 已配置 `UDBAPlayableSkillDeveloperSettings::DefaultSkillCatalog` 指向该资产，组件继续以 `DBAAsyncAssetLoader` 异步加载，未恢复 C++ 技能兜底。
+- 已更新 `test-playable-skill-catalog-defaults-data-asset-contract.ps1`，锁定默认配置节、默认软引用与真实资产文件；`DivineBeastsArena.Combat.PlayableSkillCatalog.DefaultConfiguredAsset` 自动化测试确认配置资产可加载、完整性校验通过且包含六个槽位。
+- Dedicated Server 打包范围已显式包含 `/Game/DBA/Data/SkillCatalog`；`DivineBeastsArenaServer` 构建、Cook/Stage 和端口 `17801` 大厅 smoke 通过，日志未出现 `SkipPackage`、旧 Mannequins、骨架链接或致命错误。
+- 当前后续风险收敛为逐技能图标与 GameplayCue 标签补齐、旧蓝图字段迁移以及真实 PIE 施法表现验证。
 
 ## 2026-07-04 `P1` 角色大厅装配技能硬编码兜底移除
 
@@ -1656,3 +1740,220 @@
 - 已更新 `docs/Architecture/GAS系统设计与审查报告.md` 至 v1.4，明确源码硬编码兜底已移除，当前剩余风险转为真实 `UDBAPlayableSkillCatalogDataAsset` 资产创建、默认目录配置、旧蓝图属性迁移和 PIE 验证。
 - 已执行并通过 `scripts/test-zodiac-character-lobby-skill-data-asset-boundary.ps1`、`scripts/test-zodiac-character-skill-slot-count-constants.ps1`、`scripts/validate-production-evidence-contracts.ps1`、`scripts/test-unreal-data-asset-no-hardcoding-policy.ps1`、`scripts/test-production-evidence-automation.ps1` 与 `DivineBeastsArenaEditor Win64 Development` 编译。
 - 剩余风险：本轮未创建或保存 `.uasset` / `.umap`；真实技能目录资产、默认目录配置和旧蓝图属性迁移仍需通过后续 Editor 流程完成。外部发布输入继续按既定策略跳过，不阻塞本地工程推进。
+
+## 2026-07-05 `P1` GAS AbilitySet 数据表异步加载边界
+
+- 已审查 `UDBAAbilitySetDataAsset` 数据表加载链路，确认旧实现会通过 `LoadDataTable()` 同步加载技能组相关 `DataTable` 软引用，不符合全局异步资源访问策略。
+- 已将 `UDBAAbilitySetDataAsset::LoadDataTable()` 改为只读取已加载缓存；未加载时发起 `DBAAsyncAssetLoader::RequestAsyncAsset<UDataTable>` 异步请求并返回空指针，不再阻塞线程。
+- 已新增 `PreloadAllDataTablesAsync()` 和 `RequestedDataTableLoads` 去重集合，用于预热元素被动、元素主动、大招模板、共鸣、生肖大招、技能表和技能组汇总表。
+- 已将 `ValidateDataIntegrity()` 的行数校验改为 `ValidateLoadedTableRowCount()`，数据表尚未加载完成时输出中文待加载诊断，避免为了校验而同步拉取资产。
+- 已新增 `scripts/test-ability-set-datatable-async-contract.ps1`，并接入 `scripts/test-production-evidence-automation.ps1` 与 `scripts/validate-production-evidence-contracts.ps1`，锁定该路径不得回退到 `LoadSynchronous()`。
+- 已修复 Unreal Unity Build 下多个 Arena HUD Widget 匿名命名空间辅助函数重名问题，并同步状态效果、战斗公告、目标追踪和事件流契约脚本到新函数名，保持行为检查不依赖旧共享命名。
+- 已更新 `docs/Architecture/GAS系统设计与审查报告.md` 至 v1.5，明确 AbilitySet 数据表异步边界已闭环，剩余同步加载风险转向 `UDBAZodiacHeroDataAsset` 与 `UDBAStaticDataAsset`；随后 StaticDataAsset 同步加载风险已在 2026-07-05 追加闭环。
+- 已执行并通过 `scripts/test-ability-set-datatable-async-contract.ps1`、`scripts/test-arena-hud-status-effects-sync.ps1`、`scripts/test-arena-hud-event-feedback-sync.ps1`、`scripts/test-arena-hud-event-feed-widget-sync.ps1`、`scripts/validate-production-evidence-contracts.ps1`、`scripts/test-production-evidence-automation.ps1` 与 `DivineBeastsArenaEditor Win64 Development` 编译。
+- 剩余风险：真实 `UDBAPlayableSkillCatalogDataAsset`、真实固定技能组 `DataTable` 和旧蓝图属性迁移仍需 Editor 流程完成；`UDBAZodiacHeroDataAsset` 的同步加载风险已在 2026-07-05 追加闭环，`UDBABattleAttributeSet` 默认数值与 `GetMaxEnergy()` 已在后续增量中完成源码边界数据资产化，后续重点转为真实战斗属性默认值资产创建与部分平衡常量归类。
+
+## 2026-07-05 `P1` StaticDataAsset 数据表异步加载边界
+
+- 已审查 `UDBAStaticDataAsset`，确认旧实现会在 `PreloadAllTables()`、`GetZodiacStaticTable()`、`GetElementDefinitionTable()`、`GetFiveCampDisplayTable()`、`GetMapDefinitionTable()`、`GetModeDefinitionTable()` 与编辑器 `IsDataValid()` 中同步加载静态数据表。
+- 已保留 `PreloadAllTables()` 兼容入口，并新增 `PreloadAllTablesAsync()`；兼容入口现在委托异步预加载，不再阻塞线程。
+- 已新增 `LoadDataTable()`、`RequestDataTableAsync()` 与 `RequestedDataTableLoads`，所有 Getter 只读取已加载缓存，未加载时发起 `DBAAsyncAssetLoader::RequestAsyncAsset<UDataTable>` 并返回空指针。
+- 已将编辑器行数校验收敛到 `ValidateLoadedTableRowCount()`；表未加载完成时输出中文“尚未加载完成，已发起异步加载；请等待加载完成后重试校验。”诊断。
+- 已新增 `scripts/test-static-data-asset-async-contract.ps1`，并接入 `scripts/test-production-evidence-automation.ps1`、PowerShell 语法解析列表与 `scripts/validate-production-evidence-contracts.ps1`。
+- 已更新 `docs/Architecture/GAS系统设计与审查报告.md` 至 v1.6，明确 AbilitySet 与 StaticDataAsset 的数据表同步加载风险均已闭环；`UDBAZodiacHeroDataAsset` 已在 2026-07-05 后续记录中完成同步加载迁移。
+- 已执行并通过 `scripts/test-static-data-asset-async-contract.ps1`、`scripts/validate-production-evidence-contracts.ps1`、`scripts/test-production-evidence-automation.ps1` 与 `DivineBeastsArenaEditor Win64 Development` 编译；`rg` 复查 `UDBAStaticDataAsset` 头/源文件已无 `LoadSynchronous()`。
+- 剩余风险：真实 StaticDataAsset `.uasset`、静态数据表资产加载完成后的 Editor 校验和 PIE 验证仍需后续 Editor 流程确认；本轮未保存二进制资产。
+
+## 2026-07-05 `P1` ZodiacHeroDataAsset 数据表异步加载边界
+
+- 已审查 `UDBAZodiacHeroDataAsset`，确认旧实现会通过 `LoadDataTable()` 同步加载 `ZodiacHeroDisplayTable`、`ZodiacHeroConfigTable`、`FixedSkillGroupTable` 和 `AbilitySetSummaryTable`。
+- 已新增 `PreloadAllDataTablesAsync()`，统一预热生肖显示、生肖配置、固定技能组和技能组汇总数据表。
+- 已将 `LoadDataTable()` 改为只读取已加载缓存；未加载时调用 `RequestDataTableAsync()` 发起 `DBAAsyncAssetLoader::RequestAsyncAsset<UDataTable>` 异步加载并返回空指针。
+- 已新增 `RequestedDataTableLoads` 去重集合，避免同一软引用被重复请求。
+- 已将 `ValidateDataIntegrity()` 的行数检查收敛到 `ValidateLoadedTableRowCount()`；表未加载完成时输出中文“尚未加载完成，已发起异步加载；请等待加载完成后重试校验。”诊断。
+- 已新增 `scripts/test-zodiac-hero-data-asset-async-contract.ps1`，并接入 `scripts/test-production-evidence-automation.ps1`、PowerShell 语法解析列表与 `scripts/validate-production-evidence-contracts.ps1`。
+- 已更新 `docs/Architecture/GAS系统设计与审查报告.md` 至 v1.7，明确 AbilitySet、StaticDataAsset 与 ZodiacHeroDataAsset 的核心数据表同步加载风险均已闭环；后续 v1.8 已追加 BattleAttribute 默认值数据资产化审查。
+- 已执行并通过 `scripts/test-zodiac-hero-data-asset-async-contract.ps1`、`scripts/validate-production-evidence-contracts.ps1`、`scripts/test-production-evidence-automation.ps1` 与 `DivineBeastsArenaEditor Win64 Development` 编译；`rg` 复查 `UDBAZodiacHeroDataAsset` 头/源文件已无 `LoadSynchronous()`。
+- 剩余风险：真实 `UDBAZodiacHeroDataAsset` `.uasset` 配置、关联 DataTable 资产加载完成后的 Editor 校验和 PIE 验证仍需后续 Editor 流程确认；本轮未保存二进制资产。
+
+## 2026-07-05 `P1` GAS BattleAttribute 默认值数据资产化
+
+- 已审查 `UDBABattleAttributeSet` 与 `ADBAZodiacCharacterBase::GetMaxEnergy()`，确认旧实现会在属性集构造函数中硬编码生命、攻击、防御、移速、普通能量、能量回复、暴击和护盾默认值，并在角色最大能量接口/观战快照中使用固定最大能量。
+- 已新增 `FDBABattleAttributeDefaults` 与 `UDBABattleAttributeDefaultsDataAsset`，将战斗属性默认值迁移为数据资产字段，并提供中文数据完整性校验。
+- 已新增 `UDBABattleAttributeDeveloperSettings`，通过 `DefaultBattleAttributeDefaults` 软引用提供项目级默认战斗属性数据资产入口。
+- `ADBAPlayerState::BeginPlay()` 已接入 `RequestDefaultBattleAttributeDefaultsAsync()`，通过 `DBAAsyncAssetLoader::RequestAsyncAsset<UDBABattleAttributeDefaultsDataAsset>` 异步加载默认属性数据资产，加载完成后调用 `BattleAttributeSet->ApplyDefaultAttributes(LoadedDefaults)`。
+- `UDBABattleAttributeSet` 构造函数已不再写运行默认值；`ApplyDefaultAttributes()` 负责校验并应用数据资产中的初始属性。
+- `ADBAZodiacCharacterBase::GetMaxEnergy()` 与观战快照 `OutData.MaxEnergy` 已改为读取 `UDBABattleAttributeSet::MaxEnergy`，不再返回固定 `100.0f`。
+- 已新增 `scripts/test-battle-attribute-defaults-data-asset-contract.ps1`，并接入 `scripts/test-production-evidence-automation.ps1` 与 `scripts/validate-production-evidence-contracts.ps1`，锁定战斗属性默认值不得回退为构造函数硬编码或同步加载。
+- 已更新 `docs/Architecture/GAS系统设计与审查报告.md` 至 v1.8，明确 BattleAttribute 默认值与最大能量源码边界已闭环。
+- 已执行并通过 `scripts/test-battle-attribute-defaults-data-asset-contract.ps1`、`scripts/validate-production-evidence-contracts.ps1`、`scripts/test-production-evidence-automation.ps1`、`DivineBeastsArenaEditor Win64 Development` 编译与 `DivineBeastsArenaServer Win64 Development` 编译。
+- 剩余风险：真实 `UDBABattleAttributeDefaultsDataAsset` `.uasset` 尚未在 Editor 中创建、填值、保存并配置到 `DBA 战斗属性设置`；本轮未保存任何二进制资产或修改项目设置。部分 `DBAConstants` 平衡数值仍需继续按技术边界常量或运行平衡数据分类。
+
+## 2026-07-06 `P1` 全模块构建验证与后端 API 联调闭环
+
+### 构建验证
+
+- 后端 `dotnet build` + `dotnet test`：`182 / 182` 通过（`Game.Api.Tests` 176、`Game.IntegrationTests` 1、`Game.ServerManagement.Tests` 5）。
+- 前端 `npm run build`：`Admin`（Angular 21）、`Website`（Next.js 16.2.6）、`Launcher`（Tauri + Vite）全部通过。
+- `scripts/production-preflight.ps1 -SkipUnreal*`：`Production preflight passed`。
+
+### 后端基础设施修复
+
+- `SecretFileConfigurationExtensions.cs` 第 36 行 `File.ReadAllText` 在密钥文件被锁定时抛出 `IOException`，导致 `WebApplicationFactory` 启动失败、76 个 `Game.Api.Tests` 测试失败。已包裹 `try/catch (IOException)` 跳过不可读密钥文件，避免阻断启动。
+- `write-release-readiness-report.ps1` 中 `$lines | Set-Content` 管道模式只写入最后一行，导致 Markdown 报告缺失摘要。已改为 `Set-Content -Value $lines`。
+
+### 后端 API 联调端点补齐（7 类，17 个端点）
+
+- `PATCH /api/players/me/profile` + `PUT /api/players/me/settings`：调用 `IPlayerService.UpdateProfileAsync` / `UpdateSettingsAsync`。
+- 邮件路径兼容 `/api/players/me/mails/*`（5 个端点）：列表、详情、已读、领取单封、一键领取全部。
+- `GET /api/reports/me` + `POST /api/appeals` + `GET /api/support/tickets/me`。
+- `GET /api/announcements/popup`：弹窗公告。
+- `GET /api/config/bundle` + `GET /api/maintenance/status`。
+- `POST /api/client-logs/upload`：新建 `ClientLogEndpoints.cs`，复用 `CrashReport` 表。
+- `POST /api/sessions/{id}/reconnect-token`：重连别名。
+
+### 后端充值/支付系统（新增实体 + 6 个端点）
+
+- 新增 `PaymentOrder` 实体（`GameEntities.cs`）+ `PaymentOrderConfiguration`（`GameConfigurations.cs`）。
+- `POST /api/payments/create-order`、`GET /api/payments/orders/{id}`、`GET /api/payments/orders`、`POST /api/payments/callback/{platform}`（第三方回调，幂等入账）。
+- `GET /api/wallet/balance`、`GET /api/wallet/ledger`。
+- 充值档位 5 档（gem_60 / gem_328 / gem_648 / gem_1280 / coin_100），开发阶段常量，后续迁移到数据库。
+
+### 后端任务/Quest 系统（新增 2 个实体 + 4 个端点）
+
+- 新增 `Quest` + `PlayerQuest` 实体（`GameFeatureEntities.cs`）+ EF 配置。
+- `GET /api/quests`、`GET /api/quests/{id}`、`POST /api/quests/{id}/accept`、`POST /api/quests/{id}/claim-reward`。
+- 种子任务 5 条（每日首胜、每日三场、每日击杀、每周十场、首胜主线）。
+- 奖励发放复用 `WalletBalance` / `WalletLedger` / `InventoryItem` / `InventoryLog`，幂等键 `quest:{questId}:{playerId}`。
+
+### 后端 Admin 管理端点（10 个端点）
+
+- `AdminPaymentEndpoints.cs`：支付订单列表、详情、退款（Ops，幂等扣回虚拟币）。
+- `AdminQuestEndpoints.cs`：任务列表、创建、更新、停用（Ops，审计日志）。
+- `AdminWalletEndpoints.cs`：余额列表、流水列表、余额调整（Ops，`WalletLedger` BizType=`ADMIN_ADJUST`）。
+
+### EF Core 迁移
+
+- `20260706122735_AddPaymentOrderAndQuestTables`：创建 `payment_order`、`quest`、`player_quest` 三张表，含外键、索引（`quest_key` 唯一、`player_id+quest_id` 唯一）。
+
+### 客户端 Service 补齐（8 个 Service，16 个新文件）
+
+- `GameBackendShopService` / `GameBackendRankingService` / `GameBackendEventService` / `GameBackendFriendService` / `GameBackendAchievementService` / `GameBackendQuestService` / `GameBackendPaymentService` / `GameBackendWalletService`。
+- `GameBackendClientSubsystem.h/.cpp` 已完成 8 个 Service 的前向声明、Getter、UPROPERTY、InitializeServices、ReleaseServices 集成。
+
+### Admin 前端管理页面（3 个页面）
+
+- `payment-orders-page.component.ts`：支付订单列表 + 状态筛选 + 退款。
+- `quests-page.component.ts`：任务管理（创建/编辑/停用）。
+- `wallet-page.component.ts`：钱包余额 + 流水 + 余额调整。
+- `models.ts` / `admin-api.service.ts` / `app.routes.ts` / `admin-shell.component.ts` 已同步扩展。
+
+### 验证证据
+
+- `dotnet build`：0 警告 0 错误。
+- `dotnet test`：177 通过 / 0 失败（含新增 ReconnectToken 签发与覆盖测试 2 个）。
+- `npm run build`（Admin）：构建成功，Initial total 395.63 kB。
+- `production-preflight.ps1`：`Production preflight passed`。
+
+---
+
+## 阶段 9：多人网络强化（已实施）
+
+### ReplicationGraph 接入
+
+- 新增 `DBAReplicationGraph.h/.cpp`：基于 UE5.8 真实 API（`InitGlobalGraphNodes` / `RouteAddNetworkActorToNodes` / `CreateNewNode` / `AddGlobalGraphNode`）。
+- `PlayerState` / `GameMode` / `RpcHandler` 路由到 `AlwaysRelevantNode`，`Pawn` / `Projectile` 路由到 `GridNode`（10000×10000 单元）。
+- `DivineBeastsArena.uproject` 启用 `ReplicationGraph` 插件（`EnabledByDefault: false`，需显式启用）。
+- `DivineBeastsArena.Build.cs` 增加 `ReplicationGraph` 模块依赖。
+
+### 无缝迁移与 COND 优化
+
+- `DBAGameModeBase` 构造函数设置 `bUseSeamlessTravel = true`，支持地图无缝迁移保留 Pawn/Controller 状态。
+- `DBAZodiacCharacterBase::GetLifetimeReplicatedProps`：`UltimateEnergy` / `ChainLevel` / `ResonanceLevel` / `SkillCooldowns` / `SkillMaxCooldowns` 改为 `COND_OwnerOnly`，降低带宽。
+- `DBAPlayerState::GetLifetimeReplicatedProps`：`MatchKills` / `MatchDeaths` / `MatchAssists` / `MatchScore` / `MatchExpDelta` / `MatchResult` 改为 `COND_OwnerOnly`，`MatchTeamId` 保持 `COND_None`（全客户端需要队伍信息）。
+
+### Server RPC 反作弊强化
+
+- `DBAConstants.h` 新增反作弊常量：`MaxMoveDistancePerRequest=1500` / `MinAttackInterval=0.3` / `MaxAttackRange=800`。
+- `DBARpcHandler.h` 新增 `LastAttackRequestTime` 字段记录上次攻击请求时间戳。
+- `ServerMoveTo_Validate`：增加移动距离上限校验，防止瞬移外挂。
+- `ServerRequestAttack_Validate`：增加攻击频率校验（`MinAttackInterval`），防止频率外挂。
+- `ServerRequestAttack_Implementation`：在开头记录时间戳供下次校验使用。
+
+### 后端 ReconnectToken 签发
+
+- `SessionDtos.cs`：`SessionConnectionResponse` 新增 `ReconnectToken` + `ReconnectTokenExpiresAt` 字段（可选）。
+- `SessionService.cs`：`GetConnectionInfoAsync` 在签发 `SessionToken`（10 分钟）的同时签发 `ReconnectToken`（1 小时），持久化 `ReconnectTokenHash` + `ReconnectTokenExpiresAt`，明文通过响应返回客户端。
+- 每次调用 `GetConnectionInfoAsync` 重新签发 `ReconnectToken`，覆盖旧值。
+- `SessionReconnectEndpoints.cs` 的 `/api/sessions/{sessionId}/reconnect` 端点现已可正确读取并校验 `ReconnectTokenHash`。
+- 新增单元测试 `GetConnectionInfoAsync_ReissuesReconnectTokenOnEachCall`，扩展 `GetConnectionInfoAsync_ReissuesShortLivedPlayerSessionToken` 覆盖 ReconnectToken 断言。
+
+### 客户端 ReconnectToken 对接
+
+- `GameBackendTypes.h`：`FDBA_GameBackendSessionConnection` 新增 `ReconnectToken` + `ReconnectTokenExpiresAt` 字段。
+- `GameBackendSessionService.h/.cpp`：新增 `Reconnect(SessionId, ReconnectToken, Callback)` 方法，构造 `{"reconnectToken":"<token>"}` 请求体 POST 到 `/api/sessions/{sessionId}/reconnect`。
+- `RequestReconnectToken` 标记为废弃（原实现发送空 body `{}`，与后端契约不匹配），调用时返回中文错误引导使用 `Reconnect`。
+- `ParseConnectionData` 更新：从顶层和嵌套 `connection` 对象解析 `reconnectToken` + `reconnectTokenExpiresAt` 字段。
+
+---
+
+## 下一步执行计划
+
+### 高优先级（阶段 9 收尾）
+
+1. **UE C++ 编译验证**
+   - 在 UE 编辑器环境中编译 `DivineBeastsArena` 模块，验证 `ReplicationGraph` / `bUseSeamlessTravel` / `COND` / RPC 校验改动无编译错误。
+   - 编译 `GameBackendClient` 插件，验证 `Reconnect` 方法 + `FDBA_GameBackendSessionConnection` 新字段无编译错误。
+   - 运行 PIE Smoke Test 验证基本战斗流程。
+
+2. **客户端断线重连子系统**
+   - 新增 `UDBAReconnectSubsystem`：持久化 `ReconnectToken`（SaveGame），检测断线后自动调用 `GameBackendSessionService::Reconnect`。
+   - 与 `GameBackendSessionService` 联调，验证重连后恢复 `PlayerState` / `Pawn` 状态。
+
+3. **ClientFullStateSync 实现**
+   - `IDBARpcHandler` 中声明的 `ClientFullStateSync` 接口需要服务端 `_Implementation` 实现，用于断线重连后全量同步状态。
+
+4. **弱网模拟测试**
+   - 配置 `Net.Pkt.Loss` / `Net.Pkt.Lag` 模拟弱网环境，验证核心战斗流程可靠性。
+
+### 中优先级（阶段 10：运营系统完善）
+
+4. **Admin 商城管理页面**
+   - 后端：`GET /api/admin/shop/items`、`POST /api/admin/shop/items`、`PUT /api/admin/shop/items/{id}`、`POST /api/admin/shop/items/{id}/deactivate`。
+   - 前端：商城商品管理页面（CRUD）。
+   - 将 `CommerceEndpoints.cs` 中的 mock 商品迁移到数据库。
+
+5. **Admin 邮件发送管理**
+   - 后端：`POST /api/admin/mails/send`（单发）、`POST /api/admin/mails/broadcast`（群发）。
+   - 前端：邮件发送页面。
+
+6. **Admin 排行榜管理**
+   - 后端：`POST /api/admin/rankings/refresh`、`GET /api/admin/rankings/history`。
+   - 前端：排行榜管理页面。
+
+### 中优先级（阶段 11：自动化测试与打包）
+
+7. **Gauntlet 自动化测试**
+   - 设计 `DBAGauntletTest` 基类，覆盖登录→匹配→进局→结算全流程。
+   - 集成到 `BuildGraph` 构建脚本。
+
+8. **BuildGraph 打包脚本**
+   - `BuildGameClient.xml`：Windows Client 打包。
+   - `BuildGameServer.xml`：Dedicated Server 打包。
+   - 集成到 `production-preflight.ps1`。
+
+### 低优先级（阶段 12：上线准备）
+
+9. **崩溃日志收集**
+   - 客户端 `CrashService` 与后端 `POST /api/crashes/upload` 联调验证。
+   - 集成 Sentry / Crashlytics 作为备份。
+
+10. **热更新预留**
+    - 评估 `ChunkDownloader` / `DataAsset` 热更新方案。
+    - 在 `AssetManager` 中预留 hotfix chunk 配置入口。
+
+### 待外部输入项（暂不阻塞）
+
+- 真实第三方支付 SDK 接入（微信/支付宝/Steam/EOS）。
+- 真实 CDN / 签名证书 / 生产环境凭据。
+- 平台审核材料（App Store / Google Play / Steam）。

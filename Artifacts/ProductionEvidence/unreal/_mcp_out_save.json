@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "isError": true,
+    "content": [
+      {
+        "type": "text",
+        "text": "Missing required param(s): [packages]. Provided keys: [package_paths] — inspect the action's parameter schema via monolith_discover(\"<namespace>\") and supply all required fields."
+      }
+    ]
+  }
+}

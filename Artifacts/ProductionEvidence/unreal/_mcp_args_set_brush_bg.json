@@ -1,0 +1,7 @@
+{
+  "action": "set_brush",
+  "asset_path": "/Game/DBA/UI/Lobby/Character/WBP_DBA_CharacterSelect",
+  "widget_name": "BG_Image",
+  "property_name": "Brush",
+  "draw_as": "NoDrawType"
+}

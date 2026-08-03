@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"namespace\":\"ui\",\"action\":\"set_widget_property\",\"description\":\"Set a property on a widget (text, color, opacity, visibility, etc.). Default mode gates writes through the per-type curated allowlist; pass raw_mode=true to bypass the gate (legacy compat). The new value can be supplied as `value` OR the alias `property_value` (Bug #6 fix).\",\"params\":{\"asset_path\":{\"type\":\"string\",\"description\":\"Widget Blueprint asset path\",\"required\":true,\"kind\":\"AssetPath\"},\"widget_name\":{\"type\":\"string\",\"description\":\"Target widget name\",\"required\":true},\"property_name\":{\"type\":\"string\",\"description\":\"Property path. Dotted segments allowed (e.g. 'Padding.Left'). Allowlist-gated unless raw_mode=true.\",\"required\":true},\"value\":{\"type\":\"string\",\"description\":\"Property value (alias: 'property_value'). Strings, numbers, booleans, JSON arrays/objects all accepted; struct types (Vector2D/LinearColor/Margin/Vector4/SlateColor) accept multiple shapes.\",\"required\":true},\"compile\":{\"type\":\"boolean\",\"description\":\"Compile after setting\",\"required\":false,\"default\":\"false\"},\"raw_mode\":{\"type\":\"boolean\",\"description\":\"Bypass the allowlist gate (legacy unconditional ImportText_Direct path). Default false.\",\"required\":false,\"default\":\"false\"}}}"
+      }
+    ]
+  }
+}

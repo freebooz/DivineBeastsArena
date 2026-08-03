@@ -260,3 +260,106 @@ export interface PlatformApplication {
   integrationPoints: string[];
   nextSteps: string[];
 }
+
+// ===== 支付订单管理 =====
+export interface AdminPaymentOrderItem {
+  id: string;
+  playerId: string;
+  platform: string;
+  platformOrderId: string;
+  status: string;
+  amount: number;
+  currency: string;
+  productId: string;
+  productName: string;
+  virtualAmount: number;
+  virtualCurrency: string;
+  createdAt: string;
+  paidAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface AdminPaymentOrderListResponse {
+  items: AdminPaymentOrderItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface AdminRefundRequest {
+  reason: string;
+}
+
+// ===== 任务管理 =====
+export interface AdminQuestItem {
+  id: string;
+  questKey: string;
+  title: string;
+  description: string;
+  questType: string;
+  category: string;
+  targetProgress: number;
+  rewardJson: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface AdminQuestListResponse {
+  items: AdminQuestItem[];
+  totalCount: number;
+}
+
+export interface AdminCreateQuestRequest {
+  questKey: string;
+  title: string;
+  description: string;
+  questType: string;
+  category: string;
+  targetProgress: number;
+  rewardJson: string;
+  sortOrder: number;
+}
+
+// ===== 钱包管理 =====
+export interface AdminWalletBalanceItem {
+  id: string;
+  playerId: string;
+  currencyType: string;
+  balance: number;
+  updatedAt: string;
+}
+
+export interface AdminWalletBalanceListResponse {
+  items: AdminWalletBalanceItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface AdminWalletLedgerItem {
+  id: string;
+  playerId: string;
+  currencyType: string;
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  bizType: string;
+  bizId: string;
+  createdAt: string;
+}
+
+export interface AdminWalletLedgerListResponse {
+  items: AdminWalletLedgerItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface AdminAdjustWalletRequest {
+  playerId: string;
+  currencyType: string;
+  amount: number;
+  reason: string;
+}

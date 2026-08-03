@@ -1,0 +1,4 @@
+{
+  "status": "success",
+  "widget_tree": "WBP_DBA_CharacterSelect [WidgetBlueprint]\n  Root [CanvasPanel]\n    - BG_Image [Image]\n    - MainRow [HorizontalBox]\n      - LeftPreviewCard [Border]\n        - PreviewVBox [VerticalBox]\n          - PageTitle [TextBlock]\n          - CharacterPreviewHost [Border]\n      - RightInfoCard [Border]\n        - VerticalBox_198 [VerticalBox]\n          - StatusText [TextBlock]\n          - CharacterListText [TextBlock]\n          - ActionRow [HorizontalBox]\n            - RefreshButton [Button]\n              - ConfirmButtonText [TextBlock]\n            - CreateButton [Button]\n              - ConfirmButtonText_1 [TextBlock]\n            - ConfirmButton [Button]\n              - ConfirmButtonText_2 [TextBlock]\n"
+}

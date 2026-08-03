@@ -1,4 +1,4 @@
-﻿// Copyright FreeboozStudio. All Rights Reserved.
+// Copyright FreeboozStudio. All Rights Reserved.
 /*
 中文阅读说明：
 - 所属应用：DBA_GameClient Unreal Engine 客户端。
@@ -21,3 +21,5 @@ DEFINE_LOG_CATEGORY(LogDBAValidation);
 DEFINE_LOG_CATEGORY(LogDBAAI);
 DEFINE_LOG_CATEGORY(LogDBATelemetry);
 DEFINE_LOG_CATEGORY(LogDBAGameOps);
+DEFINE_LOG_CATEGORY(LogDBAVFX);
+DEFINE_LOG_CATEGORY(LogDBASFX);

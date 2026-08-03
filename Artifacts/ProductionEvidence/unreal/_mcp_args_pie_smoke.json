@@ -1,0 +1,36 @@
+{
+  "action": "run_pie_smoke",
+  "map": "/Game/Maps/Lobby/FrontendMap",
+  "marker": "DBA_CHAR_PRES_SMOKE",
+  "duration": 15,
+  "on_compile_errors": "suppress",
+  "console_script": [
+    "Log LogDBAUI Verbose",
+    "stat fps"
+  ],
+  "log_patterns": {
+    "must_present": [],
+    "observe_only": [
+      "CharacterPresentation",
+      "CharacterSelectWidget",
+      "已透明化",
+      "ActivatePresentationCamera",
+      "使用世界 3D",
+      "舞台",
+      "AutoExposure",
+      "ViewTarget",
+      "FrontendEnvironment",
+      "选角"
+    ],
+    "warn": [
+      "创建世界 3D 角色展示舞台失败",
+      "Fatal"
+    ]
+  },
+  "stages": {
+    "after_n_ticks": {
+      "n": 90,
+      "python": "exec(open(r'E:/work/Game/DivineBeastsArena/Artifacts/ProductionEvidence/unreal/_mcp_probe_presentation.py', encoding='utf-8').read())"
+    }
+  }
+}

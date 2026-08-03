@@ -1,0 +1,9 @@
+{
+  "action": "set_brush",
+  "asset_path": "/Game/DBA/UI/Lobby/Character/WBP_DBA_CharacterCreate",
+  "widget_name": "Card",
+  "property_name": "Background",
+  "draw_type": "NoDrawType",
+  "tint_color": "0,0,0,0",
+  "compile": false
+}

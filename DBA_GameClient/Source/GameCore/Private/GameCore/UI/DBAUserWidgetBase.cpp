@@ -1,4 +1,4 @@
-﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// Copyright Freebooz Games, Inc. All Rights Reserved.
 /*
 中文阅读说明：
 - 所属应用：DBA_GameClient Unreal Engine 客户端。
@@ -9,12 +9,16 @@
 
 
 #include "GameCore/UI/DBAUserWidgetBase.h"
+#include "GameCore/Core/DBALogChannels.h"
+#include "GameCore/UI/DBAUserWidgetDeveloperSettings.h"
 
 #include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 #include "UObject/SoftObjectPath.h"
+#include "Engine/StreamableManager.h"
+#include "Engine/AssetManager.h"
 
 /**
  * 构造函数
@@ -23,8 +27,14 @@
 UDBAUserWidgetBase::UDBAUserWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	DefaultClickSound = TSoftObjectPtr<USoundBase>(
-		FSoftObjectPath(TEXT("/Game/DBA/Audio/UI/SFX/SFX_UI_ButtonClick.SFX_UI_ButtonClick")));
+	if (const UDBAUserWidgetDeveloperSettings* Settings = GetDefault<UDBAUserWidgetDeveloperSettings>())
+	{
+		DefaultClickSound = Settings->DefaultClickSound;
+	}
+	else
+	{
+		UE_LOG(LogDBAUI, Warning, TEXT("[DBAUserWidgetBase] 未找到通用 UI 配置，默认点击音效软引用为空。"));
+	}
 }
 
 /**
@@ -34,6 +44,9 @@ UDBAUserWidgetBase::UDBAUserWidgetBase(const FObjectInitializer& ObjectInitializ
 void UDBAUserWidgetBase::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
+
+	// 异步预加载默认点击音效，避免按钮点击时同步加载阻塞 GameThread。
+	PreloadDefaultClickSound();
 }
 
 /**
@@ -66,6 +79,13 @@ void UDBAUserWidgetBase::NativeDestruct()
 		}
 	}
 	BoundButtons.Reset();
+
+	// 取消未完成的异步加载句柄，避免回调悬挂。
+	if (ClickSoundStreamableHandle.IsValid())
+	{
+		ClickSoundStreamableHandle->CancelHandle();
+		ClickSoundStreamableHandle.Reset();
+	}
 
 	Super::NativeDestruct();
 }
@@ -103,13 +123,69 @@ void UDBAUserWidgetBase::Deactivate()
 
 void UDBAUserWidgetBase::HandleAnyButtonClicked()
 {
-	USoundBase* ClickSound = DefaultClickSound.LoadSynchronous();
+	USoundBase* ClickSound = CachedClickSound.Get();
 	if (!ClickSound)
+	{
+		// 音效尚未异步加载完成，输出一次中文警告日志，避免日志刷屏。
+		if (!bHasLoggedClickSoundNotReady)
+		{
+			UE_LOG(LogDBAUI, Warning, TEXT("[DBAUserWidgetBase] 默认点击音效尚未异步加载完成，本次点击跳过音效播放。软引用路径：%s"),
+				DefaultClickSound.IsValid() ? TEXT("已加载但弱指针失效") : *DefaultClickSound.ToSoftObjectPath().ToString());
+			bHasLoggedClickSoundNotReady = true;
+		}
+		return;
+	}
+
+	// 重置警告标记，便于下次未就绪时再次提示。
+	bHasLoggedClickSoundNotReady = false;
+	UGameplayStatics::PlaySound2D(this, ClickSound, 0.85f, 1.0f, 0.0f, nullptr, nullptr, true);
+}
+
+void UDBAUserWidgetBase::PreloadDefaultClickSound()
+{
+	// 若已缓存或软引用无效，直接返回。
+	if (CachedClickSound.IsValid())
 	{
 		return;
 	}
 
-	UGameplayStatics::PlaySound2D(this, ClickSound, 0.85f, 1.0f, 0.0f, nullptr, nullptr, true);
+	if (!DefaultClickSound.IsValid())
+	{
+		// 软引用尚未加载，发起异步加载。
+		const FSoftObjectPath& SoundPath = DefaultClickSound.ToSoftObjectPath();
+		if (!SoundPath.IsValid())
+		{
+		UE_LOG(LogDBAUI, Warning, TEXT("[DBAUserWidgetBase] DefaultClickSound 软引用路径无效，无法异步加载。"));
+			return;
+		}
+
+		FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
+		ClickSoundStreamableHandle = Streamable.RequestAsyncLoad(
+			SoundPath,
+			FStreamableDelegate::CreateUObject(this, &UDBAUserWidgetBase::HandleDefaultClickSoundLoaded));
+	}
+	else
+	{
+		// 软引用已加载，直接缓存。
+		HandleDefaultClickSoundLoaded();
+	}
+}
+
+void UDBAUserWidgetBase::HandleDefaultClickSoundLoaded()
+{
+	ClickSoundStreamableHandle.Reset();
+
+	USoundBase* LoadedSound = DefaultClickSound.Get();
+	if (!LoadedSound)
+	{
+		UE_LOG(LogDBAUI, Warning, TEXT("[DBAUserWidgetBase] 默认点击音效异步加载完成但解析为空，请检查软引用路径：%s"),
+			*DefaultClickSound.ToSoftObjectPath().ToString());
+		return;
+	}
+
+	CachedClickSound = LoadedSound;
+	UE_LOG(LogDBAUI, Log, TEXT("[DBAUserWidgetBase] 默认点击音效异步加载完成并已缓存：%s"),
+		*LoadedSound->GetName());
 }
 
 void UDBAUserWidgetBase::BindButtonClickAudio()

@@ -1,0 +1,4 @@
+{
+  "action": "list_dirty_packages",
+  "path_prefixes": ["/Game/DBA/UI"]
+}

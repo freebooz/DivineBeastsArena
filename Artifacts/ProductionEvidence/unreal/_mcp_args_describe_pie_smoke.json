@@ -1,0 +1,5 @@
+{
+  "action": "action_schema",
+  "target_namespace": "editor",
+  "target_action": "run_pie_smoke"
+}

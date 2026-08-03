@@ -1,0 +1,39 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "ue-online-validation",
+    "runId":  "local-ue-evidence-20260709T112311Z",
+    "status":  "passed",
+    "errorMessage":  "",
+    "generatedAtUtc":  "2026-07-09T11:25:25.0941310Z",
+    "baseUrl":  "http://localhost:8080",
+    "usePackagedServer":  false,
+    "skipClientLaunch":  false,
+    "keepProcessesAlive":  false,
+    "serverExecutable":  "UnrealEditor.exe -server",
+    "roomId":  "d4974d60-83d4-4c57-b711-c1118586b625",
+    "sessionId":  "c79dcc9c-1976-4804-a0e6-80f221c058e2",
+    "serverId":  "f05b06dd-8fb0-49b4-ad01-391d16356ffe",
+    "allocatedPort":  7777,
+    "clientConnectPort":  7878,
+    "processIds":  {
+                       "server":  28180,
+                       "clientA":  23020,
+                       "clientB":  46488
+                   },
+    "logPaths":  {
+                     "server":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\server-local-ue-evidence-20260709T112311Z.log",
+                     "clientA":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\client-a-local-ue-evidence-20260709T112311Z.log",
+                     "clientB":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\client-b-local-ue-evidence-20260709T112311Z.log"
+                 },
+    "safeLogEvidence":  {
+                            "runtimePlayerJoined":  {
+
+                                                    },
+                            "runtimePlayerJoinedOk":  [
+                                                          "[2026.07.09-11.24.02:453][266]LogDBA_GameBackendClient: HTTP 请求：方法=POST 地址=http://localhost:8080/runtime/servers/player-joined 追踪ID=c27c1dd8-40d2-367f-4607-63af17abf7d6 状态码=200 业务码=OK 耗时毫秒=71.01",
+                                                          "[2026.07.09-11.24.06:079][373]LogDBA_GameBackendClient: HTTP 请求：方法=POST 地址=http://localhost:8080/runtime/servers/player-joined 追踪ID=3477ac48-4045-51a6-4814-7fa835263c22 状态码=200 业务码=OK 耗时毫秒=172.27"
+                                                      ],
+                            "clientATravelCompleted":  "[2026.07.09-11.24.02:195][ 50]LogGlobalStatus: UPendingNetGame::TravelCompleted Pending net game travel completed",
+                            "clientBTravelCompleted":  "[2026.07.09-11.24.05:901][ 36]LogGlobalStatus: UPendingNetGame::TravelCompleted Pending net game travel completed"
+                        }
+}

@@ -17,6 +17,16 @@ class UWidgetTree;
 
 namespace DBAUIFonts
 {
+	inline constexpr float ReferenceViewportWidth = 1920.0f;
+	inline constexpr float ReferenceViewportHeight = 1080.0f;
+
+	DIVINEBEASTSARENA_API float GetViewportUIScale(const UObject* WorldContextObject);
+	DIVINEBEASTSARENA_API float ScaleLayoutValue(const UObject* WorldContextObject, float ReferenceValue);
+	DIVINEBEASTSARENA_API FVector2D ScaleVector2D(const UObject* WorldContextObject, const FVector2D& ReferenceValue);
+	DIVINEBEASTSARENA_API FMargin ScaleMargin(const UObject* WorldContextObject, float Left, float Top, float Right, float Bottom);
+	DIVINEBEASTSARENA_API void ApplyViewportScaledPresentation(class UUserWidget* Widget);
+	/** 登录/选角/创建等全屏流程控件：铺满视口且不使用 RenderScale，避免界面不可见或尺寸错误 */
+	DIVINEBEASTSARENA_API void ApplyFullscreenFlowViewportPresentation(class UUserWidget* Widget);
 	DIVINEBEASTSARENA_API FSlateFontInfo MakeGameFont(float Size, int32 OutlineSize = 1);
 	DIVINEBEASTSARENA_API void ApplyGameFontToWidgetTree(UWidgetTree* WidgetTree);
 }

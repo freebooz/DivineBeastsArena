@@ -1,4 +1,4 @@
-﻿// Copyright FreeboozStudio. All Rights Reserved.
+// Copyright FreeboozStudio. All Rights Reserved.
 /*
 中文阅读说明：
 - 所属应用：DBA_GameClient Unreal Engine 客户端。
@@ -12,8 +12,8 @@
 
 #include "CoreMinimal.h"
 #include "GameCore/Types/DBACommonTypes.h"
-#include "GameCore/Account/DBAAccountTypes.h"
-#include "GameCore/Character/DBACharacterBuildTypes.h"
+#include "GameCore/Networking/Account/DBAAccountTypes.h"
+#include "GameCore/Types/DBACharacterBuildTypes.h"
 #include "GameCore/Session/DBAMatchSessionTypes.h"
 #include "DBATravelTypes.generated.h"
 
@@ -48,17 +48,17 @@ struct GAMECORE_API FDBATravelContext
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Travel")
 	int32 TeamId = 0;
 
-	/** 选择的生肖 */
+	/** Arena 数据资产定义的生肖稳定标识符。 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Travel")
-	EDBAZodiac SelectedZodiac = EDBAZodiac::None;
+	FName SelectedZodiacId = NAME_None;
 
-	/** 选择的自然元素之力 */
+	/** Arena 数据资产定义的元素稳定标识符。 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Travel")
-	EDBAElement SelectedElement = EDBAElement::None;
+	FName SelectedElementId = NAME_None;
 
-	/** 选择的五大阵营 */
+	/** Arena 数据资产定义的五营稳定标识符。 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Travel")
-	EDBAFiveCamp SelectedFiveCamp = EDBAFiveCamp::None;
+	FName SelectedFiveCampId = NAME_None;
 
 	/** 服务端冻结的固定技能组 ID，例如 Rat_Water */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Travel")
@@ -100,9 +100,9 @@ struct GAMECORE_API FDBATravelContext
 	FDBACharacterBuildSummary GetCharacterBuildSummary() const
 	{
 		FDBACharacterBuildSummary Summary;
-		Summary.Zodiac = SelectedZodiac;
-		Summary.PrimaryElement = SelectedElement;
-		Summary.FiveCamp = SelectedFiveCamp;
+		Summary.ZodiacId = SelectedZodiacId;
+		Summary.PrimaryElementId = SelectedElementId;
+		Summary.FiveCampId = SelectedFiveCampId;
 		Summary.FixedSkillGroupId = FixedSkillGroupId;
 		return Summary;
 	}
@@ -115,7 +115,8 @@ struct GAMECORE_API FDBATravelContext
 			return false;
 		}
 
-		return Summary.FixedSkillGroupId == DBACharacterBuild::MakeFixedSkillGroupId(Summary.Zodiac, Summary.PrimaryElement);
+		// 玩法身份与固定技能组的关系必须由 Arena 数据资产校验。
+		return Summary.IsValid();
 	}
 
 	/**

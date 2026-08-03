@@ -78,6 +78,22 @@
 		{
 			"Name": "UmgMcp",
 			"Enabled": true
+		},
+		{
+			"Name": "Monolith",
+			"Enabled": true
+		},
+		{
+			"Name": "ModelContextProtocol",
+			"Enabled": true
+		},
+		{
+			"Name": "ReplicationGraph",
+			"Enabled": true
+		},
+		{
+			"Name": "CommonUI",
+			"Enabled": true
 		}
 	],
 	"TargetPlatforms": [

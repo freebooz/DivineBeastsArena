@@ -1,4 +1,4 @@
-﻿/*
+/*
 中文阅读说明：
 - 所属应用：DBA_GameBackend 后端 API / Worker。
 - 文件职责：定义 EF Core 实体模型，对应数据库表结构和领域对象的持久化形态。
@@ -218,4 +218,27 @@ public class WalletLedger
     public string IdempotencyKey { get; set; } = string.Empty;
     public Guid? OperatorId { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
+/// <summary>
+/// 充值/支付订单 / Payment order for recharge flows
+/// 与 OrderRecord 区分：本表专用于第三方支付平台（微信/支付宝/Steam/EOS/MOCK）下单与回调跟踪
+/// </summary>
+public class PaymentOrder
+{
+    public Guid Id { get; set; }
+    public Guid PlayerId { get; set; }
+    public string Platform { get; set; } = string.Empty;      // WECHAT/ALIPAY/STEAM/EOS/MOCK
+    public string PlatformOrderId { get; set; } = string.Empty; // 第三方平台订单号
+    public string Status { get; set; } = "PENDING";           // PENDING/PAID/FAILED/REFUNDED
+    public long Amount { get; set; }                           // 金额（分）
+    public string Currency { get; set; } = "CNY";             // 币种
+    public string ProductId { get; set; } = string.Empty;     // 充值档位 ID
+    public string ProductName { get; set; } = string.Empty;   // 充值档位名称
+    public long VirtualAmount { get; set; }                   // 虚拟币数量
+    public string VirtualCurrency { get; set; } = "GEM";      // 虚拟币类型
+    public string? CallbackJson { get; set; }                 // 第三方回调原始数据
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? PaidAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
 }

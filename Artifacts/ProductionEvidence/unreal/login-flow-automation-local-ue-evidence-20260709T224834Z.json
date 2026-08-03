@@ -1,0 +1,13 @@
+﻿{
+    "kind":  "login-flow-automation",
+    "runId":  "20260709T224834Z",
+    "status":  "passed",
+    "testFilter":  "DivineBeastsArena.GameCore.Session.LoginFlow",
+    "exitCode":  0,
+    "elapsedSeconds":  11.9,
+    "found":  3,
+    "passed":  3,
+    "failed":  0,
+    "logPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\unreal\\login-flow-automation-20260709T224834Z.log",
+    "timestampUtc":  "2026-07-09T14:49:49.5241472Z"
+}

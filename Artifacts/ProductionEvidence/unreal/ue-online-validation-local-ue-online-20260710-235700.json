@@ -1,0 +1,42 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "ue-online-validation",
+    "runId":  "local-ue-online-20260710-235700",
+    "status":  "failed",
+    "errorMessage":  "POST /internal/sessions/from-room failed: The remote server returned an error: (401) Unauthorized.",
+    "generatedAtUtc":  "2026-07-10T15:58:20.3078731Z",
+    "baseUrl":  "http://localhost:8080",
+    "usePackagedServer":  true,
+    "skipClientLaunch":  false,
+    "keepProcessesAlive":  false,
+    "serverExecutable":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\packaged-server-playable-skill-catalog-final\\WindowsServer\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer.exe",
+    "roomId":  "",
+    "sessionId":  "",
+    "serverId":  "",
+    "allocatedPort":  0,
+    "clientConnectPort":  0,
+    "processIds":  {
+                       "server":  null,
+                       "clientA":  null,
+                       "clientB":  null
+                   },
+    "logPaths":  {
+                     "server":  "",
+                     "clientA":  "",
+                     "clientB":  ""
+                 },
+    "safeLogEvidence":  {
+                            "runtimePlayerJoined":  {
+
+                                                    },
+                            "runtimePlayerJoinedOk":  {
+
+                                                      },
+                            "clientATravelCompleted":  {
+
+                                                       },
+                            "clientBTravelCompleted":  {
+
+                                                       }
+                        }
+}

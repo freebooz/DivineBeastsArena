@@ -33,7 +33,14 @@ public static class SecretFileConfigurationExtensions
             }
 
             var configKey = name[..^"_FILE".Length].Replace("__", ":", StringComparison.Ordinal);
-            secretValues[configKey] = File.ReadAllText(filePath).Trim();
+            try
+            {
+                secretValues[configKey] = File.ReadAllText(filePath).Trim();
+            }
+            catch (IOException)
+            {
+                // 密钥文件被其他进程锁定或不可读时跳过，避免阻断启动；生产环境应确保密钥文件可读。
+            }
         }
 
         if (secretValues.Count > 0)

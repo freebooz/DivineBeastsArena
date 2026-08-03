@@ -16,6 +16,7 @@
 GAMEBACKENDCLIENT_API DECLARE_LOG_CATEGORY_EXTERN(LogDBA_GameBackendClient, Log, All);
 
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FDBA_GameBackendResponseDelegate, bool, bSuccess, const FString&, ErrorMessage, const FString&, DataJson);
+using FDBA_GameBackendNativeResponseCallback = TFunction<void(bool, const FString&, const FString&)>;
 DECLARE_DYNAMIC_DELEGATE_FiveParams(FDBA_GameBackendAuthResponseDelegate, bool, bSuccess, const FString&, ErrorMessage, const FString&, AccessToken, const FString&, RefreshToken, const FString&, PlayerId);
 DECLARE_DYNAMIC_DELEGATE_FourParams(FDBA_GameBackendBanResponseDelegate, bool, bSuccess, const FString&, ErrorMessage, const FString&, BanReason, const FString&, UnbanTimeUtc);
 
@@ -57,6 +58,12 @@ struct GAMEBACKENDCLIENT_API FDBA_GameBackendAuthTokens
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
 	FString PlayerId;
 };
+
+using FDBA_GameBackendNativeAuthCallback = TFunction<void(
+	bool,
+	const FString&,
+	const FDBA_GameBackendAuthTokens&,
+	const FString&)>;
 
 USTRUCT(BlueprintType)
 struct GAMEBACKENDCLIENT_API FDBA_GameBackendGuestLoginRequest
@@ -148,10 +155,23 @@ struct GAMEBACKENDCLIENT_API FDBA_GameBackendSessionConnection
 	FString SessionId;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString JoinTicket;
+
+	/** 兼容旧连接响应字段；解析后统一复制到 JoinTicket。 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
 	FString PlayerSessionToken;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
 	FString PlayerId;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString CharacterId;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString ServerInstanceId;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString BuildId;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
 	int32 TeamId = 0;
@@ -167,6 +187,14 @@ struct GAMEBACKENDCLIENT_API FDBA_GameBackendSessionConnection
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
 	FString FixedSkillGroupId;
+
+	/** 断线重连令牌（明文），客户端需持久化保存以便断线后调用 Reconnect */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString ReconnectToken;
+
+	/** 重连令牌过期时间（ISO 8601 字符串） */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "DBA_GameBackend")
+	FString ReconnectTokenExpiresAt;
 };
 
 USTRUCT(BlueprintType)

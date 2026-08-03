@@ -31,7 +31,7 @@ bool FDBA_GameBackendSessionTravelUrlBuildSummaryTest::RunTest(const FString& Pa
 		TEXT("Rat_Water"));
 
 	TestTrue(TEXT("旅行地址应包含会话标识"), Url.Contains(TEXT("SessionId=session-001")));
-	TestTrue(TEXT("旅行地址应对玩家会话令牌进行 URL 编码"), Url.Contains(TEXT("PlayerSessionToken=token%2Fwith%2Bspecials")));
+	TestTrue(TEXT("旅行地址应对一次性入服票据进行 URL 编码"), Url.Contains(TEXT("JoinTicket=token%2Fwith%2Bspecials")));
 	TestTrue(TEXT("旅行地址应包含队伍标识"), Url.Contains(TEXT("DBATeamId=1")));
 	TestTrue(TEXT("旅行地址应包含生肖标识"), Url.Contains(TEXT("DBAZodiac=Rat")));
 	TestTrue(TEXT("旅行地址应包含元素标识"), Url.Contains(TEXT("DBAElement=Water")));
@@ -53,6 +53,10 @@ bool FDBA_GameBackendSessionConnectionJsonBuildSummaryTest::RunTest(const FStrin
 			"port": 7777,
 			"sessionId": "legacy-session",
 			"playerSessionToken": "nested-token",
+			"playerId": "player-001",
+			"characterId": "character-001",
+			"serverInstanceId": "server-001",
+			"buildId": "development",
 			"teamId": 2,
 			"characterBuildSummary": {
 				"zodiac": "Tiger",
@@ -69,7 +73,9 @@ bool FDBA_GameBackendSessionConnectionJsonBuildSummaryTest::RunTest(const FStrin
 		UDBA_GameBackendSessionService::TryBuildTravelUrlFromConnectionData(Json, TEXT("override-session"), Url));
 
 	TestTrue(TEXT("覆盖会话标识应优先使用"), Url.Contains(TEXT("SessionId=override-session")));
-	TestTrue(TEXT("嵌套玩家令牌应被写入"), Url.Contains(TEXT("PlayerSessionToken=nested-token")));
+	TestTrue(TEXT("嵌套入服票据应被写入"), Url.Contains(TEXT("JoinTicket=nested-token")));
+	TestTrue(TEXT("嵌套玩家标识应被写入"), Url.Contains(TEXT("PlayerId=player-001")));
+	TestTrue(TEXT("嵌套角色标识应被写入"), Url.Contains(TEXT("CharacterId=character-001")));
 	TestTrue(TEXT("嵌套队伍标识应被写入"), Url.Contains(TEXT("DBATeamId=2")));
 	TestTrue(TEXT("嵌套生肖标识应被写入"), Url.Contains(TEXT("DBAZodiac=Tiger")));
 	TestTrue(TEXT("嵌套元素标识应被写入"), Url.Contains(TEXT("DBAElement=Fire")));
@@ -91,6 +97,10 @@ bool FDBA_GameBackendSessionConnectionAliasJsonTest::RunTest(const FString& Para
 			"serverPort": 7788,
 			"sessionId": "alias-session",
 			"sessionToken": "alias-token",
+			"playerId": "player-002",
+			"characterId": "character-002",
+			"serverInstanceId": "server-002",
+			"buildId": "development",
 			"teamId": 1,
 			"characterBuildSummary": {
 				"zodiac": "Dragon",
@@ -108,7 +118,7 @@ bool FDBA_GameBackendSessionConnectionAliasJsonTest::RunTest(const FString& Para
 
 	TestTrue(TEXT("嵌套服务器地址应被使用"), Url.StartsWith(TEXT("10.0.0.42:7788")));
 	TestTrue(TEXT("嵌套会话标识应被写入"), Url.Contains(TEXT("SessionId=alias-session")));
-	TestTrue(TEXT("嵌套会话令牌别名应被写入"), Url.Contains(TEXT("PlayerSessionToken=alias-token")));
+	TestTrue(TEXT("嵌套会话令牌别名应转换为入服票据"), Url.Contains(TEXT("JoinTicket=alias-token")));
 	TestTrue(TEXT("嵌套队伍标识别名应被写入"), Url.Contains(TEXT("DBATeamId=1")));
 	TestTrue(TEXT("嵌套生肖标识别名应被写入"), Url.Contains(TEXT("DBAZodiac=Dragon")));
 	TestTrue(TEXT("嵌套元素标识别名应被写入"), Url.Contains(TEXT("DBAElement=Wood")));
@@ -130,6 +140,10 @@ bool FDBA_GameBackendSessionEnvelopeJsonTest::RunTest(const FString& Parameters)
 			"serverPort": 7799,
 			"sessionId": "envelope-session",
 			"sessionToken": "envelope-token",
+			"playerId": "player-003",
+			"characterId": "character-003",
+			"serverInstanceId": "server-003",
+			"buildId": "development",
 			"teamId": 2,
 			"characterBuildSummary": {
 				"zodiac": "Snake",
@@ -147,7 +161,7 @@ bool FDBA_GameBackendSessionEnvelopeJsonTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("信封服务器地址应被使用"), Url.StartsWith(TEXT("172.16.0.9:7799")));
 	TestTrue(TEXT("信封会话标识应被写入"), Url.Contains(TEXT("SessionId=envelope-session")));
-	TestTrue(TEXT("信封会话令牌别名应被写入"), Url.Contains(TEXT("PlayerSessionToken=envelope-token")));
+	TestTrue(TEXT("信封会话令牌别名应转换为入服票据"), Url.Contains(TEXT("JoinTicket=envelope-token")));
 	TestTrue(TEXT("信封队伍标识应被写入"), Url.Contains(TEXT("DBATeamId=2")));
 	TestTrue(TEXT("信封生肖标识应被写入"), Url.Contains(TEXT("DBAZodiac=Snake")));
 	TestTrue(TEXT("信封元素标识应被写入"), Url.Contains(TEXT("DBAElement=Gold")));

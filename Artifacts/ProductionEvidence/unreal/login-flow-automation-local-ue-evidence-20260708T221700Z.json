@@ -1,0 +1,12 @@
+{
+  "kind": "login-flow-automation",
+  "runId": "local-ue-evidence-20260708T221700Z",
+  "generatedAtUtc": "2026-07-08T14:18:00.6370000Z",
+  "automationReady": true,
+  "requestedTestCount": 3,
+  "passedTestCount": 3,
+  "testFilter": "DivineBeastsArena.GameCore.Session.LoginFlow",
+  "backendBaseUrl": "http://localhost:8080",
+  "fixApplied": "DBALoginFlowSubsystemTests 使用唯一 DBAGuestDeviceId/DBASaveSlotSuffix 与 BuildScopedSaveSlotName 隔离",
+  "logPath": "Artifacts/ProductionEvidence/unreal/login-flow-automation-20260708-221700.log"
+}

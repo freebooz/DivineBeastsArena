@@ -1,0 +1,39 @@
+{
+  "kind": "login-flow-backend-validation",
+  "runId": "local-ue-evidence-20260708T215800Z",
+  "generatedAtUtc": "2026-07-08T13:58:00.0000000Z",
+  "backendBaseUrl": "http://localhost:8080",
+  "backendLive": true,
+  "dockerStarted": true,
+  "characterPresentationAutomation": {
+    "passedTestCount": 8,
+    "requestedTestCount": 8,
+    "logPath": "Artifacts/ProductionEvidence/unreal/character-presentation-automation-20260708-200010.log"
+  },
+  "onlineAccountAutomation": {
+    "passedTestCount": 1,
+    "requestedTestCount": 1,
+    "logPath": "Artifacts/ProductionEvidence/unreal/online-account-automation-20260708-215800.log"
+  },
+  "loginFlowAutomation": {
+    "passedTestCount": 1,
+    "requestedTestCount": 3,
+    "failedTests": [
+      "DivineBeastsArena.GameCore.Session.LoginFlow.GuestCreateToLobby",
+      "DivineBeastsArena.GameCore.Session.LoginFlow.GuestSelectToLobby"
+    ],
+    "failureReason": "访客设备复用导致后端返回已有角色(1)，流程跳过 CharacterCreate；测试存档隔离不足，非角色展示回归",
+    "logPath": "Artifacts/ProductionEvidence/unreal/login-flow-automation-20260708-215600.log"
+  },
+  "apiSmoke": {
+    "guestLoginEmptyCharacters": true,
+    "guestCreateSelectCharacter": true,
+    "routesVerified": [
+      "POST /api/auth/guest-login",
+      "GET /api/account/characters",
+      "POST /api/account/characters",
+      "POST /api/account/characters/{id}/select"
+    ]
+  },
+  "remainingManualStep": "PIE 登录→选角/创建目视确认 3D 模型与光照（需 -DBASaveSlotSuffix=唯一后缀 避免设备复用）"
+}

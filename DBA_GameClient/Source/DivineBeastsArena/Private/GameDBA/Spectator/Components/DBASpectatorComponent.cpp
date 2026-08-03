@@ -1,4 +1,4 @@
-﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// Copyright Freebooz Games, Inc. All Rights Reserved.
 /*
 中文阅读说明：
 - 所属应用：DBA_GameClient Unreal Engine 客户端。
@@ -10,9 +10,13 @@
 
 #include "GameDBA/Spectator/Components/DBASpectatorComponent.h"
 #include "GameDBA/Spectator/DBASpectatorManager.h"
+#include "GameDBA/Spectator/Input/DBASpectatorInputConfigDataAsset.h"
+#include "GameDBA/Gameplay/Input/Configuration/DBAEnhancedInputDeveloperSettings.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
-#include "Components/InputComponent.h"
+#include "GameDBA/Gameplay/Input/Components/DBAEnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
 
 UDBASpectatorComponent::UDBASpectatorComponent()
 	: Super()
@@ -27,7 +31,7 @@ void UDBASpectatorComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 鑾峰彇鎵€灞濸layerController
+	// 获取所属 PlayerController
 	OwningPlayerController = GetOwningPlayerController();
 
 		if (UWorld* World = GetWorld())
@@ -48,33 +52,85 @@ void UDBASpectatorComponent::SetupInputComponent(UInputComponent* InputComponent
 
 	CachedInputComponent = InputComponent;
 
-	// Tab閿? 寰幆鍒囨崲
-	InputComponent->BindAction("Spectator_CycleNext", IE_Pressed, this, &UDBASpectatorComponent::Input_CycleNext);
-	InputComponent->BindAction("Spectator_CyclePrevious", IE_Pressed, this, &UDBASpectatorComponent::Input_CyclePrevious);
+	// P1-4/P1-6 改造：从旧版 BindAction/BindKey 迁移到 Enhanced Input 系统，使用项目统一基类 UDBAEnhancedInputComponent
+	UDBAEnhancedInputComponent* EnhancedInputComponent = Cast<UDBAEnhancedInputComponent>(InputComponent);
+	if (!EnhancedInputComponent)
+	{
+		UE_LOG(LogDBACore, Warning, TEXT("[观战组件] 无法获取 UDBAEnhancedInputComponent，Enhanced Input 绑定失败。请确保 DefaultInput.ini 中 DefaultInputComponentClass 配置为 /Script/DivineBeastsArena.DBAEnhancedInputComponent。"));
+		return;
+	}
 
-	// Space閿? 鍒囨崲鑷敱瑙嗚
-	InputComponent->BindAction("Spectator_ToggleFreeView", IE_Pressed, this, &UDBASpectatorComponent::Input_ToggleFreeView);
+	// 从 DeveloperSettings 加载观战输入配置
+	const UDBAEnhancedInputDeveloperSettings* Settings = GetDefault<UDBAEnhancedInputDeveloperSettings>();
+	const UDBASpectatorInputConfigDataAsset* InputConfig = nullptr;
+	if (Settings)
+	{
+		InputConfig = Settings->DefaultSpectatorInputConfig.Get();
+	}
+	if (!InputConfig)
+	{
+		UE_LOG(LogDBACore, Warning, TEXT("[观战组件] 未配置观战输入配置数据资产：请在 DBA Enhanced Input 设置中配置 DefaultSpectatorInputConfig。"));
+		return;
+	}
 
-	// 鏁板瓧閿?-9: 鐩存帴璺宠浆
-	InputComponent->BindKey(EKeys::One, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch1);
-	InputComponent->BindKey(EKeys::Two, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch2);
-	InputComponent->BindKey(EKeys::Three, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch3);
-	InputComponent->BindKey(EKeys::Four, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch4);
-	InputComponent->BindKey(EKeys::Five, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch5);
-	InputComponent->BindKey(EKeys::Six, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch6);
-	InputComponent->BindKey(EKeys::Seven, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch7);
-	InputComponent->BindKey(EKeys::Eight, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch8);
-	InputComponent->BindKey(EKeys::Nine, IE_Pressed, this, &UDBASpectatorComponent::Input_NumericSwitch9);
+	// 添加 Input Mapping Context 到本地玩家子系统
+	if (APlayerController* PC = GetOwningPlayerController())
+	{
+		if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+			{
+				if (UInputMappingContext* IMC = Settings->DefaultSpectatorInputMappingContext.Get())
+				{
+					InputSubsystem->AddMappingContext(IMC, 0);
+				}
+				else
+				{
+					UE_LOG(LogDBACore, Warning, TEXT("[观战组件] 未配置观战 Input Mapping Context：请在 DBA Enhanced Input 设置中配置 DefaultSpectatorInputMappingContext。"));
+				}
+			}
+		}
+	}
 
-	// P閿? 鏆傚仠
-	InputComponent->BindAction("Spectator_TogglePause", IE_Pressed, this, &UDBASpectatorComponent::Input_TogglePause);
+	// 绑定观战 Action（Started 事件对应旧版 IE_Pressed）
+	auto BindSpectatorAction = [&](const TSoftObjectPtr<UInputAction>& ActionRef, auto Callback)
+	{
+		if (UInputAction* Action = ActionRef.Get())
+		{
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Started, this, Callback);
+		}
+	};
+
+	BindSpectatorAction(InputConfig->CycleNext, &UDBASpectatorComponent::Input_CycleNext);
+	BindSpectatorAction(InputConfig->CyclePrevious, &UDBASpectatorComponent::Input_CyclePrevious);
+	BindSpectatorAction(InputConfig->ToggleFreeView, &UDBASpectatorComponent::Input_ToggleFreeView);
+	BindSpectatorAction(InputConfig->TogglePause, &UDBASpectatorComponent::Input_TogglePause);
+
+	// 绑定数字键 1-9（NumericSwitchActions 数组索引 0~8 对应数字键 1~9）
+	auto BindNumericSwitch = [&](int32 Index, auto Callback)
+	{
+		if (InputConfig->NumericSwitchActions.IsValidIndex(Index) && InputConfig->NumericSwitchActions[Index].Get())
+		{
+			EnhancedInputComponent->BindAction(InputConfig->NumericSwitchActions[Index].Get(), ETriggerEvent::Started, this, Callback);
+		}
+	};
+
+	BindNumericSwitch(0, &UDBASpectatorComponent::Input_NumericSwitch1);
+	BindNumericSwitch(1, &UDBASpectatorComponent::Input_NumericSwitch2);
+	BindNumericSwitch(2, &UDBASpectatorComponent::Input_NumericSwitch3);
+	BindNumericSwitch(3, &UDBASpectatorComponent::Input_NumericSwitch4);
+	BindNumericSwitch(4, &UDBASpectatorComponent::Input_NumericSwitch5);
+	BindNumericSwitch(5, &UDBASpectatorComponent::Input_NumericSwitch6);
+	BindNumericSwitch(6, &UDBASpectatorComponent::Input_NumericSwitch7);
+	BindNumericSwitch(7, &UDBASpectatorComponent::Input_NumericSwitch8);
+	BindNumericSwitch(8, &UDBASpectatorComponent::Input_NumericSwitch9);
 }
 
 void UDBASpectatorComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// 鏇存柊瑙嗚鐩爣鏁版嵁
+	// 更新视图目标数据
 	if (bIsConnected && SpectatorManager.IsValid())
 	{
 		CurrentViewTarget = SpectatorManager->GetCurrentViewTarget(OwningPlayerController.Get());
@@ -88,13 +144,13 @@ void UDBASpectatorComponent::JoinSpectatorMode(FString MatchID)
 		return;
 	}
 
-	// 杩炴帴瑙傛垬
+	// 连接视图
 	bool bSuccess = SpectatorManager->ConnectToMatch(OwningPlayerController.Get(), MatchID, EDBAObserverControlLevel::ViewOnly);
 	if (bSuccess)
 	{
 		bIsConnected = true;
 
-		// 璁剧疆杈撳叆澶勭悊
+		// 设置输入处理
 		if (APlayerController* PC = OwningPlayerController.Get())
 		{
 			if (UInputComponent* IC = PC->InputComponent)
@@ -190,17 +246,17 @@ UDBASpectatorManager* UDBASpectatorComponent::GetSpectatorManager() const
 	return SpectatorManager.Get();
 }
 
-void UDBASpectatorComponent::Input_CycleNext()
+void UDBASpectatorComponent::Input_CycleNext(const FInputActionValue& Value)
 {
 	CycleNextTarget();
 }
 
-void UDBASpectatorComponent::Input_CyclePrevious()
+void UDBASpectatorComponent::Input_CyclePrevious(const FInputActionValue& Value)
 {
 	CyclePreviousTarget();
 }
 
-void UDBASpectatorComponent::Input_ToggleFreeView()
+void UDBASpectatorComponent::Input_ToggleFreeView(const FInputActionValue& Value)
 {
 	if (CurrentViewMode == EDBAObserverViewMode::Follow)
 	{
@@ -212,22 +268,22 @@ void UDBASpectatorComponent::Input_ToggleFreeView()
 	}
 }
 
-void UDBASpectatorComponent::Input_NumericSwitch1() { Input_NumericSwitch(0); }
-void UDBASpectatorComponent::Input_NumericSwitch2() { Input_NumericSwitch(1); }
-void UDBASpectatorComponent::Input_NumericSwitch3() { Input_NumericSwitch(2); }
-void UDBASpectatorComponent::Input_NumericSwitch4() { Input_NumericSwitch(3); }
-void UDBASpectatorComponent::Input_NumericSwitch5() { Input_NumericSwitch(4); }
-void UDBASpectatorComponent::Input_NumericSwitch6() { Input_NumericSwitch(5); }
-void UDBASpectatorComponent::Input_NumericSwitch7() { Input_NumericSwitch(6); }
-void UDBASpectatorComponent::Input_NumericSwitch8() { Input_NumericSwitch(7); }
-void UDBASpectatorComponent::Input_NumericSwitch9() { Input_NumericSwitch(8); }
+void UDBASpectatorComponent::Input_NumericSwitch1(const FInputActionValue& Value) { Input_NumericSwitch(0); }
+void UDBASpectatorComponent::Input_NumericSwitch2(const FInputActionValue& Value) { Input_NumericSwitch(1); }
+void UDBASpectatorComponent::Input_NumericSwitch3(const FInputActionValue& Value) { Input_NumericSwitch(2); }
+void UDBASpectatorComponent::Input_NumericSwitch4(const FInputActionValue& Value) { Input_NumericSwitch(3); }
+void UDBASpectatorComponent::Input_NumericSwitch5(const FInputActionValue& Value) { Input_NumericSwitch(4); }
+void UDBASpectatorComponent::Input_NumericSwitch6(const FInputActionValue& Value) { Input_NumericSwitch(5); }
+void UDBASpectatorComponent::Input_NumericSwitch7(const FInputActionValue& Value) { Input_NumericSwitch(6); }
+void UDBASpectatorComponent::Input_NumericSwitch8(const FInputActionValue& Value) { Input_NumericSwitch(7); }
+void UDBASpectatorComponent::Input_NumericSwitch9(const FInputActionValue& Value) { Input_NumericSwitch(8); }
 
 void UDBASpectatorComponent::Input_NumericSwitch(int32 Index)
 {
 	JumpToTarget(Index);
 }
 
-void UDBASpectatorComponent::Input_TogglePause()
+void UDBASpectatorComponent::Input_TogglePause(const FInputActionValue& Value)
 {
 	if (!SpectatorManager.IsValid() || !OwningPlayerController.IsValid())
 	{

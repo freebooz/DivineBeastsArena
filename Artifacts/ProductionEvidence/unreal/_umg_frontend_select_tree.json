@@ -1,0 +1,4 @@
+{
+  "status": "success",
+  "widget_tree": "WBP_DBA_CharacterSelect [WidgetBlueprint]\n  RootCanvas_Auto [CanvasPanel]\n    - CharacterPreviewHost [CanvasPanel]\n    - CharacterListText [TextBlock]\n    - RefreshButton [Button]\n      - RefreshButtonLabel [TextBlock]\n    - ConfirmButton [Button]\n      - ConfirmButtonLabel [TextBlock]\n    - CreateButton [Button]\n      - CreateButtonLabel [TextBlock]\n    - StatusText [TextBlock]\n"
+}

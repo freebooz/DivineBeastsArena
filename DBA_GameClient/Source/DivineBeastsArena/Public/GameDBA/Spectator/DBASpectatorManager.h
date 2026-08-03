@@ -1,4 +1,4 @@
-﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// Copyright Freebooz Games, Inc. All Rights Reserved.
 /*
 中文阅读说明：
 - 所属应用：DBA_GameClient Unreal Engine 客户端。
@@ -11,8 +11,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Subsystems/GameInstanceSubsystem.h"
-#include "GameDBA/Character/DBAZodiacCharacterBase.h"
+#include "GameCore/Core/Subsystems/DBAGameInstanceSubsystemBase.h"
+#include "GameDBA/Characters/DBAZodiacCharacterBase.h"
 #include "GameDBA/Spectator/DBAObserverTypes.h"
 #include "DBASpectatorManager.generated.h"
 
@@ -32,8 +32,9 @@ struct FDBAObserverPlayerEntry
 	{}
 
 	FDBAObserverPlayerEntry(ADBAZodiacCharacterBase* InCharacter)
-		: Character(InCharacter)
-	{}
+	{
+		Character = InCharacter;
+	}
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<ADBAZodiacCharacterBase> Character;
@@ -69,15 +70,17 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMatchPaused, bool, bIsPaused);
  * 负责管理观战者连接、视角切换、观战数据同步
  */
 UCLASS(Abstract, Blueprintable)
-class DIVINEBEASTSARENA_API UDBASpectatorManager : public UGameInstanceSubsystem
+class DIVINEBEASTSARENA_API UDBASpectatorManager : public UDBAGameInstanceSubsystemBase
 {
 	GENERATED_BODY()
 
 public:
 	UDBASpectatorManager();
 
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-	virtual void Deinitialize() override;
+protected:
+	// P1-1 改造：重写项目基类生命周期钩子，替代原生 Initialize/Deinitialize
+	virtual void OnSubsystemInitialize() override;
+	virtual void OnSubsystemDeinitialize() override;
 
 public:
 	/** 连接观战者 */

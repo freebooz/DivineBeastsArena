@@ -25,6 +25,13 @@ namespace
 		Callback.ExecuteIfBound(bSuccess, ErrorMessage, Result.DataJson);
 	}
 
+	void ExecuteNativeResponse(const FDBA_GameBackendNativeResponseCallback& Callback, const FDBA_GameBackendHttpResult& Result)
+	{
+		const bool bSuccess = Result.IsSuccessful();
+		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("请求失败。") : Result.Message);
+		Callback(bSuccess, ErrorMessage, Result.RawBody);
+	}
+
 	TSharedPtr<FJsonObject> ResolvePayloadObject(const TSharedPtr<FJsonObject>& Root)
 	{
 		if (!Root.IsValid())
@@ -179,6 +186,56 @@ void UDBA_GameBackendPlayerService::GetMyMatches(const FDBA_GameBackendResponseD
 		return;
 	}
 	HttpClient->Get(TEXT("/api/players/me/matches"), [Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });
+}
+
+void UDBA_GameBackendPlayerService::GetCharactersAsync(FDBA_GameBackendNativeResponseCallback Callback)
+{
+	if (!HttpClient)
+	{
+		Callback(false, TEXT("HTTP 客户端不可用。"), TEXT("{}"));
+		return;
+	}
+
+	HttpClient->Get(TEXT("/api/players/me/characters"), [Callback = MoveTemp(Callback)](const FDBA_GameBackendHttpResult& Result)
+	{
+		ExecuteNativeResponse(Callback, Result);
+	});
+}
+
+void UDBA_GameBackendPlayerService::CreateCharacterAsync(
+	const FString& CharacterJson,
+	FDBA_GameBackendNativeResponseCallback Callback)
+{
+	if (!HttpClient)
+	{
+		Callback(false, TEXT("HTTP 客户端不可用。"), TEXT("{}"));
+		return;
+	}
+
+	HttpClient->Post(
+		TEXT("/api/players/me/characters"),
+		CharacterJson.IsEmpty() ? TEXT("{}") : CharacterJson,
+		[Callback = MoveTemp(Callback)](const FDBA_GameBackendHttpResult& Result)
+		{
+			ExecuteNativeResponse(Callback, Result);
+		});
+}
+
+void UDBA_GameBackendPlayerService::SelectCharacterAsync(
+	const FString& CharacterId,
+	FDBA_GameBackendNativeResponseCallback Callback)
+{
+	if (!HttpClient)
+	{
+		Callback(false, TEXT("HTTP 客户端不可用。"), TEXT("{}"));
+		return;
+	}
+
+	const FString Path = FString::Printf(TEXT("/api/players/me/characters/%s/select"), *CharacterId);
+	HttpClient->Post(Path, TEXT("{}"), [Callback = MoveTemp(Callback)](const FDBA_GameBackendHttpResult& Result)
+	{
+		ExecuteNativeResponse(Callback, Result);
+	});
 }
 
 bool UDBA_GameBackendPlayerService::TryParseMatchHistoryData(const FString& DataJson, FDBA_GameBackendMatchHistoryPage& OutPage, FString& OutError)

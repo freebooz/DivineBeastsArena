@@ -1,4 +1,4 @@
-﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// Copyright Freebooz Games, Inc. All Rights Reserved.
 /*
 中文阅读说明：
 - 所属应用：DBA_GameClient Unreal Engine 客户端。
@@ -11,7 +11,7 @@
 #include "GameDBA/Spectator/UI/DBASpectatorMinimapWidgetBase.h"
 
 #include "Components/Image.h"
-#include "GameDBA/Character/DBAZodiacCharacterBase.h"
+#include "GameDBA/Characters/DBAZodiacCharacterBase.h"
 
 UDBASpectatorMinimapWidgetBase::UDBASpectatorMinimapWidgetBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

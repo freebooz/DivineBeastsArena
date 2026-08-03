@@ -1,0 +1,42 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "ue-online-validation",
+    "runId":  "local-ue-evidence-20260708T222400Z",
+    "status":  "failed",
+    "errorMessage":  "远程服务器返回错误: (401) 未经授权。",
+    "generatedAtUtc":  "2026-07-08T14:24:42.7208987Z",
+    "baseUrl":  "http://localhost:8080",
+    "usePackagedServer":  false,
+    "skipClientLaunch":  true,
+    "keepProcessesAlive":  false,
+    "serverExecutable":  "UnrealEditor.exe -server",
+    "roomId":  "",
+    "sessionId":  "",
+    "serverId":  "",
+    "allocatedPort":  0,
+    "clientConnectPort":  0,
+    "processIds":  {
+                       "server":  null,
+                       "clientA":  null,
+                       "clientB":  null
+                   },
+    "logPaths":  {
+                     "server":  "",
+                     "clientA":  "",
+                     "clientB":  ""
+                 },
+    "safeLogEvidence":  {
+                            "runtimePlayerJoined":  {
+
+                                                    },
+                            "runtimePlayerJoinedOk":  {
+
+                                                      },
+                            "clientATravelCompleted":  {
+
+                                                       },
+                            "clientBTravelCompleted":  {
+
+                                                       }
+                        }
+}

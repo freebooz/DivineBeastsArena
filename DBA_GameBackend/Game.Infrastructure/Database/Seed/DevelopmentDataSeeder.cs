@@ -409,6 +409,15 @@ public class DevelopmentDataSeeder
         .Select((i, idx) => Guid.Parse($"88888888-0000-0000-0000-{i + 100:000000000000}"))
         .ToArray();
 
+    /// <summary>多客户端联调账号 player_01 ~ player_04，固定 GUID 保证幂等种子。</summary>
+    private static readonly Guid[] MultiClientAccountIds =
+    {
+        Guid.Parse("aa010000-0000-0000-0000-000000000001"),
+        Guid.Parse("aa010000-0000-0000-0000-000000000002"),
+        Guid.Parse("aa010000-0000-0000-0000-000000000003"),
+        Guid.Parse("aa010000-0000-0000-0000-000000000004")
+    };
+
     private List<Account> GetAccountSeeds()
     {
         var adminHash = BCrypt.Net.BCrypt.HashPassword("Admin@123456");
@@ -418,6 +427,7 @@ public class DevelopmentDataSeeder
         var steamHash = BCrypt.Net.BCrypt.HashPassword("Steam@123456");
         var eosHash = BCrypt.Net.BCrypt.HashPassword("Eos@123456");
         var testHash = BCrypt.Net.BCrypt.HashPassword("Test@123456");
+        var multiClientHash = BCrypt.Net.BCrypt.HashPassword("pw123456");
 
         var accounts = new List<Account>
         {
@@ -519,6 +529,20 @@ public class DevelopmentDataSeeder
             });
         }
 
+        for (int i = 0; i < MultiClientAccountIds.Length; i++)
+        {
+            var playerNum = (i + 1).ToString("00");
+            accounts.Add(new Account
+            {
+                Id = MultiClientAccountIds[i],
+                AccountType = "PLAYER",
+                Email = $"player_{playerNum}@mygameplatform.com",
+                PasswordHash = multiClientHash,
+                Status = "ACTIVE",
+                CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+            });
+        }
+
         return accounts;
     }
 
@@ -591,6 +615,14 @@ public class DevelopmentDataSeeder
     private static readonly Guid[] TestPlayerPlayerIds = Enumerable.Range(1, 5)
         .Select((i, idx) => Guid.Parse($"cccc0000-0000-0000-0000-{i + 100:000000000000}"))
         .ToArray();
+
+    private static readonly Guid[] MultiClientPlayerIds =
+    {
+        Guid.Parse("aa020000-0000-0000-0000-000000000001"),
+        Guid.Parse("aa020000-0000-0000-0000-000000000002"),
+        Guid.Parse("aa020000-0000-0000-0000-000000000003"),
+        Guid.Parse("aa020000-0000-0000-0000-000000000004")
+    };
 
     private List<PlayerIdentity> GetPlayerIdentitySeeds()
     {
@@ -681,6 +713,19 @@ public class DevelopmentDataSeeder
                 AccountId = DevAccountIds[i],
                 PlayerId = DevPlayerIds[i],
                 DisplayName = $"dba_dev_{playerNum}",
+                CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+            });
+        }
+
+        for (int i = 0; i < MultiClientAccountIds.Length; i++)
+        {
+            var playerNum = (i + 1).ToString("00");
+            identities.Add(new PlayerIdentity
+            {
+                Id = Guid.Parse($"aa030000-0000-0000-0000-00000000000{i + 1}"),
+                AccountId = MultiClientAccountIds[i],
+                PlayerId = MultiClientPlayerIds[i],
+                DisplayName = $"player_{playerNum}",
                 CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
             });
         }
@@ -779,6 +824,19 @@ public class DevelopmentDataSeeder
             {
                 PlayerId = DevPlayerIds[i],
                 Nickname = $"dba_dev_{playerNum}",
+                Level = 1,
+                Exp = 0,
+                CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+            });
+        }
+
+        for (int i = 0; i < MultiClientPlayerIds.Length; i++)
+        {
+            var playerNum = (i + 1).ToString("00");
+            profiles.Add(new PlayerProfile
+            {
+                PlayerId = MultiClientPlayerIds[i],
+                Nickname = $"player_{playerNum}",
                 Level = 1,
                 Exp = 0,
                 CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)

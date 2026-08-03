@@ -1,0 +1,43 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "runId":  "login-flow-real-backend-20260710T220418Z",
+    "status":  "passed",
+    "exitCode":  0,
+    "generatedAtUtc":  "2026-07-10T14:04:58.7502629Z",
+    "baseUrl":  "http://127.0.0.1:8080",
+    "guestLogin":  true,
+    "timeoutSec":  15,
+    "logFile":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\ops\\production-smoke-backend-login-flow-real-backend-20260710T220418Z.log",
+    "checks":  [
+                   {
+                       "name":  "live health",
+                       "status":  "passed",
+                       "durationMs":  38
+                   },
+                   {
+                       "name":  "ready health",
+                       "status":  "passed",
+                       "durationMs":  8
+                   },
+                   {
+                       "name":  "version api",
+                       "status":  "passed",
+                       "durationMs":  32
+                   },
+                   {
+                       "name":  "launcher manifest",
+                       "status":  "passed",
+                       "durationMs":  27
+                   },
+                   {
+                       "name":  "metrics endpoint",
+                       "status":  "passed",
+                       "durationMs":  42
+                   },
+                   {
+                       "name":  "guest login",
+                       "status":  "passed",
+                       "durationMs":  113
+                   }
+               ]
+}

@@ -1,5 +1,5 @@
 [package]
-name = "game-launcher"
+name = "dba-game-launcher"
 version = "0.1.0"
 description = "Divine Beasts Arena game launcher and updater"
 authors = ["Divine Beasts Arena"]

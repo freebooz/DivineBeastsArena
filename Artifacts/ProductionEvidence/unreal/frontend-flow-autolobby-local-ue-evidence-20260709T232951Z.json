@@ -1,0 +1,41 @@
+﻿{
+    "kind":  "frontend-flow-autolobby-no-skip",
+    "runId":  "20260709T232951Z",
+    "status":  "reached_main_lobby",
+    "observeSeconds":  120,
+    "processId":  0,
+    "skipFrontendFlow":  false,
+    "autoLobbyFlow":  true,
+    "autoCharacterName":  "AL232951",
+    "backendUrl":  "http://127.0.0.1:8080",
+    "logPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\unreal\\frontend-flow-autolobby-20260709T232951Z.log",
+    "reachedCharacterCreateOrSelect":  true,
+    "reachedMainLobby":  true,
+    "flowSummary":  [
+                        "0 -\u003e 2 LoginScreen",
+                        "2 -\u003e 1 TryAutoLogin (guest)",
+                        "1 -\u003e 3 LoadCharacterList",
+                        "3 -\u003e 5 CharacterCreate (0 characters)",
+                        "5 -\u003e 6 MainLobby after create+select"
+                    ],
+    "flowStateSamples":  [
+                             "[2026.07.09-15.30.12:821][987]LogDBACore: [DBALoginFlowSubsystem] 流程状态切换：0 -\u003e 2",
+                             "[2026.07.09-15.30.12:832][987]LogDBACore: [DBAGameInstance] 自动大厅流程已启用。",
+                             "[2026.07.09-15.30.12:832][987]LogDBACore: [DBAGameInstance] 自动大厅流程：提交访客登录。",
+                             "[2026.07.09-15.30.12:832][987]LogDBACore: [DBALoginFlowSubsystem] 流程状态切换：2 -\u003e 1",
+                             "[2026.07.09-15.30.12:852][989]LogDBACore: [DBALoginFlowSubsystem] 流程状态切换：1 -\u003e 3",
+                             "[2026.07.09-15.30.12:858][992]LogDBACore: [DBALoginFlowSubsystem] 角色列表加载完成：0",
+                             "[2026.07.09-15.30.12:858][992]LogDBACore: [DBALoginFlowSubsystem] 流程状态切换：3 -\u003e 5",
+                             "[2026.07.09-15.30.12:885][992]LogDBAUI: [CharacterCreateWidget] 使用世界 3D 角色展示舞台：生肖=1",
+                             "[2026.07.09-15.30.12:885][992]LogDBAUI: [CharacterCreateWidget] 视口铺满：控件几何=0x0",
+                             "[2026.07.09-15.30.12:886][992]LogDBAUI: [CharacterCreateWidget] 视口铺满：控件几何=0x0",
+                             "[2026.07.09-15.30.12:886][992]LogDBACore: [DBAGameInstance] 自动大厅流程：创建角色=AL232951 生肖=1。",
+                             "[2026.07.09-15.30.12:905][996]LogDBACore: [DBALoginFlowSubsystem] 流程状态切换：5 -\u003e 6",
+                             "[2026.07.09-15.30.12:907][996]LogDBACore: [DBAGameInstance] 自动大厅流程：已到达主大厅。"
+                         ],
+    "httpSamples":  [
+
+                    ],
+    "note":  "无 -DBASkipFrontendFlow；使用 -DBAAutoLobbyFlow 驱动游客登录→角色创建→主大厅。角色名需通过 ValidateCharacterName（过长名会导致创建失败/无后续状态）。",
+    "timestampUtc":  "2026-07-09T15:30:41.3469733Z"
+}

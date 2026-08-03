@@ -30,6 +30,11 @@ public static partial class GameFeatureEndpoints
             .WithSummary("断线重连")
             .WithDescription("使用重连令牌重新连接游戏会话")
             .RequireAuthorization();
+        // 客户端兼容路径：POST /api/sessions/{sessionId}/reconnect-token
+        reconnect.MapPost("/{sessionId}/reconnect-token", Reconnect)
+            .WithSummary("断线重连（兼容路径）")
+            .WithDescription("使用重连令牌重新连接游戏会话，等同 /api/sessions/{sessionId}/reconnect")
+            .RequireAuthorization();
     }
 
     // ==================== 断线重连 ====================

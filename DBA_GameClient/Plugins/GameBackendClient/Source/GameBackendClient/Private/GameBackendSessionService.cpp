@@ -11,13 +11,12 @@
 #include "GameBackendSessionService.h"
 
 #include "Dom/JsonObject.h"
-#include "Engine/World.h"
 #include "GameBackendClientSubsystem.h"
 #include "GameBackendHttpClient.h"
-#include "GameFramework/PlayerController.h"
 #include "GenericPlatform/GenericPlatformHttp.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
 
 namespace
 {
@@ -68,18 +67,36 @@ void UDBA_GameBackendSessionService::GetConnection(const FString& SessionId, con
 	HttpClient->Get(FString::Printf(TEXT("/api/sessions/%s/connection"), *SessionId), [Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });
 }
 
+void UDBA_GameBackendSessionService::AllocateVillage(const FString& CharacterId, const FDBA_GameBackendResponseDelegate& Callback)
+{
+	if (!HttpClient)
+	{
+		Callback.ExecuteIfBound(false, TEXT("新手村分配服务不可用。"), TEXT("{}"));
+		return;
+	}
+	if (CharacterId.TrimStartAndEnd().IsEmpty())
+	{
+		Callback.ExecuteIfBound(false, TEXT("角色标识为空，无法分配新手村。"), TEXT("{}"));
+		return;
+	}
+
+	TSharedRef<FJsonObject> Json = MakeShared<FJsonObject>();
+	Json->SetStringField(TEXT("characterId"), CharacterId);
+	FString BodyJson;
+	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&BodyJson);
+	FJsonSerializer::Serialize(Json, Writer);
+	HttpClient->Post(TEXT("/api/sessions/village-allocation"), BodyJson,
+		[Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });
+}
+
 void UDBA_GameBackendSessionService::RequestReconnectToken(const FString& SessionId, const FDBA_GameBackendResponseDelegate& Callback)
 {
-	if (!HttpClient)
-	{
-		Callback.ExecuteIfBound(false, TEXT("会话服务不可用。"), TEXT("{}"));
-		return;
-	}
-
-	HttpClient->Post(FString::Printf(TEXT("/api/sessions/%s/reconnect-token"), *SessionId), TEXT("{}"), [Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });
+	// 兼容旧调用：未提供 ReconnectToken 时无法完成重连，直接失败。
+	UE_LOG(LogDBA_GameBackendClient, Warning, TEXT("[会话] RequestReconnectToken 已废弃，请改用 Reconnect(SessionId, ReconnectToken, Callback)。"));
+	Callback.ExecuteIfBound(false, TEXT("请使用 Reconnect 方法并传入持久化的重连令牌。"), TEXT("{}"));
 }
 
-void UDBA_GameBackendSessionService::ConnectToDedicatedServer(const FString& SessionId, const FDBA_GameBackendResponseDelegate& Callback)
+void UDBA_GameBackendSessionService::Reconnect(const FString& SessionId, const FString& ReconnectToken, const FDBA_GameBackendResponseDelegate& Callback)
 {
 	if (!HttpClient)
 	{
@@ -87,59 +104,21 @@ void UDBA_GameBackendSessionService::ConnectToDedicatedServer(const FString& Ses
 		return;
 	}
 
-	HttpClient->Get(FString::Printf(TEXT("/api/sessions/%s/connection"), *SessionId), [this, SessionId, Callback](const FDBA_GameBackendHttpResult& Result)
+	if (ReconnectToken.IsEmpty())
 	{
-		const bool bSuccess = Result.IsSuccessful();
-		if (!bSuccess)
-		{
-			Callback.ExecuteIfBound(false, Result.Message.IsEmpty() ? TEXT("获取会话连接失败。") : Result.Message, TEXT("{}"));
-			return;
-		}
+		Callback.ExecuteIfBound(false, TEXT("重连令牌为空，无法执行断线重连。"), TEXT("{}"));
+		return;
+	}
 
-		ConnectToDedicatedServer(SessionId, Result.DataJson, Callback);
-	});
+	// 构造请求体：{"reconnectToken":"<token>"}
+	const FString BodyJson = FString::Printf(TEXT("{\"reconnectToken\":\"%s\"}"), *ReconnectToken);
+	HttpClient->Post(
+		FString::Printf(TEXT("/api/sessions/%s/reconnect"), *SessionId),
+		BodyJson,
+		[Callback](const FDBA_GameBackendHttpResult& Result) { ExecuteResponse(Callback, Result); });
 }
 
-void UDBA_GameBackendSessionService::ConnectToDedicatedServer(const FString& SessionId, const FString& ConnectionDataJson, const FDBA_GameBackendResponseDelegate& Callback)
-{
-	FString TravelUrl;
-	if (!TryBuildTravelUrlFromConnectionData(ConnectionDataJson, SessionId, TravelUrl))
-	{
-		Callback.ExecuteIfBound(false, TEXT("连接数据无效。"), TEXT("{}"));
-		return;
-	}
-
-	if (Subsystem.IsValid())
-	{
-		FDBA_GameBackendSessionConnection Connection;
-		ParseConnectionData(ConnectionDataJson, Connection);
-		AppendTravelOption(TravelUrl, TEXT("PlayerId"), Connection.PlayerId.IsEmpty() ? Subsystem->GetPlayerId() : Connection.PlayerId);
-	}
-	if (TravelUrl.IsEmpty())
-	{
-		Callback.ExecuteIfBound(false, TEXT("构建跳转 URL 失败。"), TEXT("{}"));
-		return;
-	}
-
-	if (!Subsystem.IsValid() || !Subsystem->GetGameInstance())
-	{
-		Callback.ExecuteIfBound(false, TEXT("GameInstance 不可用。"), TEXT("{}"));
-		return;
-	}
-
-	UWorld* World = Subsystem->GetGameInstance()->GetWorld();
-	APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr;
-	if (!PC)
-	{
-		Callback.ExecuteIfBound(false, TEXT("PlayerController 不可用。"), TEXT("{}"));
-		return;
-	}
-
-	PC->ClientTravel(TravelUrl, TRAVEL_Absolute);
-	Callback.ExecuteIfBound(true, FString(), TravelUrl);
-}
-
-FString UDBA_GameBackendSessionService::BuildTravelUrl(const FString& Ip, int32 Port, const FString& SessionId, const FString& PlayerSessionToken)
+FString UDBA_GameBackendSessionService::BuildTravelUrl(const FString& Ip, int32 Port, const FString& SessionId, const FString& JoinTicket)
 {
 	const FString TrimmedIp = Ip.TrimStartAndEnd();
 	if (TrimmedIp.IsEmpty() || Port <= 0)
@@ -149,7 +128,7 @@ FString UDBA_GameBackendSessionService::BuildTravelUrl(const FString& Ip, int32 
 
 	FString Url = FString::Printf(TEXT("%s:%d"), *TrimmedIp, Port);
 	AppendTravelOption(Url, TEXT("SessionId"), SessionId);
-	AppendTravelOption(Url, TEXT("PlayerSessionToken"), PlayerSessionToken);
+	AppendTravelOption(Url, TEXT("JoinTicket"), JoinTicket);
 	return Url;
 }
 
@@ -157,14 +136,14 @@ FString UDBA_GameBackendSessionService::BuildTravelUrl(
 	const FString& Ip,
 	int32 Port,
 	const FString& SessionId,
-	const FString& PlayerSessionToken,
+	const FString& JoinTicket,
 	int32 TeamId,
 	const FString& Zodiac,
 	const FString& PrimaryElement,
 	const FString& FiveCamp,
 	const FString& FixedSkillGroupId)
 {
-	FString Url = BuildTravelUrl(Ip, Port, SessionId, PlayerSessionToken);
+	FString Url = BuildTravelUrl(Ip, Port, SessionId, JoinTicket);
 	if (TeamId > 0)
 	{
 		AppendTravelOption(Url, TEXT("DBATeamId"), FString::FromInt(TeamId));
@@ -173,6 +152,34 @@ FString UDBA_GameBackendSessionService::BuildTravelUrl(
 	AppendTravelOption(Url, TEXT("DBAElement"), PrimaryElement);
 	AppendTravelOption(Url, TEXT("DBAFiveCamp"), FiveCamp);
 	AppendTravelOption(Url, TEXT("DBAFixedSkillGroupId"), FixedSkillGroupId);
+	return Url;
+}
+
+FString UDBA_GameBackendSessionService::BuildTravelUrl(
+	const FString& Ip,
+	int32 Port,
+	const FString& SessionId,
+	const FString& JoinTicket,
+	const FString& PlayerId,
+	const FString& CharacterId,
+	int32 TeamId,
+	const FString& Zodiac,
+	const FString& PrimaryElement,
+	const FString& FiveCamp,
+	const FString& FixedSkillGroupId)
+{
+	FString Url = BuildTravelUrl(
+		Ip,
+		Port,
+		SessionId,
+		JoinTicket,
+		TeamId,
+		Zodiac,
+		PrimaryElement,
+		FiveCamp,
+		FixedSkillGroupId);
+	AppendTravelOption(Url, TEXT("PlayerId"), PlayerId);
+	AppendTravelOption(Url, TEXT("CharacterId"), CharacterId);
 	return Url;
 }
 
@@ -192,7 +199,9 @@ bool UDBA_GameBackendSessionService::TryBuildTravelUrlFromConnectionData(
 		Connection.Ip,
 		Connection.Port,
 		OverrideSessionId.IsEmpty() ? Connection.SessionId : OverrideSessionId,
-		Connection.PlayerSessionToken,
+		Connection.JoinTicket,
+		Connection.PlayerId,
+		Connection.CharacterId,
 		Connection.TeamId,
 		Connection.Zodiac,
 		Connection.PrimaryElement,
@@ -220,9 +229,15 @@ bool UDBA_GameBackendSessionService::ParseConnectionData(const FString& DataJson
 	Payload->TryGetStringField(TEXT("ip"), OutConnection.Ip);
 	Payload->TryGetNumberField(TEXT("port"), OutConnection.Port);
 	Payload->TryGetStringField(TEXT("sessionId"), OutConnection.SessionId);
+	Payload->TryGetStringField(TEXT("joinTicket"), OutConnection.JoinTicket);
 	Payload->TryGetStringField(TEXT("playerSessionToken"), OutConnection.PlayerSessionToken);
 	Payload->TryGetStringField(TEXT("playerId"), OutConnection.PlayerId);
+	Payload->TryGetStringField(TEXT("characterId"), OutConnection.CharacterId);
+	Payload->TryGetStringField(TEXT("serverInstanceId"), OutConnection.ServerInstanceId);
+	Payload->TryGetStringField(TEXT("buildId"), OutConnection.BuildId);
 	Payload->TryGetNumberField(TEXT("teamId"), OutConnection.TeamId);
+	Payload->TryGetStringField(TEXT("reconnectToken"), OutConnection.ReconnectToken);
+	Payload->TryGetStringField(TEXT("reconnectTokenExpiresAt"), OutConnection.ReconnectTokenExpiresAt);
 
 	const TSharedPtr<FJsonObject>* BuildSummaryObj = nullptr;
 	if (Payload->TryGetObjectField(TEXT("characterBuildSummary"), BuildSummaryObj) && BuildSummaryObj && BuildSummaryObj->IsValid())
@@ -241,9 +256,13 @@ bool UDBA_GameBackendSessionService::ParseConnectionData(const FString& DataJson
 	{
 		Payload->TryGetNumberField(TEXT("serverPort"), OutConnection.Port);
 	}
-	if (OutConnection.PlayerSessionToken.IsEmpty())
+	if (OutConnection.JoinTicket.IsEmpty())
 	{
-		Payload->TryGetStringField(TEXT("sessionToken"), OutConnection.PlayerSessionToken);
+		OutConnection.JoinTicket = OutConnection.PlayerSessionToken;
+	}
+	if (OutConnection.JoinTicket.IsEmpty())
+	{
+		Payload->TryGetStringField(TEXT("sessionToken"), OutConnection.JoinTicket);
 	}
 
 	if (OutConnection.Ip.IsEmpty() && Payload->HasTypedField<EJson::Object>(TEXT("connection")))
@@ -254,9 +273,15 @@ bool UDBA_GameBackendSessionService::ParseConnectionData(const FString& DataJson
 			ConnectionObj->TryGetStringField(TEXT("ip"), OutConnection.Ip);
 			ConnectionObj->TryGetNumberField(TEXT("port"), OutConnection.Port);
 			ConnectionObj->TryGetStringField(TEXT("sessionId"), OutConnection.SessionId);
+			ConnectionObj->TryGetStringField(TEXT("joinTicket"), OutConnection.JoinTicket);
 			ConnectionObj->TryGetStringField(TEXT("playerSessionToken"), OutConnection.PlayerSessionToken);
 			ConnectionObj->TryGetStringField(TEXT("playerId"), OutConnection.PlayerId);
+			ConnectionObj->TryGetStringField(TEXT("characterId"), OutConnection.CharacterId);
+			ConnectionObj->TryGetStringField(TEXT("serverInstanceId"), OutConnection.ServerInstanceId);
+			ConnectionObj->TryGetStringField(TEXT("buildId"), OutConnection.BuildId);
 			ConnectionObj->TryGetNumberField(TEXT("teamId"), OutConnection.TeamId);
+			ConnectionObj->TryGetStringField(TEXT("reconnectToken"), OutConnection.ReconnectToken);
+			ConnectionObj->TryGetStringField(TEXT("reconnectTokenExpiresAt"), OutConnection.ReconnectTokenExpiresAt);
 			if (OutConnection.Ip.IsEmpty())
 			{
 				ConnectionObj->TryGetStringField(TEXT("serverIp"), OutConnection.Ip);
@@ -265,9 +290,13 @@ bool UDBA_GameBackendSessionService::ParseConnectionData(const FString& DataJson
 			{
 				ConnectionObj->TryGetNumberField(TEXT("serverPort"), OutConnection.Port);
 			}
-			if (OutConnection.PlayerSessionToken.IsEmpty())
+			if (OutConnection.JoinTicket.IsEmpty())
 			{
-				ConnectionObj->TryGetStringField(TEXT("sessionToken"), OutConnection.PlayerSessionToken);
+				OutConnection.JoinTicket = OutConnection.PlayerSessionToken;
+			}
+			if (OutConnection.JoinTicket.IsEmpty())
+			{
+				ConnectionObj->TryGetStringField(TEXT("sessionToken"), OutConnection.JoinTicket);
 			}
 
 			const TSharedPtr<FJsonObject>* NestedBuildSummaryObj = nullptr;
@@ -281,5 +310,12 @@ bool UDBA_GameBackendSessionService::ParseConnectionData(const FString& DataJson
 		}
 	}
 
-	return !OutConnection.Ip.IsEmpty() && OutConnection.Port > 0;
+	return !OutConnection.Ip.IsEmpty()
+		&& OutConnection.Port > 0
+		&& !OutConnection.SessionId.IsEmpty()
+		&& !OutConnection.JoinTicket.IsEmpty()
+		&& !OutConnection.PlayerId.IsEmpty()
+		&& !OutConnection.CharacterId.IsEmpty()
+		&& !OutConnection.ServerInstanceId.IsEmpty()
+		&& !OutConnection.BuildId.IsEmpty();
 }

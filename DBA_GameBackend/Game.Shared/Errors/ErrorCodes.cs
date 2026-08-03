@@ -50,6 +50,7 @@ public static class ErrorCodes
     public const string SessionNotFound = "SESSION_NOT_FOUND";
     public const string SessionInvalidState = "SESSION_INVALID_STATE";
     public const string SessionPlayerNotInSession = "SESSION_PLAYER_NOT_IN_SESSION";
+    public const string SessionServerNotReady = "SESSION_SERVER_NOT_READY";
     public const string SessionTokenInvalid = "SESSION_TOKEN_INVALID";
     public const string SessionReconnectTokenExpired = "SESSION_RECONNECT_TOKEN_EXPIRED";
 

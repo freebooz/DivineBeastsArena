@@ -1,0 +1,72 @@
+// Copyright Freebooz Games, Inc. All Rights Reserved.
+/*
+中文阅读说明：
+- 所属应用：DBA_GameClient Unreal Engine 客户端。
+- 文件职责：Unreal C++ 私有实现文件，承载运行时逻辑、网络同步、GAS、UI 或表现层实现。
+- 阅读重点：先看公开类型、路由/组件入口和构造函数，再看私有辅助方法，理解数据如何从输入流向状态变更或界面输出。
+- 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
+*/
+
+
+#include "GameDBA/Gameplay/Abilities/DBAZodiacUltimateAbility_Generic.h"
+#include "GameplayTagContainer.h"
+#include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/Gameplay/GAS/DBAAbilitySystemComponent.h"
+
+UDBAZodiacUltimateAbility_Generic::UDBAZodiacUltimateAbility_Generic()
+{
+}
+
+void UDBAZodiacUltimateAbility_Generic::ActivateAbility(
+	const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo,
+	const FGameplayEventData* TriggerEventData)
+{
+	UE_LOG(LogDBACombat, Log, TEXT("[UDBAZodiacUltimateAbility_Generic] 激活生肖终极技能：技能ID=%s"), *UltimateSkillID.ToString());
+
+	// 调用基类 ActivateAbility
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
+	// 提交消耗与冷却（P0-1 修复：原实现未调用 CommitAbility，导致大招能量不扣减、冷却不应用、Cost GE 不生效）
+	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	{
+		UE_LOG(LogDBACombat, Warning, TEXT("[UDBAZodiacUltimateAbility_Generic] 激活生肖终极技能失败：提交消耗或冷却失败，技能ID=%s"), *UltimateSkillID.ToString());
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+
+	if (ActorInfo)
+	{
+		if (UDBAAbilitySystemComponent* DBAASC = Cast<UDBAAbilitySystemComponent>(ActorInfo->AbilitySystemComponent.Get()))
+		{
+			const FGameplayTag CastCueTag = FGameplayTag::RequestGameplayTag(FName(TEXT("GameplayCue.DBA.Skill.Cast")), false);
+			DBAASC->TriggerGameplayCue(CastCueTag, ActorInfo->AvatarActor.Get());
+		}
+	}
+
+	OnUltimateActivated(UltimateSkillID);
+}
+
+void UDBAZodiacUltimateAbility_Generic::EndAbility(
+	const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo,
+	bool bReplicateEndAbility,
+	bool bWasCancelled)
+{
+	UE_LOG(LogDBACombat, Log, TEXT("[UDBAZodiacUltimateAbility_Generic] 结束生肖终极技能：技能ID=%s 是否取消=%s"), *UltimateSkillID.ToString(), bWasCancelled ? TEXT("是") : TEXT("否"));
+
+	OnUltimateEnded(UltimateSkillID, bWasCancelled);
+
+	// 调用基类 EndAbility
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+void UDBAZodiacUltimateAbility_Generic::OnUltimateActivated(FName InSkillID)
+{
+}
+
+void UDBAZodiacUltimateAbility_Generic::OnUltimateEnded(FName InSkillID, bool bWasCancelled)
+{
+}

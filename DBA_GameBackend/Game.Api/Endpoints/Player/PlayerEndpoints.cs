@@ -1,4 +1,4 @@
-﻿/*
+/*
 中文阅读说明：
 - 所属应用：DBA_GameBackend 后端 API / Worker。
 - 文件职责：定义 HTTP 接口路由、鉴权要求、请求解析和统一响应，是后端功能对外暴露的入口。
@@ -48,10 +48,26 @@ public static class PlayerEndpoints
 ")
             .RequireAuthorization();
 
+        group.MapPatch("/me/profile", UpdateMyProfile)
+            .WithSummary("修改当前玩家个人资料")
+            .WithDescription(@"
+修改当前登录玩家的个人资料，目前支持修改昵称和头像。
+昵称修改受冷却时间限制（24 小时）。
+")
+            .RequireAuthorization();
+
         group.MapGet("/me/settings", GetMySettings)
             .WithSummary("获取当前玩家设置")
             .WithDescription(@"
 获取当前玩家的游戏设置，包括画质、音量、控制等配置。
+设置以JSON格式存储。
+")
+            .RequireAuthorization();
+
+        group.MapPut("/me/settings", UpdateMySettings)
+            .WithSummary("修改当前玩家设置")
+            .WithDescription(@"
+修改当前玩家的游戏设置，传入的字段会合并到已有设置中。
 设置以JSON格式存储。
 ")
             .RequireAuthorization();
@@ -99,12 +115,43 @@ GET /api/players/{playerId}/public
         return Results.Ok(ApiResponse<PlayerProfileResponse>.Ok(profile));
     }
 
+    private static async Task<IResult> UpdateMyProfile(UpdateProfileRequest request, IPlayerService playerSvc, HttpContext ctx)
+    {
+        var playerId = GetPlayerId(ctx);
+        if (playerId == null) return ErrorResponse.Unauthorized().ToProblem();
+        try
+        {
+            var profile = await playerSvc.UpdateProfileAsync(playerId.Value, request);
+            if (profile == null) return ErrorResponse.NotFound(ErrorCodes.PlayerNotFound).ToProblem();
+            return Results.Ok(ApiResponse<PlayerProfileResponse>.Ok(profile));
+        }
+        catch (ArgumentException ex)
+        {
+            // 参数校验失败（如昵称不合法）
+            return ErrorResponse.BadRequest(ex.Message ?? ErrorCodes.PlayerInvalidNickname).ToProblem();
+        }
+        catch (InvalidOperationException ex)
+        {
+            // 业务规则冲突（如昵称被占用、冷却期内）
+            return ErrorResponse.Conflict(ex.Message).ToProblem();
+        }
+    }
+
     private static async Task<IResult> GetMySettings(IPlayerService playerSvc, HttpContext ctx)
     {
         var playerId = GetPlayerId(ctx);
         if (playerId == null) return ErrorResponse.Unauthorized().ToProblem();
         var settings = await playerSvc.GetSettingsAsync(playerId.Value);
         if (settings == null) return ErrorResponse.NotFound("Settings not found").ToProblem();
+        return Results.Ok(ApiResponse<PlayerSettingsResponse>.Ok(settings));
+    }
+
+    private static async Task<IResult> UpdateMySettings(UpdateSettingsRequest request, IPlayerService playerSvc, HttpContext ctx)
+    {
+        var playerId = GetPlayerId(ctx);
+        if (playerId == null) return ErrorResponse.Unauthorized().ToProblem();
+        var settings = await playerSvc.UpdateSettingsAsync(playerId.Value, request);
+        if (settings == null) return ErrorResponse.NotFound(ErrorCodes.PlayerNotFound).ToProblem();
         return Results.Ok(ApiResponse<PlayerSettingsResponse>.Ok(settings));
     }
 

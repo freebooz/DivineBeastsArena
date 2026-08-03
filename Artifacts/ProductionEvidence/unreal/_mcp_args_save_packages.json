@@ -1,0 +1,9 @@
+{
+  "action": "save_packages",
+  "package_paths": [
+    "/Game/DBA/UI/Lobby/Character/WBP_DBA_CharacterSelect",
+    "/Game/DBA/UI/Lobby/Character/WBP_DBA_CharacterCreate",
+    "/Game/DBA/UI/Frontend/Character/WBP_DBA_CharacterSelect",
+    "/Game/DBA/UI/Frontend/Character/WBP_DBA_CharacterCreate"
+  ]
+}

@@ -24,16 +24,13 @@ public class GameCore : ModuleRules
 			"GameplayTags",
 			"InputCore",
 			"UMG",
+			"DeveloperSettings",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
 			"Slate",
 			"SlateCore",
-			"HTTP",
-			"Json",
-			"JsonUtilities",
-			"GameBackendClient",
 		});
 
 		PublicIncludePaths.Add("GameCore/Public");

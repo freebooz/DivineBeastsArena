@@ -34,5 +34,8 @@ public static partial class GameFeatureEndpoints
         MapPlayerHistoryEndpoints(app);
         MapVersionAnalyticsEndpoints(app);
         MapSessionReconnectEndpoints(app);
+        MapPaymentEndpoints(app);
+        MapWalletEndpoints(app);
+        MapQuestEndpoints(app);
     }
 }

@@ -68,12 +68,12 @@
 - 需要游戏内反馈入口，自动附加日志片段、TraceId、截图开关和玩家授权。
 - 缺少客户端运营开关：维护公告、灰度配置、热修复配置、强更提示、活动入口、公告弹窗。
 
-### 8. 自动化测试与发布流程
+### 8. 人工审核与发布流程
 
-- 当前机器未验证 UE C++ 编译，生产流程需要 UBT Build、Cook、Package、Run Automation Tests。
-- 已有若干 Python/Automation 测试脚本，但缺少统一入口和 CI 工作流。
-- 缺少前端端到端脚本：启动客户端、登录、创建角色、匹配、进服、释放 Session、断线重连。
-- 缺少截图回归、UI 层级检查、关键资产存在性检查、Cook 后启动检查。
+- 生产流程需要人工执行 UBT Build、Cook 与 Package，并由审核人员记录结果。
+- 项目不保留 Python、Automation、CI 或端到端自动化脚本。
+- 登录、创建角色、选角、匹配、进服、退出和断线恢复必须由审核人员在真实客户端界面验证。
+- UI 层级、关键资产、Cook 后启动和截图均采用人工审核记录。
 - 需要客户端版本、资源 manifest、Launcher manifest、后端 minClientVersion 的发布一致性校验。
 
 ## 生产化执行计划
@@ -111,13 +111,13 @@
 4. 增加用户反馈 UI，支持分类、描述、邮箱、日志附加和提交状态。
 5. 建立线上问题定位流程：玩家反馈 ID -> TraceId -> 后端日志 -> Dedicated Server 日志 -> 客户端日志。
 
-### P4：自动化验收与发布
+### P4：人工验收与发布
 
-1. 增加 `Scripts/BuildClient.ps1`、`Scripts/CookClient.ps1`、`Scripts/PackageClient.ps1` 和统一参数。
-2. 增加 UBT 编译、Cook、Package、Automation Tests、资产审计、配置审计的 CI 工作流。
-3. 增加客户端 smoke test：启动、登录、创建角色、选择角色、匹配、进服、退出。
-4. 增加 UI 截图回归和关键 Widget 层级验证。
-5. 增加版本一致性检查：客户端版本、Launcher manifest、后端 minClientVersion、CDN SHA256。
+1. 由审核人员执行客户端 Build、Cook、Package，并记录构建号、环境、产物摘要与失败原因。
+2. 由审核人员核对配置、资产、版本和发布输入；不得恢复 CI 或自动化脚本。
+3. 在真实客户端界面手工完成启动、登录、创建角色、选择角色、进入大厅、进服和退出。
+4. 人工核对 UI 截图、Widget 层级、关键资产引用和 Cook 后启动结果。
+5. 人工核对客户端版本、Launcher manifest、后端最低版本与 CDN SHA256。
 
 ## 建议执行顺序
 
@@ -125,7 +125,7 @@
 2. 再做 P1：UI 补全、Stub 清理、输入系统正规化、设置持久化。
 3. 同步推进 P2：打包资源治理、移动端预算、性能基线。
 4. 完成 P3：观测、崩溃、反馈和运营配置。
-5. 最后固化 P4：CI、Cook、Package、自动化验收和发布一致性。
+5. 最后固化 P4：人工 Build、Cook、Package、审核验收和发布一致性。
 
 ## 验收标准
 
@@ -134,4 +134,4 @@
 - 十二生肖所有技能均有施法动画、飞行/命中粒子、音效、GameplayCue 和服务端权威伤害。
 - Windows 客户端可以通过 Launcher 下载、校验、修复、启动，并能完成登录到进服闭环。
 - Android 客户端在目标机型达到稳定帧率、UI 安全区正确、触摸操作可用。
-- CI 能执行编译、Cook、Package、自动化测试、资源审计和配置审计。
+- 审核人员已记录编译、Cook、Package、资源审计与配置审计结果。

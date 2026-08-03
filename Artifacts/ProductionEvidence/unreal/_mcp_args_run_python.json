@@ -1,0 +1,5 @@
+{
+  "action": "run_python",
+  "command": "E:/work/Game/DivineBeastsArena/Artifacts/ProductionEvidence/unreal/_mcp_inspect_presentation.py",
+  "mode": "execute_file"
+}

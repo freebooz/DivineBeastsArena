@@ -269,6 +269,18 @@ bool FDBA_GameBackendHttpClient::ParseEnvelope(const FString& Body, FDBA_GameBac
 
 	Root->TryGetStringField(TEXT("code"), OutResult.Code);
 	Root->TryGetStringField(TEXT("message"), OutResult.Message);
+	if (OutResult.Code.IsEmpty())
+	{
+		Root->TryGetStringField(TEXT("errorCode"), OutResult.Code);
+	}
+	if (OutResult.Message.IsEmpty())
+	{
+		Root->TryGetStringField(TEXT("detail"), OutResult.Message);
+	}
+	if (OutResult.Message.IsEmpty())
+	{
+		Root->TryGetStringField(TEXT("title"), OutResult.Message);
+	}
 	if (Root->HasTypedField<EJson::Boolean>(TEXT("success")))
 	{
 		OutResult.bApiSuccess = Root->GetBoolField(TEXT("success"));

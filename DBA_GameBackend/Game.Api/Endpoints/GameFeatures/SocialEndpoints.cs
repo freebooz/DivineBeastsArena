@@ -61,6 +61,29 @@ public static partial class GameFeatureEndpoints
             .WithSummary("领取附件")
             .WithDescription("领取邮件中的附件物品")
             .RequireAuthorization();
+
+        // 邮件系统（客户端兼容路径 /api/players/me/mails）
+        var playerMail = app.MapGroup("/api/players/me/mails").WithTags("邮件");
+        playerMail.MapGet("/", GetMails)
+            .WithSummary("获取邮件列表")
+            .WithDescription("获取当前玩家的邮件列表（兼容路径）")
+            .RequireAuthorization();
+        playerMail.MapGet("/{mailId}", GetMailDetail)
+            .WithSummary("获取邮件详情")
+            .WithDescription("获取指定邮件的详情及附件列表")
+            .RequireAuthorization();
+        playerMail.MapPost("/{mailId}/read", ReadMail)
+            .WithSummary("标记邮件已读")
+            .WithDescription("标记指定邮件为已读（兼容路径）")
+            .RequireAuthorization();
+        playerMail.MapPost("/{mailId}/claim", ClaimMailAllAttachments)
+            .WithSummary("领取邮件所有附件")
+            .WithDescription("一次性领取指定邮件中所有未领取的附件")
+            .RequireAuthorization();
+        playerMail.MapPost("/claim-all", ClaimAllMails)
+            .WithSummary("一键领取所有邮件附件")
+            .WithDescription("一次性领取当前玩家所有邮件中未领取的附件")
+            .RequireAuthorization();
     }
 
     // ==================== 好友系统 ====================
@@ -260,5 +283,142 @@ public static partial class GameFeatureEndpoints
 
         await db.SaveChangesAsync();
         return Results.Ok(ApiResponse.Ok());
+    }
+
+    private static async Task<IResult> GetMailDetail(Guid mailId, HttpContext ctx, GameDbContext db)
+    {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
+        var mail = await db.Mails
+            .FirstOrDefaultAsync(x => x.Id == mailId && x.ReceiverId == playerId.Value && !x.IsDeleted);
+        if (mail == null) return ErrorResponse.NotFound("邮件不存在").ToProblem();
+
+        var attachments = await db.MailAttachments
+            .Where(x => x.MailId == mailId)
+            .OrderBy(x => x.Id)
+            .Select(x => new MailAttachmentDto(x.Id, x.ItemId, x.Quantity, x.IsClaimed, x.ClaimedAt))
+            .ToListAsync();
+
+        var detail = new MailDetailDto(
+            mail.Id,
+            mail.Title,
+            mail.Content,
+            mail.MailType,
+            mail.IsRead,
+            mail.AttachmentJson != "[]",
+            mail.CreatedAt,
+            mail.ReadAt,
+            mail.ExpiresAt,
+            attachments);
+
+        return Results.Ok(ApiResponse<MailDetailDto>.Ok(detail));
+    }
+
+    private static async Task<IResult> ClaimMailAllAttachments(Guid mailId, HttpContext ctx, GameDbContext db)
+    {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
+        // 校验邮件归属当前玩家
+        var mail = await db.Mails.FirstOrDefaultAsync(x => x.Id == mailId && x.ReceiverId == playerId.Value && !x.IsDeleted);
+        if (mail == null) return ErrorResponse.NotFound("邮件不存在").ToProblem();
+
+        var attachments = await db.MailAttachments
+            .Where(x => x.MailId == mailId && !x.IsClaimed)
+            .ToListAsync();
+
+        if (attachments.Count == 0)
+        {
+            return Results.Ok(ApiResponse<ClaimAllMailsResponse>.Ok(new ClaimAllMailsResponse(0, 0, Array.Empty<MailAttachmentDto>())));
+        }
+
+        var claimedDtos = new List<MailAttachmentDto>();
+        foreach (var attachment in attachments)
+        {
+            attachment.IsClaimed = true;
+            attachment.ClaimedAt = DateTimeOffset.UtcNow;
+
+            // 添加物品到背包
+            var item = await db.InventoryItems.FirstOrDefaultAsync(x => x.PlayerId == playerId.Value && x.ItemId == attachment.ItemId);
+            if (item == null)
+            {
+                item = new InventoryItem { PlayerId = playerId.Value, ItemId = attachment.ItemId, Quantity = attachment.Quantity };
+                db.InventoryItems.Add(item);
+            }
+            else
+            {
+                item.Quantity += attachment.Quantity;
+                item.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+
+            claimedDtos.Add(new MailAttachmentDto(attachment.Id, attachment.ItemId, attachment.Quantity, attachment.IsClaimed, attachment.ClaimedAt));
+        }
+
+        await db.SaveChangesAsync();
+        return Results.Ok(ApiResponse<ClaimAllMailsResponse>.Ok(new ClaimAllMailsResponse(1, claimedDtos.Count, claimedDtos)));
+    }
+
+    private static async Task<IResult> ClaimAllMails(HttpContext ctx, GameDbContext db)
+    {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
+        // 查询当前玩家所有未删除邮件中未领取的附件
+        var mailIds = await db.Mails
+            .Where(x => x.ReceiverId == playerId.Value && !x.IsDeleted)
+            .Select(x => x.Id)
+            .ToListAsync();
+
+        if (mailIds.Count == 0)
+        {
+            return Results.Ok(ApiResponse<ClaimAllMailsResponse>.Ok(new ClaimAllMailsResponse(0, 0, Array.Empty<MailAttachmentDto>())));
+        }
+
+        var attachments = await db.MailAttachments
+            .Where(x => mailIds.Contains(x.MailId) && !x.IsClaimed)
+            .ToListAsync();
+
+        if (attachments.Count == 0)
+        {
+            return Results.Ok(ApiResponse<ClaimAllMailsResponse>.Ok(new ClaimAllMailsResponse(0, 0, Array.Empty<MailAttachmentDto>())));
+        }
+
+        var claimedDtos = new List<MailAttachmentDto>();
+        var claimedMailIds = new HashSet<Guid>();
+
+        foreach (var attachment in attachments)
+        {
+            attachment.IsClaimed = true;
+            attachment.ClaimedAt = DateTimeOffset.UtcNow;
+            claimedMailIds.Add(attachment.MailId);
+
+            // 添加物品到背包
+            var item = await db.InventoryItems.FirstOrDefaultAsync(x => x.PlayerId == playerId.Value && x.ItemId == attachment.ItemId);
+            if (item == null)
+            {
+                item = new InventoryItem { PlayerId = playerId.Value, ItemId = attachment.ItemId, Quantity = attachment.Quantity };
+                db.InventoryItems.Add(item);
+            }
+            else
+            {
+                item.Quantity += attachment.Quantity;
+                item.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+
+            claimedDtos.Add(new MailAttachmentDto(attachment.Id, attachment.ItemId, attachment.Quantity, attachment.IsClaimed, attachment.ClaimedAt));
+        }
+
+        await db.SaveChangesAsync();
+        return Results.Ok(ApiResponse<ClaimAllMailsResponse>.Ok(new ClaimAllMailsResponse(claimedMailIds.Count, claimedDtos.Count, claimedDtos)));
     }
 }

@@ -1,0 +1,9 @@
+{
+  "action": "set_widget_property",
+  "asset_path": "/Game/DBA/UI/Lobby/Character/WBP_DBA_CharacterSelect",
+  "widget_name": "BG_Image",
+  "property_name": "Visibility",
+  "value": "Collapsed",
+  "compile": false,
+  "raw_mode": true
+}

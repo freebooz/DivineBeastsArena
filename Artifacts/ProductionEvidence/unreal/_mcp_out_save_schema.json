@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"namespace\":\"editor\",\"action\":\"save_packages\",\"description\":\"Save the requested packages to disk (UPackage::SavePackage + FSavePackageArgs). When fail_on_unrequested_dirty=true, errors before saving anything if any dirty package exists outside the requested set (within scope_paths if given). Returns per-package save status.\",\"params\":{\"packages\":{\"type\":\"array\",\"description\":\"Array of long package names (e.g. [\\\"/Game/Tests/Monolith/DA_Foo\\\"]) to save.\",\"required\":true},\"fail_on_unrequested_dirty\":{\"type\":\"bool\",\"description\":\"If true, abort (saving nothing) when a dirty package outside the request set is found. Default false.\",\"required\":false,\"default\":\"false\"},\"scope_paths\":{\"type\":\"array\",\"description\":\"Path prefixes that bound the unrequested-dirty pre-scan (only used with fail_on_unrequested_dirty). Omit to scan all dirty packages.\",\"required\":false},\"dry_run\":{\"type\":\"bool\",\"description\":\"If true, report which packages WOULD be saved (per-package would_save status) without writing anything to disk. Default false.\",\"required\":false,\"default\":\"false\"}}}"
+      }
+    ]
+  }
+}

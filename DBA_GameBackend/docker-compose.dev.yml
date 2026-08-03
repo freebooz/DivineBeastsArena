@@ -14,15 +14,16 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
       # 数据库 - 连接到docker-compose内的postgres
-      - Database__ConnectionString=Host=postgres;Database=gamedb;Username=postgres;Password=postgres
+      - Database__ConnectionString=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Include Error Detail=false
       # Redis - 连接到docker-compose内的redis
-      - Redis__ConnectionString=redis:6379
+      - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD},abortConnect=false
       # JWT配置
-      - Jwt__Secret=your-secret-key-min-32-chars-long!!
-      - Jwt__Issuer=GameApi
-      - Jwt__Audience=GameClients
+      - Jwt__Secret=${JWT_SECRET}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
       - Jwt__AccessTokenExpiryMinutes=15
       - Jwt__RefreshTokenExpiryDays=30
+      - InternalApi__Key=${INTERNAL_API_KEY}
       # 数据种子（开发环境启用）
       - SeedData__Enabled=true
     depends_on:
@@ -53,9 +54,12 @@ services:
       - "8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - Database__ConnectionString=Host=postgres;Database=gamedb;Username=postgres;Password=postgres
-      - Redis__ConnectionString=redis:6379
-      - Jwt__Secret=your-secret-key-min-32-chars-long!!
+      - Database__ConnectionString=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Include Error Detail=false
+      - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD},abortConnect=false
+      - Jwt__Secret=${JWT_SECRET}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      - InternalApi__Key=${INTERNAL_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
@@ -73,8 +77,9 @@ services:
     profiles:
       - separate
     environment:
-      - Database__ConnectionString=Host=postgres;Database=gamedb;Username=postgres;Password=postgres
-      - Redis__ConnectionString=redis:6379
+      - Database__ConnectionString=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Include Error Detail=false
+      - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD},abortConnect=false
+      - InternalApi__Key=${INTERNAL_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
@@ -88,15 +93,15 @@ services:
     image: postgres:16-alpine
     container_name: game-postgres
     environment:
-      - POSTGRES_DB=gamedb
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -107,12 +112,15 @@ services:
   redis:
     image: redis:7-alpine
     container_name: game-redis
+    command: ["sh", "-c", "redis-server --appendonly yes --requirepass \"$${REDIS_PASSWORD}\""]
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 5

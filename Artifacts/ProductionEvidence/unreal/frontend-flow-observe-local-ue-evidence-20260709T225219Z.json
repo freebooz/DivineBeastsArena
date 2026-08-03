@@ -1,0 +1,76 @@
+﻿{
+    "kind":  "frontend-flow-observe-no-skip",
+    "runId":  "20260709T225219Z",
+    "status":  "observed",
+    "observeSeconds":  45,
+    "processId":  42004,
+    "skipFrontendFlow":  false,
+    "backendUrl":  "http://127.0.0.1:8080",
+    "logPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\unreal\\frontend-flow-observe-20260709T225219Z.log",
+    "keywordHits":  [
+                        {
+                            "keyword":  "FrontendMap",
+                            "count":  11,
+                            "sample":  "[2026.07.09-14.52.27:897][  0]LogGlobalStatus: UEngine::Browse Started Browse: \"/Game/Maps/Lobby/FrontendMap?Name=Player\""
+                        },
+                        {
+                            "keyword":  "LoginFlow",
+                            "count":  2,
+                            "sample":  "[2026.07.09-14.52.27:594][  0]LogDBACore: [DBALoginFlowSubsystem] 已初始化"
+                        },
+                        {
+                            "keyword":  "游客",
+                            "count":  3,
+                            "sample":  "[2026.07.09-14.52.41:597][126]LogDBAUI: [LoginWidget] 组件绑定状态：登录按钮=LoginButton，游客登录按钮=GuestLoginButton，调试登录按钮=NULL，账号输入框=EmailInput，密码输入框=PasswordInput"
+                        },
+                        {
+                            "keyword":  "登录",
+                            "count":  24,
+                            "sample":  "[2026.07.09-14.52.28:127][  0]LogDBAUI: [FrontendEnvironment] 已清理前端登录场景三维组件，隐藏 Actor 数量=7"
+                        },
+                        {
+                            "keyword":  "Guest",
+                            "count":  5,
+                            "sample":  "LogCsvProfiler: Display: Metadata set : commandline=\"\" E:\\work\\Game\\DivineBeastsArena\\DBA_GameClient\\DivineBeastsArena.uproject -game -windowed -ResX=960 -ResY=540 -WinX=40 -WinY=60 -log -abslog=E:\\work\\Game\\DivineBeastsArena\\Artifacts\\Prod"
+                        },
+                        {
+                            "keyword":  "账号服务",
+                            "count":  1,
+                            "sample":  "[2026.07.09-14.52.27:595][  0]LogDBACore: [DBAOnlineAccountService] 在线账号服务已初始化：http://127.0.0.1:8080"
+                        },
+                        {
+                            "keyword":  "后端",
+                            "count":  1,
+                            "sample":  "[2026.07.09-14.52.27:590][  0]LogDBA_GameBackendClient: 后端子系统初始化完成。基础地址=http://127.0.0.1:8080 版本=0.1.0 渠道=dev 平台=Windows"
+                        },
+                        {
+                            "keyword":  "HTTP",
+                            "count":  18,
+                            "sample":  "LogCsvProfiler: Display: Metadata set : commandline=\"\" E:\\work\\Game\\DivineBeastsArena\\DBA_GameClient\\DivineBeastsArena.uproject -game -windowed -ResX=960 -ResY=540 -WinX=40 -WinY=60 -log -abslog=E:\\work\\Game\\DivineBeastsArena\\Artifacts\\Prod"
+                        },
+                        {
+                            "keyword":  "8080",
+                            "count":  6,
+                            "sample":  "LogCsvProfiler: Display: Metadata set : commandline=\"\" E:\\work\\Game\\DivineBeastsArena\\DBA_GameClient\\DivineBeastsArena.uproject -game -windowed -ResX=960 -ResY=540 -WinX=40 -WinY=60 -log -abslog=E:\\work\\Game\\DivineBeastsArena\\Artifacts\\Prod"
+                        },
+                        {
+                            "keyword":  "characters",
+                            "count":  2,
+                            "sample":  "[2026.07.09-14.52.23:351][  0]LogShaderCompilers: Guid format shader working directory is 8 characters bigger than the processId version (E:/work/Game/DivineBeastsArena/DBA_GameClient/Intermediate/Shaders/WorkingDirectory/42004/)."
+                        }
+                    ],
+    "mapLoadSamples":  [
+                           "[2026.07.09-14.52.27:897][  0]LogGlobalStatus: UEngine::Browse Started Browse: \"/Game/Maps/Lobby/FrontendMap?Name=Player\"",
+                           "[2026.07.09-14.52.27:897][  0]LogNet: Browse: /Game/Maps/Lobby/FrontendMap?Name=Player",
+                           "[2026.07.09-14.52.27:900][  0]LogLoad: LoadMap: /Game/Maps/Lobby/FrontendMap?Name=Player",
+                           "[2026.07.09-14.52.28:022][  0]LogWorld: Bringing World /Game/Maps/Lobby/FrontendMap.FrontendMap up for play (max tick rate 0) at 2026.07.09-22.52.28",
+                           "[2026.07.09-14.52.28:133][  0]LogLoad: Took 0.233404 seconds to LoadMap(/Game/Maps/Lobby/FrontendMap)"
+                       ],
+    "errorSamples":  [
+                         "[2026.07.09-14.52.26:242][  0]LogObj: Error: LoadConfig (/Script/DivineBeastsArena.Default__DBAZodiacVisualDeveloperSettings): import failed for PlaceholderSkeletalMesh in: (AssetPath=\"/Game/DBA/Characters/Rosales/Meshes/SK_Rosales.SK_Rosal",
+                         "[2026.07.09-14.52.26:243][  0]LogObj: Error: LoadConfig (/Script/DivineBeastsArena.Default__DBAZodiacVisualDeveloperSettings): import failed for PlaceholderTintMaterial in: (AssetPath=\"/Game/DBA/Materials/M_DBA_RuntimeTint.M_DBA_RuntimeTint",
+                         "[2026.07.09-14.52.26:243][  0]LogObj: Error: LoadConfig (/Script/DivineBeastsArena.Default__DBAZodiacVisualDeveloperSettings): import failed for ZodiacPlaceholderTintTable in: (AssetPath=\"/Game/DBA/Data/Tables/DT_ZodiacPlaceholderTints.DT_Z",
+                         "[2026.07.09-14.52.27:600][  0]LogUIActionRouter: Error: Using CommonUI without a CommonGameViewportClient derived game viewport client. CommonUI Input routing will not function correctly."
+                     ],
+    "timestampUtc":  "2026-07-09T14:53:09.4142685Z"
+}

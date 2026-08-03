@@ -7,15 +7,14 @@
 */
 
 using Game.Api.Services.Auth;
+using Game.Application.Auth;
 using Game.Infrastructure.Auth;
 using Game.Infrastructure.Database;
+using Game.Infrastructure.Database.Auth;
 using Game.Infrastructure.Database.Entities;
-using Game.Infrastructure.Redis;
 using Game.Shared.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging.Abstractions;
-using StackExchange.Redis;
 
 namespace Game.Api.Tests;
 
@@ -151,7 +150,7 @@ public class AuthServiceTests
         var result = await service.ResetPasswordAsync("reset-unconfigured@example.test", "reset-token", "new-password");
 
         Assert.False(result.Success);
-        Assert.Contains("not configured", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("尚未配置", result.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -265,20 +264,78 @@ public class AuthServiceTests
         var builtConfiguration = new ConfigurationBuilder()
             .AddInMemoryCollection(configuration)
             .Build();
+        var credentialIssuer = new JwtLoginCredentialIssuer(jwt, jwtOptions);
+        var refreshCredentialHasher = new JwtRefreshCredentialHasher(jwt);
+        var refreshCredentialStore = new EfRefreshCredentialStore(db, credentialIssuer);
+        var passwordCredential = new BcryptPasswordCredentialVerifier();
+        var passwordStore = new EfPasswordAccountStore(db);
+        var authenticationPolicy = CreateAuthenticationPolicy(
+            builtConfiguration["Auth:PasswordResetBootstrapToken"]);
+        var onboardingStore = new EfAccountOnboardingStore(db);
 
         return new AuthService(
-            db,
-            jwt,
-            new NullRedisConnectionFactory(),
-            jwtOptions,
-            NullLogger<AuthService>.Instance,
+            new GuestLoginUseCase(
+                new Sha256DeviceIdentifierHasher(),
+                onboardingStore,
+                authenticationPolicy),
+            new RegisterAccountUseCase(passwordCredential, onboardingStore, authenticationPolicy),
+            new GetAuthenticatedAccountUseCase(new EfAuthenticatedAccountQueryStore(db)),
+            new AuthenticateCredentialsUseCase(
+                new EfAuthenticationCredentialStore(db),
+                new BcryptPasswordCredentialVerifier()),
+            new IssueLoginCredentialsUseCase(
+                credentialIssuer,
+                new EfLoginCredentialStore(db)),
+            new RotateRefreshCredentialUseCase(
+                refreshCredentialHasher,
+                refreshCredentialStore),
+            new LogoutUseCase(refreshCredentialHasher, refreshCredentialStore),
+            new ChangePasswordUseCase(passwordStore, passwordCredential, authenticationPolicy),
+            new ResetPasswordUseCase(
+                passwordStore,
+                passwordCredential,
+                new FixedTimeCredentialComparer(),
+                authenticationPolicy),
+            authenticationPolicy,
             builtConfiguration);
     }
 
-    private sealed class NullRedisConnectionFactory : IRedisConnectionFactory
+    private static AuthenticationPolicyOptions CreateAuthenticationPolicy(string? resetToken) => new()
     {
-        public IDatabase GetDatabase(int db = -1) => throw new NotSupportedException();
-
-        public IServer GetServer() => throw new NotSupportedException();
-    }
+        MinimumPasswordLength = 6,
+        ActiveAccountStatus = "ACTIVE",
+        GuestAccountType = "GUEST",
+        RegisteredAccountType = "REGULAR",
+        GuestDisplayNamePrefix = "Player_",
+        GuestDisplayNameSuffixLength = 8,
+        InitialPlayerLevel = 1,
+        InitialPlayerExperience = 0,
+        InitialPlayerSettingsJson = "{}",
+        PasswordResetBootstrapToken = resetToken,
+        Messages = new AuthenticationPolicyMessages
+        {
+            PasswordFieldsRequired = "旧密码和新密码均不能为空。",
+            EmailAndPasswordRequired = "邮箱和新密码均不能为空。",
+            PasswordTooShort = "密码长度不符合安全策略。",
+            AccountNotFound = "未找到账号。",
+            AccountBanned = "账号已被封禁。",
+            PasswordCredentialMissing = "账号尚未设置密码凭据。",
+            OldPasswordIncorrect = "旧密码不正确。",
+            PasswordUnchanged = "新密码不能与当前密码相同。",
+            ResetServiceUnavailable = "密码重置服务尚未配置。",
+            ResetTokenInvalid = "密码重置令牌无效。",
+            PasswordChanged = "密码修改成功。",
+            PasswordResetCompleted = "密码重置成功。",
+            UsernameOrEmailRequired = "用户名或邮箱不能为空。",
+            UsernameTaken = "用户名或邮箱已被使用。",
+            IdentityConflict = "设备身份已关联其他账号。",
+            InvalidOnboarding = "账号创建参数无效。",
+            InvalidCredentials = "账号或密码错误。",
+            DevelopmentLoginDisabled = "生产环境禁止使用开发登录。",
+            RefreshTokenInvalid = "刷新令牌无效或已过期。",
+            SteamLoginUnavailable = "Steam 登录服务尚未接入。",
+            EosLoginUnavailable = "EOS 登录服务尚未接入。",
+            WeChatLoginUnavailable = "微信登录服务尚未接入。"
+        }
+    };
 }

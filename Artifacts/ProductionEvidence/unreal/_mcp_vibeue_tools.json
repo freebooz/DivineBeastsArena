@@ -1,0 +1,121 @@
+{
+  "url": "http://127.0.0.1:8000/mcp",
+  "session_id": "9fd9aee14d800b4b9a545d9f030b6c1c",
+  "serverInfo": {
+    "name": "",
+    "title": "",
+    "version": ""
+  },
+  "tool_count": 10,
+  "tools": [
+    "deep_research",
+    "execute_python_code",
+    "discover_python_module",
+    "discover_python_class",
+    "discover_python_function",
+    "list_python_subsystems",
+    "terrain_data",
+    "list_toolsets",
+    "describe_toolset",
+    "call_tool"
+  ],
+  "interesting": [
+    "execute_python_code",
+    "discover_python_module",
+    "discover_python_class",
+    "discover_python_function",
+    "list_python_subsystems",
+    "list_toolsets",
+    "describe_toolset"
+  ],
+  "tool_details": [
+    {
+      "name": "deep_research",
+      "description": "Web research and GPS geocoding — no API key required. Use 'search' to look up any topic via DuckDuckGo and get real web results with titles, URLs, and snippets. Use 'fetch_page' to read the full content of any URL as clean markdown (great f",
+      "inputSchema_keys": [
+        "type",
+        "properties",
+        "required"
+      ]
+    },
+    {
+      "name": "execute_python_code",
+      "description": "Execute Python code in Unreal Engine. IMPORTANT: Use 'import unreal' (lowercase). For subsystems use: unreal.get_editor_subsystem(unreal.LevelEditorSubsystem). Returns stdout, stderr, and execution status.",
+      "inputSchema_keys": [
+        "type",
+        "properties",
+        "required"
+      ]
+    },
+    {
+      "name": "discover_python_module",
+      "description": "Discover contents of a Python module. IMPORTANT: The module name is 'unreal' (lowercase, not 'Unreal'). Use this before execute_python_code to find available classes/functions.",
+      "inputSchema_keys": [
+        "type",
+        "properties",
+        "required"
+      ]
+    },
+    {
+      "name": "discover_python_class",
+      "description": "Discover methods and attributes of one or MORE Python classes in a single call. PREFER batching: class_name accepts a comma-separated list ('unreal.MaterialService, unreal.WidgetService') and method_filter ORs keywords with '|' ('create|del",
+      "inputSchema_keys": [
+        "type",
+        "properties",
+        "required"
+      ]
+    },
+    {
+      "name": "discover_python_function",
+      "description": "Get signature and documentation for a Python function.",
+      "inputSchema_keys": [
+        "type",
+        "properties",
+        "required"
+      ]
+    },
+    {
+      "name": "list_python_subsystems",
+      "description": "List all Unreal Engine editor subsystems. Access via: unreal.get_editor_subsystem(unreal.SubsystemName). Example: subsys = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)",
+      "inputSchema_keys": [
+        "type",
+        "properties"
+      ]
+    },
+    {
+      "name": "terrain_data",
+      "description": "Generate heightmaps, map images, and water feature data from real-world terrain. Requires an active VibeUE API key. Actions: generate_heightmap, preview_elevation, get_map_image, list_styles, get_water_features. IMPORTANT: Use the 'resoluti",
+      "inputSchema_keys": [
+        "type",
+        "properties",
+        "required"
+      ]
+    },
+    {
+      "name": "list_toolsets",
+      "description": "List all available toolsets with names and descriptions.",
+      "inputSchema_keys": [
+        "type",
+        "properties"
+      ]
+    },
+    {
+      "name": "describe_toolset",
+      "description": "Get detailed information about a toolset including all tool names, descriptions, and input schemas.",
+      "inputSchema_keys": [
+        "type",
+        "properties",
+        "required"
+      ]
+    },
+    {
+      "name": "call_tool",
+      "description": "Call a tool by name. Provide toolset_name to call a toolset tool, or omit it to call a top-level MCP tool. Use list_toolsets and describe_toolset to discover available tools and their input schemas.",
+      "inputSchema_keys": [
+        "type",
+        "properties",
+        "required"
+      ]
+    }
+  ]
+}

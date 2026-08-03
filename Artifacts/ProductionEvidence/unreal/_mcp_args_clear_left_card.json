@@ -1,0 +1,9 @@
+{
+  "action": "set_widget_property",
+  "asset_path": "/Game/DBA/UI/Lobby/Character/WBP_DBA_CharacterSelect",
+  "widget_name": "LeftPreviewCard",
+  "property_name": "BrushColor",
+  "value": {"r": 0, "g": 0, "b": 0, "a": 0},
+  "compile": false,
+  "raw_mode": true
+}

@@ -1,0 +1,6 @@
+{
+  "widget_name": "RightInfoCard",
+  "properties": {
+    "BrushColor": {"R": 0.02, "G": 0.04, "B": 0.08, "A": 0.4}
+  }
+}

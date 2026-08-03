@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"command\":\"py E:/work/Game/DivineBeastsArena/Artifacts/ProductionEvidence/unreal/_mcp_probe_camsteal_now.py\",\"world\":\"pie\",\"via_player_controller\":true}"
+      }
+    ]
+  }
+}

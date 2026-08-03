@@ -21,6 +21,14 @@
 #include "GameBackendTelemetryService.h"
 #include "GameBackendCrashService.h"
 #include "GameBackendRuntimeService.h"
+#include "GameBackendShopService.h"
+#include "GameBackendRankingService.h"
+#include "GameBackendEventService.h"
+#include "GameBackendFriendService.h"
+#include "GameBackendAchievementService.h"
+#include "GameBackendQuestService.h"
+#include "GameBackendPaymentService.h"
+#include "GameBackendWalletService.h"
 #include "GameBackendHttpClient.h"
 #include "GameBackendClientSettings.h"
 #include "Dom/JsonObject.h"
@@ -316,6 +324,14 @@ void UDBA_GameBackendClientSubsystem::InitializeServices()
 	TelemetryService = NewObject<UDBA_GameBackendTelemetryService>(this);
 	CrashService = NewObject<UDBA_GameBackendCrashService>(this);
 	RuntimeService = NewObject<UDBA_GameBackendRuntimeService>(this);
+	ShopService = NewObject<UDBA_GameBackendShopService>(this);
+	RankingService = NewObject<UDBA_GameBackendRankingService>(this);
+	EventService = NewObject<UDBA_GameBackendEventService>(this);
+	FriendService = NewObject<UDBA_GameBackendFriendService>(this);
+	AchievementService = NewObject<UDBA_GameBackendAchievementService>(this);
+	QuestService = NewObject<UDBA_GameBackendQuestService>(this);
+	PaymentService = NewObject<UDBA_GameBackendPaymentService>(this);
+	WalletService = NewObject<UDBA_GameBackendWalletService>(this);
 
 	if (AuthService) AuthService->Initialize(this, HttpClient.Get());
 	if (PlayerService) PlayerService->Initialize(this, HttpClient.Get());
@@ -328,6 +344,14 @@ void UDBA_GameBackendClientSubsystem::InitializeServices()
 	if (TelemetryService) TelemetryService->Initialize(this, HttpClient.Get());
 	if (CrashService) CrashService->Initialize(this, HttpClient.Get());
 	if (RuntimeService) RuntimeService->Initialize(this, HttpClient.Get());
+	if (ShopService) ShopService->Initialize(this, HttpClient.Get());
+	if (RankingService) RankingService->Initialize(this, HttpClient.Get());
+	if (EventService) EventService->Initialize(this, HttpClient.Get());
+	if (FriendService) FriendService->Initialize(this, HttpClient.Get());
+	if (AchievementService) AchievementService->Initialize(this, HttpClient.Get());
+	if (QuestService) QuestService->Initialize(this, HttpClient.Get());
+	if (PaymentService) PaymentService->Initialize(this, HttpClient.Get());
+	if (WalletService) WalletService->Initialize(this, HttpClient.Get());
 }
 
 void UDBA_GameBackendClientSubsystem::ReleaseServices()
@@ -343,6 +367,14 @@ void UDBA_GameBackendClientSubsystem::ReleaseServices()
 	TelemetryService = nullptr;
 	CrashService = nullptr;
 	RuntimeService = nullptr;
+	ShopService = nullptr;
+	RankingService = nullptr;
+	EventService = nullptr;
+	FriendService = nullptr;
+	AchievementService = nullptr;
+	QuestService = nullptr;
+	PaymentService = nullptr;
+	WalletService = nullptr;
 }
 
 void UDBA_GameBackendClientSubsystem::NotifyRefreshCompleted(bool bSuccess)

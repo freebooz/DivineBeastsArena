@@ -1,0 +1,30 @@
+﻿{
+    "kind":  "login-flow-api-smoke",
+    "runId":  "20260709T225105Z",
+    "status":  "passed",
+    "baseUrl":  "http://localhost:8080",
+    "deviceId":  "smoke-frontend-20260709225105",
+    "steps":  [
+                  {
+                      "name":  "guest-login",
+                      "ok":  true,
+                      "detail":  "tokenLen=692"
+                  },
+                  {
+                      "name":  "characters-list",
+                      "ok":  true,
+                      "detail":  "count=0"
+                  },
+                  {
+                      "name":  "characters-create",
+                      "ok":  true,
+                      "detail":  "characterId=06049db37ec741efb913434ff0835567; success=True; charKeys=characterId,characterName,zodiac,primaryElement,fiveCamp,fixedSkillGroupId,coreAttributes,level,createTime,lastUsedTime"
+                  },
+                  {
+                      "name":  "characters-select",
+                      "ok":  true,
+                      "detail":  "success=True; keys=success,selectedCharacterId,character"
+                  }
+              ],
+    "timestampUtc":  "2026-07-09T14:51:07.6961238Z"
+}

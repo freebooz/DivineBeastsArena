@@ -3,10 +3,18 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
+  AdminAdjustWalletRequest,
   AdminAuditLogItem,
+  AdminCreateQuestRequest,
   AdminLoginRequest,
   AdminLoginResponse,
+  AdminPaymentOrderItem,
+  AdminPaymentOrderListResponse,
   AdminProfile,
+  AdminQuestListResponse,
+  AdminRefundRequest,
+  AdminWalletBalanceListResponse,
+  AdminWalletLedgerListResponse,
   ApiEnvelope,
   ClientVersionItem,
   FeedbackItem,
@@ -106,6 +114,49 @@ export class AdminApiService {
     return this.post<void>('/api/admin/inventory/deduct', request);
   }
 
+  // 支付订单管理
+  paymentOrders(page = 1, pageSize = 50, status = '', playerId = ''): Observable<AdminPaymentOrderListResponse> {
+    return this.get<AdminPaymentOrderListResponse>('/api/admin/payments/orders', { page, pageSize, status, playerId });
+  }
+
+  paymentOrderDetail(orderId: string): Observable<AdminPaymentOrderItem> {
+    return this.get<AdminPaymentOrderItem>(`/api/admin/payments/orders/${orderId}`);
+  }
+
+  refundPayment(orderId: string, req: AdminRefundRequest): Observable<void> {
+    return this.post<void>(`/api/admin/payments/orders/${orderId}/refund`, req);
+  }
+
+  // 任务管理
+  quests(): Observable<AdminQuestListResponse> {
+    return this.get<AdminQuestListResponse>('/api/admin/quests');
+  }
+
+  createQuest(req: AdminCreateQuestRequest): Observable<{ questId: string }> {
+    return this.post<{ questId: string }>('/api/admin/quests', req);
+  }
+
+  updateQuest(questId: string, req: AdminCreateQuestRequest): Observable<void> {
+    return this.put<void>(`/api/admin/quests/${questId}`, req);
+  }
+
+  deactivateQuest(questId: string, reason: string): Observable<void> {
+    return this.post<void>(`/api/admin/quests/${questId}/deactivate`, { reason });
+  }
+
+  // 钱包管理
+  walletBalances(page = 1, pageSize = 50, playerId = ''): Observable<AdminWalletBalanceListResponse> {
+    return this.get<AdminWalletBalanceListResponse>('/api/admin/wallet/balances', { page, pageSize, playerId });
+  }
+
+  walletLedgers(page = 1, pageSize = 50, playerId = '', bizType = ''): Observable<AdminWalletLedgerListResponse> {
+    return this.get<AdminWalletLedgerListResponse>('/api/admin/wallet/ledgers', { page, pageSize, playerId, bizType });
+  }
+
+  adjustWallet(req: AdminAdjustWalletRequest): Observable<void> {
+    return this.post<void>('/api/admin/wallet/adjust', req);
+  }
+
   private get<T>(path: string, query?: Record<string, string | number | boolean>): Observable<T> {
     return this.http.get<ApiEnvelope<T> | T>(this.buildUrl(path), { params: this.buildParams(query) })
       .pipe(map((payload) => this.unwrap(payload)));
@@ -113,6 +164,10 @@ export class AdminApiService {
 
   private post<T>(path: string, body: unknown): Observable<T> {
     return this.http.post<ApiEnvelope<T> | T>(this.buildUrl(path), body).pipe(map((payload) => this.unwrap(payload)));
+  }
+
+  private put<T>(path: string, body: unknown): Observable<T> {
+    return this.http.put<ApiEnvelope<T> | T>(this.buildUrl(path), body).pipe(map((payload) => this.unwrap(payload)));
   }
 
   private buildUrl(path: string): string {

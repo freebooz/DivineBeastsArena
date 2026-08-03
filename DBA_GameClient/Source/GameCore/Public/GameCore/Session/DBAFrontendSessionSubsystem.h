@@ -1,4 +1,4 @@
-﻿// Copyright FreeboozStudio. All Rights Reserved.
+// Copyright FreeboozStudio. All Rights Reserved.
 /*
 中文阅读说明：
 - 所属应用：DBA_GameClient Unreal Engine 客户端。
@@ -11,10 +11,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameCore/Subsystems/DBAGameInstanceSubsystemBase.h"
-#include "GameCore/Party/DBAPartyTypes.h"
-#include "GameCore/Queue/DBAQueueTypes.h"
-#include "GameCore/Queue/DBAReadyCheckTypes.h"
+#include "GameCore/Core/Subsystems/DBAGameInstanceSubsystemBase.h"
+#include "GameCore/Session/Party/DBAPartyTypes.h"
+#include "GameCore/Session/Queue/DBAQueueTypes.h"
+#include "GameCore/Session/Queue/DBAReadyCheckTypes.h"
 #include "GameCore/Session/DBAMatchSessionTypes.h"
 #include "GameCore/Session/DBATravelTypes.h"
 #include "DBAFrontendSessionSubsystem.generated.h"

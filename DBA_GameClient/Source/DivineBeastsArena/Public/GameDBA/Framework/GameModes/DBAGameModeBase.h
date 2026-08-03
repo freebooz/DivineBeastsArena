@@ -1,0 +1,76 @@
+// Copyright Freebooz Games, Inc. All Rights Reserved.
+/*
+中文阅读说明：
+- 所属应用：DBA_GameClient Unreal Engine 客户端。
+- 文件职责：Unreal C++ 公共头文件，声明可被其他模块或蓝图使用的类型、属性和函数契约。
+- 阅读重点：先看公开类型、路由/组件入口和构造函数，再看私有辅助方法，理解数据如何从输入流向状态变更或界面输出。
+- 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
+*/
+
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameCore/Types/DBACommonEnums.h"
+#include "GameMoba/Combat/DBAMobaGameModeBase.h"
+#include "GameFramework/OnlineReplStructs.h"
+#include "UObject/ObjectKey.h"
+#include "DBAGameModeBase.generated.h"
+
+class ADBALobbyTrainingMonster;
+class APlayerController;
+class AController;
+class APawn;
+class UDBAZodiacCharacterRegistry;
+
+UCLASS(Config=Game)
+class DIVINEBEASTSARENA_API ADBAGameModeBase : public ADBAMobaGameModeBase
+{
+	GENERATED_BODY()
+
+public:
+	ADBAGameModeBase();
+
+	static EDBAZodiac ResolveLobbyDisplayZodiac(const FString& Options, int32 JoinIndex);
+	static FTransform GetLobbyDisplayTransform(int32 JoinIndex);
+
+protected:
+	virtual void BeginPlay() override;
+	virtual void PreLoginAsync(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, const FOnPreLoginCompleteDelegate& OnComplete) override;
+	virtual FString InitNewPlayer(APlayerController* NewPlayerController, const FUniqueNetIdRepl& UniqueId, const FString& Options, const FString& Portal) override;
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+	virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
+	virtual void Logout(AController* Exiting) override;
+	virtual void HandleMatchHasStarted() override;
+	virtual void HandleMatchHasEnded() override;
+	virtual UClass* GetDefaultPawnClassForController_Implementation(AController* InController) override;
+	virtual APawn* SpawnDefaultPawnAtTransform_Implementation(AController* NewPlayer, const FTransform& SpawnTransform) override;
+
+private:
+	void SpawnLobbyTrainingMonsters();
+	UClass* ResolveLobbyPawnClass(EDBAZodiac Zodiac) const;
+	void TryInitializeBackendRuntime();
+	void SendBackendHeartbeat();
+	void SyncBackendMatchTeamId(APlayerController* PlayerController);
+	void ReportBackendMatchStarted();
+	void ReportBackendPlayerLeft(APlayerController* PlayerController);
+	void ReportBackendMatchResults();
+
+private:
+	int32 NextLobbyJoinIndex = 0;
+	TMap<TObjectKey<APlayerController>, int32> LobbyJoinIndices;
+	TMap<TObjectKey<APlayerController>, EDBAZodiac> LobbyJoinZodiacs;
+	TMap<TObjectKey<APlayerController>, FString> BackendRuntimePlayerIds;
+	TMap<TObjectKey<APlayerController>, int32> BackendRuntimePlayerTeamIds;
+	TArray<TWeakObjectPtr<ADBALobbyTrainingMonster>> LobbyTrainingMonsters;
+	FTimerHandle BackendRuntimeHeartbeatTimerHandle;
+	bool bBackendRuntimeReadySent = false;
+	bool bBackendMatchStartedSent = false;
+	bool bBackendMatchEndedSent = false;
+	bool bBackendMatchResultsSent = false;
+	FString BackendMatchResultIdempotencyKey;
+
+	/** 生肖角色类注册表数据资产，替代硬编码 switch-case 映射 */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "DBA|GameMode|Lobby")
+	TSoftObjectPtr<UDBAZodiacCharacterRegistry> ZodiacCharacterRegistry;
+};

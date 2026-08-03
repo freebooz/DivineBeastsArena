@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Game.Application\Game.Application.csproj" />
     <ProjectReference Include="..\Game.Shared\Game.Shared.csproj" />
   </ItemGroup>
 

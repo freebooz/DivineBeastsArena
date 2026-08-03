@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"namespace\":\"ui\",\"action\":\"set_brush\",\"description\":\"Configure a slate brush on any widget property (background, fill image, etc.)\",\"params\":{\"asset_path\":{\"type\":\"string\",\"description\":\"Widget Blueprint asset path\",\"required\":true,\"kind\":\"AssetPath\"},\"widget_name\":{\"type\":\"string\",\"description\":\"Target widget name\",\"required\":true},\"property_name\":{\"type\":\"string\",\"description\":\"Brush property: Background, BarFillStyle.FillImage, etc.\",\"required\":true},\"draw_type\":{\"type\":\"string\",\"description\":\"Draw type: Image, Box, Border, RoundedBox, NoDrawType\",\"required\":false,\"default\":\"Image\"},\"tint_color\":{\"type\":\"string\",\"description\":\"Tint color as hex (#RRGGBB) or r,g,b,a floats\",\"required\":false},\"image_size\":{\"type\":\"object\",\"description\":\"Image size: {\\\"x\\\": 64, \\\"y\\\": 64}\",\"required\":false},\"margin\":{\"type\":\"object\",\"description\":\"9-slice margin: {\\\"left\\\":0, \\\"top\\\":0, \\\"right\\\":0, \\\"bottom\\\":0}\",\"required\":false},\"corner_radius\":{\"type\":\"object\",\"description\":\"Corner radius: {\\\"top_left\\\":0, \\\"top_right\\\":0, \\\"bottom_right\\\":0, \\\"bottom_left\\\":0}\",\"required\":false},\"outline_color\":{\"type\":\"string\",\"description\":\"Outline color as hex or r,g,b,a\",\"required\":false},\"outline_width\":{\"type\":\"number\",\"description\":\"Outline width in pixels\",\"required\":false},\"texture_path\":{\"type\":\"string\",\"description\":\"Texture asset path to set on the brush\",\"required\":false,\"kind\":\"AssetPath\"},\"material_path\":{\"type\":\"string\",\"description\":\"Material asset path to set on the brush\",\"required\":false,\"kind\":\"AssetPath\"},\"compile\":{\"type\":\"boolean\",\"description\":\"Compile after setting\",\"required\":false,\"default\":\"false\"}}}"
+      }
+    ]
+  }
+}

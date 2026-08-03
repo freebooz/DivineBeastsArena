@@ -43,6 +43,8 @@ void UDBA_GameBackendMatchService::CreateTicket(const FString& Mode, const FStri
 	const TSharedRef<FJsonObject> Json = MakeShared<FJsonObject>();
 	Json->SetStringField(TEXT("mode"), Mode);
 	Json->SetStringField(TEXT("region"), RegionCode);
+	// 后端 CreateMatchmakingTicketRequest.Mmr 默认 1000；显式发送避免校验/绑定歧义。
+	Json->SetNumberField(TEXT("mmr"), 1000);
 
 	FString Body;
 	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Body);

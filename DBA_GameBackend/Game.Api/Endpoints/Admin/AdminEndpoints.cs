@@ -1,4 +1,4 @@
-﻿/*
+/*
 中文阅读说明：
 - 所属应用：DBA_GameBackend 后端 API / Worker。
 - 文件职责：定义 HTTP 接口路由、鉴权要求、请求解析和统一响应，是后端功能对外暴露的入口。
@@ -70,6 +70,11 @@ public static partial class AdminEndpoints
         admin.MapPost("/client-versions", UpsertClientVersion)
             .WithSummary("Create or update client version manifest metadata")
             .RequireAdminRoles(AdminRoleEndpointExtensions.Ops);
+
+        // 支付订单、任务系统、钱包管理端点 / Payment / Quest / Wallet admin endpoints
+        MapAdminPaymentEndpoints(admin);
+        MapAdminQuestEndpoints(admin);
+        MapAdminWalletEndpoints(admin);
     }
 
     private static async Task<IResult> Login(

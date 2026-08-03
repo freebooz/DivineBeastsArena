@@ -1,15 +1,15 @@
 ﻿{
     "schemaVersion":  "1.0",
-    "releaseId":  "local-launcher-evidence-support-files-gate-20260630",
-    "generatedAtUtc":  "2026-06-30T10:36:03.6841098Z",
+    "releaseId":  "local-ue-evidence-20260707T112831Z",
+    "generatedAtUtc":  "2026-07-07T11:30:10.3120177Z",
     "repoRoot":  "E:\\work\\Game\\DivineBeastsArena",
-    "gitCommit":  "a5a08469d8d6ada512972c4edfc9787a680be9a4",
+    "gitCommit":  "383fed38446462dadea67c93c9a46f213c785d35",
     "gitIsDirty":  true,
     "evidenceRoot":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence",
     "requirements":  [
                          {
                              "key":  "security.nuget",
-                             "description":  "NuGet vulnerable package report from security-ci or production-security-audit.",
+                             "description":  "NuGet 漏洞包报告来自 security-ci 或 production-security-audit。",
                              "status":  "present",
                              "fileCount":  1,
                              "files":  [
@@ -18,7 +18,7 @@
                          },
                          {
                              "key":  "security.npm",
-                             "description":  "Production npm audit JSON for Admin, Website, and Launcher.",
+                             "description":  "Admin、Website、Launcher 的生产 npm audit JSON。",
                              "status":  "present",
                              "fileCount":  9,
                              "files":  [
@@ -35,7 +35,7 @@
                          },
                          {
                              "key":  "security.trivy",
-                             "description":  "API and Worker container Trivy SARIF or scan report.",
+                             "description":  "API 和 Worker 容器 Trivy SARIF 或扫描报告。",
                              "status":  "present",
                              "fileCount":  2,
                              "files":  [
@@ -45,7 +45,7 @@
                          },
                          {
                              "key":  "load.k6",
-                             "description":  "k6 login, matchmaking, or dedicated server orchestration load-test output.",
+                             "description":  "k6 登录、匹配或专用服务器编排压测输出。",
                              "status":  "present",
                              "fileCount":  4,
                              "files":  [
@@ -57,7 +57,7 @@
                          },
                          {
                              "key":  "ops.backup_restore",
-                             "description":  "PostgreSQL backup and restore rehearsal evidence.",
+                             "description":  "PostgreSQL 备份与恢复演练证据。",
                              "status":  "present",
                              "fileCount":  2,
                              "files":  [
@@ -67,7 +67,7 @@
                          },
                          {
                              "key":  "ops.deploy_rollback",
-                             "description":  "Deployment, smoke test, and rollback evidence.",
+                             "description":  "部署、冒烟测试和回滚证据。",
                              "status":  "present",
                              "fileCount":  2,
                              "files":  [
@@ -77,10 +77,11 @@
                          },
                          {
                              "key":  "unreal.online_validation",
-                             "description":  "UE packaged or editor online validation evidence for backend allocation, Dedicated Server startup, and client joins.",
+                             "description":  "UE 打包或编辑器在线验证证据，覆盖后端分配、Dedicated Server 启动和客户端加入。",
                              "status":  "present",
-                             "fileCount":  5,
+                             "fileCount":  6,
                              "files":  [
+                                           "unreal/ue-online-validation-local-ue-evidence-20260707T112831Z.json",
                                            "unreal/ue-online-validation-packaged-ue-online-build-summary-20260628T040000Z.json",
                                            "unreal/ue-online-validation-packaged-ue-online-build-summary-20260628T041000Z.json",
                                            "unreal/ue-online-validation-packaged-ue-online-external-mode-20260628T062800Z.json",
@@ -90,21 +91,22 @@
                          },
                          {
                              "key":  "unreal.ai_showcase_automation",
-                             "description":  "AI_Showcase UI/VFX automation regression evidence for MCP-generated showcase assets.",
+                             "description":  "MCP 生成 AI_Showcase 资产的 UI/VFX 自动化回归证据。",
                              "status":  "present",
-                             "fileCount":  6,
+                             "fileCount":  7,
                              "files":  [
                                            "unreal/ai-showcase-automation-ai-showcase-editorcmd-20260629.json",
                                            "unreal/ai-showcase-automation-ai-showcase-editorcmd-window-20260629.json",
                                            "unreal/ai-showcase-automation-ai-showcase-loggate-20260629.json",
                                            "unreal/ai-showcase-automation-ai-showcase-semantic-20260629.json",
                                            "unreal/ai-showcase-automation-ai-showcase-widget-tree-20260630.json",
-                                           "unreal/ai-showcase-automation-ai-showcase-widget-tree-20260630b.json"
+                                           "unreal/ai-showcase-automation-ai-showcase-widget-tree-20260630b.json",
+                                           "unreal/ai-showcase-automation-local-ue-evidence-20260707T112831Z.json"
                                        ]
                          },
                          {
                              "key":  "client.release_prerequisites",
-                             "description":  "Client release input prerequisite evidence proving package root, production CDN URLs, and signing inputs are ready before release automation runs.",
+                             "description":  "客户端发布输入前置证据，证明包体根目录、生产 CDN URL 和签名输入已就绪。",
                              "status":  "incomplete",
                              "fileCount":  1,
                              "files":  [
@@ -113,7 +115,7 @@
                          },
                          {
                              "key":  "client.package_launcher",
-                             "description":  "Client package, launcher manifest, SHA256 file list, and local install/update repair smoke evidence.",
+                             "description":  "客户端包、启动器清单、SHA256 文件列表和本地安装/更新修复冒烟证据。",
                              "status":  "incomplete",
                              "fileCount":  16,
                              "files":  [
@@ -137,7 +139,7 @@
                          },
                          {
                              "key":  "client.cdn_launcher_smoke",
-                             "description":  "Launcher CDN smoke evidence proving manifest fetch, package downloads, SHA256 verification, and local install version persistence.",
+                             "description":  "启动器 CDN 冒烟证据，证明清单获取、包下载、SHA256 校验和本地安装版本持久化。",
                              "status":  "incomplete",
                              "fileCount":  2,
                              "files":  [
@@ -147,7 +149,7 @@
                          },
                          {
                              "key":  "client.code_signing",
-                             "description":  "Windows Authenticode code-signing evidence proving public client executables and libraries are trusted signed.",
+                             "description":  "Windows Authenticode 代码签名证据，证明公开客户端可执行文件和库已可信签名。",
                              "status":  "incomplete",
                              "fileCount":  7,
                              "files":  [
@@ -162,7 +164,7 @@
                          },
                          {
                              "key":  "client.launcher_install_update",
-                             "description":  "Launcher install/update smoke evidence proving manifest fetch, repair download, SHA256 verification, and version persistence.",
+                             "description":  "启动器安装/更新冒烟证据，证明清单获取、修复下载、SHA256 校验和版本持久化。",
                              "status":  "present",
                              "fileCount":  10,
                              "files":  [
@@ -180,7 +182,7 @@
                          },
                          {
                              "key":  "client.launcher_ui_visual",
-                             "description":  "Launcher UI visual evidence proving the player-facing launcher screen renders and exposes install/update actions.",
+                             "description":  "启动器 UI 视觉证据，证明玩家可见启动器界面可渲染并暴露安装/更新操作。",
                              "status":  "present",
                              "fileCount":  5,
                              "files":  [
@@ -854,6 +856,18 @@
                       "sha256":  "df0b90c38e81a03bcb4402467fd0b6437ec91465efb7f649b0bb4a1ace387a74"
                   },
                   {
+                      "path":  "unreal/ai-showcase-automation-local-ue-evidence-20260707T112831Z.json",
+                      "sizeBytes":  1669,
+                      "modifiedAtUtc":  "2026-07-07T11:29:01.6572059Z",
+                      "sha256":  "624379db16a19f670e79a6e6bd228910dfe23d4dcf60e3dfaaff02818ef5f78e"
+                  },
+                  {
+                      "path":  "unreal/runner-diagnostic-local-ue-evidence-20260707T112831Z.json",
+                      "sizeBytes":  4153,
+                      "modifiedAtUtc":  "2026-07-07T11:28:34.6294401Z",
+                      "sha256":  "d1dd117500e8f28fe50e53ec8cb0bc9fd0f40ef3dd501a7d4b898326aa3b7a96"
+                  },
+                  {
                       "path":  "unreal/runner-diagnostic-packaged-ue-online-external-mode-20260628T062800Z.json",
                       "sizeBytes":  4153,
                       "modifiedAtUtc":  "2026-06-28T04:29:56.9449829Z",
@@ -870,6 +884,12 @@
                       "sizeBytes":  4153,
                       "modifiedAtUtc":  "2026-06-28T04:17:31.0910351Z",
                       "sha256":  "715cbe0598baf71836fbcfaae572c1fc169f9f316bfb238bb21396454e337f46"
+                  },
+                  {
+                      "path":  "unreal/ue-online-validation-local-ue-evidence-20260707T112831Z.json",
+                      "sizeBytes":  3166,
+                      "modifiedAtUtc":  "2026-07-07T11:30:09.2701210Z",
+                      "sha256":  "bed020a499d7511dd254aea0cbf99c09783d34f1c7222865a3104eb617ef0fec"
                   },
                   {
                       "path":  "unreal/ue-online-validation-packaged-ue-online-build-summary-20260628T040000Z.json",

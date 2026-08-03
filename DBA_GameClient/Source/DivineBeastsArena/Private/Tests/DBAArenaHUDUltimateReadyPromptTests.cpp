@@ -9,7 +9,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-#include "GameDBA/UI/Arena/UDBAArenaHUDWidgetController.h"
+#include "GameDBA/UI/Controllers/Arena/UDBAArenaHUDWidgetController.h"
 #include "Misc/AutomationTest.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(

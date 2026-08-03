@@ -53,6 +53,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Player")
 	static bool TryParseMatchHistoryData(const FString& DataJson, FDBA_GameBackendMatchHistoryPage& OutPage, FString& OutError);
 
+	void GetCharactersAsync(FDBA_GameBackendNativeResponseCallback Callback);
+	void CreateCharacterAsync(const FString& CharacterJson, FDBA_GameBackendNativeResponseCallback Callback);
+	void SelectCharacterAsync(const FString& CharacterId, FDBA_GameBackendNativeResponseCallback Callback);
+
 private:
 	TWeakObjectPtr<UDBA_GameBackendClientSubsystem> Subsystem;
 	FDBA_GameBackendHttpClient* HttpClient = nullptr;

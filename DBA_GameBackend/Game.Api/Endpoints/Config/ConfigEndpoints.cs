@@ -1,4 +1,4 @@
-﻿/*
+/*
 中文阅读说明：
 - 所属应用：DBA_GameBackend 后端 API / Worker。
 - 文件职责：定义 HTTP 接口路由、鉴权要求、请求解析和统一响应，是后端功能对外暴露的入口。
@@ -9,6 +9,8 @@
 using Game.Shared.Contracts.Config;
 using Game.Shared.Common;
 using Game.Api.Extensions;
+using Game.Infrastructure.Database;
+using Microsoft.EntityFrameworkCore;
 
 namespace Game.Api.Endpoints.Config;
 
@@ -38,6 +40,13 @@ public static class ConfigEndpoints
 GET /api/config/manifest?channel=stable&region=global
 ");
 
+        client.MapGet("/bundle", GetConfigBundle)
+            .WithSummary("批量获取配置")
+            .WithDescription(@"
+批量获取所有已发布生效的配置，返回 key-value 字典。
+配置值以原始 JSON 字符串返回，便于客户端一次性拉取所有配置。
+");
+
         client.MapGet("/{configKey}", GetConfig)
             .WithSummary("获取指定配置")
             .WithDescription(@"
@@ -46,6 +55,15 @@ GET /api/config/manifest?channel=stable&region=global
 
 **调用方式：**
 GET /api/config/{configKey}
+");
+
+        // 维护状态接口
+        app.MapGet("/api/maintenance/status", GetMaintenanceStatus)
+            .WithTags("维护")
+            .WithSummary("获取维护状态")
+            .WithDescription(@"
+获取当前服务维护状态。
+当前返回默认值（非维护中），后续可通过 GameConfig 控制实际状态。
 ");
 
         // 管理员接口
@@ -118,6 +136,65 @@ GET /api/config/{configKey}
 
     private static async Task<IResult> GetManifest(string channel, string region, Services.Config.IConfigService svc) =>
         Results.Ok(ApiResponse<GameConfigManifestResponse>.Ok(await svc.GetManifestAsync(channel, "global")));
+
+    private static async Task<IResult> GetConfigBundle(GameDbContext db)
+    {
+        // 查询所有已发布（PUBLISHED）状态的配置，按 ConfigKey 去重，每个 key 取最新版本
+        var configs = await db.GameConfigs
+            .Where(x => x.Status == "PUBLISHED")
+            .OrderByDescending(x => x.PublishedAt)
+            .ToListAsync();
+
+        // 按 ConfigKey 分组取第一条（最新发布版本）
+        var bundle = configs
+            .GroupBy(x => x.ConfigKey)
+            .ToDictionary(
+                g => g.Key,
+                g => g.First().ContentJson);
+
+        return Results.Ok(ApiResponse<Dictionary<string, string>>.Ok(bundle));
+    }
+
+    private static async Task<IResult> GetMaintenanceStatus(GameDbContext db)
+    {
+        // 当前默认非维护中；后续可通过 GameConfig 表中 maintenance 相关 key 控制
+        // 查询是否存在维护开关配置（key 形如 "maintenance"），若存在且 contentJson 含 enabled=true 则视为维护中
+        var maintenanceConfig = await db.GameConfigs
+            .Where(x => x.Status == "PUBLISHED" && x.ConfigKey == "maintenance")
+            .OrderByDescending(x => x.PublishedAt)
+            .FirstOrDefaultAsync();
+
+        var isMaintenance = false;
+        var message = string.Empty;
+
+        if (maintenanceConfig != null)
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(maintenanceConfig.ContentJson);
+                if (doc.RootElement.TryGetProperty("enabled", out var enabledProp) &&
+                    enabledProp.ValueKind == System.Text.Json.JsonValueKind.True)
+                {
+                    isMaintenance = true;
+                }
+                if (doc.RootElement.TryGetProperty("message", out var msgProp) &&
+                    msgProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    message = msgProp.GetString() ?? string.Empty;
+                }
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                // 配置 JSON 解析失败时按非维护中处理，避免阻塞客户端
+            }
+        }
+
+        return Results.Ok(ApiResponse<object>.Ok(new
+        {
+            maintenance = isMaintenance,
+            message
+        }));
+    }
 
     private static async Task<IResult> GetConfig(string configKey, Services.Config.IConfigService svc)
     {

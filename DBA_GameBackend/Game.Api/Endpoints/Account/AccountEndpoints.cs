@@ -1,198 +1,168 @@
-﻿/*
+/*
 中文阅读说明：
-- 所属应用：DBA_GameBackend 后端 API / Worker。
-- 文件职责：定义 HTTP 接口路由、鉴权要求、请求解析和统一响应，是后端功能对外暴露的入口。
-- 阅读重点：先看公开类型、路由/组件入口和构造函数，再看私有辅助方法，理解数据如何从输入流向状态变更或界面输出。
-- 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
+- 所属应用：DBA_GameBackend API 表现层。
+- 文件职责：声明玩家角色 HTTP 路由，读取鉴权身份并将应用层结果映射为兼容响应。
+- 架构约束：本文件不得直接访问 GameDbContext、EF 实体或承载角色创建与选择规则。
 */
 
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using Game.Api.Extensions;
-using Game.Infrastructure.Database;
-using Game.Infrastructure.Database.Entities;
+using Game.Application.Characters;
 using Game.Shared.Common;
-using Game.Shared.Contracts.Character;
-using Microsoft.EntityFrameworkCore;
 
 namespace Game.Api.Endpoints.Account;
 
 public static class AccountEndpoints
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly Regex CharacterNameRegex = new(@"^[\u4e00-\u9fa5A-Za-z0-9_]{2,16}$", RegexOptions.Compiled);
-
     public static void MapAccountEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/account").WithTags("客户端账号兼容").RequireAuthorization();
+        var legacyGroup = app.MapGroup("/api/account")
+            .WithTags("客户端账号兼容")
+            .RequireAuthorization();
+        var playerGroup = app.MapGroup("/api/players/me/characters")
+            .WithTags("玩家角色")
+            .RequireAuthorization();
 
-        var playerGroup = app.MapGroup("/api/players/me/characters").WithTags("Player Characters").RequireAuthorization();
-
-        group.MapGet("/characters", GetCharacters)
+        legacyGroup.MapGet("/characters", GetCharacters)
             .WithSummary("获取当前账号角色列表")
             .WithDescription("兼容旧版 Unreal 客户端的角色列表接口。");
-
-        group.MapPost("/characters", CreateCharacter)
+        legacyGroup.MapPost("/characters", CreateCharacter)
             .WithSummary("创建当前账号角色")
             .WithDescription("兼容旧版 Unreal 客户端的创建角色接口。");
-
-        group.MapPost("/characters/{characterId}/select", SelectCharacter)
+        legacyGroup.MapPost("/characters/{characterId}/select", SelectCharacter)
             .WithSummary("选择当前账号角色")
-            .WithDescription("将指定角色标记为当前选中角色并写入数据库。");
-
-        group.MapPost("/characters/select", SelectCharacterByBody)
+            .WithDescription("将指定角色标记为当前选中角色。");
+        legacyGroup.MapPost("/characters/select", SelectCharacterByBody)
             .WithSummary("选择当前账号角色")
-            .WithDescription("兼容只支持 JSON Body 的客户端，写入当前选中角色。");
+            .WithDescription("兼容只支持 JSON Body 的客户端。");
+
         playerGroup.MapGet("", GetCharacters)
-            .WithSummary("Get current player's characters");
+            .WithSummary("获取当前玩家角色列表");
         playerGroup.MapPost("", CreateCharacter)
-            .WithSummary("Create current player's character");
+            .WithSummary("创建当前玩家角色");
         playerGroup.MapPost("/{characterId}/select", SelectCharacter)
-            .WithSummary("Select current player's character");
+            .WithSummary("选择当前玩家角色");
         playerGroup.MapPost("/select", SelectCharacterByBody)
-            .WithSummary("Select current player's character by JSON body");
+            .WithSummary("通过请求体选择当前玩家角色");
     }
 
-    private static async Task<IResult> GetCharacters(HttpContext ctx, GameDbContext db)
+    private static async Task<IResult> GetCharacters(
+        HttpContext context,
+        IGetPlayerCharactersUseCase useCase,
+        CancellationToken cancellationToken)
     {
-        var playerId = GetPlayerId(ctx);
-        if (playerId == null)
-            return ErrorResponse.Unauthorized().ToProblem();
-
-        var rows = await db.PlayerCharacters
-            .Where(x => x.PlayerId == playerId.Value)
-            .OrderByDescending(x => x.IsSelected)
-            .ThenByDescending(x => x.LastUsedAt)
-            .ThenBy(x => x.CreatedAt)
-            .ToListAsync();
-
-        var characters = rows
-            .Select(ToCharacterSummary)
-            .ToArray();
-        var selectedCharacterId = rows.FirstOrDefault(x => x.IsSelected)?.Id.ToString("N") ?? string.Empty;
-
-        return Results.Ok(new { success = true, selectedCharacterId, characters });
-    }
-
-    private static async Task<IResult> CreateCharacter(HttpContext ctx, GameDbContext db, CreateCharacterRequest request)
-    {
-        var playerId = GetPlayerId(ctx);
-        if (playerId == null)
-            return ErrorResponse.Unauthorized().ToProblem();
-
-        var characterName = string.IsNullOrWhiteSpace(request.CharacterName)
-            ? $"Hero_{Guid.NewGuid():N}"[..13]
-            : request.CharacterName.Trim();
-
-        if (!CharacterNameRegex.IsMatch(characterName))
-            return Results.Ok(new { success = false, error = "角色名需为 2-16 位，仅允许中文、英文、数字和下划线。" });
-
-        var duplicate = await db.PlayerCharacters.AnyAsync(x => x.PlayerId == playerId.Value && x.CharacterName == characterName);
-        if (duplicate)
-            return Results.Ok(new { success = false, error = "Character name already exists." });
-
-        var now = DateTimeOffset.UtcNow;
-        var buildSummary = CharacterBuildRules.BuildSummary(request.Zodiac, request.PrimaryElement, request.FiveCamp);
-        var row = new PlayerCharacter
+        var playerId = GetPlayerId(context);
+        if (playerId is null)
         {
-            Id = Guid.NewGuid(),
-            PlayerId = playerId.Value,
-            CharacterName = characterName,
-            Zodiac = buildSummary.Zodiac,
-            PrimaryElement = buildSummary.PrimaryElement,
-            FiveCamp = buildSummary.FiveCamp,
-            FixedSkillGroupId = buildSummary.FixedSkillGroupId,
-            CoreAttributesJson = JsonSerializer.Serialize(new CharacterCoreAttributes(1800, 100, 40, 380, 100, 10, 0.05f, 2.0f), JsonOptions),
-            Level = 1,
-            IsSelected = false,
-            CreatedAt = now,
-            LastUsedAt = now
-        };
-
-        db.PlayerCharacters.Add(row);
-        await db.SaveChangesAsync();
-
-        return Results.Ok(new { success = true, character = ToCharacterSummary(row) });
-    }
-
-    private static async Task<IResult> SelectCharacter(HttpContext ctx, GameDbContext db, string characterId)
-    {
-        return await SelectCharacterCore(ctx, db, characterId);
-    }
-
-    private static async Task<IResult> SelectCharacterByBody(HttpContext ctx, GameDbContext db, SelectCharacterRequest request)
-    {
-        return await SelectCharacterCore(ctx, db, request.CharacterId);
-    }
-
-    private static async Task<IResult> SelectCharacterCore(HttpContext ctx, GameDbContext db, string? characterId)
-    {
-        var playerId = GetPlayerId(ctx);
-        if (playerId == null)
             return ErrorResponse.Unauthorized().ToProblem();
-
-        if (!Guid.TryParse(characterId, out var parsedId))
-            return Results.Ok(new { success = false, error = "Invalid character id." });
-
-        await using var tx = await db.Database.BeginTransactionAsync();
-
-        var characters = await db.PlayerCharacters
-            .Where(x => x.PlayerId == playerId.Value)
-            .ToListAsync();
-        var selected = characters.FirstOrDefault(x => x.Id == parsedId);
-        if (selected == null)
-            return Results.Ok(new { success = false, error = "Character not found." });
-
-        var now = DateTimeOffset.UtcNow;
-        foreach (var character in characters)
-        {
-            character.IsSelected = character.Id == parsedId;
-            if (character.IsSelected)
-            {
-                character.LastUsedAt = now;
-                character.UpdatedAt = now;
-            }
         }
 
-        await db.SaveChangesAsync();
-        await tx.CommitAsync();
+        var result = await useCase.ExecuteAsync(playerId.Value, cancellationToken);
+        if (!result.Success || result.Value is null)
+        {
+            return Results.Ok(new CharacterFailureResponse(false, result.ErrorCode, result.ErrorMessage));
+        }
 
-        return Results.Ok(new { success = true, selectedCharacterId = selected.Id.ToString("N"), character = ToCharacterSummary(selected) });
+        var roster = result.Value;
+        return Results.Ok(new CharacterRosterResponse(
+            true,
+            roster.SelectedCharacterId?.ToString("N") ?? string.Empty,
+            roster.Characters.Select(ToResponse).ToArray()));
     }
 
-    private static Guid? GetPlayerId(HttpContext ctx)
+    private static async Task<IResult> CreateCharacter(
+        HttpContext context,
+        CreateCharacterRequest request,
+        ICreatePlayerCharacterUseCase useCase,
+        CancellationToken cancellationToken)
     {
-        var claim = ctx.User.FindFirst("player_id");
-        return claim != null && Guid.TryParse(claim.Value, out var id) ? id : null;
+        var playerId = GetPlayerId(context);
+        if (playerId is null)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
+        var result = await useCase.ExecuteAsync(
+            new CreatePlayerCharacterCommand(
+                playerId.Value,
+                request.CharacterName,
+                request.Zodiac,
+                request.PrimaryElement,
+                request.FiveCamp),
+            cancellationToken);
+        return !result.Success || result.Value is null
+            ? Results.Ok(new CharacterFailureResponse(false, result.ErrorCode, result.ErrorMessage))
+            : Results.Ok(new CharacterMutationResponse(true, string.Empty, ToResponse(result.Value)));
     }
 
-    private static CharacterSummary ToCharacterSummary(PlayerCharacter character)
+    private static Task<IResult> SelectCharacter(
+        HttpContext context,
+        string characterId,
+        ISelectPlayerCharacterUseCase useCase,
+        CancellationToken cancellationToken)
     {
-        var attributes = TryReadCoreAttributes(character.CoreAttributesJson);
-        return new CharacterSummary(
-            character.Id.ToString("N"),
+        return SelectCharacterCore(context, characterId, useCase, cancellationToken);
+    }
+
+    private static Task<IResult> SelectCharacterByBody(
+        HttpContext context,
+        SelectCharacterRequest request,
+        ISelectPlayerCharacterUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        return SelectCharacterCore(context, request.CharacterId, useCase, cancellationToken);
+    }
+
+    private static async Task<IResult> SelectCharacterCore(
+        HttpContext context,
+        string? characterId,
+        ISelectPlayerCharacterUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var playerId = GetPlayerId(context);
+        if (playerId is null)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
+        var result = await useCase.ExecuteAsync(playerId.Value, characterId, cancellationToken);
+        return !result.Success || result.Value is null
+            ? Results.Ok(new CharacterFailureResponse(false, result.ErrorCode, result.ErrorMessage))
+            : Results.Ok(new CharacterMutationResponse(
+                true,
+                result.Value.CharacterId.ToString("N"),
+                ToResponse(result.Value)));
+    }
+
+    private static Guid? GetPlayerId(HttpContext context)
+    {
+        var claim = context.User.FindFirst("player_id");
+        return claim is not null && Guid.TryParse(claim.Value, out var playerId)
+            ? playerId
+            : null;
+    }
+
+    private static CharacterSummaryResponse ToResponse(PlayerCharacterSummary character)
+    {
+        var attributes = character.CoreAttributes;
+        return new CharacterSummaryResponse(
+            character.CharacterId.ToString("N"),
             character.CharacterName,
             character.Zodiac,
             character.PrimaryElement,
             character.FiveCamp,
             character.FixedSkillGroupId,
-            attributes,
+            new CharacterCoreAttributesResponse(
+                attributes.MaxHealth,
+                attributes.AttackPower,
+                attributes.Defense,
+                attributes.MoveSpeed,
+                attributes.MaxEnergy,
+                attributes.EnergyRegen,
+                attributes.CriticalRate,
+                attributes.CriticalMultiplier),
             character.Level,
             character.CreatedAt.ToUnixTimeSeconds(),
             character.LastUsedAt.ToUnixTimeSeconds());
-    }
-
-    private static CharacterCoreAttributes TryReadCoreAttributes(string json)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<CharacterCoreAttributes>(json, JsonOptions)
-                ?? new CharacterCoreAttributes(1800, 100, 40, 380, 100, 10, 0.05f, 2.0f);
-        }
-        catch
-        {
-            return new CharacterCoreAttributes(1800, 100, 40, 380, 100, 10, 0.05f, 2.0f);
-        }
     }
 
     public sealed record CreateCharacterRequest(
@@ -203,19 +173,31 @@ public static class AccountEndpoints
 
     public sealed record SelectCharacterRequest(string? CharacterId);
 
-    public sealed record CharacterSummary(
+    public sealed record CharacterFailureResponse(bool Success, string Code, string Error);
+
+    public sealed record CharacterRosterResponse(
+        bool Success,
+        string SelectedCharacterId,
+        IReadOnlyList<CharacterSummaryResponse> Characters);
+
+    public sealed record CharacterMutationResponse(
+        bool Success,
+        string SelectedCharacterId,
+        CharacterSummaryResponse Character);
+
+    public sealed record CharacterSummaryResponse(
         string CharacterId,
         string CharacterName,
         string Zodiac,
         string PrimaryElement,
         string FiveCamp,
         string FixedSkillGroupId,
-        CharacterCoreAttributes CoreAttributes,
+        CharacterCoreAttributesResponse CoreAttributes,
         int Level,
         long CreateTime,
         long LastUsedTime);
 
-    public sealed record CharacterCoreAttributes(
+    public sealed record CharacterCoreAttributesResponse(
         float MaxHealth,
         float AttackPower,
         float Defense,

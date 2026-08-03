@@ -1,0 +1,30 @@
+﻿{
+    "kind":  "backend-dotnet-test",
+    "runId":  "20260709T225400Z",
+    "status":  "passed",
+    "method":  "docker mcr.microsoft.com/dotnet/sdk:10.0",
+    "localSdkBlocker":  "NETSDK1045: host SDK 9.0.313 cannot target net10.0",
+    "results":  [
+                    {
+                        "project":  "Game.ServerManagement.Tests",
+                        "skipped":  0,
+                        "failed":  0,
+                        "passed":  5
+                    },
+                    {
+                        "project":  "Game.IntegrationTests",
+                        "skipped":  0,
+                        "failed":  0,
+                        "passed":  1
+                    },
+                    {
+                        "project":  "Game.Api.Tests",
+                        "skipped":  0,
+                        "failed":  0,
+                        "passed":  177
+                    }
+                ],
+    "totalPassed":  183,
+    "totalFailed":  0,
+    "timestampUtc":  "2026-07-09T14:55:23.4573073Z"
+}

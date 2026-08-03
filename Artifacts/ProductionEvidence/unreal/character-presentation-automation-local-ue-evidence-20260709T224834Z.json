@@ -1,0 +1,13 @@
+﻿{
+    "kind":  "character-presentation-automation",
+    "runId":  "20260709T224834Z",
+    "status":  "passed",
+    "testFilter":  "DivineBeastsArena.UI.CharacterPresentation",
+    "exitCode":  0,
+    "elapsedSeconds":  12.2,
+    "found":  8,
+    "passed":  8,
+    "failed":  0,
+    "logPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\unreal\\character-presentation-automation-20260709T224834Z.log",
+    "timestampUtc":  "2026-07-09T14:50:01.7547383Z"
+}

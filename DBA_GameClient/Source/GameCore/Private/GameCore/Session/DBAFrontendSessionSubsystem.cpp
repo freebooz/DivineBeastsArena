@@ -126,10 +126,10 @@ bool UDBAFrontendSessionSubsystem::TrySetCurrentTravelContext(const FDBATravelCo
 
 	if (!Context.HasValidCharacterBuildSummary())
 	{
-		LogSubsystemWarning(FString::Printf(TEXT("拒绝无效 Travel 构建摘要：Zodiac=%d Element=%d FiveCamp=%d FixedSkillGroup=%s"),
-			static_cast<int32>(Context.SelectedZodiac),
-			static_cast<int32>(Context.SelectedElement),
-			static_cast<int32>(Context.SelectedFiveCamp),
+		LogSubsystemWarning(FString::Printf(TEXT("拒绝无效 Travel 构筑身份：生肖=%s 元素=%s 阵营=%s 固定技能组=%s"),
+			*Context.SelectedZodiacId.ToString(),
+			*Context.SelectedElementId.ToString(),
+			*Context.SelectedFiveCampId.ToString(),
 			*Context.FixedSkillGroupId.ToString()));
 		return false;
 	}

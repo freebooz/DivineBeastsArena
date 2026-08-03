@@ -1,0 +1,16 @@
+﻿{
+    "kind":  "dedicated-server-wiring-note",
+    "runId":  "20260709T153041Z",
+    "status":  "windows_packaged_ds_validated_docker_linux_blocked",
+    "packagedWindowsServer":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\packaged-server\\WindowsServer\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer.exe",
+    "packagedDsRebuiltAtLocal":  "2026-07-09T15:25:07+08:00",
+    "validationEvidence":  "Artifacts/ProductionEvidence/unreal/ue-online-validation-local-ue-evidence-packaged-20260709T232537Z.json",
+    "dockerLimitation":  "Docker 容器为 Linux，不能直接执行 Windows DivineBeastsArenaServer.exe；勿把 .exe 拷进 Linux 容器当作接线成功。本机验证应使用 start-local-ue-validation.ps1 -UsePackagedServer -ServerExePath \u003cWindows exe\u003e。",
+    "dockerEnv":  {
+                      "UE_SERVER_EXECUTABLE_PATH":  "/opt/game-server/GameServer.sh",
+                      "GAME_SERVER_ALLOW_MOCK_ALLOCATION":  false,
+                      "UE_SERVER_HOST_DIR":  "./game-server"
+                  },
+    "nextForDocker":  "需要 Linux Server 包（或宿主机 Worker 编排 Windows DS），当前已用 Windows packaged DS + 本地脚本完成 Join×2 + player-joined×2 OK。",
+    "timestampUtc":  "2026-07-09T15:30:41.3794851Z"
+}

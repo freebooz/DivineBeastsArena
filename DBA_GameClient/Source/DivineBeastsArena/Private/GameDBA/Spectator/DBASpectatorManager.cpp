@@ -1,4 +1,4 @@
-﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// Copyright Freebooz Games, Inc. All Rights Reserved.
 /*
 中文阅读说明：
 - 所属应用：DBA_GameClient Unreal Engine 客户端。
@@ -10,7 +10,7 @@
 
 #include "GameDBA/Spectator/DBASpectatorManager.h"
 
-#include "GameDBA/Character/DBAZodiacCharacterBase.h"
+#include "GameDBA/Characters/DBAZodiacCharacterBase.h"
 #include "GameFramework/PlayerState.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -20,17 +20,17 @@ UDBASpectatorManager::UDBASpectatorManager()
 {
 }
 
-void UDBASpectatorManager::Initialize(FSubsystemCollectionBase& Collection)
+void UDBASpectatorManager::OnSubsystemInitialize()
 {
-	Super::Initialize(Collection);
+	// P1-1 改造：项目基类统一调用 Super::Initialize，此处仅执行派生类初始化
 	UpdateObserverViewTargets();
 }
 
-void UDBASpectatorManager::Deinitialize()
+void UDBASpectatorManager::OnSubsystemDeinitialize()
 {
+	// P1-1 改造：项目基类统一调用 Super::Deinitialize，此处仅清理派生类状态
 	ObserverMap.Empty();
 	MatchPlayers.Empty();
-	Super::Deinitialize();
 }
 
 bool UDBASpectatorManager::ConnectObserver(APlayerController* ObserverController, EDBAObserverControlLevel ControlLevel)

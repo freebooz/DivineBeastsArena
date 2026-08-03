@@ -1,0 +1,286 @@
+// Copyright FreeboozStudio. All Rights Reserved.
+/*
+中文阅读说明：
+- 所属应用：DBA_GameClient Unreal Engine 客户端。
+- 文件职责：Unreal C++ 公共头文件，声明可被其他模块或蓝图使用的类型、属性和函数契约。
+- 阅读重点：先看公开类型、路由/组件入口和构造函数，再看私有辅助方法，理解数据如何从输入流向状态变更或界面输出。
+- 修改提示：保持现有分层边界；新增逻辑优先复用本目录已有服务、DTO、组件和工具函数，避免把配置、IO 与业务规则混在一起。
+*/
+
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameCore/Core/Subsystems/DBAGameInstanceSubsystemBase.h"
+#include "GameCore/Networking/Account/DBAAccountTypes.h"
+#include "GameCore/Data/Profile/DBAProfileTypes.h"
+#include "DBAAccountServiceBase.generated.h"
+
+class UDBAAccountSaveGame;
+class UDBAProfileSaveGame;
+class UGameInstance;
+
+/**
+ * 账户服务基类
+ *
+ * 功能：
+ * - 账户登录 / 注册 / 登出
+ * - 角色创建 / 删除 / 选择
+ * - 角色数据加载 / 保存
+ * - Profile 加载 / 保存
+ * - 存档管理
+ *
+ * 实现策略：
+ * - 基类提供存档管理和通用逻辑
+ * - 派生类实现具体的登录 / 注册逻辑
+ * - OnlineAccountService：在线模式，连接外部 Auth 服务
+ *
+ * 外部服务边界：
+ * - 外部 Auth 服务不可用时返回明确失败结果，不伪造本地登录成功
+ * - 所有外部请求必须异步、可超时、可丢弃、可熔断、可禁用
+ * - 外部服务回调必须检查 UObject 生命周期
+ *
+ * Dedicated Server：
+ * - Dedicated Server 不调用登录接口
+ * - Dedicated Server 不加载 Profile
+ * - Dedicated Server 只验证客户端提供的 SessionToken
+ *
+ * 线程安全：
+ * - 所有接口必须在 GameThread 调用
+ * - 异步回调必须切回 GameThread
+ */
+UCLASS(Abstract)
+class GAMECORE_API UDBAAccountServiceBase : public UDBAGameInstanceSubsystemBase
+{
+	GENERATED_BODY()
+
+public:
+	UDBAAccountServiceBase();
+
+	/** 解析当前 GameInstance 中已注册的具体账户服务，避免基础模块依赖业务实现类。 */
+	static UDBAAccountServiceBase* Resolve(UGameInstance* GameInstance);
+
+	// UDBAGameInstanceSubsystemBase interface
+	virtual void OnSubsystemInitialize() override;
+	virtual void OnSubsystemDeinitialize() override;
+	virtual bool IsSupportedInCurrentEnvironment() const override;
+	// End of UDBAGameInstanceSubsystemBase interface
+
+	/**
+	 * 登录
+	 *
+	 * @param Request 登录请求
+	 * @param OnComplete 完成回调
+	 */
+	virtual void Login(const FDBALoginRequest& Request, FDBAOnLoginComplete OnComplete);
+
+	/**
+	 * 注册
+	 *
+	 * @param Request 登录请求（包含注册信息）
+	 * @param OnComplete 完成回调
+	 */
+	virtual void Register(const FDBALoginRequest& Request, FDBAOnLoginComplete OnComplete);
+
+	/**
+	 * 游客登录
+	 *
+	 * @param OnComplete 完成回调
+	 */
+	virtual void GuestLogin(FDBAOnLoginComplete OnComplete);
+
+	/**
+	 * 自动登录
+	 * 尝试使用本地存档自动登录
+	 *
+	 * @param OnComplete 完成回调
+	 */
+	virtual void AutoLogin(FDBAOnLoginComplete OnComplete);
+
+	/**
+	 * 登出
+	 *
+	 * @param OnComplete 完成回调
+	 */
+	virtual void Logout(FDBAOnLogoutComplete OnComplete);
+
+	/**
+	 * 获取角色列表
+	 *
+	 * @param OnComplete 完成回调
+	 */
+	virtual void GetCharacterList(FDBAOnCharacterListLoaded OnComplete);
+
+	/**
+	 * 获取角色详细信息
+	 *
+	 * @param CharacterId 角色 ID
+	 * @param OnComplete 完成回调
+	 */
+	virtual void GetCharacterProfile(const FDBACharacterId& CharacterId, FDBAOnCharacterProfileLoaded OnComplete);
+
+	/**
+	 * 创建角色
+	 *
+	 * @param Request 创建请求
+	 * @param OnComplete 完成回调
+	 */
+	virtual void CreateCharacter(const FDBACharacterCreateRequest& Request, FDBAOnCharacterCreated OnComplete);
+
+	/**
+	 * 删除角色
+	 *
+	 * @param CharacterId 角色 ID
+	 * @param OnComplete 完成回调
+	 */
+	virtual void DeleteCharacter(const FDBACharacterId& CharacterId, FDBAOnCharacterDeleted OnComplete);
+
+	/**
+	 * 选择角色
+	 *
+	 * @param CharacterId 角色 ID
+	 * @param OnComplete 完成回调
+	 */
+	virtual void SelectCharacter(const FDBACharacterId& CharacterId, FDBAOnCharacterSelected OnComplete);
+
+	/**
+	 * 获取当前账户信息
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Account")
+	const FDBAAccountInfo& GetCurrentAccountInfo() const { return CurrentAccountInfo; }
+
+	/**
+	 * 获取当前角色 ID
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Account")
+	const FDBACharacterId& GetCurrentCharacterId() const { return CurrentCharacterId; }
+
+	/**
+	 * 获取当前 Profile
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Account")
+	const FDBAPlayerProfile& GetCurrentProfile() const { return CurrentProfile; }
+
+	/**
+	 * 检查是否已登录
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Account")
+	bool IsLoggedIn() const { return CurrentAccountInfo.IsValid(); }
+
+	/** 仅供项目层 Backend Facade 同步认证上下文，不得记录返回值。 */
+	const FString& GetAccessToken() const { return SessionToken; }
+	const FString& GetRefreshToken() const { return RefreshToken; }
+
+	/**
+	 * 保存 Profile
+	 *
+	 * @return 是否保存成功
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Account")
+	bool SaveProfile();
+
+	static FString BuildScopedSaveSlotName(const FString& BaseSlotName);
+
+protected:
+	/**
+	 * 当前账户信息
+	 */
+	UPROPERTY()
+	FDBAAccountInfo CurrentAccountInfo;
+
+	/**
+	 * 当前角色 ID
+	 */
+	UPROPERTY()
+	FDBACharacterId CurrentCharacterId;
+
+	/**
+	 * 当前 Profile
+	 */
+	UPROPERTY()
+	FDBAPlayerProfile CurrentProfile;
+
+	/**
+	 * 会话 Token
+	 */
+	UPROPERTY()
+	FString SessionToken;
+
+	UPROPERTY()
+	FString RefreshToken;
+
+	/**
+	 * 加载账户存档
+	 *
+	 * @return 账户存档，加载失败返回 nullptr
+	 */
+	UDBAAccountSaveGame* LoadAccountSaveGame();
+
+	/**
+	 * 保存账户存档
+	 *
+	 * @param SaveGame 账户存档
+	 * @return 是否保存成功
+	 */
+	bool SaveAccountSaveGame(UDBAAccountSaveGame* SaveGame);
+
+	/**
+	 * 加载 Profile 存档
+	 *
+	 * @return Profile 存档，加载失败返回 nullptr
+	 */
+	UDBAProfileSaveGame* LoadProfileSaveGame();
+
+	/**
+	 * 保存 Profile 存档
+	 *
+	 * @param SaveGame Profile 存档
+	 * @return 是否保存成功
+	 */
+	bool SaveProfileSaveGame(UDBAProfileSaveGame* SaveGame);
+
+	/**
+	 * 创建默认账户存档
+	 *
+	 * @return 默认账户存档
+	 */
+	UDBAAccountSaveGame* CreateDefaultAccountSaveGame();
+
+	/**
+	 * 创建默认 Profile 存档
+	 *
+	 * @return 默认 Profile 存档
+	 */
+	UDBAProfileSaveGame* CreateDefaultProfileSaveGame();
+
+	/**
+	 * 处理存档损坏
+	 *
+	 * @param SlotName 存档槽名称
+	 * @return 是否修复成功
+	 */
+	bool HandleCorruptedSaveGame(const FString& SlotName);
+
+	/**
+	 * 生成 Guest 账户 ID
+	 *
+	 * @return Guest 账户 ID
+	 */
+	FDBAAccountId GenerateGuestAccountId();
+
+	/**
+	 * 生成角色 ID
+	 *
+	 * @return 角色 ID
+	 */
+	FDBACharacterId GenerateCharacterId();
+
+	/**
+	 * 验证角色名称
+	 *
+	 * @param CharacterName 角色名称
+	 * @param OutErrorMessage 错误消息
+	 * @return 是否有效
+	 */
+	bool ValidateCharacterName(const FString& CharacterName, FString& OutErrorMessage);
+};

@@ -1,0 +1,49 @@
+{
+  "action": "run_pie_smoke",
+  "map": "/Game/Maps/Lobby/FrontendMap",
+  "marker": "DBA_BLACK_FIX_SMOKE",
+  "duration": 40,
+  "on_compile_errors": "suppress",
+  "console_script": [
+    "Log LogDBAUI Verbose",
+    "Log LogDBACore Log"
+  ],
+  "stages": {
+    "after_n_ticks": {
+      "n": 120,
+      "python": "exec(open(r'E:/work/Game/DivineBeastsArena/Artifacts/ProductionEvidence/unreal/_mcp_pie_guest_to_select.py', encoding='utf-8').read())"
+    }
+  },
+  "probe_scripts": [
+    {
+      "at_seconds": 22,
+      "python": "exec(open(r'E:/work/Game/DivineBeastsArena/Artifacts/ProductionEvidence/unreal/_mcp_probe_select_runtime.py', encoding='utf-8').read())"
+    },
+    {
+      "at_seconds": 28,
+      "python": "exec(open(r'E:/work/Game/DivineBeastsArena/Artifacts/ProductionEvidence/unreal/_mcp_pie_guest_to_select.py', encoding='utf-8').read())"
+    }
+  ],
+  "log_patterns": {
+    "observe_only": [
+      "CharacterSelectWidget",
+      "CharacterPresentationActor",
+      "已关闭关卡后处理",
+      "已恢复角色展示",
+      "使用世界 3D",
+      "已透明化",
+      "已显示角色选择界面",
+      "已激活展示摄像机",
+      "自动大厅流程",
+      "访客",
+      "PRES",
+      "PPV",
+      "Probe",
+      "PROBE"
+    ],
+    "warn": [
+      "创建世界 3D 角色展示舞台失败",
+      "Fatal"
+    ]
+  }
+}

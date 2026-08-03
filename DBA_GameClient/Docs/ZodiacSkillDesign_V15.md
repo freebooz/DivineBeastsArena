@@ -1,8 +1,9 @@
 # 十二生肖技能数据配置表
 
-> 项目: DivineBeastsArena 神兽竞技场
-> 版本: 15.0 (终极定稿版)
-> 日期: 2026-05-07
+> 项目: DivineBeastsArena 神兽竞技场  
+> 版本: 15.0 (终极定稿版)  
+> 日期: 2026-05-07  
+> **状态：已被 V2 取代** — 权威设计见 [`docs/Architecture/Characters/ZodiacSkillDesign_V2_万象灵庭.md`](../../docs/Architecture/Characters/ZodiacSkillDesign_V2_万象灵庭.md)。本文档保留作 V15 槽位命名、图标/特效/台词脚本与历史对照参考。
 
 ---
 

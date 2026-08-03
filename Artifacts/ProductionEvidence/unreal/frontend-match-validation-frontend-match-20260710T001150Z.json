@@ -1,0 +1,27 @@
+﻿{
+    "kind":  "frontend-match-validation",
+    "runId":  "frontend-match-20260710T001150Z",
+    "generatedAtUtc":  "2026-07-10T00:14:18.9174755Z",
+    "status":  "passed",
+    "error":  "",
+    "baseUrl":  "http://localhost:8080",
+    "sessionId":  "4d3d70f8-09e3-427d-b53a-5ff7618ae8bf",
+    "serverId":  "3fba70dd-9f98-492c-a744-1fa6e7860f78",
+    "logs":  {
+                 "server":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-frontend-match\\server-frontend-match-20260710T001150Z.log",
+                 "clientB":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-frontend-match\\client-b-frontend-match-20260710T001150Z.log",
+                 "clientA":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-frontend-match\\client-a-frontend-match-20260710T001150Z.log"
+             },
+    "counts":  {
+                   "clientAMatchTicket":  8,
+                   "clientBMatchTicket":  2,
+                   "clientAMatched":  12,
+                   "clientBMatched":  8,
+                   "clientAConnectIssued":  2,
+                   "clientBConnectIssued":  1,
+                   "clientATravel":  1,
+                   "clientBTravel":  1,
+                   "serverJoin":  2,
+                   "serverPlayerJoinedOk":  2
+               }
+}

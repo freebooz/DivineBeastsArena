@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"success\":true,\"results\":[{\"asset_path\":\"/Game/DBA/UI/Lobby/Character/WBP_DBA_CharacterCreate\",\"asset_name\":\"WBP_DBA_CharacterCreate\",\"asset_class\":\"WidgetBlueprint\",\"module_name\":\"\",\"match_context\":\"\",\"rank\":-8.8760185241699219},{\"asset_path\":\"/Game/DBA/UI/Frontend/Character/WBP_DBA_CharacterCreate\",\"asset_name\":\"WBP_DBA_CharacterCreate\",\"asset_class\":\"WidgetBlueprint\",\"module_name\":\"\",\"match_context\":\"\",\"rank\":-8.8760185241699219}],\"count\":2}"
+      }
+    ]
+  }
+}

@@ -1,4 +1,4 @@
-﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// Copyright Freebooz Games, Inc. All Rights Reserved.
 /*
 中文阅读说明：
 - 所属应用：DBA_GameClient Unreal Engine 客户端。
@@ -20,6 +20,7 @@ class UButton;
 class UImage;
 class USoundBase;
 class UTexture2D;
+struct FStreamableHandle;
 
 /**
  * UDBAMobaUserWidgetBase
@@ -47,6 +48,12 @@ protected:
 
 	void BindButtonClickAudio();
 	void ApplyDefaultBackgroundTexture();
+
+	/** 异步预加载默认点击音效，避免在按钮点击回调中同步加载阻塞 GameThread。 */
+	void PreloadDefaultClickSound();
+
+	/** 音效异步加载完成回调。 */
+	void HandleDefaultClickSoundLoaded();
 
 protected:
 	/** 显示UI时的动画 */
@@ -98,4 +105,14 @@ protected:
 	/** 自动注入的背景图引用 */
 	UPROPERTY(Transient)
 	TObjectPtr<UImage> InjectedBackgroundImage;
+
+	/** 异步加载完成后的音效缓存（弱指针，避免阻止音效 GC）。 */
+	UPROPERTY(Transient)
+	TWeakObjectPtr<USoundBase> CachedClickSound;
+
+	/** 异步加载句柄，用于取消或生命周期管理。 */
+	TSharedPtr<FStreamableHandle> ClickSoundStreamableHandle;
+
+	/** 标记是否已输出过"音效未就绪"警告日志，避免日志刷屏。 */
+	bool bHasLoggedClickSoundNotReady = false;
 };

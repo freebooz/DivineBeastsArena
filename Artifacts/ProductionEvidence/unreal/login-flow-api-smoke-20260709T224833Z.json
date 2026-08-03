@@ -1,0 +1,25 @@
+﻿{
+    "kind":  "login-flow-api-smoke",
+    "runId":  "20260709T224833Z",
+    "status":  "failed",
+    "baseUrl":  "http://localhost:8080",
+    "deviceId":  "smoke-frontend-20260709224833",
+    "steps":  [
+                  {
+                      "name":  "guest-login",
+                      "ok":  true,
+                      "detail":  "tokenLen=692; keys=data,success,message,timestamp"
+                  },
+                  {
+                      "name":  "characters-list",
+                      "ok":  true,
+                      "detail":  "count=0; rawType=PSCustomObject"
+                  },
+                  {
+                      "name":  "characters-create",
+                      "ok":  false,
+                      "detail":  "characterId=; keys=success,character"
+                  }
+              ],
+    "timestampUtc":  "2026-07-09T14:48:36.1004002Z"
+}

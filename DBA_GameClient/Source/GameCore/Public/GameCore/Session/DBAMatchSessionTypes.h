@@ -1,4 +1,4 @@
-﻿// Copyright FreeboozStudio. All Rights Reserved.
+// Copyright FreeboozStudio. All Rights Reserved.
 /*
 中文阅读说明：
 - 所属应用：DBA_GameClient Unreal Engine 客户端。
@@ -12,7 +12,7 @@
 
 #include "CoreMinimal.h"
 #include "GameCore/Types/DBACommonTypes.h"
-#include "GameCore/Account/DBAAccountTypes.h"
+#include "GameCore/Networking/Account/DBAAccountTypes.h"
 #include "DBAMatchSessionTypes.generated.h"
 
 /**
@@ -114,17 +114,17 @@ struct GAMECORE_API FDBAPlayerMatchInfo
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MatchSession")
 	int32 TeamId = 0;
 
-	/** 选择的生肖 */
+	/** Arena 数据资产定义的生肖稳定标识符。 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MatchSession")
-	EDBAZodiac SelectedZodiac = EDBAZodiac::None;
+	FName SelectedZodiacId = NAME_None;
 
-	/** 选择的自然元素之力 */
+	/** Arena 数据资产定义的元素稳定标识符。 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MatchSession")
-	EDBAElement SelectedElement = EDBAElement::None;
+	FName SelectedElementId = NAME_None;
 
-	/** 选择的五大阵营 */
+	/** Arena 数据资产定义的五营稳定标识符。 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MatchSession")
-	EDBAFiveCamp SelectedFiveCamp = EDBAFiveCamp::None;
+	FName SelectedFiveCampId = NAME_None;
 
 	/** 是否已准备 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MatchSession")

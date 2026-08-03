@@ -43,7 +43,7 @@ public class RoomSessionServiceTests
     {
         await using var db = CreateDbContext();
         var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
-        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var sessionService = CreateSessionService(db);
         var ownerId = Guid.NewGuid();
         var secondPlayerId = Guid.NewGuid();
 
@@ -67,7 +67,7 @@ public class RoomSessionServiceTests
     {
         await using var db = CreateDbContext();
         var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
-        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var sessionService = CreateSessionService(db);
         var ownerId = Guid.NewGuid();
         var secondPlayerId = Guid.NewGuid();
 
@@ -94,6 +94,53 @@ public class RoomSessionServiceTests
         Assert.False(string.IsNullOrWhiteSpace(connection.PlayerSessionToken));
         Assert.Equal(HashToken(connection.PlayerSessionToken), playerSession.SessionTokenHash);
         Assert.True(connection.TokenExpiresAt <= DateTimeOffset.UtcNow.AddMinutes(11));
+
+        // 重连令牌应同时被签发并持久化 Hash，明文仅返回给客户端
+        Assert.False(string.IsNullOrWhiteSpace(connection.ReconnectToken));
+        Assert.NotNull(connection.ReconnectTokenExpiresAt);
+        Assert.Equal(HashToken(connection.ReconnectToken!), playerSession.ReconnectTokenHash);
+        Assert.NotNull(playerSession.ReconnectTokenExpiresAt);
+        Assert.True(playerSession.ReconnectTokenExpiresAt <= DateTimeOffset.UtcNow.AddHours(1).AddMinutes(1));
+        Assert.True(playerSession.ReconnectTokenExpiresAt > DateTimeOffset.UtcNow.AddMinutes(11));
+    }
+
+    [Fact]
+    public async Task GetConnectionInfoAsync_ReissuesReconnectTokenOnEachCall()
+    {
+        await using var db = CreateDbContext();
+        var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
+        var sessionService = CreateSessionService(db);
+        var ownerId = Guid.NewGuid();
+        var secondPlayerId = Guid.NewGuid();
+
+        var room = await roomService.CreateRoomAsync(CreateRoom(), ownerId);
+        await roomService.JoinRoomAsync(room.Id, secondPlayerId, null);
+        await roomService.SetReadyAsync(room.Id, secondPlayerId, true);
+        await roomService.StartGameAsync(room.Id, ownerId);
+        var session = await sessionService.CreateFromRoomAsync(room.Id);
+        Assert.NotNull(session);
+
+        var storedSession = await db.GameSessions.SingleAsync(x => x.Id == session!.Id);
+        storedSession.ServerIp = "127.0.0.1";
+        storedSession.ServerPort = 7777;
+        storedSession.Status = "WAITING_PLAYERS";
+        await db.SaveChangesAsync();
+
+        // 第一次获取连接信息，应签发重连令牌
+        var firstConnection = await sessionService.GetConnectionInfoAsync(session!.Id, ownerId);
+        var firstPlayerSession = await db.PlayerSessions.SingleAsync(x => x.GameSessionId == session.Id && x.PlayerId == ownerId);
+        Assert.NotNull(firstConnection);
+        Assert.False(string.IsNullOrWhiteSpace(firstConnection!.ReconnectToken));
+        var firstReconnectHash = firstPlayerSession.ReconnectTokenHash;
+
+        // 第二次获取连接信息，应重新签发重连令牌（覆盖旧值）
+        var secondConnection = await sessionService.GetConnectionInfoAsync(session!.Id, ownerId);
+        var secondPlayerSession = await db.PlayerSessions.SingleAsync(x => x.GameSessionId == session.Id && x.PlayerId == ownerId);
+        Assert.NotNull(secondConnection);
+        Assert.False(string.IsNullOrWhiteSpace(secondConnection!.ReconnectToken));
+        Assert.NotEqual(firstConnection.ReconnectToken, secondConnection.ReconnectToken);
+        Assert.NotEqual(firstReconnectHash, secondPlayerSession.ReconnectTokenHash);
+        Assert.Equal(HashToken(secondConnection.ReconnectToken!), secondPlayerSession.ReconnectTokenHash);
     }
 
     [Fact]
@@ -101,7 +148,7 @@ public class RoomSessionServiceTests
     {
         await using var db = CreateDbContext();
         var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
-        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var sessionService = CreateSessionService(db);
         var ownerId = Guid.NewGuid();
         var secondPlayerId = Guid.NewGuid();
 
@@ -134,7 +181,7 @@ public class RoomSessionServiceTests
     {
         await using var db = CreateDbContext();
         var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
-        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var sessionService = CreateSessionService(db);
         var ownerId = Guid.NewGuid();
         var secondPlayerId = Guid.NewGuid();
 
@@ -186,7 +233,7 @@ public class RoomSessionServiceTests
     {
         await using var db = CreateDbContext();
         var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
-        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var sessionService = CreateSessionService(db);
         var ownerId = Guid.NewGuid();
         var secondPlayerId = Guid.NewGuid();
 
@@ -240,7 +287,7 @@ public class RoomSessionServiceTests
     {
         await using var db = CreateDbContext();
         var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
-        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var sessionService = CreateSessionService(db);
         var ownerId = Guid.NewGuid();
         var secondPlayerId = Guid.NewGuid();
 
@@ -284,7 +331,7 @@ public class RoomSessionServiceTests
     {
         await using var db = CreateDbContext();
         var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
-        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var sessionService = CreateSessionService(db);
         var ownerId = Guid.NewGuid();
         var secondPlayerId = Guid.NewGuid();
 
@@ -320,7 +367,7 @@ public class RoomSessionServiceTests
     {
         await using var db = CreateDbContext();
         var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
-        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var sessionService = CreateSessionService(db);
         var ownerId = Guid.NewGuid();
         var secondPlayerId = Guid.NewGuid();
 
@@ -373,7 +420,7 @@ public class RoomSessionServiceTests
     {
         await using var db = CreateDbContext();
         var roomService = new RoomService(db, NullLogger<RoomService>.Instance);
-        var sessionService = new SessionService(db, NullLogger<SessionService>.Instance);
+        var sessionService = CreateSessionService(db);
         var ownerId = Guid.NewGuid();
         var secondPlayerId = Guid.NewGuid();
 
@@ -413,6 +460,44 @@ public class RoomSessionServiceTests
         Assert.NotNull(connection);
         Assert.Equal("Rat_Water", connection!.CharacterBuildSummary!.FixedSkillGroupId);
         Assert.Equal("Rat_Water", playerSession.FixedSkillGroupId);
+    }
+
+    private static SessionService CreateSessionService(GameDbContext db)
+    {
+        var characterBuildPolicy = TestCharacterBuildFactory.CreatePolicy();
+        var credentialIssuer = TestCharacterBuildFactory.CreateCredentialIssuer();
+        var issueSessionConnection = new Game.Application.Sessions.IssueSessionConnectionUseCase(
+            new Game.Infrastructure.Database.Admissions.EfSessionAdmissionStore(db),
+            characterBuildPolicy,
+            credentialIssuer);
+        var changeSessionLifecycle = new Game.Application.Sessions.ChangeSessionLifecycleUseCase(
+            new Game.Infrastructure.Database.Sessions.EfSessionLifecycleStore(db),
+            TimeProvider.System);
+        var allocateSessionServer = new Game.Application.Sessions.AllocateSessionServerUseCase(
+            new Game.Infrastructure.Database.Sessions.EfSessionServerAllocationStore(db),
+            TimeProvider.System);
+        var sessionCreationStore = new Game.Infrastructure.Database.Sessions.EfSessionCreationStore(db);
+        var createSessionFromRoom = new Game.Application.Sessions.CreateSessionFromRoomUseCase(
+            sessionCreationStore,
+            characterBuildPolicy,
+            credentialIssuer,
+            TimeProvider.System);
+        var createSessionFromMatch = new Game.Application.Sessions.CreateSessionFromMatchUseCase(
+            sessionCreationStore,
+            characterBuildPolicy,
+            credentialIssuer,
+            TestCharacterBuildFactory.SessionAdmissionOptions,
+            TimeProvider.System);
+        var getSession = new Game.Application.Sessions.GetSessionUseCase(
+            new Game.Infrastructure.Database.Sessions.EfSessionQueryStore(db));
+        return new SessionService(
+            NullLogger<SessionService>.Instance,
+            getSession,
+            createSessionFromRoom,
+            createSessionFromMatch,
+            issueSessionConnection,
+            changeSessionLifecycle,
+            allocateSessionServer);
     }
 
     private static GameDbContext CreateDbContext()

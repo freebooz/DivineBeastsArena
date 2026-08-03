@@ -1,4 +1,4 @@
-﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// Copyright Freebooz Games, Inc. All Rights Reserved.
 /*
 中文阅读说明：
 - 所属应用：DBA_GameClient Unreal Engine 客户端。
@@ -13,6 +13,7 @@
 
 #include "CoreMinimal.h"
 #include "DBAEnumsCore.h"
+#include "GameCore/Core/DBAConstantsCore.h"
 
 /**
  * DBA 核心常量命名空间
@@ -108,6 +109,10 @@ namespace DBAConstants
 	// ========================================
 	// 十二生肖技能名称定稿 (V15)
 	// ========================================
+
+	// @deprecated 已迁移至 DT_SkillNames DataTable，由 UDBASkillNameSubsystem 运行时查询。
+	// 以下常量保留作为兼容回退和编译期占位；新增技能名称请通过 DataTable 配置，
+	// 不要在此命名空间追加硬编码字符串。详见《数据资产完善计划》P1-4。
 
 	namespace DBASkillNames
 	{
@@ -469,6 +474,19 @@ namespace DBAConstants
 	constexpr float AnimationSpeedBase = 600.0f;
 
 	// ========================================
+	// 网络反作弊配置
+	// ========================================
+
+	/** 单次移动请求最大允许距离（厘米），超过视为瞬移 */
+	constexpr float MaxMoveDistancePerRequest = 1500.0f;
+
+	/** 攻击请求最小间隔（秒），小于此间隔视为频率异常 */
+	constexpr float MinAttackInterval = 0.3f;
+
+	/** 攻击范围上限（厘米），用于校验目标合法性 */
+	constexpr float MaxAttackRange = 800.0f;
+
+	// ========================================
 	// 调试配置
 	// ========================================
 
@@ -480,6 +498,13 @@ namespace DBAConstants
 
 	/** 调试绘制厚度 */
 	constexpr float DebugDrawThickness = 2.0f;
+
+	// ========================================
+	// 数据表路径（兼容旧引用，新代码请使用 DBAPaths）
+	// ========================================
+
+	constexpr const TCHAR* DT_Skills = TEXT("/Game/DBA/Data/Tables/DT_Skills");
+	constexpr const TCHAR* DT_ElementResonance = TEXT("/Game/Data/Elements/DBAElementResonanceRow");
 }
 
 /**
@@ -599,7 +624,7 @@ namespace DBAPaths
 	constexpr const TCHAR* PracticeRoot = TEXT("/Game/Practice");
 
 	/** UI 资源根路径 */
-	constexpr const TCHAR* UIRoot = TEXT("/Game/UI");
+	constexpr const TCHAR* UIRoot = TEXT("/Game/DBA/UI");
 
 	/** Developer 资源根路径 */
 	constexpr const TCHAR* DeveloperRoot = TEXT("/Game/Developer");
@@ -626,6 +651,9 @@ namespace DBAPaths
 	/** 固定技能组数据表 */
 	constexpr const TCHAR* DT_FixedSkillGroups = TEXT("/Game/DBA/Data/Tables/DT_FixedSkillGroups");
 
+	/** 元素共鸣数据表（修正原拼写错误 DBAElementResonanceRowe → DBAElementResonanceRow） */
+	constexpr const TCHAR* DT_ElementResonance = TEXT("/Game/Data/Elements/DBAElementResonanceRow");
+
 	// ========================================
 	// 地图路径
 	// ========================================
@@ -636,12 +664,12 @@ namespace DBAPaths
 	/** 5v5 对局地图 */
 	constexpr const TCHAR* Map_Arena5v5 = TEXT("/Game/Arena/Maps/Arena_5v5");
 
-	/** 主大厅地图 */
-	constexpr const TCHAR* Map_MainLobby = TEXT("/Game/Lobby/Maps/MainLobby");
+	/** 主大厅地图（引用 GameCore 层常量，避免路径分歧） */
+	constexpr const TCHAR* Map_MainLobby = DBAConstantsCore::Map_MainLobby;
 
-	/** 新手村地图 */
-	constexpr const TCHAR* Map_NewbieVillage = TEXT("/Game/Lobby/Maps/NewbieVillage");
+	/** 新手村地图（引用 GameCore 层常量，避免路径分歧） */
+	constexpr const TCHAR* Map_NewbieVillage = DBAConstantsCore::Map_NewbieVillage;
 
-	/** 练习地图 */
-	constexpr const TCHAR* Map_Practice = TEXT("/Game/Practice/Maps/Practice_Training");
+	/** 练习地图（引用 GameCore 层常量，避免路径分歧） */
+	constexpr const TCHAR* Map_Practice = DBAConstantsCore::Map_Practice;
 }

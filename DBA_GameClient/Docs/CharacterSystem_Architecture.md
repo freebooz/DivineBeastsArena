@@ -26,27 +26,26 @@
 
 ### 2.1 角色继承体系
 
+> **2026-07-07 更新：** 十二玩家生肖已不再使用 `ADBAZodiacCharacter_*` 子类，改为 `ADBAZodiacCharacterBase` + `UDBAZodiacCharacterRegistry` 数据驱动。权威说明见 [`docs/Architecture/Characters/ZodiacCharacterSystem.md`](../../../docs/Architecture/Characters/ZodiacCharacterSystem.md)。
+>
+> **外观策略（当前阶段）：** 默认 `UDBAZodiacVisualDeveloperSettings::bUseTintedPlaceholderMesh=true`，12 生肖共用 Rosales 占位网格，通过 `DT_ZodiacPlaceholderTints` 染色区分；后期关闭该开关后改用各生肖 `SKM_DBA_Zodiac_*` 正式模型。
+
 ```
 UE原生基类
-└── AActor / ACharacter
+└── AActor / ACharacter + IAbilitySystemInterface
         │
-        ├── ADBAMonsterBase (怪物基类)
-        │       ├── ADBAMonster_Slime
-        │       ├── ADBAMonster_Ghost
-        │       ├── ADBAMonster_Golem
-        │       ├── ADBAMonster_Imp
-        │       └── ADBAMonster_Skeleton
+        ├── ADBACharacterBase (角色/怪物统一抽象父类)
+        │       ├── ADBAZodiacCharacterBase (生肖玩家角色唯一 C++ 基类)
+        │       │       └── [蓝图或 Registry 映射的具体类，按 EDBAZodiac 区分 ZodiacType]
+        │       └── ADBAMonsterBase (怪物基类)
+        │               └── ADBALobbyTrainingMonster
         │
         ├── ADBAGuardianBase (守卫基类)
         │       ├── ADBAGuardian_Tower (防御塔)
         │       ├── ADBAGuardian_Crystal (水晶)
         │       └── ADBAGuardian_Statue (雕像)
         │
-        └── ADBAZodiacCharacterBase (生肖角色基类) ← 玩家角色
-                ├── ADBAZodiacCharacter_Rat
-                ├── ADBAZodiacCharacter_Ox
-                ├── ADBAZodiacCharacter_Tiger
-                └── ... (12生肖)
+        └── [已移除] ADBAZodiacCharacter_Rat / Ox / ... / Pig (12 个 C++ 子类)
 ```
 
 ### 2.2 组件架构

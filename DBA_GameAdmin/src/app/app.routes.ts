@@ -17,6 +17,9 @@ import {
   SupportTicketsPageComponent
 } from './pages/admin-pages';
 import { LoginPageComponent } from './pages/login-page.component';
+import { PaymentOrdersPageComponent } from './pages/payment-orders-page.component';
+import { QuestsPageComponent } from './pages/quests-page.component';
+import { WalletPageComponent } from './pages/wallet-page.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
@@ -39,7 +42,10 @@ export const routes: Routes = [
       { path: 'feedback', component: FeedbackPageComponent },
       { path: 'support', component: SupportTicketsPageComponent },
       { path: 'audit', component: AuditLogsPageComponent },
-      { path: 'platform', component: PlatformPageComponent }
+      { path: 'platform', component: PlatformPageComponent },
+      { path: 'payment-orders', component: PaymentOrdersPageComponent },
+      { path: 'quests', component: QuestsPageComponent },
+      { path: 'wallet', component: WalletPageComponent }
     ]
   },
   { path: '**', redirectTo: 'dashboard' }

@@ -12,6 +12,9 @@ namespace Game.Api.Tests;
 
 public class CharacterBuildRulesTests
 {
+    private static readonly Game.Application.Characters.ICharacterBuildPolicy BuildPolicy =
+        TestCharacterBuildFactory.CreatePolicy();
+
     [Fact]
     public void BuildFixedSkillGroupId_WhenZodiacAndElementAreProvided_UsesZodiacAndElement()
     {
@@ -21,14 +24,11 @@ public class CharacterBuildRulesTests
     }
 
     [Theory]
-    [InlineData(null, null, "Rat_Water")]
-    [InlineData("", "", "Rat_Water")]
-    [InlineData("None", "None", "Rat_Water")]
-    [InlineData(" None ", " None ", "Rat_Water")]
     [InlineData(" Rat ", " Water ", "Rat_Water")]
-    public void BuildFixedSkillGroupId_WhenValuesAreMissingOrPadded_NormalizesChoices(
-        string? zodiac,
-        string? element,
+    [InlineData(" Tiger ", " Fire ", "Tiger_Fire")]
+    public void BuildFixedSkillGroupId_WhenValuesArePadded_NormalizesChoices(
+        string zodiac,
+        string element,
         string expected)
     {
         var fixedSkillGroupId = CharacterBuildRules.BuildFixedSkillGroupId(zodiac, element);
@@ -58,7 +58,7 @@ public class CharacterBuildRulesTests
         string expectedFiveCamp,
         string expectedFixedSkillGroupId)
     {
-        var buildSummary = CharacterBuildRules.BuildSummary(zodiac, primaryElement, fiveCamp);
+        var buildSummary = BuildPolicy.BuildSummary(zodiac, primaryElement, fiveCamp);
 
         Assert.Equal(expectedZodiac, buildSummary.Zodiac);
         Assert.Equal(expectedPrimaryElement, buildSummary.PrimaryElement);

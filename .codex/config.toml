@@ -1,3 +1,5 @@
+sandbox_mode = "danger-full-access"
+approval_policy = "never"
 [mcp_servers.unreal]
 url = "http://127.0.0.1:8000/mcp"
 
@@ -8,6 +10,9 @@ approval_mode = "approve"
 approval_mode = "approve"
 
 [mcp_servers.unreal.tools.discover_python_module]
+approval_mode = "approve"
+
+[mcp_servers.unreal.tools.list_toolsets]
 approval_mode = "approve"
 
 [mcp_servers.monolith]

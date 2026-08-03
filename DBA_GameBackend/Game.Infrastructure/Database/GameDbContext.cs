@@ -48,6 +48,7 @@ public class GameDbContext : DbContext
     public DbSet<OrderRecord> OrderRecords => Set<OrderRecord>();
     public DbSet<WalletBalance> WalletBalances => Set<WalletBalance>();
     public DbSet<WalletLedger> WalletLedgers => Set<WalletLedger>();
+    public DbSet<PaymentOrder> PaymentOrders => Set<PaymentOrder>();
 
     // 游戏功能与运营支撑 / Game feature and live-ops entities
     public DbSet<PlayerRanking> PlayerRankings => Set<PlayerRanking>();
@@ -60,6 +61,8 @@ public class GameDbContext : DbContext
     public DbSet<PlayerEventProgress> PlayerEventProgresses => Set<PlayerEventProgress>();
     public DbSet<Achievement> Achievements => Set<Achievement>();
     public DbSet<PlayerAchievement> PlayerAchievements => Set<PlayerAchievement>();
+    public DbSet<Quest> Quests => Set<Quest>();
+    public DbSet<PlayerQuest> PlayerQuests => Set<PlayerQuest>();
     public DbSet<PlayerMatchHistory> PlayerMatchHistories => Set<PlayerMatchHistory>();
     public DbSet<Report> Reports => Set<Report>();
     public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();

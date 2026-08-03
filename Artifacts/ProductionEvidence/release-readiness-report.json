@@ -1,13 +1,13 @@
 ﻿{
     "schemaVersion":  "1.0",
     "kind":  "release-readiness-report",
-    "generatedAtUtc":  "2026-06-30T13:39:47.2329731Z",
+    "generatedAtUtc":  "2026-07-07T11:30:33.9856166Z",
     "readyForRelease":  false,
-    "developmentContinuationReady":  true,
-    "releaseId":  "local-launcher-evidence-support-files-gate-20260630",
+    "developmentContinuationReady":  false,
+    "releaseId":  "local-ue-evidence-20260707T112831Z",
     "manifestPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\production-evidence-manifest.json",
     "evidenceRoot":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence",
-    "gitCommit":  "a5a08469d8d6ada512972c4edfc9787a680be9a4",
+    "gitCommit":  "383fed38446462dadea67c93c9a46f213c785d35",
     "gitIsDirty":  true,
     "requirementCount":  14,
     "presentRequirementCount":  10,
@@ -17,7 +17,7 @@
                                   "path":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\release-blockers-external-only-validation.json",
                                   "releaseId":  "local-launcher-evidence-support-files-gate-20260630",
                                   "kindIsValid":  true,
-                                  "releaseIdMatchesManifest":  true,
+                                  "releaseIdMatchesManifest":  false,
                                   "blockerCountMatchesManifest":  true,
                                   "externalOnly":  true,
                                   "blockerCount":  4,
@@ -41,7 +41,7 @@
                                  {
                                      "key":  "client.release_prerequisites",
                                      "status":  "incomplete",
-                                     "description":  "Client release input prerequisite evidence proving package root, production CDN URLs, and signing inputs are ready before release automation runs.",
+                                     "description":  "客户端发布输入前置证据，证明包体根目录、生产 CDN URL 和签名输入已就绪。",
                                      "fileCount":  1,
                                      "files":  [
                                                    "client/client-release-prerequisites-client-evidence-local-20260628T080212Z-example-url.json"
@@ -50,7 +50,7 @@
                                  {
                                      "key":  "client.package_launcher",
                                      "status":  "incomplete",
-                                     "description":  "Client package, launcher manifest, SHA256 file list, and local install/update repair smoke evidence.",
+                                     "description":  "客户端包、启动器清单、SHA256 文件列表和本地安装/更新修复冒烟证据。",
                                      "fileCount":  16,
                                      "files":  [
                                                    "client/client-package-launcher-client-evidence-local-20260628T080212Z-package.json",
@@ -74,7 +74,7 @@
                                  {
                                      "key":  "client.cdn_launcher_smoke",
                                      "status":  "incomplete",
-                                     "description":  "Launcher CDN smoke evidence proving manifest fetch, package downloads, SHA256 verification, and local install version persistence.",
+                                     "description":  "启动器 CDN 冒烟证据，证明清单获取、包下载、SHA256 校验和本地安装版本持久化。",
                                      "fileCount":  2,
                                      "files":  [
                                                    "client/launcher-cdn-smoke-client-evidence-local-20260628T080212Z-local-cdn-payload-smoke.json",
@@ -84,7 +84,7 @@
                                  {
                                      "key":  "client.code_signing",
                                      "status":  "incomplete",
-                                     "description":  "Windows Authenticode code-signing evidence proving public client executables and libraries are trusted signed.",
+                                     "description":  "Windows Authenticode 代码签名证据，证明公开客户端可执行文件和库已可信签名。",
                                      "fileCount":  7,
                                      "files":  [
                                                    "client/code-signing-client-code-signing-final-require-signed-expected-fail-20260628T094500Z.json",
@@ -101,7 +101,7 @@
                          {
                              "key":  "security.nuget",
                              "status":  "present",
-                             "description":  "NuGet vulnerable package report from security-ci or production-security-audit.",
+                             "description":  "NuGet 漏洞包报告来自 security-ci 或 production-security-audit。",
                              "fileCount":  1,
                              "files":  [
                                            "security/vulnerability-report.txt"
@@ -110,7 +110,7 @@
                          {
                              "key":  "security.npm",
                              "status":  "present",
-                             "description":  "Production npm audit JSON for Admin, Website, and Launcher.",
+                             "description":  "Admin、Website、Launcher 的生产 npm audit JSON。",
                              "fileCount":  9,
                              "files":  [
                                            "security/npm-audit-admin-local-20260628T075336Z.json",
@@ -127,7 +127,7 @@
                          {
                              "key":  "security.trivy",
                              "status":  "present",
-                             "description":  "API and Worker container Trivy SARIF or scan report.",
+                             "description":  "API 和 Worker 容器 Trivy SARIF 或扫描报告。",
                              "fileCount":  2,
                              "files":  [
                                            "security/trivy-api-local-security-20260628T020000Z.sarif",
@@ -137,7 +137,7 @@
                          {
                              "key":  "load.k6",
                              "status":  "present",
-                             "description":  "k6 login, matchmaking, or dedicated server orchestration load-test output.",
+                             "description":  "k6 登录、匹配或专用服务器编排压测输出。",
                              "fileCount":  4,
                              "files":  [
                                            "load/k6-login-local-k6-login-20260628T022527Z.json",
@@ -149,7 +149,7 @@
                          {
                              "key":  "ops.backup_restore",
                              "status":  "present",
-                             "description":  "PostgreSQL backup and restore rehearsal evidence.",
+                             "description":  "PostgreSQL 备份与恢复演练证据。",
                              "fileCount":  2,
                              "files":  [
                                            "ops/backup-restore-rehearsal-20260628T015502Z.json",
@@ -159,7 +159,7 @@
                          {
                              "key":  "ops.deploy_rollback",
                              "status":  "present",
-                             "description":  "Deployment, smoke test, and rollback evidence.",
+                             "description":  "部署、冒烟测试和回滚证据。",
                              "fileCount":  2,
                              "files":  [
                                            "ops/production-smoke-backend-local-smoke-20260628T021000Z.json",
@@ -169,9 +169,10 @@
                          {
                              "key":  "unreal.online_validation",
                              "status":  "present",
-                             "description":  "UE packaged or editor online validation evidence for backend allocation, Dedicated Server startup, and client joins.",
-                             "fileCount":  5,
+                             "description":  "UE 打包或编辑器在线验证证据，覆盖后端分配、Dedicated Server 启动和客户端加入。",
+                             "fileCount":  6,
                              "files":  [
+                                           "unreal/ue-online-validation-local-ue-evidence-20260707T112831Z.json",
                                            "unreal/ue-online-validation-packaged-ue-online-build-summary-20260628T040000Z.json",
                                            "unreal/ue-online-validation-packaged-ue-online-build-summary-20260628T041000Z.json",
                                            "unreal/ue-online-validation-packaged-ue-online-external-mode-20260628T062800Z.json",
@@ -182,21 +183,22 @@
                          {
                              "key":  "unreal.ai_showcase_automation",
                              "status":  "present",
-                             "description":  "AI_Showcase UI/VFX automation regression evidence for MCP-generated showcase assets.",
-                             "fileCount":  6,
+                             "description":  "MCP 生成 AI_Showcase 资产的 UI/VFX 自动化回归证据。",
+                             "fileCount":  7,
                              "files":  [
                                            "unreal/ai-showcase-automation-ai-showcase-editorcmd-20260629.json",
                                            "unreal/ai-showcase-automation-ai-showcase-editorcmd-window-20260629.json",
                                            "unreal/ai-showcase-automation-ai-showcase-loggate-20260629.json",
                                            "unreal/ai-showcase-automation-ai-showcase-semantic-20260629.json",
                                            "unreal/ai-showcase-automation-ai-showcase-widget-tree-20260630.json",
-                                           "unreal/ai-showcase-automation-ai-showcase-widget-tree-20260630b.json"
+                                           "unreal/ai-showcase-automation-ai-showcase-widget-tree-20260630b.json",
+                                           "unreal/ai-showcase-automation-local-ue-evidence-20260707T112831Z.json"
                                        ]
                          },
                          {
                              "key":  "client.release_prerequisites",
                              "status":  "incomplete",
-                             "description":  "Client release input prerequisite evidence proving package root, production CDN URLs, and signing inputs are ready before release automation runs.",
+                             "description":  "客户端发布输入前置证据，证明包体根目录、生产 CDN URL 和签名输入已就绪。",
                              "fileCount":  1,
                              "files":  [
                                            "client/client-release-prerequisites-client-evidence-local-20260628T080212Z-example-url.json"
@@ -205,7 +207,7 @@
                          {
                              "key":  "client.package_launcher",
                              "status":  "incomplete",
-                             "description":  "Client package, launcher manifest, SHA256 file list, and local install/update repair smoke evidence.",
+                             "description":  "客户端包、启动器清单、SHA256 文件列表和本地安装/更新修复冒烟证据。",
                              "fileCount":  16,
                              "files":  [
                                            "client/client-package-launcher-client-evidence-local-20260628T080212Z-package.json",
@@ -229,7 +231,7 @@
                          {
                              "key":  "client.cdn_launcher_smoke",
                              "status":  "incomplete",
-                             "description":  "Launcher CDN smoke evidence proving manifest fetch, package downloads, SHA256 verification, and local install version persistence.",
+                             "description":  "启动器 CDN 冒烟证据，证明清单获取、包下载、SHA256 校验和本地安装版本持久化。",
                              "fileCount":  2,
                              "files":  [
                                            "client/launcher-cdn-smoke-client-evidence-local-20260628T080212Z-local-cdn-payload-smoke.json",
@@ -239,7 +241,7 @@
                          {
                              "key":  "client.code_signing",
                              "status":  "incomplete",
-                             "description":  "Windows Authenticode code-signing evidence proving public client executables and libraries are trusted signed.",
+                             "description":  "Windows Authenticode 代码签名证据，证明公开客户端可执行文件和库已可信签名。",
                              "fileCount":  7,
                              "files":  [
                                            "client/code-signing-client-code-signing-final-require-signed-expected-fail-20260628T094500Z.json",
@@ -254,7 +256,7 @@
                          {
                              "key":  "client.launcher_install_update",
                              "status":  "present",
-                             "description":  "Launcher install/update smoke evidence proving manifest fetch, repair download, SHA256 verification, and version persistence.",
+                             "description":  "启动器安装/更新冒烟证据，证明清单获取、修复下载、SHA256 校验和版本持久化。",
                              "fileCount":  10,
                              "files":  [
                                            "client/launcher-install-update-smoke-client-evidence-local-20260628T080212Z-launcher-install-update.json",
@@ -272,7 +274,7 @@
                          {
                              "key":  "client.launcher_ui_visual",
                              "status":  "present",
-                             "description":  "Launcher UI visual evidence proving the player-facing launcher screen renders and exposes install/update actions.",
+                             "description":  "启动器 UI 视觉证据，证明玩家可见启动器界面可渲染并暴露安装/更新操作。",
                              "fileCount":  5,
                              "files":  [
                                            "client/launcher-ui-visual-evidence-client-evidence-local-20260628T080212Z-launcher-ui-visual.json",

@@ -1,0 +1,13 @@
+﻿{
+    "kind":  "online-json-automation",
+    "runId":  "20260709T224834Z",
+    "status":  "passed",
+    "testFilter":  "DivineBeastsArena.GameCore.Account.OnlineJson",
+    "exitCode":  0,
+    "elapsedSeconds":  11.8,
+    "found":  6,
+    "passed":  6,
+    "failed":  0,
+    "logPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\unreal\\online-json-automation-20260709T224834Z.log",
+    "timestampUtc":  "2026-07-09T14:49:37.6007773Z"
+}

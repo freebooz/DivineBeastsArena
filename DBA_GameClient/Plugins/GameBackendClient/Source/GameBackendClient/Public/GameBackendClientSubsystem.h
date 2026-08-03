@@ -27,6 +27,14 @@ class UDBA_GameBackendSupportService;
 class UDBA_GameBackendTelemetryService;
 class UDBA_GameBackendCrashService;
 class UDBA_GameBackendRuntimeService;
+class UDBA_GameBackendShopService;
+class UDBA_GameBackendRankingService;
+class UDBA_GameBackendEventService;
+class UDBA_GameBackendFriendService;
+class UDBA_GameBackendAchievementService;
+class UDBA_GameBackendQuestService;
+class UDBA_GameBackendPaymentService;
+class UDBA_GameBackendWalletService;
 
 UCLASS(BlueprintType)
 class GAMEBACKENDCLIENT_API UDBA_GameBackendClientSubsystem : public UGameInstanceSubsystem
@@ -100,6 +108,30 @@ public:
 	UFUNCTION(BlueprintPure, Category = "DBA_GameBackend|Service")
 	UDBA_GameBackendRuntimeService* GetRuntimeService() const { return RuntimeService; }
 
+	UFUNCTION(BlueprintPure, Category = "DBA_GameBackend|Service")
+	UDBA_GameBackendShopService* GetShopService() const { return ShopService; }
+
+	UFUNCTION(BlueprintPure, Category = "DBA_GameBackend|Service")
+	UDBA_GameBackendRankingService* GetRankingService() const { return RankingService; }
+
+	UFUNCTION(BlueprintPure, Category = "DBA_GameBackend|Service")
+	UDBA_GameBackendEventService* GetEventService() const { return EventService; }
+
+	UFUNCTION(BlueprintPure, Category = "DBA_GameBackend|Service")
+	UDBA_GameBackendFriendService* GetFriendService() const { return FriendService; }
+
+	UFUNCTION(BlueprintPure, Category = "DBA_GameBackend|Service")
+	UDBA_GameBackendAchievementService* GetAchievementService() const { return AchievementService; }
+
+	UFUNCTION(BlueprintPure, Category = "DBA_GameBackend|Service")
+	UDBA_GameBackendQuestService* GetQuestService() const { return QuestService; }
+
+	UFUNCTION(BlueprintPure, Category = "DBA_GameBackend|Service")
+	UDBA_GameBackendPaymentService* GetPaymentService() const { return PaymentService; }
+
+	UFUNCTION(BlueprintPure, Category = "DBA_GameBackend|Service")
+	UDBA_GameBackendWalletService* GetWalletService() const { return WalletService; }
+
 	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Debug")
 	void TestVersionCheck(const FDBA_GameBackendResponseDelegate& Callback);
 
@@ -166,6 +198,30 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UDBA_GameBackendRuntimeService> RuntimeService;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDBA_GameBackendShopService> ShopService;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDBA_GameBackendRankingService> RankingService;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDBA_GameBackendEventService> EventService;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDBA_GameBackendFriendService> FriendService;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDBA_GameBackendAchievementService> AchievementService;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDBA_GameBackendQuestService> QuestService;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDBA_GameBackendPaymentService> PaymentService;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDBA_GameBackendWalletService> WalletService;
 
 	TSharedPtr<FDBA_GameBackendHttpClient> HttpClient;
 

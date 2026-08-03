@@ -4,7 +4,8 @@
 
 - 登录界面使用蓝图 `WBP_DBA_Login`（含用户名/密码输入框和背景纹理）。
 - 角色选择与角色创建使用蓝图UI承载交互控件。
-- 角色三维模型和光照全部由关卡中的 `ADBACharacterPresentationActor` 提供，不走 UMG Viewport 渲染。
+- 角色三维模型、相机和光照全部由固定 `FrontendMap` 中的 `ADBACharacterPresentationActor` 提供，不走 UMG Viewport 渲染。
+- 选角/创角 Widget 不得创建 `CharacterPreviewHost`、预览组件或运行时展示舞台；只通过 C++ 事件更新关卡中已放置的角色。
 
 ---
 
@@ -74,8 +75,8 @@ WBP_DBA_Login (UserWidget)
 |                                                                                  |
 |  +----------------------------+        +--------------------------------------+  |
 |  | LeftPanel                  |        | CenterStage (3D关卡镜头)             |  |
-|  | CharacterListText          |        | CharacterPreviewHost (透明占位)      |  |
-|  | RefreshButton              |        | 拖拽旋转热区                         |  |
+|  | CharacterListText          |        | 固定关卡角色展示区                   |  |
+|  | RefreshButton              |        | 非交互控件区可拖拽旋转             |  |
 |  +----------------------------+        +--------------------------------------+  |
 |                                                                                  |
 |                                      +-----------------------------+             |
@@ -96,7 +97,6 @@ WBP_DBA_CharacterSelect (UserWidget)
    │  └─ LeftVBox
    │     ├─ CharacterListText (TextBlock)        // BindWidgetOptional
    │     └─ RefreshButton (Button)               // BindWidgetOptional
-   ├─ CharacterPreviewHost (Border/Overlay)      // BindWidgetOptional（透明，仅事件区域）
    └─ RightPanel (Border)
       └─ RightVBox
          ├─ ConfirmButton (Button)               // BindWidgetOptional
@@ -108,13 +108,11 @@ WBP_DBA_CharacterSelect (UserWidget)
 
 | 组件 | 参数 | 建议值 |
 |---|---|---|
-| `CharacterPreviewHost` | Anchors | Min(0.24,0.05), Max(0.76,0.95) |
-| `CharacterPreviewHost` | RenderOpacity | `0.0`（显示交给关卡镜头） |
-| `CharacterPreviewHost` | Visibility | `SelfHitTestInvisible` |
 | `ConfirmButton` | Text | `进入大厅` |
 | `CreateButton` | Text | `创建角色` |
 | `RefreshButton` | Text | `刷新` |
-| `PreviewDragRotationDegreesPerPixel` | C++默认 | `0.28` |
+| `PreviewDragRotationDegreesPerPixel` | C++默认 | `0.55` |
+| 拖拽命中 | C++ | 根 Widget 中不属于按钮的区域 |
 
 ---
 
@@ -125,7 +123,7 @@ WBP_DBA_CharacterSelect (UserWidget)
 ```text
 +----------------------------------------------------------------------------------+
 |                                CenterStage (3D关卡镜头)                         |
-|                                CharacterPreviewHost 透明热区                    |
+|                                固定关卡角色展示区                            |
 |                                                                                  |
 |  +-----------------------------+                                                 |
 |  | CreatePanel                 |                                                 |
@@ -145,7 +143,6 @@ WBP_DBA_CharacterSelect (UserWidget)
 ```text
 WBP_DBA_CharacterCreate (UserWidget)
 └─ RootCanvas
-   ├─ CharacterPreviewHost (Border/Overlay)      // BindWidgetOptional（透明，仅事件区域）
    └─ CreatePanel (Border)
       └─ FormVBox
          ├─ CharacterNameInput (EditableTextBox) // BindWidgetOptional
@@ -164,8 +161,6 @@ WBP_DBA_CharacterCreate (UserWidget)
 
 | 组件 | 参数 | 建议值 |
 |---|---|---|
-| `CharacterPreviewHost` | Anchors | Min(0.24,0.05), Max(0.76,0.95) |
-| `CharacterPreviewHost` | RenderOpacity | `0.0` |
 | `CharacterNameInput` | HintText | `输入角色名` |
 | `ZodiacButton` | 点击行为 | 轮换 `Rat -> ... -> Pig` |
 | `ElementButton` | 点击行为 | 轮换 `Water/Fire/Wood/Gold/Earth` |
@@ -176,19 +171,19 @@ WBP_DBA_CharacterCreate (UserWidget)
 
 ---
 
-## 5. 关卡三维展示 Actor 规格（ADBACharacterPresentationActor）
+## 5. 固定关卡三维展示规格（ADBACharacterPresentationActor）
 
-> 以下为当前C++已实现的参考值，蓝图关卡摆放可直接对齐。
+> `FrontendMap` 直接放置一个原生 `ADBACharacterPresentationActor`。不使用同名 Blueprint 空壳，不允许 Widget 生成或销毁展示 Actor。
 
 ### 5.1 相机与舞台
 
 | 项 | 值 |
 |---|---|
-| CameraFOV | `38.0` |
-| CameraLocation | `(230, 0, 92)` |
-| CameraRotation | `(-8, 180, 0)` |
+| CameraFOV | `34.0` |
+| CameraLocation | `(520, 0, 150)` |
+| CameraRotation | `(-2, 180, 0)` |
 | GroundScale | `(7.5, 7.5, 1.0)` |
-| 模型缩放 | `3.75` |
+| 模型缩放 | `1.0`（原始大小） |
 
 ### 5.2 灯光
 
@@ -215,8 +210,7 @@ WBP_DBA_CharacterCreate (UserWidget)
 
 1. 启动后 `Splash -> Login`，显示 `WBP_DBA_Login`，用户名/密码输入框可见。  
 2. 点击游客登录后进入 `WBP_DBA_CharacterSelect`。  
-3. `CharacterPreviewHost` 区域能拖拽旋转角色（实际模型来自关卡镜头）。  
+3. 在非按钮区域拖拽时，关卡中的角色模型可旋转，Widget 树中不存在角色预览组件。  
 4. 点击创建角色进入 `WBP_DBA_CharacterCreate`。  
 5. 创建成功后返回选择并可进入大厅。  
 6. 日志中不应出现 `MM_Idle ... Invalid USkeleton supplied`。  
-

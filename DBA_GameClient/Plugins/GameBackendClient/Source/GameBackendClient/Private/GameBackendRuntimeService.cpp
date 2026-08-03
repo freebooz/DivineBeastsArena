@@ -51,15 +51,22 @@ bool UDBA_GameBackendRuntimeService::ConfigureFromCommandLine()
 		ServerId = ReadCommandLineValue(TEXT("ServerId="));
 	}
 
+	BuildId = ReadCommandLineValue(TEXT("buildId="));
+	if (BuildId.IsEmpty())
+	{
+		BuildId = ReadCommandLineValue(TEXT("BuildId="));
+	}
+
 	RuntimeToken = ReadCommandLineValue(TEXT("runtimeToken="));
 	if (RuntimeToken.IsEmpty())
 	{
 		RuntimeToken = ReadCommandLineValue(TEXT("RuntimeToken="));
 	}
 
-	UE_LOG(LogDBA_GameBackendClient, Log, TEXT("运行时参数读取完成。会话=%s 服务器=%s 已配置令牌=%s"),
+	UE_LOG(LogDBA_GameBackendClient, Log, TEXT("运行时参数读取完成。会话=%s 服务器=%s 构建=%s 已配置令牌=%s"),
 		*SessionId,
 		*ServerId,
+		*BuildId,
 		RuntimeToken.IsEmpty() ? TEXT("否") : TEXT("是"));
 
 	return IsConfigured();
@@ -67,7 +74,7 @@ bool UDBA_GameBackendRuntimeService::ConfigureFromCommandLine()
 
 bool UDBA_GameBackendRuntimeService::IsConfigured() const
 {
-	return !SessionId.IsEmpty() && !ServerId.IsEmpty() && !RuntimeToken.IsEmpty();
+	return !SessionId.IsEmpty() && !ServerId.IsEmpty() && !BuildId.IsEmpty() && !RuntimeToken.IsEmpty();
 }
 
 void UDBA_GameBackendRuntimeService::RegisterServer(const FDBA_GameBackendResponseDelegate& Callback)
@@ -85,18 +92,21 @@ void UDBA_GameBackendRuntimeService::SendHeartbeat(const FDBA_GameBackendRespons
 	PostRuntime(TEXT("/runtime/servers/heartbeat"), BuildRuntimePayload([](TSharedRef<FJsonObject>) {}), Callback);
 }
 
-void UDBA_GameBackendRuntimeService::NotifyPlayerJoined(
+void UDBA_GameBackendRuntimeService::ValidateJoinTicket(
 	const FString& PlayerId,
-	const FString& PlayerSessionToken,
+	const FString& CharacterId,
+	const FString& JoinTicket,
 	const FString& Team,
 	int32 SlotIndex,
 	const FDBA_GameBackendRuntimePlayerBuildSummary& BuildSummary,
-	const FDBA_GameBackendResponseDelegate& Callback)
+	FDBA_GameBackendNativeResponseCallback Callback)
 {
-	const FString Body = BuildRuntimePayload([&PlayerId, &PlayerSessionToken, &Team, SlotIndex, &BuildSummary](TSharedRef<FJsonObject> Json)
+	const FString Body = BuildRuntimePayload([this, &PlayerId, &CharacterId, &JoinTicket, &Team, SlotIndex, &BuildSummary](TSharedRef<FJsonObject> Json)
 	{
 		Json->SetStringField(TEXT("playerId"), PlayerId);
-		Json->SetStringField(TEXT("playerSessionToken"), PlayerSessionToken);
+		Json->SetStringField(TEXT("characterId"), CharacterId);
+		Json->SetStringField(TEXT("buildId"), BuildId);
+		Json->SetStringField(TEXT("joinTicket"), JoinTicket);
 		Json->SetStringField(TEXT("team"), Team);
 		Json->SetNumberField(TEXT("slotIndex"), SlotIndex);
 		if (BuildSummary.HasAnyValue())
@@ -107,7 +117,7 @@ void UDBA_GameBackendRuntimeService::NotifyPlayerJoined(
 			Json->SetStringField(TEXT("fixedSkillGroupId"), BuildSummary.FixedSkillGroupId);
 		}
 	});
-	PostRuntime(TEXT("/runtime/servers/player-joined"), Body, Callback);
+	PostRuntimeNative(TEXT("/runtime/servers/validate-join-ticket"), Body, MoveTemp(Callback));
 }
 
 void UDBA_GameBackendRuntimeService::NotifyPlayerLeft(const FString& PlayerId, const FDBA_GameBackendResponseDelegate& Callback)
@@ -212,6 +222,31 @@ void UDBA_GameBackendRuntimeService::PostRuntime(const FString& Path, const FStr
 	HttpClient->Post(Path, Body, [Callback](const FDBA_GameBackendHttpResult& Result)
 	{
 		ExecuteResponse(Callback, Result);
+	}, false);
+}
+
+void UDBA_GameBackendRuntimeService::PostRuntimeNative(
+	const FString& Path,
+	const FString& Body,
+	FDBA_GameBackendNativeResponseCallback Callback) const
+{
+	if (!HttpClient || !IsConfigured())
+	{
+		if (Callback)
+		{
+			Callback(false, TEXT("运行时服务未配置。"), TEXT("{}"));
+		}
+		return;
+	}
+
+	HttpClient->Post(Path, Body, [Callback = MoveTemp(Callback)](const FDBA_GameBackendHttpResult& Result) mutable
+	{
+		const bool bSuccess = Result.IsSuccessful();
+		const FString ErrorMessage = bSuccess ? FString() : (Result.Message.IsEmpty() ? TEXT("运行时请求失败。") : Result.Message);
+		if (Callback)
+		{
+			Callback(bSuccess, ErrorMessage, Result.DataJson);
+		}
 	}, false);
 }
 

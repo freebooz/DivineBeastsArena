@@ -113,12 +113,12 @@ enum class EDBASkillInputSlot : uint8
 {
 	None            UMETA(DisplayName = "无"),
 
-	BasicAttack     UMETA(DisplayName = "普通攻击"),
-	Skill01         UMETA(DisplayName = "技能1"),
-	Skill02         UMETA(DisplayName = "技能2"),
-	Skill03         UMETA(DisplayName = "技能3"),
-	Skill04         UMETA(DisplayName = "技能4"),
-	Ultimate        UMETA(DisplayName = "生肖大招"),
+	BasicAttack     UMETA(DisplayName = "普通攻击"),   // 鼠标左键；GAS InputID=BasicAttack
+	Skill01         UMETA(DisplayName = "技能1"),      // PC 默认 Q；V2 攻击类（Attack）
+	Skill02         UMETA(DisplayName = "技能2"),      // PC 默认 W；V2 控制类（Control）
+	Skill03         UMETA(DisplayName = "技能3"),      // PC 默认 E；V2 移动/功能/防护（Move/Function/Defense）
+	Skill04         UMETA(DisplayName = "技能4"),      // V2 PC 默认无键；保留槽位
+	Ultimate        UMETA(DisplayName = "生肖大招"),   // PC 默认 R
 
 	MAX             UMETA(Hidden)
 };
@@ -133,7 +133,7 @@ enum class EDBACombatInputSlot : uint8
 {
 	None            UMETA(DisplayName = "无"),
 
-	LockTarget      UMETA(DisplayName = "锁定目标"),
+	LockTarget      UMETA(DisplayName = "锁定目标"),      // PC 默认 Tab：切换锁定目标
 	CancelCast      UMETA(DisplayName = "取消施法"),
 	Ping            UMETA(DisplayName = "信号"),
 	Scoreboard      UMETA(DisplayName = "计分板"),
@@ -159,6 +159,25 @@ enum class EDBASkillType : uint8
 	Active          UMETA(DisplayName = "主动技能"),      // Skill01~04
 	Ultimate        UMETA(DisplayName = "生肖大招"),      // ZodiacUltimate
 	Resonance       UMETA(DisplayName = "元素共鸣"),      // 自动生效，不占输入
+
+	MAX             UMETA(Hidden)
+};
+
+/**
+ * EDBAZodiacTacticalSkillType
+ * 万象灵庭 V2 战术技能五维分类（攻击/移动/控制/功能/防护）
+ * 与 EDBASkillType（Passive/Active/Ultimate）正交，用于 DT_ZodiacSkillDefinitions。
+ */
+UENUM(BlueprintType)
+enum class EDBAZodiacTacticalSkillType : uint8
+{
+	None            UMETA(DisplayName = "无"),
+
+	Attack          UMETA(DisplayName = "攻击"),
+	Move            UMETA(DisplayName = "移动"),
+	Control         UMETA(DisplayName = "控制"),
+	Function        UMETA(DisplayName = "功能"),
+	Defense         UMETA(DisplayName = "防护保命"),
 
 	MAX             UMETA(Hidden)
 };
@@ -378,12 +397,12 @@ enum class EDBAAbilityInputID : uint8
 	Confirm         UMETA(DisplayName = "确认"),
 	Cancel          UMETA(DisplayName = "取消"),
 
-	BasicAttack     UMETA(DisplayName = "普通攻击"),
-	Skill01         UMETA(DisplayName = "技能1"),
-	Skill02         UMETA(DisplayName = "技能2"),
-	Skill03         UMETA(DisplayName = "技能3"),
-	Skill04         UMETA(DisplayName = "技能4"),
-	Ultimate        UMETA(DisplayName = "生肖大招"),
+	BasicAttack     UMETA(DisplayName = "普通攻击"),   // 鼠标左键；GAS InputID=BasicAttack
+	Skill01         UMETA(DisplayName = "技能1"),      // PC 默认 Q；V2 攻击类（Attack）
+	Skill02         UMETA(DisplayName = "技能2"),      // PC 默认 W；V2 控制类（Control）
+	Skill03         UMETA(DisplayName = "技能3"),      // PC 默认 E；V2 移动/功能/防护（Move/Function/Defense）
+	Skill04         UMETA(DisplayName = "技能4"),      // V2 PC 默认无键；保留槽位
+	Ultimate        UMETA(DisplayName = "生肖大招"),   // PC 默认 R
 
 	MAX             UMETA(Hidden)
 };

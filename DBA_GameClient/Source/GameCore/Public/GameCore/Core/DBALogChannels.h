@@ -1,4 +1,4 @@
-﻿// Copyright FreeboozStudio. All Rights Reserved.
+// Copyright FreeboozStudio. All Rights Reserved.
 /*
 中文阅读说明：
 - 所属应用：DBA_GameClient Unreal Engine 客户端。
@@ -80,3 +80,15 @@ GAMECORE_API DECLARE_LOG_CATEGORY_EXTERN(LogDBATelemetry, Log, All);
  * 此日志域不影响游戏核心逻辑
  */
 GAMECORE_API DECLARE_LOG_CATEGORY_EXTERN(LogDBAGameOps, Log, All);
+
+/**
+ * VFX 日志域
+ * 用于记录视觉特效播放、加载、回退、异步预加载状态
+ */
+GAMECORE_API DECLARE_LOG_CATEGORY_EXTERN(LogDBAVFX, Log, All);
+
+/**
+ * SFX 日志域
+ * 用于记录音效播放、加载、回退、异步预加载状态
+ */
+GAMECORE_API DECLARE_LOG_CATEGORY_EXTERN(LogDBASFX, Log, All);

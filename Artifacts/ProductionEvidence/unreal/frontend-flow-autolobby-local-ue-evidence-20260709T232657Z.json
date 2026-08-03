@@ -1,0 +1,29 @@
+﻿{
+    "kind":  "frontend-flow-autolobby-no-skip",
+    "runId":  "20260709T232657Z",
+    "status":  "reached_character_select",
+    "observeSeconds":  90,
+    "processId":  45420,
+    "skipFrontendFlow":  false,
+    "autoLobbyFlow":  true,
+    "backendUrl":  "http://127.0.0.1:8080",
+    "logPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\unreal\\frontend-flow-autolobby-20260709T232657Z.log",
+    "reachedCharacterCreateOrSelect":  true,
+    "reachedMainLobby":  false,
+    "keywordHits":  [
+
+                    ],
+    "flowStateSamples":  [
+                             "[2026.07.09-15.27.17:954][644]LogDBACore: [DBALoginFlowSubsystem] 流程状态切换：0 -\u003e 2",
+                             "[2026.07.09-15.27.17:964][644]LogDBACore: [DBAGameInstance] 自动大厅流程已启用。",
+                             "[2026.07.09-15.27.17:964][644]LogDBACore: [DBAGameInstance] 自动大厅流程：提交访客登录。",
+                             "[2026.07.09-15.27.17:964][644]LogDBACore: [DBALoginFlowSubsystem] 流程状态切换：2 -\u003e 1",
+                             "[2026.07.09-15.27.17:980][644]LogDBACore: [DBALoginFlowSubsystem] 流程状态切换：1 -\u003e 3",
+                             "[2026.07.09-15.27.17:988][646]LogDBACore: [DBALoginFlowSubsystem] 流程状态切换：3 -\u003e 5",
+                             "[2026.07.09-15.27.18:018][647]LogDBAUI: [CharacterCreateWidget] 使用世界 3D 角色展示舞台：生肖=1",
+                             "[2026.07.09-15.27.18:018][647]LogDBAUI: [CharacterCreateWidget] 视口铺满：控件几何=0x0",
+                             "[2026.07.09-15.27.18:018][647]LogDBAUI: [CharacterCreateWidget] 视口铺满：控件几何=0x0",
+                             "[2026.07.09-15.27.18:018][647]LogDBACore: [DBAGameInstance] 自动大厅流程：创建角色=AutoLobby_20260709T232657Z 生肖=1。"
+                         ],
+    "timestampUtc":  "2026-07-09T15:28:29.6958537Z"
+}

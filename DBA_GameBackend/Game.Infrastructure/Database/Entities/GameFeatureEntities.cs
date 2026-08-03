@@ -160,6 +160,40 @@ public class PlayerAchievement
     public Achievement? Achievement { get; set; }
 }
 
+// ==================== 任务系统 / Quest ====================
+
+public class Quest
+{
+    public Guid Id { get; set; }
+    public string QuestKey { get; set; } = string.Empty;        // 任务唯一标识（如 daily_play_1_match）
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string QuestType { get; set; } = "DAILY";             // DAILY/WEEKLY/MAIN/ACHIEVEMENT
+    public string Category { get; set; } = "GENERAL";            // 分类
+    public int TargetProgress { get; set; }                      // 目标进度
+    public string RewardJson { get; set; } = "{}";              // 奖励JSON（itemId, quantity 等）
+    public int SortOrder { get; set; }
+    public bool IsActive { get; set; } = true;
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? UpdatedAt { get; set; }
+}
+
+public class PlayerQuest
+{
+    public Guid Id { get; set; }
+    public Guid PlayerId { get; set; }
+    public Guid QuestId { get; set; }
+    public int Progress { get; set; }
+    public string Status { get; set; } = "ACCEPTED";            // ACCEPTED/COMPLETED/REWARDED/EXPIRED
+    public DateTimeOffset AcceptedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? CompletedAt { get; set; }
+    public DateTimeOffset? RewardedAt { get; set; }
+    public DateTimeOffset? ExpiredAt { get; set; }
+
+    public PlayerProfile? Player { get; set; }
+    public Quest? Quest { get; set; }
+}
+
 // ==================== 战绩记录 / Match History ====================
 
 public class PlayerMatchHistory

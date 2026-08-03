@@ -1,4 +1,4 @@
-﻿/*
+/*
 中文阅读说明：
 - 所属应用：DBA_GameBackend 后端 API / Worker。
 - 文件职责：应用源码文件，承担该模块的一部分业务、界面、配置或启动逻辑。
@@ -117,6 +117,7 @@ try
     app.MapLiveOpsStatusEndpoints();
     app.MapCrashEndpoints();
     app.MapTelemetryEndpoints();
+    app.MapClientLogEndpoints();
 
     await app.ApplySeedDataAsync();
 

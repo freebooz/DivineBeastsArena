@@ -1,0 +1,30 @@
+{
+  "kind": "character-presentation-automation",
+  "runId": "local-ue-evidence-20260708T200010Z",
+  "generatedAtUtc": "2026-07-08T12:00:22.6310000Z",
+  "automationReady": true,
+  "logErrorCount": 0,
+  "logWarningCount": 0,
+  "requestedTestCount": 8,
+  "passedTestCount": 8,
+  "testFilter": "DivineBeastsArena.UI.CharacterPresentation",
+  "platform": "Win64",
+  "configuration": "Development",
+  "projectPath": "E:\\work\\Game\\DivineBeastsArena\\DBA_GameClient\\DivineBeastsArena.uproject",
+  "command": {
+    "filePath": "D:\\UnrealEngine-5.8.0-release\\Engine\\Binaries\\Win64\\UnrealEditor-Cmd.exe",
+    "workingDirectory": "E:\\work\\Game\\DivineBeastsArena",
+    "arguments": [
+      "E:\\work\\Game\\DivineBeastsArena\\DBA_GameClient\\DivineBeastsArena.uproject",
+      "-unattended",
+      "-nullrhi",
+      "-nosplash",
+      "-log",
+      "-abslog=E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\unreal\\character-presentation-automation-20260708-200010.log",
+      "-ExecCmds=Automation RunTests DivineBeastsArena.UI.CharacterPresentation; Quit",
+      "-TestExit=Automation Test Queue Empty"
+    ],
+    "logPath": "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\unreal\\character-presentation-automation-20260708-200010.log"
+  },
+  "notes": "首次无 -nullrhi 运行因编辑器弹窗卡住（exit -1）；本证据为无头重跑结果。"
+}

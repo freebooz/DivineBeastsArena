@@ -6,8 +6,8 @@
 - 修改提示：如扩展冻结摘要字段，先补测试再修改这里。
 */
 
+using Game.Application.Characters;
 using Game.Infrastructure.Database.Entities;
-using Game.Shared.Contracts.Character;
 using Game.Shared.Contracts.GameServer;
 using System.Text.Json;
 
@@ -17,66 +17,23 @@ public readonly record struct RuntimePlayerJoinValidationResult(bool IsValid, st
 
 public static class RuntimePlayerJoinValidator
 {
-    public const string BuildSummaryMismatchMessage = "Runtime player build summary does not match the frozen session build.";
-    public const string BuildSummaryMissingMessage = "Runtime player build summary is required when the session has a frozen build.";
-    public const string FrozenBuildSummaryInvalidMessage = "Frozen session build summary is invalid.";
-
     public static RuntimePlayerJoinValidationResult ValidateBuildSummary(
         PlayerSession playerSession,
-        RuntimePlayerJoinedRequest request)
+        RuntimePlayerJoinedRequest request,
+        ICharacterBuildPolicy characterBuildPolicy)
     {
-        var bHasFrozenZodiac = !string.IsNullOrWhiteSpace(playerSession.Zodiac);
-        var bHasFrozenPrimaryElement = !string.IsNullOrWhiteSpace(playerSession.PrimaryElement);
-        var bHasFrozenFixedSkillGroupId = !string.IsNullOrWhiteSpace(playerSession.FixedSkillGroupId);
-        var bHasAnyFrozenBuildSummary = bHasFrozenZodiac || bHasFrozenPrimaryElement || bHasFrozenFixedSkillGroupId;
-        var bHasCompleteFrozenBuildSummary = bHasFrozenZodiac && bHasFrozenPrimaryElement && bHasFrozenFixedSkillGroupId;
-
-        if (!bHasAnyFrozenBuildSummary)
-        {
-            return new RuntimePlayerJoinValidationResult(true);
-        }
-
-        if (!bHasCompleteFrozenBuildSummary)
-        {
-            return new RuntimePlayerJoinValidationResult(false, FrozenBuildSummaryInvalidMessage);
-        }
-
-        if (IsNoneChoice(playerSession.Zodiac)
-            || IsNoneChoice(playerSession.PrimaryElement)
-            || IsNoneChoice(playerSession.FixedSkillGroupId))
-        {
-            return new RuntimePlayerJoinValidationResult(false, FrozenBuildSummaryInvalidMessage);
-        }
-
-        var frozenBuildSummary = NormalizeFrozenBuildSummary(playerSession);
-        var expectedFrozenFixedSkillGroupId = CharacterBuildRules.BuildFixedSkillGroupId(
-            frozenBuildSummary.Zodiac,
-            frozenBuildSummary.PrimaryElement);
-        if (!string.Equals(frozenBuildSummary.FixedSkillGroupId, expectedFrozenFixedSkillGroupId, StringComparison.OrdinalIgnoreCase))
-        {
-            return new RuntimePlayerJoinValidationResult(false, FrozenBuildSummaryInvalidMessage);
-        }
-
-        if (IsMissingRequiredChoice(request.Zodiac)
-            || IsMissingRequiredChoice(request.PrimaryElement)
-            || IsMissingRequiredChoice(request.FixedSkillGroupId))
-        {
-            return new RuntimePlayerJoinValidationResult(false, BuildSummaryMissingMessage);
-        }
-
-        var requestZodiac = CharacterBuildRules.NormalizeChoice(request.Zodiac, frozenBuildSummary.Zodiac);
-        var requestElement = CharacterBuildRules.NormalizeChoice(request.PrimaryElement, frozenBuildSummary.PrimaryElement);
-        var requestFixedSkillGroupId = CharacterBuildRules.NormalizeChoice(
-            request.FixedSkillGroupId,
-            CharacterBuildRules.BuildFixedSkillGroupId(requestZodiac, requestElement));
-        var bMatchesFrozenIdentity =
-            string.Equals(requestZodiac, frozenBuildSummary.Zodiac, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(requestElement, frozenBuildSummary.PrimaryElement, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(requestFixedSkillGroupId, expectedFrozenFixedSkillGroupId, StringComparison.OrdinalIgnoreCase);
-
-        return bMatchesFrozenIdentity
-            ? new RuntimePlayerJoinValidationResult(true)
-            : new RuntimePlayerJoinValidationResult(false, BuildSummaryMismatchMessage);
+        var result = characterBuildPolicy.ValidateRuntimeJoin(
+            new CharacterBuildSnapshot(
+                playerSession.Zodiac,
+                playerSession.PrimaryElement,
+                playerSession.FiveCamp,
+                playerSession.FixedSkillGroupId),
+            new CharacterBuildSnapshot(
+                request.Zodiac,
+                request.PrimaryElement,
+                request.FiveCamp,
+                request.FixedSkillGroupId));
+        return new RuntimePlayerJoinValidationResult(result.IsValid, result.ErrorMessage);
     }
 
     public static string BuildPlayerJoinedEventPayload(PlayerSession playerSession)
@@ -99,29 +56,4 @@ public static class RuntimePlayerJoinValidator
             : value.Trim();
     }
 
-    private static CharacterBuildSummaryDto NormalizeFrozenBuildSummary(PlayerSession playerSession)
-    {
-        var zodiac = CharacterBuildRules.NormalizeChoice(playerSession.Zodiac, "Rat");
-        var primaryElement = CharacterBuildRules.NormalizeChoice(playerSession.PrimaryElement, "Water");
-        var fixedSkillGroupId = CharacterBuildRules.NormalizeChoice(
-            playerSession.FixedSkillGroupId,
-            CharacterBuildRules.BuildFixedSkillGroupId(zodiac, primaryElement));
-
-        return new CharacterBuildSummaryDto(
-            zodiac,
-            primaryElement,
-            CharacterBuildRules.NormalizeChoice(playerSession.FiveCamp, string.Empty),
-            fixedSkillGroupId);
-    }
-
-    private static bool IsMissingRequiredChoice(string? value)
-    {
-        return string.IsNullOrWhiteSpace(value)
-            || IsNoneChoice(value);
-    }
-
-    private static bool IsNoneChoice(string? value)
-    {
-        return value?.Trim().Equals("None", StringComparison.OrdinalIgnoreCase) == true;
-    }
 }

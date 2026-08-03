@@ -1,6 +1,6 @@
 ﻿# 神兽竞技场 / Divine Beasts Arena
 
-UE5.8 C++ MOBA 游戏项目
+UE5.8 C++ MOBA 游戏工程。本目录同时承载 Game、Editor 和 Dedicated Server Target；目录名中的 Client 是历史名称，不表示这里只有客户端代码。
 
 ## 快速开始
 
@@ -13,7 +13,7 @@ UE5.8 C++ MOBA 游戏项目
 - 16GB+ RAM
 - 100GB+ 可用磁盘空间
 
-### 首次构建（1小时内完成）
+### 首次构建
 
 1. 克隆仓库
 ```bash
@@ -33,12 +33,11 @@ $UE5_ROOT/Engine/Build/BatchFiles/Linux/GenerateProjectFiles.sh DivineBeastsAren
 ```
 
 3. 编译项目
-```bash
-# Windows
-Scripts\Build\FirstBuild.bat
 
-# Linux
-bash Scripts/Build/FirstBuild.sh
+Windows 使用本机 UE 5.8 的 Build.bat：
+
+```powershell
+& "$env:UE5_ROOT\Engine\Build\BatchFiles\Build.bat" DivineBeastsArenaEditor Win64 Development "$PWD\DivineBeastsArena.uproject" -WaitMutex -NoHotReloadFromIDE
 ```
 
 4. 启动 Editor
@@ -74,7 +73,10 @@ code --install-extension llvm-vs-code-extensions.vscode-clangd
 - `Content/` - 资源内容
 - `Config/` - 配置文件
 - `Plugins/` - 插件
-- `Scripts/` - 自动化脚本
+- 不保留 `Scripts/` 或 `Tools/` 自动化目录与脚本入口
+- `SourceArt/` - 可编辑美术源文件
+- `SourceAssets/` - Unreal 导入前中间资源
+- `Exports/` - 可追溯导出物，不是运行时权威数据源
 - `Docs/` - 文档
 
 ## 开发规范
@@ -82,4 +84,6 @@ code --install-extension llvm-vs-code-extensions.vscode-clangd
 - C++ 类前缀：DBA
 - 遵循 UE5.8 编码规范
 - 所有代码必须有中文注释
-- Dedicated Server 优先架构
+- Dedicated Server 权威架构
+- 新项目资产统一进入 `Content/DBA`
+- 目录和命名以 `docs/Architecture/命名与目录登记表.md` 为准

@@ -48,8 +48,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Auth")
 	void GetMe(const FDBA_GameBackendResponseDelegate& Callback);
 
+	void AccountLoginAsync(const FString& Username, const FString& Password, FDBA_GameBackendNativeAuthCallback Callback);
+	void AccountRegisterAsync(const FString& Username, const FString& Password, const FString& Email, FDBA_GameBackendNativeAuthCallback Callback);
+	void GuestLoginAsync(const FDBA_GameBackendGuestLoginRequest& Request, FDBA_GameBackendNativeAuthCallback Callback);
+	void RefreshTokenAsync(FDBA_GameBackendNativeAuthCallback Callback);
+	void LogoutAsync(FDBA_GameBackendNativeResponseCallback Callback);
+
 private:
 	void HandleAuthResponse(const FDBA_GameBackendHttpResult& Result, const FDBA_GameBackendAuthResponseDelegate& Callback);
+	void HandleNativeAuthResponse(const FDBA_GameBackendHttpResult& Result, const FDBA_GameBackendNativeAuthCallback& Callback);
 	static bool TryExtractTokens(const FString& DataJson, FDBA_GameBackendAuthTokens& OutTokens);
 
 private:

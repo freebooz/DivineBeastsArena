@@ -107,8 +107,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Runtime")
 	void SendHeartbeat(const FDBA_GameBackendResponseDelegate& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Runtime")
-	void NotifyPlayerJoined(const FString& PlayerId, const FString& PlayerSessionToken, const FString& Team, int32 SlotIndex, const FDBA_GameBackendRuntimePlayerBuildSummary& BuildSummary, const FDBA_GameBackendResponseDelegate& Callback);
+	/** 在创建 PlayerController 前异步验证并消费一次性 JoinTicket。 */
+	void ValidateJoinTicket(
+		const FString& PlayerId,
+		const FString& CharacterId,
+		const FString& JoinTicket,
+		const FString& Team,
+		int32 SlotIndex,
+		const FDBA_GameBackendRuntimePlayerBuildSummary& BuildSummary,
+		FDBA_GameBackendNativeResponseCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "DBA_GameBackend|Runtime")
 	void NotifyPlayerLeft(const FString& PlayerId, const FDBA_GameBackendResponseDelegate& Callback);
@@ -133,6 +140,7 @@ public:
 private:
 	FString BuildRuntimePayload(const TFunction<void(TSharedRef<FJsonObject>)>& Fill) const;
 	void PostRuntime(const FString& Path, const FString& Body, const FDBA_GameBackendResponseDelegate& Callback) const;
+	void PostRuntimeNative(const FString& Path, const FString& Body, FDBA_GameBackendNativeResponseCallback Callback) const;
 	static void ExecuteResponse(const FDBA_GameBackendResponseDelegate& Callback, const FDBA_GameBackendHttpResult& Result);
 
 private:
@@ -141,5 +149,6 @@ private:
 
 	FString SessionId;
 	FString ServerId;
+	FString BuildId;
 	FString RuntimeToken;
 };

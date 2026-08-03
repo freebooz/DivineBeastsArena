@@ -1,4 +1,4 @@
-﻿/*
+/*
 中文阅读说明：
 - 所属应用：DBA_GameClient Unreal Engine 客户端。
 - 文件职责：应用源码文件，承担该模块的一部分业务、界面、配置或启动逻辑。
@@ -27,7 +27,9 @@ public class DivineBeastsArena : ModuleRules
             "UMG",
             "GameCore",
             "GameMoba",
+            "GameBackendClient",
             "Niagara",
+            "ReplicationGraph",
         });
 
         PrivateDependencyModuleNames.AddRange(new string[]
@@ -43,7 +45,7 @@ public class DivineBeastsArena : ModuleRules
             "NavigationSystem",
             "Json",
             "JsonUtilities",
-            "GameBackendClient",
+            "HTTP",
         });
 
         if (Target.Type != TargetType.Server)
@@ -63,16 +65,6 @@ public class DivineBeastsArena : ModuleRules
             {
                 "UnrealEd",
                 "EditorSubsystem",
-            });
-        }
-
-        if (Target.Configuration != UnrealTargetConfiguration.Shipping)
-        {
-            PrivateDependencyModuleNames.AddRange(new string[]
-            {
-                "HTTP",
-                "Json",
-                "JsonUtilities",
             });
         }
 

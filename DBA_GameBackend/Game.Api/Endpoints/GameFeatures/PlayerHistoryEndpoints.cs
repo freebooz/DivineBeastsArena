@@ -30,13 +30,29 @@ public static partial class GameFeatureEndpoints
 
         // 举报系统
         var report = app.MapGroup("/api/reports").WithTags("举报");
+        report.MapGet("/me", GetMyReports)
+            .WithSummary("获取我的举报列表")
+            .WithDescription("获取当前玩家提交的举报记录列表")
+            .RequireAuthorization();
         report.MapPost("/", SubmitReport)
             .WithSummary("提交举报")
             .WithDescription("举报违规玩家")
             .RequireAuthorization();
 
+        // 申诉系统（创建 TicketType = "APPEAL" 的工单）
+        var appeal = app.MapGroup("/api/appeals").WithTags("申诉");
+        appeal.MapPost("/", SubmitAppeal)
+            .WithSummary("提交申诉")
+            .WithDescription("提交申诉，会创建类型为 APPEAL 的客服工单")
+            .RequireAuthorization();
+
         // 客服工单
         var support = app.MapGroup("/api/support").WithTags("客服");
+        // 注意：/tickets/me 必须在 /tickets/{ticketId} 之前注册，避免 me 被当作 ticketId 解析
+        support.MapGet("/tickets/me", GetMyTickets)
+            .WithSummary("获取我的工单（兼容路径）")
+            .WithDescription("获取当前玩家的客服工单，等同 /api/support/tickets")
+            .RequireAuthorization();
         support.MapGet("/tickets", GetMyTickets)
             .WithSummary("获取我的工单")
             .WithDescription("获取当前玩家的客服工单")
@@ -191,6 +207,37 @@ public static partial class GameFeatureEndpoints
 
     // ==================== 举报系统 ====================
 
+    private static async Task<IResult> GetMyReports(HttpContext ctx, GameDbContext db, int page = 1, int pageSize = 50)
+    {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
+        (page, pageSize) = NormalizePaging(page, pageSize);
+
+        var totalCount = await db.Reports.CountAsync(x => x.ReporterId == playerId.Value);
+
+        var reports = await db.Reports
+            .Where(x => x.ReporterId == playerId.Value)
+            .OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(x => new ReportDto(
+                x.Id,
+                x.ReportedPlayerId,
+                x.ReportType,
+                x.Content,
+                x.Status,
+                x.CreatedAt,
+                x.HandledAt,
+                x.HandleNote))
+            .ToListAsync();
+
+        return Results.Ok(ApiResponse<MyReportsResponse>.Ok(new MyReportsResponse(reports, totalCount, page, pageSize)));
+    }
+
     private static async Task<IResult> SubmitReport(SubmitReportRequest request, HttpContext ctx, GameDbContext db)
     {
         var playerId = GetPlayerId(ctx);
@@ -212,6 +259,43 @@ public static partial class GameFeatureEndpoints
         await db.SaveChangesAsync();
 
         return Results.Ok(ApiResponse<object>.Ok(new { ReportId = report.Id }));
+    }
+
+    // ==================== 申诉系统 ====================
+
+    private static async Task<IResult> SubmitAppeal(SubmitAppealRequest request, HttpContext ctx, GameDbContext db)
+    {
+        var playerId = GetPlayerId(ctx);
+        if (!playerId.HasValue)
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
+        // 申诉创建为 TicketType = "APPEAL" 的客服工单
+        // 将关联工单/举报信息附加到工单内容中，便于客服追溯
+        var relatedInfo = new List<string>();
+        if (request.RelatedTicketId.HasValue)
+            relatedInfo.Add($"关联工单: {request.RelatedTicketId.Value}");
+        if (request.RelatedReportId.HasValue)
+            relatedInfo.Add($"关联举报: {request.RelatedReportId.Value}");
+
+        var content = relatedInfo.Count > 0
+            ? $"[{string.Join("; ", relatedInfo)}] {request.Content}"
+            : request.Content;
+
+        var ticket = new SupportTicket
+        {
+            PlayerId = playerId.Value,
+            TicketType = "APPEAL",
+            Subject = request.Subject,
+            Content = content,
+            Priority = string.IsNullOrWhiteSpace(request.Priority) ? "NORMAL" : request.Priority
+        };
+
+        db.SupportTickets.Add(ticket);
+        await db.SaveChangesAsync();
+
+        return Results.Ok(ApiResponse<object>.Ok(new { TicketId = ticket.Id, TicketType = ticket.TicketType }));
     }
 
     // ==================== 客服工单 ====================

@@ -2,14 +2,15 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-#include "GameDBA/Combat/DBAPlayableSkillComponent.h"
-#include "GameDBA/Combat/DBAPlayableSkillCatalogDataAsset.h"
-#include "GameDBA/Combat/DBAPlayableSkillTypes.h"
-#include "GameDBA/Combat/DBABloomHealingSpell.h"
-#include "GameDBA/Combat/DBAChainLightningSpell.h"
-#include "GameDBA/Combat/DBAFireballProjectile.h"
-#include "GameDBA/Combat/DBAHolyShieldSpell.h"
-#include "GameDBA/Combat/DBASkillProjectileBase.h"
+#include "GameDBA/Gameplay/Loadout/DBAPlayableSkillComponent.h"
+#include "GameDBA/Gameplay/Loadout/DBAPlayableSkillCatalogDataAsset.h"
+#include "GameDBA/Gameplay/Loadout/DBAPlayableSkillDeveloperSettings.h"
+#include "GameDBA/Gameplay/Loadout/DBAPlayableSkillTypes.h"
+#include "GameDBA/Gameplay/Abilities/Spells/DBABloomHealingSpell.h"
+#include "GameDBA/Gameplay/Abilities/Spells/DBAChainLightningSpell.h"
+#include "GameDBA/Gameplay/Abilities/Projectiles/DBAFireballProjectile.h"
+#include "GameDBA/Gameplay/Abilities/Spells/DBAHolyShieldSpell.h"
+#include "GameDBA/Gameplay/Abilities/Projectiles/DBASkillProjectileBase.h"
 #include "Misc/AutomationTest.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -96,6 +97,40 @@ bool FDBAPlayableSkillCatalogValidationTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("缺少施放音效应被报告"), HasErrorContaining(TEXT("CastSFXAsset")));
 	TestTrue(TEXT("缺少命中特效应被报告"), HasErrorContaining(TEXT("ImpactNiagaraVFXAsset")));
 
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FDBAPlayableSkillCatalogDefaultConfiguredAssetTest,
+	"DivineBeastsArena.Combat.PlayableSkillCatalog.DefaultConfiguredAsset",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FDBAPlayableSkillCatalogDefaultConfiguredAssetTest::RunTest(const FString& Parameters)
+{
+	const UDBAPlayableSkillDeveloperSettings* Settings = GetDefault<UDBAPlayableSkillDeveloperSettings>();
+	TestNotNull(TEXT("可玩技能项目设置必须存在"), Settings);
+	if (!Settings)
+	{
+		return false;
+	}
+
+	const FSoftObjectPath CatalogPath = Settings->DefaultSkillCatalog.ToSoftObjectPath();
+	TestFalse(TEXT("项目级默认可玩技能目录必须配置"), CatalogPath.IsNull());
+	if (CatalogPath.IsNull())
+	{
+		return false;
+	}
+
+	UDBAPlayableSkillCatalogDataAsset* Catalog = Cast<UDBAPlayableSkillCatalogDataAsset>(CatalogPath.TryLoad());
+	TestNotNull(TEXT("项目级默认可玩技能目录资产必须可加载"), Catalog);
+	if (!Catalog)
+	{
+		return false;
+	}
+
+	TArray<FString> ValidationErrors;
+	TestTrue(TEXT("项目级默认可玩技能目录必须通过完整性校验"), Catalog->ValidateDataIntegrity(ValidationErrors));
+	TestEqual(TEXT("项目级默认可玩技能目录必须包含六个技能槽位"), Catalog->GetAllSkillSpecs().Num(), 6);
 	return true;
 }
 

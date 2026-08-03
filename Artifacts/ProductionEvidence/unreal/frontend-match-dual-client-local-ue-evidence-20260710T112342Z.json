@@ -1,0 +1,76 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "frontend-match-dual-client-no-skip",
+    "runId":  "20260710T112342Z",
+    "status":  "failed",
+    "errorMessage":  "无法连接到远程服务器",
+    "generatedAtUtc":  "2026-07-10T11:23:46.9482289Z",
+    "baseUrl":  "http://localhost:8080",
+    "skipFrontendFlow":  false,
+    "autoLobbyFlow":  true,
+    "autoMatchFlow":  true,
+    "usePackagedServer":  true,
+    "serverExecutable":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\packaged-server\\WindowsServer\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer.exe",
+    "sessionId":  "",
+    "serverId":  "",
+    "allocatedPort":  0,
+    "processIds":  {
+                       "server":  0,
+                       "clientA":  0,
+                       "clientB":  0
+                   },
+    "logPaths":  {
+                     "server":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-frontend-match\\server-20260710T112342.log",
+                     "clientA":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-frontend-match\\client-a-20260710T112342.log",
+                     "clientB":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-frontend-match\\client-b-20260710T112342.log"
+                 },
+    "flowEvidence":  {
+                         "clientAMainLobby":  {
+
+                                              },
+                         "clientBMainLobby":  {
+
+                                              },
+                         "clientATicket":  {
+
+                                           },
+                         "clientBTicket":  {
+
+                                           },
+                         "clientAMatched":  {
+
+                                            },
+                         "clientBMatched":  {
+
+                                            },
+                         "clientATravel":  {
+
+                                           },
+                         "clientBTravel":  {
+
+                                           },
+                         "clientAConnectIssued":  {
+
+                                                  },
+                         "clientBConnectIssued":  {
+
+                                                  },
+                         "serverJoinSucceeded":  {
+
+                                                 },
+                         "serverPlayerJoinedOk":  {
+
+                                                  }
+                     },
+    "counts":  {
+                   "clientAMainLobby":  0,
+                   "clientBMainLobby":  0,
+                   "clientAMatched":  0,
+                   "clientBMatched":  0,
+                   "clientATravel":  0,
+                   "clientBTravel":  0,
+                   "serverJoinSucceeded":  0,
+                   "serverPlayerJoinedOk":  0
+               },
+    "note":  "无 -DBASkipFrontendFlow；双客户端 -DBAAutoLobbyFlow + -DBAAutoMatchFlow；匹配出 session 后脚本分配 packaged DS。"
+}

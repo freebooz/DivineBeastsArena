@@ -156,6 +156,10 @@ public class GameSessionConfiguration : IEntityTypeConfiguration<GameSession>
 
         b.HasIndex(x => x.Status);
         b.HasIndex(x => new { x.Mode, x.Region });
+        b.HasIndex(x => new { x.SourceType, x.SourceId })
+            .IsUnique()
+            .HasFilter("source_id IS NOT NULL")
+            .HasDatabaseName("IX_game_session_source_type_source_id");
         b.HasIndex(x => x.CreatedAt);
     }
 }
@@ -169,6 +173,7 @@ public class PlayerSessionConfiguration : IEntityTypeConfiguration<PlayerSession
         b.Property(x => x.Id).HasColumnName("id");
         b.Property(x => x.GameSessionId).HasColumnName("game_session_id").IsRequired();
         b.Property(x => x.PlayerId).HasColumnName("player_id").IsRequired();
+        b.Property(x => x.CharacterId).HasColumnName("character_id");
         b.Property(x => x.Team).HasColumnName("team").HasMaxLength(32);
         b.Property(x => x.SlotIndex).HasColumnName("slot_index");
         b.Property(x => x.Zodiac).HasColumnName("zodiac").HasMaxLength(32);
@@ -176,15 +181,22 @@ public class PlayerSessionConfiguration : IEntityTypeConfiguration<PlayerSession
         b.Property(x => x.FiveCamp).HasColumnName("five_camp").HasMaxLength(32);
         b.Property(x => x.FixedSkillGroupId).HasColumnName("fixed_skill_group_id").HasMaxLength(64);
         b.Property(x => x.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
-        b.Property(x => x.SessionTokenHash).HasColumnName("session_token_hash").HasMaxLength(256).IsRequired();
+        b.Property(x => x.SessionTokenHash)
+            .HasColumnName("session_token_hash")
+            .HasMaxLength(256)
+            .IsRequired()
+            .IsConcurrencyToken();
         b.Property(x => x.SessionTokenExpiresAt).HasColumnName("session_token_expires_at").IsRequired();
+        b.Property(x => x.SessionTokenServerId).HasColumnName("session_token_server_id");
+        b.Property(x => x.SessionTokenBuildId).HasColumnName("session_token_build_id").HasMaxLength(64);
         b.Property(x => x.ReconnectTokenHash).HasColumnName("reconnect_token_hash").HasMaxLength(256);
         b.Property(x => x.ReconnectTokenExpiresAt).HasColumnName("reconnect_token_expires_at");
         b.Property(x => x.JoinedAt).HasColumnName("joined_at");
-        b.Property(x => x.LeftAt).HasColumnName("left_at");
+        b.Property(x => x.LeftAt).HasColumnName("left_at").IsConcurrencyToken();
         b.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
 
         b.HasIndex(x => new { x.GameSessionId, x.PlayerId }).IsUnique();
+        b.HasIndex(x => x.CharacterId);
         b.HasIndex(x => x.SessionTokenHash).IsUnique();
     }
 }

@@ -1,0 +1,25 @@
+﻿{
+    "kind":  "dedicated-server-locate",
+    "runId":  "20260709T225400Z",
+    "status":  "found_packaged_but_not_wired_to_docker",
+    "candidates":  [
+                       "E:\\work\\Game\\DivineBeastsArena\\.tmp\\packaged-server\\WindowsServer\\DivineBeastsArenaServer.exe",
+                       "E:\\work\\Game\\DivineBeastsArena\\.tmp\\packaged-server\\WindowsServer\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer.exe",
+                       "E:\\work\\Game\\DivineBeastsArena\\DBA_GameClient\\Saved\\StagedBuilds\\WindowsServer\\DivineBeastsArenaServer.exe"
+                   ],
+    "preferredPackaged":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\packaged-server\\WindowsServer\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer.exe",
+    "cookedContent":  {
+                          "pakExists":  true,
+                          "pak":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\packaged-server\\WindowsServer\\DivineBeastsArena\\Content\\Paks\\DivineBeastsArena-WindowsServer.pak"
+                      },
+    "docker":  {
+                   "note":  "game-server 挂载目录为空；AllowMock=false 已生效，但容器内无真实 DS 可执行文件。本地联机验证可继续用 Editor -server 或 start-local-ue-validation.ps1 -ServerExePath 指向 packaged-server。",
+                   "AllowMockServerAllocation":  false,
+                   "UE_SERVER_HOST_DIR":  "./game-server",
+                   "UE_SERVER_EXECUTABLE_PATH_from_env":  "/opt/game-server/GameServer.sh",
+                   "mountedDirEmpty":  true
+               },
+    "packagingSkipped":  true,
+    "packagingSkipReason":  "已有 staged/packaged server（含 .pak），无需重打；剩余工作是把 Windows DS 路径接到 Worker/本地验证脚本，而非重新 Cook。",
+    "timestampUtc":  "2026-07-09T14:55:23.4884048Z"
+}

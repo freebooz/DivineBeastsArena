@@ -19,6 +19,17 @@
 | `dba_dev_02` | `Dev@123456` | `DevDragon` |
 | `dba_dev_03` | `Dev@123456` | `DevRat` |
 
+## 多客户端联调账号
+
+用于双客户端/四客户端并行登录验证，**不含预置角色**，登录后需走角色创建或选择流程。
+
+| 用户名 | 密码 | 说明 |
+| --- | --- | --- |
+| `player_01` | `pw123456` | 多客户端联调账号 1 |
+| `player_02` | `pw123456` | 多客户端联调账号 2 |
+| `player_03` | `pw123456` | 多客户端联调账号 3 |
+| `player_04` | `pw123456` | 多客户端联调账号 4 |
+
 ## 普通测试玩家
 
 | 用户名范围 | 密码 | 说明 |
@@ -39,6 +50,10 @@
 ```powershell
 $body = @{ username = "dba_dev_01"; password = "Dev@123456" } | ConvertTo-Json
 Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/auth/account/login" -Body $body -ContentType "application/json"
+
+# 多客户端联调账号示例
+$multiClientBody = @{ username = "player_01"; password = "pw123456" } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/auth/account/login" -Body $multiClientBody -ContentType "application/json"
 
 $adminBody = @{ username = "admin"; password = "Admin@123456" } | ConvertTo-Json
 Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/admin/auth/login" -Body $adminBody -ContentType "application/json"

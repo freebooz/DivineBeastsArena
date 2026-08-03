@@ -1,0 +1,13 @@
+﻿{
+    "kind":  "fallback-policy-automation",
+    "runId":  "20260709T224834Z",
+    "status":  "passed",
+    "testFilter":  "DivineBeastsArena.GameCore.Account.OnlineService.FallbackPolicy",
+    "exitCode":  0,
+    "elapsedSeconds":  51.6,
+    "found":  1,
+    "passed":  1,
+    "failed":  0,
+    "logPath":  "E:\\work\\Game\\DivineBeastsArena\\Artifacts\\ProductionEvidence\\unreal\\fallback-policy-automation-20260709T224834Z.log",
+    "timestampUtc":  "2026-07-09T14:49:25.6986849Z"
+}

@@ -345,7 +345,7 @@ public sealed class DedicatedServerOrchestrator : IDedicatedServerOrchestrator
 
     private string BuildServerArgs(GameServerInstance server, string runtimeToken)
     {
-        return string.Join(' ', new[]
+        var arguments = new List<string>
         {
             $"-sessionId={server.SessionId}",
             $"-serverId={server.Id}",
@@ -354,7 +354,12 @@ public sealed class DedicatedServerOrchestrator : IDedicatedServerOrchestrator
             $"-mode={server.Mode}",
             $"-backendUrl={_options.BackendUrl}",
             $"-runtimeToken={runtimeToken}"
-        });
+        };
+        if (!string.IsNullOrWhiteSpace(server.BuildVersion))
+        {
+            arguments.Add($"-buildId={server.BuildVersion.Trim()}");
+        }
+        return string.Join(' ', arguments);
     }
 
     private static GameServerEvent NewEvent(Guid serverId, string eventType, string payloadJson) => new()

@@ -1,0 +1,39 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "kind":  "ue-online-validation",
+    "runId":  "local-ue-online-runtime-defaults-20260711-001800",
+    "status":  "passed",
+    "errorMessage":  "",
+    "generatedAtUtc":  "2026-07-10T16:17:56.2355427Z",
+    "baseUrl":  "http://localhost:8080",
+    "usePackagedServer":  true,
+    "skipClientLaunch":  false,
+    "keepProcessesAlive":  false,
+    "serverExecutable":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\packaged-server-runtime-defaults-20260710\\WindowsServer\\DivineBeastsArena\\Binaries\\Win64\\DivineBeastsArenaServer.exe",
+    "roomId":  "3bce490b-5def-4c20-8757-28cbca16843c",
+    "sessionId":  "3143b027-071d-48be-9c2b-065aefcd5079",
+    "serverId":  "4853e2b0-dbc5-4bb5-9adf-214b4b9cbb7d",
+    "allocatedPort":  7777,
+    "clientConnectPort":  7878,
+    "processIds":  {
+                       "server":  14148,
+                       "clientA":  41640,
+                       "clientB":  38080
+                   },
+    "logPaths":  {
+                     "server":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\server-local-ue-online-runtime-defaults-20260711-001800.log",
+                     "clientA":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\client-a-local-ue-online-runtime-defaults-20260711-001800.log",
+                     "clientB":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-ue-validation\\client-b-local-ue-online-runtime-defaults-20260711-001800.log"
+                 },
+    "safeLogEvidence":  {
+                            "runtimePlayerJoined":  {
+
+                                                    },
+                            "runtimePlayerJoinedOk":  [
+                                                          "[2026.07.10-16.17.27:617][291]LogDBA_GameBackendClient: HTTP 请求：方法=POST 地址=http://localhost:8080/runtime/servers/player-joined 追踪ID=da4b12ed-4bd3-06ba-65b5-c399e4cb7fa6 状态码=200 业务码=OK 耗时毫秒=29.20",
+                                                          "[2026.07.10-16.17.33:812][477]LogDBA_GameBackendClient: HTTP 请求：方法=POST 地址=http://localhost:8080/runtime/servers/player-joined 追踪ID=e5d0251a-41ed-b23c-15d0-54aff94e71bd 状态码=200 业务码=OK 耗时毫秒=30.98"
+                                                      ],
+                            "clientATravelCompleted":  "[2026.07.10-16.17.27:579][ 67]LogGlobalStatus: UPendingNetGame::TravelCompleted Pending net game travel completed",
+                            "clientBTravelCompleted":  "[2026.07.10-16.17.33:770][ 28]LogGlobalStatus: UPendingNetGame::TravelCompleted Pending net game travel completed"
+                        }
+}

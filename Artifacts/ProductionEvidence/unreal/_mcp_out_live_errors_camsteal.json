@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"error_count\":0,\"errors\":[],\"compile_error_count\":0,\"compile_errors\":[],\"other_error_count\":0,\"other_errors\":[],\"warning_count\":1,\"warnings\":[{\"message\":\"Live coding succeeded, data type changes may cause packaging to fail if assets reference the new or updated data types\",\"category\":\"LogLiveCoding\",\"verbosity\":\"warning\"}],\"since\":\"2026-07-10T00:09:53.445Z\",\"since_source\":\"last_compile\",\"excluded_categories\":[\"LogPython\",\"LogMonolith\"],\"fix_hints\":[]}"
+      }
+    ]
+  }
+}

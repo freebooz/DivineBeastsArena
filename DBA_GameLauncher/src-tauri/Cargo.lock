@@ -1121,7 +1121,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "game-launcher"
+name = "dba-game-launcher"
 version = "0.1.0"
 dependencies = [
  "hex",

@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"ok\":false,\"success\":false,\"mode\":\"execute_file\",\"result\":\"Traceback (most recent call last):\\n\\n  File \\\"E:/work/Game/DivineBeastsArena/Artifacts/ProductionEvidence/unreal/_mcp_fix_select_wbp.py\\\", line 132, in <module>\\n    n = fix_asset(p)\\n        ^^^^^^^^^^^^\\n\\n  File \\\"E:/work/Game/DivineBeastsArena/Artifacts/ProductionEvidence/unreal/_mcp_fix_select_wbp.py\\\", line 102, in fix_asset\\n    root = asset.widget_tree.root_widget\\n           ^^^^^^^^^^^^^^^^^\\n\\nAttributeError: 'WidgetBlueprint' object has no attribute 'widget_tree'\\n\",\"output\":[{\"type\":\"info\",\"output\":\"FIX /Game/DBA/UI/Lobby/Character/WBP_DBA_CharacterSelect\\r\\n\"},{\"type\":\"error\",\"output\":\"Traceback (most recent call last):\"},{\"type\":\"error\",\"output\":\"  File \\\"E:/work/Game/DivineBeastsArena/Artifacts/ProductionEvidence/unreal/_mcp_fix_select_wbp.py\\\", line 132, in <module>\"},{\"type\":\"error\",\"output\":\"    n = fix_asset(p)\"},{\"type\":\"error\",\"output\":\"        ^^^^^^^^^^^^\"},{\"type\":\"error\",\"output\":\"  File \\\"E:/work/Game/DivineBeastsArena/Artifacts/ProductionEvidence/unreal/_mcp_fix_select_wbp.py\\\", line 102, in fix_asset\"},{\"type\":\"error\",\"output\":\"    root = asset.widget_tree.root_widget\"},{\"type\":\"error\",\"output\":\"           ^^^^^^^^^^^^^^^^^\"},{\"type\":\"error\",\"output\":\"AttributeError: 'WidgetBlueprint' object has no attribute 'widget_tree'\"}],\"message\":\"Traceback (most recent call last):\\n\\n  File \\\"E:/work/Game/DivineBeastsArena/Artifacts/ProductionEvidence/unreal/_mcp_fix_select_wbp.py\\\", line 132, in <module>\\n    n = fix_asset(p)\\n        ^^^^^^^^^^^^\\n\\n  File \\\"E:/work/Game/DivineBeastsArena/Artifacts/ProductionEvidence/unreal/_mcp_fix_select_wbp.py\\\", line 102, in fix_asset\\n    root = asset.widget_tree.root_widget\\n           ^^^^^^^^^^^^^^^^^\\n\\nAttributeError: 'WidgetBlueprint' object has no attribute 'widget_tree'\\n\"}"
+      }
+    ]
+  }
+}

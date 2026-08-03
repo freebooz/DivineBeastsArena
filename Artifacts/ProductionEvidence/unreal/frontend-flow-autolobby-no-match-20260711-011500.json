@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "frontend-flow-autolobby-no-match",
+  "runId": "frontend-autolobby-no-match-20260711-011500",
+  "status": "passed",
+  "generatedAtUtc": "2026-07-10T17:00:10Z",
+  "skipFrontendFlow": false,
+  "autoLobbyFlow": true,
+  "autoMatchFlow": false,
+  "backendUrl": "http://localhost:8080",
+  "logPath": "E:\\work\\Game\\DivineBeastsArena\\.tmp\\frontend-autolobby-no-match-20260711-011500.log",
+  "flowSummary": [
+    "LoginScreen",
+    "访客登录",
+    "角色列表加载",
+    "角色创建",
+    "主大厅"
+  ],
+  "assertions": {
+    "reachedCharacterCreate": true,
+    "reachedMainLobby": true,
+    "autoMatchStarted": false,
+    "commonUIViewportError": false
+  }
+}

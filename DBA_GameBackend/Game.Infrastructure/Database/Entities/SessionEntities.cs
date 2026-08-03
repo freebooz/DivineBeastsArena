@@ -115,6 +115,7 @@ public class PlayerSession
     public Guid Id { get; set; }
     public Guid GameSessionId { get; set; }
     public Guid PlayerId { get; set; }
+    public Guid? CharacterId { get; set; }
     public string? Team { get; set; }
     public int? SlotIndex { get; set; }
     public string? Zodiac { get; set; }
@@ -124,6 +125,8 @@ public class PlayerSession
     public string Status { get; set; } = "CREATED";
     public string SessionTokenHash { get; set; } = string.Empty;
     public DateTimeOffset SessionTokenExpiresAt { get; set; }
+    public Guid? SessionTokenServerId { get; set; }
+    public string? SessionTokenBuildId { get; set; }
     public string? ReconnectTokenHash { get; set; }
     public DateTimeOffset? ReconnectTokenExpiresAt { get; set; }
     public DateTimeOffset? JoinedAt { get; set; }

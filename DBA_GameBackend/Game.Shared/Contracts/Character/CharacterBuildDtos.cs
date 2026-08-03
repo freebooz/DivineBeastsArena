@@ -16,21 +16,29 @@ public record CharacterBuildSummaryDto(
 
 public static class CharacterBuildRules
 {
-    public static CharacterBuildSummaryDto BuildSummary(string? zodiac, string? primaryElement, string? fiveCamp)
-    {
-        var normalizedZodiac = NormalizeChoice(zodiac, "Rat");
-        var normalizedPrimaryElement = NormalizeChoice(primaryElement, "Water");
+	public static CharacterBuildSummaryDto BuildSummary(
+		string? zodiac,
+		string? primaryElement,
+		string? fiveCamp,
+		string defaultZodiac,
+		string defaultPrimaryElement,
+		string defaultFiveCamp)
+	{
+		var normalizedZodiac = NormalizeChoice(zodiac, defaultZodiac);
+		var normalizedPrimaryElement = NormalizeChoice(primaryElement, defaultPrimaryElement);
 
-        return new CharacterBuildSummaryDto(
-            normalizedZodiac,
-            normalizedPrimaryElement,
-            NormalizeChoice(fiveCamp, "East"),
-            BuildFixedSkillGroupId(normalizedZodiac, normalizedPrimaryElement));
-    }
+		return new CharacterBuildSummaryDto(
+			normalizedZodiac,
+			normalizedPrimaryElement,
+			NormalizeChoice(fiveCamp, defaultFiveCamp),
+			BuildFixedSkillGroupId(normalizedZodiac, normalizedPrimaryElement));
+	}
 
     public static string BuildFixedSkillGroupId(string? zodiac, string? primaryElement)
     {
-        return $"{NormalizeChoice(zodiac, "Rat")}_{NormalizeChoice(primaryElement, "Water")}";
+        var normalizedZodiac = NormalizeRequiredChoice(zodiac, "生肖");
+        var normalizedPrimaryElement = NormalizeRequiredChoice(primaryElement, "主元素");
+        return $"{normalizedZodiac}_{normalizedPrimaryElement}";
     }
 
     public static string NormalizeChoice(string? value, string fallback)
@@ -44,5 +52,16 @@ public static class CharacterBuildRules
         return trimmed.Equals("None", StringComparison.OrdinalIgnoreCase)
             ? fallback
             : trimmed;
+    }
+
+    private static string NormalizeRequiredChoice(string? value, string fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(value)
+            || value.Trim().Equals("None", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException($"{fieldName}不能为空或使用 None。", fieldName);
+        }
+
+        return value.Trim();
     }
 }

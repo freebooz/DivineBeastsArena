@@ -1,0 +1,35 @@
+﻿{
+    "kind":  "frontend-match-validation",
+    "runId":  "frontend-match-20260709T160414Z",
+    "generatedAtUtc":  "2026-07-09T16:04:34.7116102Z",
+    "status":  "failed",
+    "error":  "远程服务器返回错误: (401) 未经授权。",
+    "baseUrl":  "http://localhost:8080",
+    "sessionId":  "173afe20-2f66-418b-93e1-dbbececa0aef",
+    "serverId":  "",
+    "logs":  {
+                 "server":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-frontend-match\\server-frontend-match-20260709T160414Z.log",
+                 "clientB":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-frontend-match\\client-b-frontend-match-20260709T160414Z.log",
+                 "clientA":  "E:\\work\\Game\\DivineBeastsArena\\.tmp\\local-frontend-match\\client-a-frontend-match-20260709T160414Z.log"
+             },
+    "counts":  {
+                   "clientBMatchTicket":  5,
+                   "clientBTravel":  {
+
+                                     },
+                   "clientAMatched":  2,
+                   "clientAMatchTicket":  2,
+                   "serverJoin":  0,
+                   "clientBConnectIssued":  {
+
+                                            },
+                   "serverPlayerJoinedOk":  0,
+                   "clientBMatched":  2,
+                   "clientAConnectIssued":  {
+
+                                            },
+                   "clientATravel":  {
+
+                                     }
+               }
+}

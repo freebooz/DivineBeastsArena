@@ -1,0 +1,70 @@
+{
+  "status": "success",
+  "Visibility": "Collapsed",
+  "ColorAndOpacity": {
+    "r": 1,
+    "g": 1,
+    "b": 1,
+    "a": 0
+  },
+  "RenderOpacity": 0,
+  "Brush": {
+    "tintColor": {
+      "specifiedColor": {
+        "r": 1,
+        "g": 1,
+        "b": 1,
+        "a": 0
+      },
+      "colorUseRule": "UseColor_Specified"
+    },
+    "drawAs": "NoDrawType",
+    "tiling": "NoTile",
+    "mirroring": "NoMirror",
+    "imageType": "FullColor",
+    "imageSize": {
+      "x": 1672,
+      "y": 941
+    },
+    "margin": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 0
+    },
+    "resourceObject": "/Script/Engine.Texture2D'/Game/DBA/UI/Lobby/Backgrounds/T_DBA_BG_CharacterSelect_01.T_DBA_BG_CharacterSelect_01'",
+    "outlineSettings": {
+      "cornerRadii": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 0
+      },
+      "color": {
+        "specifiedColor": {
+          "r": 0,
+          "g": 0,
+          "b": 0,
+          "a": 0
+        },
+        "colorUseRule": "UseColor_Specified"
+      },
+      "width": 0,
+      "roundingType": "HalfHeightRadius",
+      "bUseBrushTransparency": false
+    },
+    "uVRegion": {
+      "min": {
+        "x": 0,
+        "y": 0
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bIsValid": false
+    },
+    "bIsDynamicallyLoaded": false,
+    "resourceName": "None"
+  }
+}

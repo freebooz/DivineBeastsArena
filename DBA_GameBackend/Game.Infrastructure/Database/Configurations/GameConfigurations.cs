@@ -1,4 +1,4 @@
-﻿/*
+/*
 中文阅读说明：
 - 所属应用：DBA_GameBackend 后端 API / Worker。
 - 文件职责：集中配置 EF Core 映射、索引、约束和字段长度，避免实体类混入过多存储细节。
@@ -309,5 +309,80 @@ public class WalletLedgerConfiguration : IEntityTypeConfiguration<WalletLedger>
 
         b.HasIndex(x => x.IdempotencyKey).IsUnique();
         b.HasIndex(x => x.PlayerId);
+    }
+}
+
+public class PaymentOrderConfiguration : IEntityTypeConfiguration<PaymentOrder>
+{
+    public void Configure(EntityTypeBuilder<PaymentOrder> b)
+    {
+        b.ToTable("payment_order");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.PlayerId).HasColumnName("player_id").IsRequired();
+        b.Property(x => x.Platform).HasColumnName("platform").HasMaxLength(32).IsRequired();
+        b.Property(x => x.PlatformOrderId).HasColumnName("platform_order_id").HasMaxLength(128).IsRequired();
+        b.Property(x => x.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+        b.Property(x => x.Amount).HasColumnName("amount").IsRequired();
+        b.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(16).IsRequired();
+        b.Property(x => x.ProductId).HasColumnName("product_id").HasMaxLength(64).IsRequired();
+        b.Property(x => x.ProductName).HasColumnName("product_name").HasMaxLength(128).IsRequired();
+        b.Property(x => x.VirtualAmount).HasColumnName("virtual_amount").IsRequired();
+        b.Property(x => x.VirtualCurrency).HasColumnName("virtual_currency").HasMaxLength(32).IsRequired();
+        b.Property(x => x.CallbackJson).HasColumnName("callback_json").HasColumnType("jsonb");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
+        b.Property(x => x.PaidAt).HasColumnName("paid_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+
+        b.HasIndex(x => x.PlayerId);
+        b.HasIndex(x => x.Status);
+        b.HasIndex(x => x.PlatformOrderId);
+    }
+}
+
+public class QuestConfiguration : IEntityTypeConfiguration<Quest>
+{
+    public void Configure(EntityTypeBuilder<Quest> b)
+    {
+        b.ToTable("quest");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.QuestKey).HasColumnName("quest_key").HasMaxLength(128).IsRequired();
+        b.Property(x => x.Title).HasColumnName("title").HasMaxLength(255).IsRequired();
+        b.Property(x => x.Description).HasColumnName("description");
+        b.Property(x => x.QuestType).HasColumnName("quest_type").HasMaxLength(32).IsRequired();
+        b.Property(x => x.Category).HasColumnName("category").HasMaxLength(64).IsRequired();
+        b.Property(x => x.TargetProgress).HasColumnName("target_progress").IsRequired();
+        b.Property(x => x.RewardJson).HasColumnName("reward_json").HasColumnType("jsonb").IsRequired();
+        b.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
+        b.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
+        b.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+
+        b.HasIndex(x => x.QuestKey).IsUnique();
+        b.HasIndex(x => x.QuestType);
+        b.HasIndex(x => x.IsActive);
+    }
+}
+
+public class PlayerQuestConfiguration : IEntityTypeConfiguration<PlayerQuest>
+{
+    public void Configure(EntityTypeBuilder<PlayerQuest> b)
+    {
+        b.ToTable("player_quest");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.PlayerId).HasColumnName("player_id").IsRequired();
+        b.Property(x => x.QuestId).HasColumnName("quest_id").IsRequired();
+        b.Property(x => x.Progress).HasColumnName("progress").IsRequired();
+        b.Property(x => x.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+        b.Property(x => x.AcceptedAt).HasColumnName("accepted_at").IsRequired();
+        b.Property(x => x.CompletedAt).HasColumnName("completed_at");
+        b.Property(x => x.RewardedAt).HasColumnName("rewarded_at");
+        b.Property(x => x.ExpiredAt).HasColumnName("expired_at");
+
+        b.HasIndex(x => new { x.PlayerId, x.QuestId }).IsUnique();
+        b.HasIndex(x => x.PlayerId);
+        b.HasIndex(x => x.Status);
     }
 }

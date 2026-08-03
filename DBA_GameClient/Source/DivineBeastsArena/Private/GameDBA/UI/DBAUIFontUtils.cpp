@@ -11,8 +11,10 @@
 #include "GameDBA/UI/DBAUIFontUtils.h"
 
 #include "Blueprint/WidgetTree.h"
+#include "Blueprint/UserWidget.h"
 #include "Components/EditableTextBox.h"
 #include "Components/TextBlock.h"
+#include "Engine/GameViewportClient.h"
 #include "Fonts/CompositeFont.h"
 #include "Misc/PackageName.h"
 #include "UObject/SoftObjectPath.h"
@@ -70,6 +72,82 @@ namespace
 		CachedFont = CompositeFont;
 		return CachedFont;
 	}
+}
+
+float DBAUIFonts::GetViewportUIScale(const UObject* WorldContextObject)
+{
+	if (!WorldContextObject)
+	{
+		return 1.0f;
+	}
+
+	const UWorld* World = WorldContextObject->GetWorld();
+	if (!World)
+	{
+		return 1.0f;
+	}
+
+	if (const UGameViewportClient* ViewportClient = World->GetGameViewport())
+	{
+		FVector2D ViewportSize(ReferenceViewportWidth, ReferenceViewportHeight);
+		ViewportClient->GetViewportSize(ViewportSize);
+		if (ViewportSize.X > 1.0f && ViewportSize.Y > 1.0f)
+		{
+			return FMath::Min(
+				ViewportSize.X / ReferenceViewportWidth,
+				ViewportSize.Y / ReferenceViewportHeight);
+		}
+	}
+
+	return 1.0f;
+}
+
+float DBAUIFonts::ScaleLayoutValue(const UObject* WorldContextObject, const float ReferenceValue)
+{
+	return ReferenceValue * GetViewportUIScale(WorldContextObject);
+}
+
+FVector2D DBAUIFonts::ScaleVector2D(const UObject* WorldContextObject, const FVector2D& ReferenceValue)
+{
+	const float Scale = GetViewportUIScale(WorldContextObject);
+	return ReferenceValue * Scale;
+}
+
+FMargin DBAUIFonts::ScaleMargin(const UObject* WorldContextObject, const float Left, const float Top, const float Right, const float Bottom)
+{
+	const float Scale = GetViewportUIScale(WorldContextObject);
+	return FMargin(Left * Scale, Top * Scale, Right * Scale, Bottom * Scale);
+}
+
+void DBAUIFonts::ApplyViewportScaledPresentation(UUserWidget* Widget)
+{
+	if (!Widget)
+	{
+		return;
+	}
+
+	const float UIScale = GetViewportUIScale(Widget);
+	Widget->SetAnchorsInViewport(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
+	Widget->SetAlignmentInViewport(FVector2D(0.0f, 0.0f));
+	Widget->SetPositionInViewport(FVector2D::ZeroVector, false);
+	Widget->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
+	Widget->SetRenderScale(FVector2D(UIScale, UIScale));
+}
+
+void DBAUIFonts::ApplyFullscreenFlowViewportPresentation(UUserWidget* Widget)
+{
+	if (!Widget)
+	{
+		return;
+	}
+
+	// UE5 SetDesiredSizeInViewport 会把锚点重置为 (0,0) 点锚点，因此拉伸锚点必须最后设置。
+	Widget->SetVisibility(ESlateVisibility::Visible);
+	Widget->SetAlignmentInViewport(FVector2D::ZeroVector);
+	Widget->SetPositionInViewport(FVector2D::ZeroVector, false);
+	Widget->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
+	Widget->SetRenderScale(FVector2D(1.0f, 1.0f));
+	Widget->SetAnchorsInViewport(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
 }
 
 FSlateFontInfo DBAUIFonts::MakeGameFont(float Size, int32 OutlineSize)

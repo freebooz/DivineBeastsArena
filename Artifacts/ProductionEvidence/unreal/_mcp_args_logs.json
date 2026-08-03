@@ -1,0 +1,4 @@
+{
+  "action": "search_logs",
+  "pattern": "CharacterPresentation|抢镜|跳过锁定|已激活展示"
+}

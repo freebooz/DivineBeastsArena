@@ -1,0 +1,5 @@
+{
+  "action": "action_schema",
+  "target_namespace": "ui",
+  "target_action": "set_widget_property"
+}

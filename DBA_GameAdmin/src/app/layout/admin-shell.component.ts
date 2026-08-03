@@ -62,7 +62,10 @@ export class AdminShellComponent {
     { label: '反馈', path: '/feedback' },
     { label: '工单', path: '/support' },
     { label: '审计', path: '/audit' },
-    { label: '平台', path: '/platform' }
+    { label: '平台', path: '/platform' },
+    { label: '支付订单', path: '/payment-orders' },
+    { label: '任务管理', path: '/quests' },
+    { label: '钱包管理', path: '/wallet' }
   ];
 
   logout(): void {

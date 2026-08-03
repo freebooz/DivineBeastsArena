@@ -1,18 +1,18 @@
 ﻿# Release readiness report
 
 - kind: release-readiness-report
-- releaseId: local-launcher-evidence-support-files-gate-20260630
-- generatedAtUtc: 2026-06-30T13:39:47.2329731Z
+- releaseId: local-ue-evidence-20260707T112831Z
+- generatedAtUtc: 2026-07-07T11:30:33.9856166Z
 - readyForRelease: False
-- developmentContinuationReady: True
+- developmentContinuationReady: False
 - manifest: E:\work\Game\DivineBeastsArena\Artifacts\ProductionEvidence\production-evidence-manifest.json
 - evidenceRoot: E:\work\Game\DivineBeastsArena\Artifacts\ProductionEvidence
-- gitCommit: a5a08469d8d6ada512972c4edfc9787a680be9a4
+- gitCommit: 383fed38446462dadea67c93c9a46f213c785d35
 - gitIsDirty: True
 - presentRequirements: 10 / 14
 - blockingRequirements: 4
 - externalOnlyReleaseBlockers: True
-- releaseBlockerPostureReleaseIdMatchesManifest: True
+- releaseBlockerPostureReleaseIdMatchesManifest: False
 - releaseBlockerPostureBlockerCountMatchesManifest: True
 - externalBlockers: 4
 - localAutomationBlockers: 0
@@ -22,29 +22,29 @@
 
 | Key | Status | Files | Description |
 | --- | --- | ---: | --- |
-| client.release_prerequisites | incomplete | 1 | Client release input prerequisite evidence proving package root, production CDN URLs, and signing inputs are ready before release automation runs. |
-| client.package_launcher | incomplete | 16 | Client package, launcher manifest, SHA256 file list, and local install/update repair smoke evidence. |
-| client.cdn_launcher_smoke | incomplete | 2 | Launcher CDN smoke evidence proving manifest fetch, package downloads, SHA256 verification, and local install version persistence. |
-| client.code_signing | incomplete | 7 | Windows Authenticode code-signing evidence proving public client executables and libraries are trusted signed. |
+| client.release_prerequisites | incomplete | 1 | 客户端发布输入前置证据，证明包体根目录、生产 CDN URL 和签名输入已就绪。 |
+| client.package_launcher | incomplete | 16 | 客户端包、启动器清单、SHA256 文件列表和本地安装/更新修复冒烟证据。 |
+| client.cdn_launcher_smoke | incomplete | 2 | 启动器 CDN 冒烟证据，证明清单获取、包下载、SHA256 校验和本地安装版本持久化。 |
+| client.code_signing | incomplete | 7 | Windows Authenticode 代码签名证据，证明公开客户端可执行文件和库已可信签名。 |
 
 ## All production evidence requirements
 
 | Key | Status | Files | Description |
 | --- | --- | ---: | --- |
-| security.nuget | present | 1 | NuGet vulnerable package report from security-ci or production-security-audit. |
-| security.npm | present | 9 | Production npm audit JSON for Admin, Website, and Launcher. |
-| security.trivy | present | 2 | API and Worker container Trivy SARIF or scan report. |
-| load.k6 | present | 4 | k6 login, matchmaking, or dedicated server orchestration load-test output. |
-| ops.backup_restore | present | 2 | PostgreSQL backup and restore rehearsal evidence. |
-| ops.deploy_rollback | present | 2 | Deployment, smoke test, and rollback evidence. |
-| unreal.online_validation | present | 5 | UE packaged or editor online validation evidence for backend allocation, Dedicated Server startup, and client joins. |
-| unreal.ai_showcase_automation | present | 6 | AI_Showcase UI/VFX automation regression evidence for MCP-generated showcase assets. |
-| client.release_prerequisites | incomplete | 1 | Client release input prerequisite evidence proving package root, production CDN URLs, and signing inputs are ready before release automation runs. |
-| client.package_launcher | incomplete | 16 | Client package, launcher manifest, SHA256 file list, and local install/update repair smoke evidence. |
-| client.cdn_launcher_smoke | incomplete | 2 | Launcher CDN smoke evidence proving manifest fetch, package downloads, SHA256 verification, and local install version persistence. |
-| client.code_signing | incomplete | 7 | Windows Authenticode code-signing evidence proving public client executables and libraries are trusted signed. |
-| client.launcher_install_update | present | 10 | Launcher install/update smoke evidence proving manifest fetch, repair download, SHA256 verification, and version persistence. |
-| client.launcher_ui_visual | present | 5 | Launcher UI visual evidence proving the player-facing launcher screen renders and exposes install/update actions. |
+| security.nuget | present | 1 | NuGet 漏洞包报告来自 security-ci 或 production-security-audit。 |
+| security.npm | present | 9 | Admin、Website、Launcher 的生产 npm audit JSON。 |
+| security.trivy | present | 2 | API 和 Worker 容器 Trivy SARIF 或扫描报告。 |
+| load.k6 | present | 4 | k6 登录、匹配或专用服务器编排压测输出。 |
+| ops.backup_restore | present | 2 | PostgreSQL 备份与恢复演练证据。 |
+| ops.deploy_rollback | present | 2 | 部署、冒烟测试和回滚证据。 |
+| unreal.online_validation | present | 6 | UE 打包或编辑器在线验证证据，覆盖后端分配、Dedicated Server 启动和客户端加入。 |
+| unreal.ai_showcase_automation | present | 7 | MCP 生成 AI_Showcase 资产的 UI/VFX 自动化回归证据。 |
+| client.release_prerequisites | incomplete | 1 | 客户端发布输入前置证据，证明包体根目录、生产 CDN URL 和签名输入已就绪。 |
+| client.package_launcher | incomplete | 16 | 客户端包、启动器清单、SHA256 文件列表和本地安装/更新修复冒烟证据。 |
+| client.cdn_launcher_smoke | incomplete | 2 | 启动器 CDN 冒烟证据，证明清单获取、包下载、SHA256 校验和本地安装版本持久化。 |
+| client.code_signing | incomplete | 7 | Windows Authenticode 代码签名证据，证明公开客户端可执行文件和库已可信签名。 |
+| client.launcher_install_update | present | 10 | 启动器安装/更新冒烟证据，证明清单获取、修复下载、SHA256 校验和版本持久化。 |
+| client.launcher_ui_visual | present | 5 | 启动器 UI 视觉证据，证明玩家可见启动器界面可渲染并暴露安装/更新操作。 |
 
 ## Evidence file index
 
@@ -158,9 +158,12 @@
 - `unreal/ai-showcase-automation-ai-showcase-semantic-20260629.json` (1382 bytes, sha256 `01c191f8466f81a5998b200d526f8b5ebc72c53734524c67314fdd6fbe091b6c`)
 - `unreal/ai-showcase-automation-ai-showcase-widget-tree-20260630.json` (1665 bytes, sha256 `ff5fccb8fc4e852e69d1c5658f5baed2f5f344f03e1f0d86addbed3dd5f99a85`)
 - `unreal/ai-showcase-automation-ai-showcase-widget-tree-20260630b.json` (1666 bytes, sha256 `df0b90c38e81a03bcb4402467fd0b6437ec91465efb7f649b0bb4a1ace387a74`)
+- `unreal/ai-showcase-automation-local-ue-evidence-20260707T112831Z.json` (1669 bytes, sha256 `624379db16a19f670e79a6e6bd228910dfe23d4dcf60e3dfaaff02818ef5f78e`)
+- `unreal/runner-diagnostic-local-ue-evidence-20260707T112831Z.json` (4153 bytes, sha256 `d1dd117500e8f28fe50e53ec8cb0bc9fd0f40ef3dd501a7d4b898326aa3b7a96`)
 - `unreal/runner-diagnostic-packaged-ue-online-external-mode-20260628T062800Z.json` (4153 bytes, sha256 `b2dad7a96ecf252a2b538d8e3bb2bda888b3945f3e0fd93f3d14a1491dcc45b2`)
 - `unreal/runner-diagnostic-packaged-ue-online-url-decode-20260628T064000Z.json` (4153 bytes, sha256 `85c44f92da37a2d685f5793239c62ea049f6d3ab800621c21417b6786f5c91cb`)
 - `unreal/runner-diagnostic-packaged-ue-online-wrapper-full-20260628T061500Z.json` (4153 bytes, sha256 `715cbe0598baf71836fbcfaae572c1fc169f9f316bfb238bb21396454e337f46`)
+- `unreal/ue-online-validation-local-ue-evidence-20260707T112831Z.json` (3166 bytes, sha256 `bed020a499d7511dd254aea0cbf99c09783d34f1c7222865a3104eb617ef0fec`)
 - `unreal/ue-online-validation-packaged-ue-online-build-summary-20260628T040000Z.json` (2412 bytes, sha256 `63d51b5bde3886997648d928dcc8cf2eee7109d053690d120f7478db9c6737dd`)
 - `unreal/ue-online-validation-packaged-ue-online-build-summary-20260628T041000Z.json` (2521 bytes, sha256 `a64fa24fa0d4d3ff09fc1e3fd0e0377db2f1b57893c52459657986b7ed567579`)
 - `unreal/ue-online-validation-packaged-ue-online-external-mode-20260628T062800Z.json` (2521 bytes, sha256 `568db20b46dc773cb10839905ac8ac198690eaa2490d9e920c067ea59b78f43f`)

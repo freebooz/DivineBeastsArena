@@ -1,4 +1,4 @@
-﻿// Copyright Freebooz Games, Inc. All Rights Reserved.
+// Copyright Freebooz Games, Inc. All Rights Reserved.
 /*
 中文阅读说明：
 - 所属应用：DBA_GameClient Unreal Engine 客户端。
@@ -24,7 +24,7 @@ void UDBASpectatorHUDWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// 榛樿鏆傚仠鎻愮ず闅愯棌
+	// 默认暂停提示隐藏
 	if (PauseOverlay)
 	{
 		PauseOverlay->SetVisibility(ESlateVisibility::Hidden);
@@ -52,7 +52,7 @@ void UDBASpectatorHUDWidgetBase::NativeTick(const FGeometry& MyGeometry, float I
 		CachedViewTarget = NewTarget;
 		OnViewTargetUpdated(NewTarget);
 
-		// 鏇存柊褰撳墠鐜╁鍚嶇О
+		// 更新当前玩家名称
 		if (CurrentPlayerNameText)
 		{
 			CurrentPlayerNameText->SetText(FText::FromName(NewTarget.PlayerName));
@@ -68,7 +68,7 @@ void UDBASpectatorHUDWidgetBase::NativeTick(const FGeometry& MyGeometry, float I
 			bCachedIsPaused = bCurrentPauseState;
 			OnPauseStateChanged(bCachedIsPaused);
 
-			// 鏇存柊鏆傚仠鎻愮ずUI
+			// 更新暂停提示 UI
 			if (PauseOverlay)
 			{
 				PauseOverlay->SetVisibility(bCachedIsPaused ? ESlateVisibility::Visible : ESlateVisibility::Hidden);

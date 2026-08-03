@@ -25,6 +25,9 @@ public static partial class GameFeatureEndpoints
         announcement.MapGet("/", GetAnnouncements)
             .WithSummary("获取公告列表")
             .WithDescription("获取当前有效的公告列表");
+        announcement.MapGet("/popup", GetPopupAnnouncement)
+            .WithSummary("获取弹窗公告")
+            .WithDescription("获取当前优先级最高的弹窗公告，返回单个公告或 null");
 
         // 活动系统
         var events = app.MapGroup("/api/events").WithTags("活动");
@@ -63,6 +66,23 @@ public static partial class GameFeatureEndpoints
             .ToListAsync();
 
         return Results.Ok(ApiResponse<AnnouncementListResponse>.Ok(new AnnouncementListResponse(announcements)));
+    }
+
+    private static async Task<IResult> GetPopupAnnouncement(GameDbContext db)
+    {
+        var now = DateTimeOffset.UtcNow;
+        // 优先返回 POPUP 类型公告；若没有，则返回优先级最高的公告
+        // 仅返回当前有效（已开始、未过期、激活）的公告
+        var popup = await db.Announcements
+            .Where(x => x.IsActive && x.StartAt <= now && (x.EndAt == null || x.EndAt > now))
+            .OrderByDescending(x => x.Type == "POPUP") // POPUP 类型优先
+            .ThenByDescending(x => x.Priority)
+            .ThenByDescending(x => x.CreatedAt)
+            .Select(x => new AnnouncementDto(x.Id, x.Title, x.Content, x.Type, x.Priority, x.StartAt, x.EndAt))
+            .FirstOrDefaultAsync();
+
+        // 弹窗公告可能为 null（无可用公告时）
+        return Results.Ok(ApiResponse<AnnouncementDto?>.Ok(popup));
     }
 
     // ==================== 活动系统 ====================

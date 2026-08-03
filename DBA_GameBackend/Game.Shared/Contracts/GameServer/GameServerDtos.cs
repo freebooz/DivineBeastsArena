@@ -26,7 +26,10 @@ public record RuntimePlayerJoinedRequest(
     string? Zodiac = null,
     string? PrimaryElement = null,
     string? FiveCamp = null,
-    string? FixedSkillGroupId = null);
+    string? FixedSkillGroupId = null,
+    string? JoinTicket = null,
+    Guid? CharacterId = null,
+    string? BuildId = null);
 public record RuntimePlayerLeftRequest(Guid ServerId, Guid SessionId, string RuntimeToken, Guid PlayerId);
 public record RuntimeMatchStartedRequest(Guid ServerId, Guid SessionId, string RuntimeToken);
 public record RuntimeMatchEndedRequest(Guid ServerId, Guid SessionId, string RuntimeToken);

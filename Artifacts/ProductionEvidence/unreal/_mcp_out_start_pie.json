@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"started\":true,\"mode\":\"in_viewport\",\"warnings\":[\"Unknown param 'map' for action 'editor:start_pie'\"]}"
+      }
+    ]
+  }
+}

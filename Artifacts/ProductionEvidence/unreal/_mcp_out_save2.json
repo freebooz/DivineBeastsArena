@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"ok\":true,\"dry_run\":false,\"saved\":2,\"requested\":2,\"results\":[{\"package\":\"/Game/DBA/UI/Lobby/Character/WBP_DBA_CharacterSelect\",\"is_map\":false,\"disk_path\":\"E:/work/Game/DivineBeastsArena/DBA_GameClient/Content/DBA/UI/Lobby/Character/WBP_DBA_CharacterSelect.uasset\",\"saved\":true},{\"package\":\"/Game/DBA/UI/Lobby/Character/WBP_DBA_CharacterCreate\",\"is_map\":false,\"disk_path\":\"E:/work/Game/DivineBeastsArena/DBA_GameClient/Content/DBA/UI/Lobby/Character/WBP_DBA_CharacterCreate.uasset\",\"saved\":true}]}"
+      }
+    ]
+  }
+}
