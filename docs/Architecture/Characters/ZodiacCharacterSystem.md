@@ -272,26 +272,17 @@ DeveloperSettings 期望路径：
 
 ### 6.3 低优先级 / 文档
 
-7. **同步旧文档**  
-   - `DBA_GameClient/Docs/CharacterSystem_Architecture.md` §2.1  
-   - `docs/Architecture/角色与动画系统审查报告.md` §2.2  
-
-8. **Western Zodiac**  
+7. **Western Zodiac**
    `Content/DBA/Zodiacs/Western/` 为另一套星座资源，**未接入玩家生肖生成链路**，与本文档无关。
 
 ---
 
-## 7. 相关文档与脚本
+## 7. 相关文档
 
 | 文档 / 资源 | 路径 |
 |-------------|------|
 | 技能设计 V2（权威） | `docs/Architecture/Characters/ZodiacSkillDesign_V2_万象灵庭.md` |
-| 技能设计 V15（历史） | `DBA_GameClient/Docs/ZodiacSkillDesign_V15.md` |
 | 登录选角 UI 规格 | `DBA_GameClient/Docs/Architecture/LoginCharacterFlow_UI_BlueprintSpec.md` |
-| 角色系统架构（待更新） | `DBA_GameClient/Docs/CharacterSystem_Architecture.md` |
-| 角色与动画审查（部分过时） | `docs/Architecture/角色与动画系统审查报告.md` |
-| V15 语音/图标脚本表 | `DBA_GameClient/Scripts/DT_ZodiacVoiceLines_V15.csv` 等 |
-| 自动化契约脚本 | `scripts/test-zodiac-*.ps1`（技能槽、HUD、GAS 等） |
 
 ---
 

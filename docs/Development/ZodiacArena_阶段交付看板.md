@@ -487,7 +487,7 @@
 ### 已有证据
 
 - 根仓库 [`README.md`](/E:/work/Game/DivineBeastsArena/README.md) 已明确单仓多项目边界、构建命令与开发纲领入口。
-- [`solution-audit-and-production-plan.md`](/E:/work/Game/DivineBeastsArena/docs/solution-audit-and-production-plan.md) 已记录多应用构建验证与当前阶段计划。
+- 多应用阶段计划已收口到本看板，旧版解决方案审查文档已于文档治理时删除。
 - `scripts/production-preflight.ps1` 已覆盖 后端、管理后台、官网、启动器、容器与虚幻预检入口。
 
 ### 当前结论
@@ -639,13 +639,9 @@
 
 ## 2026-06-28 架构报告接入
 
-- 已新增 `docs/Architecture/总体架构设计与审查报告.md` 相关脚本、测试、文档或实现，用于补齐当前阶段证据链。
-- 已对齐 `Pantheon`、`FiveCamp` 相关术语与当前项目目标，避免外部报告用语误入工程边界。
-- 已更新 `docs/Architecture/三层架构设计.md`、`docs/Development/README.md` 相关实现、脚本或文档，使其符合当前阶段交付要求。
-- 已新增 `docs/Architecture/三层UE5模块与Build依赖设计.md`、`GameCore / GameMoba / DivineBeastsArena`、`DBAFoundation / DBAMoba / DBAArenaGame`、`Build.cs` 相关脚本、测试、文档或实现，用于补齐当前阶段证据链。
-- 已强化 `scripts/validate-unreal-module-boundaries.ps1`、`../` 相关边界、校验或准入规则，防止后续实现绕过既定工程约束。
-- 已记录 `scripts/validate-unreal-module-boundaries.ps1`、`scripts/validate-unreal-source-guardrails.ps1` 相关命令或结构检查通过；具体数量、出口码和证据路径以原始验证记录为准。
-- 剩余缺口：围绕 相关仓库证据 的后续生产化验证、正式环境证据或交付闭环仍需补齐；具体状态以对应脚本、测试和证据文件为准。
+- 当时形成的架构报告已完成术语和模块边界收口；旧版报告与自动化门禁记录已在后续文档治理中删除。
+- 当前权威入口为 `docs/Architecture/全局工程策略文档.md`、`docs/Architecture/三层架构设计.md` 与 `docs/Architecture/ADR/ADR-0001-三层模块与业务语义边界.md`。
+- 模块边界后续通过源码审查、编译级工程检查和人工业务审核确认，不再引用或运行自动化脚本。
 
 ## 2026-06-28 基础层角色构建基线
 
