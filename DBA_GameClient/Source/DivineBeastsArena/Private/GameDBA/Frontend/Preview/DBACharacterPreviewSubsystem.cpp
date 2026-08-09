@@ -119,6 +119,29 @@ void UDBACharacterPreviewSubsystem::PlayIdleVariation()
 	}
 }
 
+void UDBACharacterPreviewSubsystem::ApplyFiveCampTheme(const FDBAFiveCampPreviewTheme& Theme)
+{
+	// 五营仅属于前台主题表现；Dedicated Server 与不存在舞台的过渡场景均安全忽略。
+	if (!IsDedicatedServer())
+	{
+		if (ADBACharacterPreviewStage* Stage = ResolvePreviewStage())
+		{
+			Stage->ApplyFiveCampTheme(Theme);
+		}
+	}
+}
+
+void UDBACharacterPreviewSubsystem::ClearFiveCampTheme()
+{
+	if (!IsDedicatedServer())
+	{
+		if (ADBACharacterPreviewStage* Stage = ResolvePreviewStage())
+		{
+			Stage->ClearFiveCampTheme();
+		}
+	}
+}
+
 void UDBACharacterPreviewSubsystem::ReleasePreview()
 {
 	RequestGate.Invalidate();

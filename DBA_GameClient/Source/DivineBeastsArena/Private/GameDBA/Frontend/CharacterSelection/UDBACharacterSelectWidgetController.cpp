@@ -144,6 +144,17 @@ void UDBACharacterSelectWidgetController::HandleFlowStateChanged(const EDBAFront
 	if (!ViewModel) return;
 	ViewModel->SetRosterLoading(NewState == EDBAFrontendState::CharacterRosterLoading);
 	if (PreviousState == EDBAFrontendState::CharacterRosterLoading && NewState == EDBAFrontendState::CharacterSelect) ViewModel->ClearError();
+
+	// 角色创建成功后，流程子系统会先把新角色写入前台会话。
+	// 此处只消费该会话摘要并驱动既有选择/预览链，避免确认页直接操作角色选择 Widget 或预览 Subsystem。
+	if (NewState == EDBAFrontendState::CharacterSelect)
+	{
+		if (UDBAFrontendFlowSubsystem* Flow = GetLoginFlow())
+		{
+			const FDBACharacterId SessionSelectedCharacterId(Flow->GetFrontendSessionContext().SelectedCharacterId);
+			if (SessionSelectedCharacterId.IsValid()) ApplySelection(SessionSelectedCharacterId);
+		}
+	}
 }
 
 void UDBACharacterSelectWidgetController::PublishError(const FDBAOperationResult& Result)

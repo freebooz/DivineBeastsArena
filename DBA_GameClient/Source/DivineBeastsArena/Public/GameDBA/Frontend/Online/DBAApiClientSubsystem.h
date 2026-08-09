@@ -46,6 +46,12 @@ using FDBAApiMockTransport = TFunction<void(const FDBAApiRequest&, TFunction<voi
 using FDBAApiMockRefresh = TFunction<void(TFunction<void(bool)>)>;
 
 /**
+ * 刷新令牌单飞请求最终失败时只广播一次。
+ * Flow 订阅该事件并统一执行登出清理；各个 Widget/领域子系统不得自行处理 Token 过期。
+ */
+DECLARE_MULTICAST_DELEGATE(FDBAOnAuthenticationRefreshFailed);
+
+/**
  * 前台唯一 HTTP/JSON 入口。它不创建第二套传输，而是委托 GameBackendClient 的
  * FDBA_GameBackendHttpClient，并集中处理请求生命周期、注销失效、401 刷新和错误映射。
  */
@@ -73,6 +79,12 @@ public:
 	void SetRefreshTokenPersistenceEnabled(bool bEnabled);
 	bool LoadDevelopmentRefreshToken(FString& OutRefreshToken) const;
 	void InvalidateSession();
+
+	/**
+	 * 返回认证刷新失败事件。该事件仅表示 ApiClient 已尝试单飞 Refresh 且失败，
+	 * 不携带 Token、RefreshToken 或远端响应正文。
+	 */
+	FDBAOnAuthenticationRefreshFailed& OnAuthenticationRefreshFailed() { return AuthenticationRefreshFailed; }
 
 	/** 只供自动化契约或无后端前端调试注入；不得在 Widget 中设置。 */
 	void SetMockTransportForTests(FDBAApiMockTransport InMockTransport);
@@ -109,4 +121,5 @@ private:
 	uint64 SessionGeneration = 0;
 	bool bRefreshInFlight = false;
 	bool bPersistRefreshToken = true;
+	FDBAOnAuthenticationRefreshFailed AuthenticationRefreshFailed;
 };

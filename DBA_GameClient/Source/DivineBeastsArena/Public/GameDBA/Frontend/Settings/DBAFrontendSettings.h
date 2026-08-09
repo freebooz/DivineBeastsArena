@@ -10,6 +10,7 @@
 class UDBAStartupVideoWidget;
 class UDBAServerSelectScreenBase;
 class UDBAAppearanceCatalogDataAsset;
+class UDataTable;
 
 /** 前台地图与角色槽位的唯一配置入口。地图均为软引用，不在启动阶段同步加载角色资源。 */
 UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "DBA Frontend"))
@@ -34,6 +35,13 @@ public:
 	/** 角色创建 Draft 使用的唯一外观选项目录；为空时只能提交生肖资产提供的默认外观。 */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Character")
 	TSoftObjectPtr<UDBAAppearanceCatalogDataAsset> CharacterAppearanceCatalog;
+
+	/**
+	 * 账号角色创建第三步的唯一五营显示数据表。表行定义名称、图标、徽记、背景、材质与音效等表现数据；
+	 * 它不保存 TeamId、对局阵营、伤害或技能规则。保留软引用以避免启动阶段同步加载前台主题资源。
+	 */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Character|FiveCamp")
+	TSoftObjectPtr<UDataTable> CharacterCreateFiveCampDisplayTable;
 
 	/** 仅允许 FlowSubsystem 读取；失败时必须无提示回退 Login。 */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Authentication")

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameCore/Types/DBACommonEnums.h"
 #include "GameDBA/Character/Appearance/DBACharacterAppearanceTypes.h"
+#include "GameDBA/Frontend/Preview/DBAFiveCampPreviewTheme.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "DBACharacterPreviewSubsystem.generated.h"
 
@@ -47,6 +48,9 @@ public:
 	void ActivateCamera(APlayerController* PlayerController, float BlendTime = 0.0f);
 	void PlaySelect();
 	void PlayIdleVariation();
+	/** 将五营选择的已解析表现主题转交给 PreviewStage；不会写入角色外观或对局 TeamId。 */
+	void ApplyFiveCampTheme(const FDBAFiveCampPreviewTheme& Theme);
+	void ClearFiveCampTheme();
 	void ReleasePreview();
 
 	uint32 GetRequestGeneration() const { return RequestGate.GetGeneration(); }

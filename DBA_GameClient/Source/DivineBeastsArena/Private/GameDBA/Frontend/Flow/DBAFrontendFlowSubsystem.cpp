@@ -15,6 +15,8 @@
 #include "GameDBA/Frontend/Core/DBAFrontendErrorMapper.h"
 
 #include "GameDBA/Frontend/Account/DBAOnlineAccountService.h"
+#include "GameDBA/Frontend/Online/DBAApiClientSubsystem.h"
+#include "GameDBA/Frontend/Preview/DBACharacterPreviewSubsystem.h"
 #include "GameDBA/Frontend/Settings/DBAFrontendSettings.h"
 #include "GameCore/Core/DBALogChannels.h"
 #include "GameBackendClientSettings.h"
@@ -24,6 +26,7 @@
 #include "Dom/JsonObject.h"
 #include "Engine/World.h"
 #include "GameCore/Networking/Travel/DBATravelSubsystem.h"
+#include "Misc/CoreDelegates.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "TimerManager.h"
@@ -50,6 +53,45 @@ namespace
 	}
 }
 
+void UDBAFrontendFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	// Flow 只订阅 ApiClient 的认证结果，不反向让 ApiClient 依赖 UI/Flow 模块。
+	Collection.InitializeDependency<UDBAApiClientSubsystem>();
+	Super::Initialize(Collection);
+
+	if (UDBAApiClientSubsystem* ApiClient = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAApiClientSubsystem>() : nullptr)
+	{
+		AuthenticationRefreshFailedHandle = ApiClient->OnAuthenticationRefreshFailed().AddUObject(this, &UDBAFrontendFlowSubsystem::HandleAuthenticationRefreshFailed);
+	}
+
+	// 平台生命周期只改变 Flow 会话代次；绝不在此创建 Widget 或 UI Root。
+	ApplicationWillEnterBackgroundHandle = FCoreDelegates::ApplicationWillEnterBackgroundDelegate.AddUObject(this, &UDBAFrontendFlowSubsystem::HandleApplicationEnteredBackground);
+	ApplicationHasEnteredForegroundHandle = FCoreDelegates::ApplicationHasEnteredForegroundDelegate.AddUObject(this, &UDBAFrontendFlowSubsystem::HandleApplicationResumed);
+}
+
+void UDBAFrontendFlowSubsystem::Deinitialize()
+{
+	if (UDBAApiClientSubsystem* ApiClient = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAApiClientSubsystem>() : nullptr)
+	{
+		if (AuthenticationRefreshFailedHandle.IsValid())
+		{
+			ApiClient->OnAuthenticationRefreshFailed().Remove(AuthenticationRefreshFailedHandle);
+		}
+	}
+	if (ApplicationWillEnterBackgroundHandle.IsValid())
+	{
+		FCoreDelegates::ApplicationWillEnterBackgroundDelegate.Remove(ApplicationWillEnterBackgroundHandle);
+	}
+	if (ApplicationHasEnteredForegroundHandle.IsValid())
+	{
+		FCoreDelegates::ApplicationHasEnteredForegroundDelegate.Remove(ApplicationHasEnteredForegroundHandle);
+	}
+	AuthenticationRefreshFailedHandle.Reset();
+	ApplicationWillEnterBackgroundHandle.Reset();
+	ApplicationHasEnteredForegroundHandle.Reset();
+	Super::Deinitialize();
+}
+
 bool UDBAFrontendFlowSubsystem::ShouldEnterCharacterCreate(int32 CharacterCount)
 {
 	return CharacterCount <= 0;
@@ -72,6 +114,106 @@ void UDBAFrontendFlowSubsystem::SetSelectedCharacterFromRoster(const FDBACharact
 void UDBAFrontendFlowSubsystem::ClearSelectedCharacterFromRoster()
 {
 	FrontendSessionContext.SelectedCharacterId.Reset();
+}
+
+void UDBAFrontendFlowSubsystem::ClearFrontendCharacterContext(const bool bClearServerId)
+{
+	// 先失效 Flow 回调，再取消/清空各领域子系统，保证换服、登出和维护期间的旧响应无法回写新会话。
+	InvalidatePendingFlowRequests();
+	if (UDBACharacterRosterSubsystem* Roster = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterRosterSubsystem>() : nullptr)
+	{
+		Roster->ClearCache();
+	}
+	if (UDBACharacterPreviewSubsystem* Preview = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterPreviewSubsystem>() : nullptr)
+	{
+		Preview->ReleasePreview();
+	}
+	if (UDBACharacterCreateDraftSubsystem* Draft = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterCreateDraftSubsystem>() : nullptr)
+	{
+		Draft->ResetDraft();
+	}
+
+	CachedCharacters.Reset();
+	FrontendSessionContext.ResetCharacterDraft();
+	if (bClearServerId)
+	{
+		FrontendSessionContext.ServerId.Reset();
+	}
+}
+
+void UDBAFrontendFlowSubsystem::RefreshServerDirectory()
+{
+	const UDBAExternalServiceSettings* ServiceSettings = GetDefault<UDBAExternalServiceSettings>();
+	if (UDBAServerDirectorySubsystem* ServerDirectory = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAServerDirectorySubsystem>() : nullptr)
+	{
+		ServerDirectory->RefreshDirectory(
+			ServiceSettings ? ServiceSettings->Region : FString(),
+			ServiceSettings ? ServiceSettings->ApiVersion : FString(),
+			ServiceSettings ? ServiceSettings->Platform : FString());
+	}
+}
+
+void UDBAFrontendFlowSubsystem::HandleAuthenticationRefreshFailed()
+{
+	// ApiClient 已完成单飞 Refresh 且失败；统一从这里登出，避免角色页、选服页各自清理会话。
+	UE_LOG(LogDBAOnline, Warning, TEXT("前台认证刷新失败，开始统一登出与状态清理。"));
+	RequestLogout();
+}
+
+void UDBAFrontendFlowSubsystem::HandleApplicationEnteredBackground()
+{
+	bApplicationWasSuspended = true;
+	// 仅失效当前异步代次，不创建/销毁 UI；恢复时会按当时 Screen 检查会话并按需刷新。
+	InvalidatePendingFlowRequests();
+}
+
+void UDBAFrontendFlowSubsystem::HandleApplicationResumed()
+{
+	if (!bApplicationWasSuspended || bResumeSessionRefreshInFlight)
+	{
+		return;
+	}
+	bApplicationWasSuspended = false;
+
+	const EDBAFrontendState ResumeState = GetFrontendState();
+	if (ResumeState == EDBAFrontendState::Login || ResumeState == EDBAFrontendState::Register || FrontendSessionContext.AccountId.IsEmpty())
+	{
+		return;
+	}
+
+	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
+	if (!AccountService)
+	{
+		HandleTokenExpired();
+		return;
+	}
+
+	bResumeSessionRefreshInFlight = true;
+	const uint64 RequestGeneration = BeginFlowRequest();
+	AccountService->RefreshSession(FDBAOnLoginComplete::CreateWeakLambda(this, [this, ResumeState, RequestGeneration](const FDBALoginResponse& Response)
+	{
+		if (!IsFlowRequestCurrent(RequestGeneration))
+		{
+			return;
+		}
+		bResumeSessionRefreshInFlight = false;
+		if (!Response.bSuccess)
+		{
+			HandleTokenExpired();
+			return;
+		}
+
+		// Refresh 成功只确认会话有效，不重新创建 UI Root，也不重置仍在编辑的角色 Draft。
+		FrontendSessionContext.AccountId = Response.AccountInfo.AccountId.ToString();
+		if (ResumeState == EDBAFrontendState::ServerSelect)
+		{
+			RefreshServerDirectory();
+		}
+		else if (ResumeState == EDBAFrontendState::CharacterSelect || ResumeState == EDBAFrontendState::CharacterRosterLoading)
+		{
+			RefreshCharacterList();
+		}
+	}));
 }
 
 void UDBAFrontendFlowSubsystem::SetFlowState(EDBALoginFlowState NewState)
@@ -526,7 +668,6 @@ void UDBAFrontendFlowSubsystem::LoadCharactersAfterLogin()
 	}
 	UpdateLegacyFlowState(EDBAFrontendState::CharacterRosterLoading);
 	const uint64 RequestGeneration = BeginFlowRequest();
-
 	UDBACharacterRosterSubsystem* Roster = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterRosterSubsystem>() : nullptr;
 	if (!Roster)
 	{
@@ -632,16 +773,25 @@ void UDBAFrontendFlowSubsystem::SubmitCharacterSelection(const FDBACharacterId& 
 
 void UDBAFrontendFlowSubsystem::SubmitCharacterCreation(const FDBACharacterCreateRequest& Request)
 {
+	if (bCharacterCreateRequestInFlight)
+	{
+		// 同一 Confirm 页面只能存在一个在途请求；重复点击不会生成第二个角色或第二个幂等键。
+		// 不广播“完成”事件，避免表现层错误地关闭首个请求的 Loading 状态。
+		UE_LOG(LogDBACharacter, Verbose, TEXT("[DBAFrontendFlowSubsystem] 已忽略重复的角色创建提交。"));
+		return;
+	}
 	// Flow 只在确认页发送创建意图，禁止任意 Widget 从中间步骤直接创建角色。
 	if (GetFrontendState() != EDBAFrontendState::CharacterCreate_Confirm)
 	{
 		UE_LOG(LogDBACharacter, Warning, TEXT("[DBAFrontendFlowSubsystem] 角色创建请求未通过完整状态机步骤。"));
+		OnCharacterCreateCompleted.Broadcast(FDBAOperationResult::Failure(EDBAErrorCode::InvalidState, TEXT("当前不在角色创建确认步骤。")), FDBACharacterSummary());
 		return;
 	}
 
 	if (FlowState != EDBALoginFlowState::CharacterCreating)
 	{
 		BroadcastErrorAndSetState(TEXT("当前状态不允许创建角色。"), EDBALoginFlowState::AwaitingLogin);
+		OnCharacterCreateCompleted.Broadcast(FDBAOperationResult::Failure(EDBAErrorCode::InvalidState, TEXT("当前流程不允许创建角色。")), FDBACharacterSummary());
 		return;
 	}
 	const uint64 RequestGeneration = BeginFlowRequest();
@@ -650,6 +800,7 @@ void UDBAFrontendFlowSubsystem::SubmitCharacterCreation(const FDBACharacterCreat
 	if (!Roster)
 	{
 		BroadcastErrorAndSetState(TEXT("账号服务不可用。"), EDBALoginFlowState::CharacterCreating);
+		OnCharacterCreateCompleted.Broadcast(FDBAOperationResult::Failure(EDBAErrorCode::ServiceUnavailable, TEXT("角色服务不可用。")), FDBACharacterSummary());
 		return;
 	}
 
@@ -659,13 +810,20 @@ void UDBAFrontendFlowSubsystem::SubmitCharacterCreation(const FDBACharacterCreat
 	if (!DraftSubsystem || !DraftSubsystem->BuildCreateRequest(DraftRequest, DraftReason))
 	{
 		BroadcastErrorAndSetState(DraftReason.IsEmpty() ? TEXT("角色创建草稿无效。") : DraftReason.ToString(), EDBALoginFlowState::CharacterCreating);
+		OnCharacterCreateCompleted.Broadcast(FDBAOperationResult::Failure(EDBAErrorCode::InvalidData, DraftReason.IsEmpty() ? TEXT("角色创建草稿无效。") : DraftReason.ToString()), FDBACharacterSummary());
 		return;
 	}
 
 	// 保持旧 Widget 调用兼容；新业务只提交 Draft 构建的请求，避免 Widget 临时变量覆盖已验证外观。
 	(void)Request;
+	bCharacterCreateRequestInFlight = true;
+	if (PendingCharacterCreateIdempotencyKey.IsEmpty())
+	{
+		PendingCharacterCreateIdempotencyKey = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphensLower);
+	}
+	// RequestGeneration 已在通过 Flow 状态与 Draft 校验后生成；同一次创建不得再开启第二个代次。
 	const FDBACharacterAppearance DraftAppearance = DraftSubsystem->GetDraft().Appearance;
-	Roster->CreateCharacter(DraftRequest, DraftAppearance, [this, RequestGeneration](const FDBAOperationResult& Result, const FDBACharacterDetails& Details)
+	Roster->CreateCharacter(DraftRequest, DraftAppearance, PendingCharacterCreateIdempotencyKey, [this, RequestGeneration](const FDBAOperationResult& Result, const FDBACharacterDetails& Details)
 	{
 		if (!IsFlowRequestCurrent(RequestGeneration))
 		{
@@ -673,6 +831,7 @@ void UDBAFrontendFlowSubsystem::SubmitCharacterCreation(const FDBACharacterCreat
 			return;
 		}
 
+		bCharacterCreateRequestInFlight = false;
 		if (Result.bSuccess)
 		{
 			// 服务端创建成功后立即清理本地草稿，再选中新角色；失败时保留草稿供用户修正重试。
@@ -680,12 +839,41 @@ void UDBAFrontendFlowSubsystem::SubmitCharacterCreation(const FDBACharacterCreat
 			{
 				Draft->ResetDraft();
 			}
-			SubmitCharacterSelection(Details.Summary.CharacterId);
+			if (UDBACharacterRosterSubsystem* CurrentRoster = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterRosterSubsystem>() : nullptr)
+			{
+				// 新角色已由服务端创建；这里只写入前台选中态并回到角色选择，绝不自动 ClientTravel。
+				CurrentRoster->SelectCreatedCharacterForFrontend(Details);
+			}
+			PendingCharacterCreateIdempotencyKey.Reset();
+			TryTransitionTo(EDBAFrontendState::CharacterSelect);
+			UpdateLegacyFlowState(EDBAFrontendState::CharacterSelect);
+			OnCharacterCreateCompleted.Broadcast(Result, Details.Summary);
 			return;
 		}
 
+		if (!Result.ApiError.bCanRetry)
+		{
+			PendingCharacterCreateIdempotencyKey.Reset();
+		}
+		OnCharacterCreateCompleted.Broadcast(Result, FDBACharacterSummary());
 		BroadcastErrorAndSetState(Result.ErrorMessage, EDBALoginFlowState::CharacterCreating);
 	});
+}
+
+void UDBAFrontendFlowSubsystem::CancelCharacterCreationSubmission()
+{
+	if (!bCharacterCreateRequestInFlight || GetFrontendState() != EDBAFrontendState::CharacterCreate_Confirm)
+	{
+		return;
+	}
+	// 先关闭本地门闩并失效回调，再取消 HTTP，避免 CancelRequest 同步回调时刷新已关闭的确认页。
+	bCharacterCreateRequestInFlight = false;
+	InvalidatePendingFlowRequests();
+	if (UDBACharacterRosterSubsystem* Roster = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterRosterSubsystem>() : nullptr)
+	{
+		Roster->CancelCreateCharacterRequest();
+	}
+	// 保留 Draft 与幂等键，避免服务端已接收时重试创建第二个角色。
 }
 
 void UDBAFrontendFlowSubsystem::EnterCharacterCreate()
@@ -693,6 +881,8 @@ void UDBAFrontendFlowSubsystem::EnterCharacterCreate()
 	if (GetFrontendState() == EDBAFrontendState::CharacterSelect)
 	{
 		InvalidatePendingFlowRequests();
+		bCharacterCreateRequestInFlight = false;
+		PendingCharacterCreateIdempotencyKey.Reset();
 		// 显式入口必须重新开始草稿，防止已取消创建的输入被重新使用。
 		if (UDBACharacterCreateDraftSubsystem* Draft = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterCreateDraftSubsystem>() : nullptr)
 		{

@@ -18,6 +18,11 @@ namespace
 
 FDBAApiError UDBAFrontendErrorMapper::FromHttpStatus(const int32 HttpStatusCode, const FName BackendErrorCode)
 {
+	const FDBAApiError CharacterCreateError = FromCharacterCreateErrorCode(BackendErrorCode, HttpStatusCode);
+	if (CharacterCreateError.IsError())
+	{
+		return CharacterCreateError;
+	}
 	if (BackendErrorCode == TEXT("character.name_taken"))
 	{
 		return CreateApiError(BackendErrorCode, EDBANetworkErrorCategory::Conflict, NSLOCTEXT("DBAFrontendError", "CharacterNameTaken", "该角色名已被使用，请更换后重试。"), HttpStatusCode, false);
@@ -56,6 +61,37 @@ FDBAApiError UDBAFrontendErrorMapper::FromHttpStatus(const int32 HttpStatusCode,
 	default:
 		return CreateApiError(BackendErrorCode.IsNone() ? TEXT("service.unknown") : BackendErrorCode, EDBANetworkErrorCategory::Unknown, NSLOCTEXT("DBAFrontendError", "Unknown", "操作未完成，请稍后重试。"), HttpStatusCode, true);
 	}
+}
+
+FDBAApiError UDBAFrontendErrorMapper::FromCharacterCreateErrorCode(const FName BackendErrorCode, const int32 HttpStatusCode)
+{
+	// 同时兼容目标协议码和当前 CharacterService 已落地的 CHARACTER_* / APPEARANCE_* 码，
+	// 让 UI 始终以结构化 ErrorCode 决定回退到名字、外观或通用重试状态。
+	if (BackendErrorCode == TEXT("NAME_EXISTS") || BackendErrorCode == TEXT("CHARACTER_NAME_DUPLICATE"))
+	{
+		return CreateApiError(BackendErrorCode, EDBANetworkErrorCategory::Conflict, NSLOCTEXT("DBAFrontendError", "CreateNameExists", "该角色名已被使用，请更换名称后重试。"), HttpStatusCode, false);
+	}
+	if (BackendErrorCode == TEXT("INVALID_NAME") || BackendErrorCode == TEXT("CHARACTER_NAME_INVALID"))
+	{
+		return CreateApiError(BackendErrorCode, EDBANetworkErrorCategory::Validation, NSLOCTEXT("DBAFrontendError", "CreateInvalidName", "角色名不符合规则，请修改后重试。"), HttpStatusCode, false);
+	}
+	if (BackendErrorCode == TEXT("SLOT_LIMIT") || BackendErrorCode == TEXT("CHARACTER_SLOT_LIMIT"))
+	{
+		return CreateApiError(BackendErrorCode, EDBANetworkErrorCategory::Conflict, NSLOCTEXT("DBAFrontendError", "CreateSlotLimit", "当前区服角色槽位已满，请删除角色或选择其他区服。"), HttpStatusCode, false);
+	}
+	if (BackendErrorCode == TEXT("INVALID_APPEARANCE") || BackendErrorCode == TEXT("APPEARANCE_OPTION_INVALID"))
+	{
+		return CreateApiError(BackendErrorCode, EDBANetworkErrorCategory::Validation, NSLOCTEXT("DBAFrontendError", "CreateInvalidAppearance", "所选外观不适用于当前生肖，请返回外观步骤调整。"), HttpStatusCode, false);
+	}
+	if (BackendErrorCode == TEXT("INVALID_BUILD") || BackendErrorCode == TEXT("CHARACTER_BUILD_INVALID"))
+	{
+		return CreateApiError(BackendErrorCode, EDBANetworkErrorCategory::Validation, NSLOCTEXT("DBAFrontendError", "CreateInvalidBuild", "生肖、元素或五营组合无效，请返回对应步骤调整。"), HttpStatusCode, false);
+	}
+	if (BackendErrorCode == TEXT("SERVER_MAINTENANCE"))
+	{
+		return CreateApiError(BackendErrorCode, EDBANetworkErrorCategory::ServiceUnavailable, NSLOCTEXT("DBAFrontendError", "CreateServerMaintenance", "当前区服正在维护，暂时无法创建角色。"), HttpStatusCode, true);
+	}
+	return FDBAApiError();
 }
 
 FDBAApiError UDBAFrontendErrorMapper::FromLegacyMessage(const FString& LegacyMessage)

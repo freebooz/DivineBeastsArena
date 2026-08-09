@@ -13,11 +13,20 @@
 #include "GameDBA/Frontend/Character/DBACharacterCreateDraftSubsystem.h"
 #include "GameDBA/Frontend/CharacterSelection/DBACharacterCreateZodiacViewModel.h"
 #include "GameDBA/Frontend/CharacterSelection/DBACharacterCreateElementViewModel.h"
+#include "GameDBA/Frontend/CharacterSelection/DBACharacterCreateFiveCampViewModel.h"
+#include "GameDBA/Frontend/CharacterSelection/DBACharacterCreateConfirmViewModel.h"
 #include "GameDBA/Character/Data/DBAZodiacRegistrySubsystem.h"
+#include "GameDBA/Data/Tables/DBAFiveCampDisplayData.h"
 #include "GameDBA/Data/Assets/DBAZodiacHeroDataAsset.h"
 #include "GameDBA/Frontend/Flow/DBAFrontendFlowSubsystem.h"
 #include "GameDBA/Frontend/Preview/DBACharacterPreviewSubsystem.h"
+#include "GameDBA/Frontend/Preview/DBAFiveCampPreviewTheme.h"
+#include "GameDBA/Frontend/Settings/DBAFrontendSettings.h"
+#include "GameDBA/Frontend/Core/DBAFrontendErrorMapper.h"
 #include "GameDBA/Gameplay/Loadout/SkillGroups/DBASkillGroupGeneratorSubsystem.h"
+#include "Engine/AssetManager.h"
+#include "Engine/DataTable.h"
+#include "Engine/StreamableManager.h"
 
 UDBACharacterCreateWidgetController::UDBACharacterCreateWidgetController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -144,7 +153,130 @@ void UDBACharacterCreateWidgetController::SelectElement(const EDBAElement InElem
 
 void UDBACharacterCreateWidgetController::SetFiveCamp(EDBAFiveCamp InFiveCamp)
 {
-	if (UDBACharacterCreateDraftSubsystem* Draft = GetDraftSubsystem()) Draft->SetFiveCamp(InFiveCamp);
+	SelectFiveCamp(InFiveCamp);
+}
+
+void UDBACharacterCreateWidgetController::BindFiveCampStep()
+{
+	// 五营页面与前两步复用同一个 Draft 订阅，避免为第三步再创建互相竞争的创建状态机。
+	UDBACharacterCreateDraftSubsystem* Draft = GetDraftSubsystem();
+	if (!Draft)
+	{
+		PublishZodiacStepError(NSLOCTEXT("DBACharacterCreateController", "FiveCampDraftUnavailable", "角色创建五营步骤所需草稿服务尚未就绪。"));
+		return;
+	}
+	if (!FiveCampStepViewModel)
+	{
+		FiveCampStepViewModel = NewObject<UDBACharacterCreateFiveCampViewModel>(this);
+	}
+	if (!BoundDraftSubsystem.IsValid() || !DraftChangedHandle.IsValid())
+	{
+		BoundDraftSubsystem = Draft;
+		DraftChangedHandle = Draft->OnDraftChanged().AddUObject(this, &UDBACharacterCreateWidgetController::HandleDraftChanged);
+	}
+	RequestFiveCampDisplayTable();
+	HandleDraftChanged(Draft->GetDraft());
+}
+
+void UDBACharacterCreateWidgetController::SelectFiveCamp(const EDBAFiveCamp InFiveCamp)
+{
+	if (!FiveCampStepViewModel)
+	{
+		BindFiveCampStep();
+	}
+	if (InFiveCamp == EDBAFiveCamp::None || !FiveCampStepViewModel)
+	{
+		PublishZodiacStepError(NSLOCTEXT("DBACharacterCreateController", "FiveCampInvalid", "请选择有效的五营主题。"));
+		return;
+	}
+
+	const FDBACharacterCreateFiveCampCardModel* SelectedCard = nullptr;
+	for (const FDBACharacterCreateFiveCampCardModel& Card : FiveCampStepViewModel->GetFiveCampCards())
+	{
+		if (Card.FiveCamp == InFiveCamp)
+		{
+			SelectedCard = &Card;
+			break;
+		}
+	}
+	if (!SelectedCard || !SelectedCard->bIsAvailable)
+	{
+		PublishZodiacStepError(SelectedCard && !SelectedCard->UnavailableReason.IsEmpty()
+			? SelectedCard->UnavailableReason
+			: NSLOCTEXT("DBACharacterCreateController", "FiveCampNotConfigured", "该五营主题尚未配置或当前不可用。"));
+		return;
+	}
+
+	if (UDBACharacterCreateDraftSubsystem* Draft = GetDraftSubsystem())
+	{
+		// Draft 只保存 EDBAFiveCamp；这里不引用任何 TeamId/Faction 类型，彻底隔离账号创建与对局敌我关系。
+		Draft->SetFiveCamp(InFiveCamp);
+	}
+}
+
+void UDBACharacterCreateWidgetController::BindConfirmStep()
+{
+	UDBACharacterCreateDraftSubsystem* Draft = GetDraftSubsystem();
+	UDBAFrontendFlowSubsystem* Flow = GetLoginFlow();
+	if (!Draft || !Flow)
+	{
+		PublishZodiacStepError(NSLOCTEXT("DBACharacterCreateController", "ConfirmUnavailable", "角色创建确认步骤所需服务尚未就绪。"));
+		return;
+	}
+	if (!ConfirmStepViewModel)
+	{
+		ConfirmStepViewModel = NewObject<UDBACharacterCreateConfirmViewModel>(this);
+	}
+	if (!BoundDraftSubsystem.IsValid() || !DraftChangedHandle.IsValid())
+	{
+		BoundDraftSubsystem = Draft;
+		DraftChangedHandle = Draft->OnDraftChanged().AddUObject(this, &UDBACharacterCreateWidgetController::HandleDraftChanged);
+	}
+	UnbindConfirmStep();
+	BoundConfirmFlow = Flow;
+	Flow->OnCharacterCreateCompleted.AddDynamic(this, &UDBACharacterCreateWidgetController::HandleCharacterCreateCompleted);
+	ConfirmStepViewModel->ApplyDraft(Draft->GetDraft());
+}
+
+bool UDBACharacterCreateWidgetController::SubmitConfirmedCharacterCreation()
+{
+	if (!ConfirmStepViewModel)
+	{
+		BindConfirmStep();
+	}
+	UDBACharacterCreateDraftSubsystem* Draft = GetDraftSubsystem();
+	UDBAFrontendFlowSubsystem* Flow = GetLoginFlow();
+	if (!Draft || !Flow || !ConfirmStepViewModel)
+	{
+		return false;
+	}
+	FText Reason;
+	FDBACharacterCreateRequest Request;
+	if (!Draft->BuildCreateRequest(Request, Reason))
+	{
+		FDBAApiError Error = UDBAFrontendErrorMapper::FromCharacterCreateErrorCode(TEXT("INVALID_NAME"));
+		Error.UserMessage = Reason.IsEmpty() ? NSLOCTEXT("DBACharacterCreateController", "ConfirmDraftInvalid", "请检查角色名与创建选项。") : Reason;
+		ConfirmStepViewModel->SetError(Error);
+		return false;
+	}
+
+	ConfirmStepViewModel->ClearError();
+	ConfirmStepViewModel->SetSubmitting(true);
+	// Flow 忽略临时 Request 内容而重新从 Draft 构建，避免 Widget 通过参数绕过统一校验与幂等门闩。
+	Flow->SubmitCharacterCreation(Request);
+	return true;
+}
+
+void UDBACharacterCreateWidgetController::CancelConfirmedCharacterCreation()
+{
+	if (UDBAFrontendFlowSubsystem* Flow = GetLoginFlow())
+	{
+		Flow->CancelCharacterCreationSubmission();
+	}
+	if (ConfirmStepViewModel)
+	{
+		ConfirmStepViewModel->SetSubmitting(false);
+	}
 }
 
 bool UDBACharacterCreateWidgetController::RandomizeAppearance()
@@ -185,6 +317,11 @@ void UDBACharacterCreateWidgetController::Submit()
 	// 兼容旧“创建”按钮：它在前三步执行 Next，在确认页才提交网络创建意图。
 	if (UDBAFrontendFlowSubsystem* Flow = GetLoginFlow())
 	{
+		if (Flow->GetFrontendState() == EDBAFrontendState::CharacterCreate_Confirm)
+		{
+			SubmitConfirmedCharacterCreation();
+			return;
+		}
 		Flow->AdvanceCharacterCreateDraft();
 	}
 }
@@ -234,6 +371,8 @@ void UDBACharacterCreateWidgetController::BeginDestroy()
 	// Controller 被销毁时解除 Native Delegate，防止已关闭页面继续收到资源加载完成回调。
 	UnbindZodiacStep();
 	UnbindElementStep();
+	UnbindFiveCampStep();
+	UnbindConfirmStep();
 	Super::BeginDestroy();
 }
 
@@ -245,6 +384,17 @@ void UDBACharacterCreateWidgetController::HandleDraftChanged(const FDBACharacter
 	{
 		ElementStepViewModel->ApplyDraft(Draft);
 		RefreshElementPresentation(Draft);
+	}
+
+	if (FiveCampStepViewModel)
+	{
+		FiveCampStepViewModel->ApplyDraft(Draft);
+		RefreshFiveCampPresentation(Draft);
+	}
+
+	if (ConfirmStepViewModel)
+	{
+		ConfirmStepViewModel->ApplyDraft(Draft);
 	}
 
 	if (!ZodiacStepViewModel) return;
@@ -281,6 +431,26 @@ void UDBACharacterCreateWidgetController::HandleSkillGroupDataReady()
 			RefreshElementPresentation(Draft->GetDraft());
 		}
 	}
+}
+
+void UDBACharacterCreateWidgetController::HandleCharacterCreateCompleted(const FDBAOperationResult& Result, const FDBACharacterSummary& Character)
+{
+	if (!ConfirmStepViewModel)
+	{
+		return;
+	}
+	ConfirmStepViewModel->SetSubmitting(false);
+	if (Result.bSuccess)
+	{
+		ConfirmStepViewModel->ClearError();
+		return;
+	}
+	FDBAApiError Error = Result.ApiError;
+	if (!Error.IsError())
+	{
+		Error = UDBAFrontendErrorMapper::FromLegacyMessage(Result.ErrorMessage.IsEmpty() ? TEXT("角色创建失败。") : Result.ErrorMessage);
+	}
+	ConfirmStepViewModel->SetError(Error);
 }
 
 void UDBACharacterCreateWidgetController::HandlePreviewResolved(const EDBAZodiac Zodiac, const bool bSuccess)
@@ -381,6 +551,205 @@ void UDBACharacterCreateWidgetController::RefreshElementPresentation(const FDBAC
 	}
 }
 
+void UDBACharacterCreateWidgetController::RequestFiveCampDisplayTable()
+{
+	const UDBAFrontendSettings* Settings = GetDefault<UDBAFrontendSettings>();
+	if (!Settings || Settings->CharacterCreateFiveCampDisplayTable.IsNull())
+	{
+		PublishZodiacStepError(NSLOCTEXT("DBACharacterCreateController", "FiveCampTableMissing", "尚未在 DBA Frontend 设置中配置角色创建五营显示数据表。"));
+		return;
+	}
+
+	const uint32 RequestGeneration = ++FiveCampDisplayTableRequestGeneration;
+	if (FiveCampDisplayTableLoadHandle.IsValid())
+	{
+		FiveCampDisplayTableLoadHandle->CancelHandle();
+		FiveCampDisplayTableLoadHandle.Reset();
+	}
+
+	TWeakObjectPtr<UDBACharacterCreateWidgetController> WeakThis(this);
+	FiveCampDisplayTableLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		Settings->CharacterCreateFiveCampDisplayTable.ToSoftObjectPath(),
+		FStreamableDelegate::CreateLambda([WeakThis, RequestGeneration, Table = Settings->CharacterCreateFiveCampDisplayTable]()
+		{
+			if (WeakThis.IsValid())
+			{
+				WeakThis->ApplyFiveCampDisplayTable(Table.Get(), RequestGeneration);
+			}
+		}));
+	if (!FiveCampDisplayTableLoadHandle.IsValid())
+	{
+		PublishZodiacStepError(NSLOCTEXT("DBACharacterCreateController", "FiveCampTableLoadRequestFailed", "五营显示数据表异步加载请求无法启动。"));
+	}
+}
+
+void UDBACharacterCreateWidgetController::ApplyFiveCampDisplayTable(UDataTable* DisplayTable, const uint32 RequestGeneration)
+{
+	// 数据表回调可能在页面已经关闭、配置已经切换后才到达；仅接受最新请求，防止旧主题覆盖新页面。
+	if (RequestGeneration != FiveCampDisplayTableRequestGeneration || !FiveCampStepViewModel)
+	{
+		return;
+	}
+	FiveCampDisplayTableLoadHandle.Reset();
+	if (!DisplayTable || DisplayTable->GetRowStruct() != FDBAFiveCampDisplayRow::StaticStruct())
+	{
+		PublishZodiacStepError(NSLOCTEXT("DBACharacterCreateController", "FiveCampTableInvalid", "五营显示数据表缺失或行结构不是 FDBAFiveCampDisplayRow。"));
+		return;
+	}
+
+	TArray<FDBACharacterCreateFiveCampCardModel> Cards;
+	TSet<EDBAFiveCamp> SeenCamps;
+	for (const TPair<FName, uint8*>& Pair : DisplayTable->GetRowMap())
+	{
+		const FDBAFiveCampDisplayRow* Row = reinterpret_cast<const FDBAFiveCampDisplayRow*>(Pair.Value);
+		if (!Row)
+		{
+			continue;
+		}
+		const EDBAFiveCamp FiveCamp = static_cast<EDBAFiveCamp>(Row->FiveCampEnum);
+		if (FiveCamp == EDBAFiveCamp::None || !StaticEnum<EDBAFiveCamp>()->IsValidEnumValue(static_cast<int64>(FiveCamp)))
+		{
+			UE_LOG(LogDBAFrontend, Error, TEXT("[角色创建] 五营显示表行 %s 使用了无效的 FiveCampEnum=%d。"), *Pair.Key.ToString(), Row->FiveCampEnum);
+			continue;
+		}
+		if (SeenCamps.Contains(FiveCamp))
+		{
+			UE_LOG(LogDBAFrontend, Error, TEXT("[角色创建] 五营显示表存在重复的五营枚举：%d，重复行=%s。"), static_cast<int32>(FiveCamp), *Pair.Key.ToString());
+			continue;
+		}
+		SeenCamps.Add(FiveCamp);
+
+		FDBACharacterCreateFiveCampCardModel& Card = Cards.AddDefaulted_GetRef();
+		Card.FiveCamp = FiveCamp;
+		Card.SourceRowName = Pair.Key;
+		Card.DisplayName = !Row->DisplayNameCN.IsEmpty()
+			? Row->DisplayNameCN
+			: StaticEnum<EDBAFiveCamp>()->GetDisplayNameTextByValue(static_cast<int64>(FiveCamp));
+		Card.Description = Row->Description;
+		Card.Icon = Row->IconTexture;
+		Card.Emblem = Row->EmblemTexture;
+		Card.ThemeColor = Row->ThemeColor;
+		Card.SecondaryColor = Row->SecondaryColor;
+		Card.bIsAvailable = Row->bIsAvailable && Row->UnlockLevel <= 0;
+		if (!Row->bIsAvailable)
+		{
+			Card.UnavailableReason = NSLOCTEXT("DBACharacterCreateController", "FiveCampDisabled", "该五营主题暂未开放。");
+		}
+		else if (Row->UnlockLevel > 0)
+		{
+			Card.UnavailableReason = FText::Format(
+				NSLOCTEXT("DBACharacterCreateController", "FiveCampLocked", "该五营主题需要角色等级 {0} 才能选择。"),
+				FText::AsNumber(Row->UnlockLevel));
+		}
+	}
+
+	Cards.Sort([](const FDBACharacterCreateFiveCampCardModel& Left, const FDBACharacterCreateFiveCampCardModel& Right)
+	{
+		return static_cast<uint8>(Left.FiveCamp) < static_cast<uint8>(Right.FiveCamp);
+	});
+	FiveCampStepViewModel->ApplyFiveCampCards(Cards);
+	if (Cards.IsEmpty())
+	{
+		PublishZodiacStepError(NSLOCTEXT("DBACharacterCreateController", "FiveCampRowsUnavailable", "五营显示数据表没有可用的有效行。"));
+		return;
+	}
+	if (UDBACharacterCreateDraftSubsystem* Draft = GetDraftSubsystem())
+	{
+		RefreshFiveCampPresentation(Draft->GetDraft());
+	}
+}
+
+void UDBACharacterCreateWidgetController::RefreshFiveCampPresentation(const FDBACharacterCreateDraft& Draft)
+{
+	if (!FiveCampStepViewModel)
+	{
+		return;
+	}
+	if (Draft.FiveCampType == EDBAFiveCamp::None)
+	{
+		if (UDBACharacterPreviewSubsystem* Preview = GetPreviewSubsystem())
+		{
+			Preview->ClearFiveCampTheme();
+		}
+		return;
+	}
+
+	const FDBACharacterCreateFiveCampCardModel* Card = nullptr;
+	for (const FDBACharacterCreateFiveCampCardModel& Candidate : FiveCampStepViewModel->GetFiveCampCards())
+	{
+		if (Candidate.FiveCamp == Draft.FiveCampType)
+		{
+			Card = &Candidate;
+			break;
+		}
+	}
+	if (!Card || !Card->bIsAvailable)
+	{
+		return;
+	}
+
+	const UDBAFrontendSettings* Settings = GetDefault<UDBAFrontendSettings>();
+	UDataTable* DisplayTable = Settings ? Settings->CharacterCreateFiveCampDisplayTable.Get() : nullptr;
+	const FDBAFiveCampDisplayRow* Row = DisplayTable ? DisplayTable->FindRow<FDBAFiveCampDisplayRow>(Card->SourceRowName, TEXT("角色创建五营主题"), false) : nullptr;
+	if (!Row)
+	{
+		return;
+	}
+
+	// 表行的大资源仍保持软引用；在此只加载当前已选择主题，且由 PreviewStage 接收已解析对象。
+	TArray<FSoftObjectPath> ThemeAssets;
+	if (!Row->BackgroundTexture.IsNull()) { ThemeAssets.Add(Row->BackgroundTexture.ToSoftObjectPath()); }
+	if (!Row->EmblemTexture.IsNull()) { ThemeAssets.Add(Row->EmblemTexture.ToSoftObjectPath()); }
+	if (!Row->EffectMaterial.IsNull()) { ThemeAssets.Add(Row->EffectMaterial.ToSoftObjectPath()); }
+	if (!Row->ThemeSound.IsNull()) { ThemeAssets.Add(Row->ThemeSound.ToSoftObjectPath()); }
+	const uint32 ThemeRequestGeneration = ++FiveCampThemeRequestGeneration;
+	TWeakObjectPtr<UDBACharacterCreateWidgetController> WeakThis(this);
+	const auto ApplyResolvedTheme = [WeakThis, ThemeRequestGeneration, FiveCamp = Draft.FiveCampType, RowName = Card->SourceRowName]()
+	{
+		if (!WeakThis.IsValid() || ThemeRequestGeneration != WeakThis->FiveCampThemeRequestGeneration)
+		{
+			return;
+		}
+		const UDBAFrontendSettings* CurrentSettings = GetDefault<UDBAFrontendSettings>();
+		UDataTable* CurrentTable = CurrentSettings ? CurrentSettings->CharacterCreateFiveCampDisplayTable.Get() : nullptr;
+		const FDBAFiveCampDisplayRow* CurrentRow = CurrentTable ? CurrentTable->FindRow<FDBAFiveCampDisplayRow>(RowName, TEXT("角色创建五营主题"), false) : nullptr;
+		UDBACharacterCreateDraftSubsystem* CurrentDraft = WeakThis->GetDraftSubsystem();
+		if (!CurrentRow || !CurrentDraft || CurrentDraft->GetDraft().FiveCampType != FiveCamp)
+		{
+			return;
+		}
+		FDBAFiveCampPreviewTheme Theme;
+		Theme.FiveCamp = FiveCamp;
+		Theme.DisplayName = CurrentRow->DisplayNameCN;
+		Theme.ThemeColor = CurrentRow->ThemeColor;
+		Theme.SecondaryColor = CurrentRow->SecondaryColor;
+		Theme.BackgroundTexture = CurrentRow->BackgroundTexture.Get();
+		Theme.EmblemTexture = CurrentRow->EmblemTexture.Get();
+		Theme.VfxMaterial = CurrentRow->EffectMaterial.Get();
+		Theme.ThemeSound = CurrentRow->ThemeSound.Get();
+		if (UDBACharacterPreviewSubsystem* Preview = WeakThis->GetPreviewSubsystem())
+		{
+			Preview->ApplyFiveCampTheme(Theme);
+		}
+	};
+	if (FiveCampThemeLoadHandle.IsValid())
+	{
+		FiveCampThemeLoadHandle->CancelHandle();
+		FiveCampThemeLoadHandle.Reset();
+	}
+	if (ThemeAssets.IsEmpty())
+	{
+		// 没有可选大资源时也要更新主题色投影，不能因空资源数组让选中态停留在旧主题。
+		ApplyResolvedTheme();
+		return;
+	}
+	FiveCampThemeLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(ThemeAssets, FStreamableDelegate::CreateLambda(ApplyResolvedTheme));
+	if (!FiveCampThemeLoadHandle.IsValid())
+	{
+		PublishZodiacStepError(NSLOCTEXT("DBACharacterCreateController", "FiveCampThemeLoadRequestFailed", "五营主题资源异步加载请求无法启动。"));
+	}
+}
+
 void UDBACharacterCreateWidgetController::RequestZodiacPresentation(const EDBAZodiac Zodiac)
 {
 	UDBAZodiacRegistrySubsystem* Registry = GetZodiacRegistry();
@@ -407,7 +776,11 @@ void UDBACharacterCreateWidgetController::ApplyZodiacPresentation(const EDBAZodi
 
 void UDBACharacterCreateWidgetController::PublishZodiacStepError(const FText& Message)
 {
+	// 该历史名称兼容第一步事件；第二步复用同一结构化中文错误出口，
+	// 避免 Element Widget 根据英文消息或底层 DataTable 错误自行判断状态。
 	if (ZodiacStepViewModel) ZodiacStepViewModel->SetValidationMessage(Message);
+	if (ElementStepViewModel) ElementStepViewModel->SetValidationMessage(Message);
+	if (FiveCampStepViewModel) FiveCampStepViewModel->SetValidationMessage(Message);
 	OnZodiacStepError.Broadcast(Message);
 }
 
@@ -429,4 +802,34 @@ void UDBACharacterCreateWidgetController::UnbindElementStep()
 	}
 	BoundSkillGroupGenerator.Reset();
 	SkillGroupDataReadyHandle.Reset();
+}
+
+void UDBACharacterCreateWidgetController::UnbindFiveCampStep()
+{
+	// 取消页面私有异步加载，防止关闭创建页后旧主题回调写入新的前台 Screen。
+	++FiveCampDisplayTableRequestGeneration;
+	if (FiveCampDisplayTableLoadHandle.IsValid())
+	{
+		FiveCampDisplayTableLoadHandle->CancelHandle();
+		FiveCampDisplayTableLoadHandle.Reset();
+	}
+	++FiveCampThemeRequestGeneration;
+	if (FiveCampThemeLoadHandle.IsValid())
+	{
+		FiveCampThemeLoadHandle->CancelHandle();
+		FiveCampThemeLoadHandle.Reset();
+	}
+	if (UDBACharacterPreviewSubsystem* Preview = GetPreviewSubsystem())
+	{
+		Preview->ClearFiveCampTheme();
+	}
+}
+
+void UDBACharacterCreateWidgetController::UnbindConfirmStep()
+{
+	if (BoundConfirmFlow.IsValid())
+	{
+		BoundConfirmFlow->OnCharacterCreateCompleted.RemoveDynamic(this, &UDBACharacterCreateWidgetController::HandleCharacterCreateCompleted);
+	}
+	BoundConfirmFlow.Reset();
 }

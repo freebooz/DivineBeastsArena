@@ -13,6 +13,7 @@
 #include "CoreMinimal.h"
 #include "GameCore/Networking/Account/DBAAccountTypes.h"
 #include "GameCore/Core/Subsystems/DBAGameInstanceSubsystemBase.h"
+#include "GameDBA/Core/DBAResultTypes.h"
 #include "GameDBA/Frontend/Core/DBAFrontendContracts.h"
 #include "GameDBA/Frontend/Flow/DBAFrontendStateMachine.h"
 #include "DBAFrontendFlowSubsystem.generated.h"
@@ -56,6 +57,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDBAOnLoginFlowStateChanged, EDBALog
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDBAOnLoginFlowError, const FString&, ErrorMessage);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDBAOnLoginFlowApiError, const FDBAApiError&, Error);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDBAOnLoginFlowCharactersLoaded, const TArray<FDBACharacterSummary>&, Characters);
+/** Confirm 页面用此事件结束 Loading；失败时 Draft 保持不变，成功时摘要已进入 Roster 缓存。 */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDBAOnCharacterCreateCompleted, const FDBAOperationResult&, Result, const FDBACharacterSummary&, Character);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDBAOnFrontendStateChanged, EDBAFrontendState, PreviousState, EDBAFrontendState, NewState);
 
 /**
@@ -86,6 +89,9 @@ class DIVINEBEASTSARENA_API UDBAFrontendFlowSubsystem : public UDBAGameInstanceS
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
+
 	UFUNCTION(BlueprintCallable, Category = "DBA|LoginFlow")
 	void StartLoginFlow();
 
@@ -116,6 +122,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|LoginFlow")
 	void SubmitCharacterCreation(const FDBACharacterCreateRequest& Request);
+
+	/**
+	 * 仅取消仍在本地等待的创建 HTTP 请求并保留 Draft/幂等键，以便安全重试；
+	 * 不把未创建角色当作服务器实体，也不进行页面跳转。
+	 */
+	void CancelCharacterCreationSubmission();
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|LoginFlow")
 	void EnterCharacterCreate();
@@ -151,6 +163,18 @@ public:
 
 	/** 服务目录/进服服务不可用时由 API 层调用，统一回退至可操作页面。 */
 	void HandleServerUnavailable();
+
+	/** 网络中断时保留当前可恢复 Screen，并通过统一状态事件交给 NetworkStatus/Retry UI。 */
+	void HandleNetworkLost();
+
+	/**
+	 * 后端维护恢复策略。目录范围维护回选服；全局范围维护回启动页，
+	 * 两种情况均先清理角色、预览与创建草稿上下文。
+	 */
+	void HandleBackendMaintenance(bool bAffectsServerDirectory);
+
+	/** Android 等平台从后台恢复后调用；不会创建第二个 UI Root。 */
+	void HandleApplicationResumed();
 
 	UFUNCTION(BlueprintCallable, Category = "DBA|LoginFlow")
 	void RefreshCharacterList();
@@ -192,6 +216,9 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "DBA|LoginFlow")
 	FDBAOnLoginFlowCharactersLoaded OnCharactersLoaded;
 
+	UPROPERTY(BlueprintAssignable, Category = "DBA|LoginFlow")
+	FDBAOnCharacterCreateCompleted OnCharacterCreateCompleted;
+
 	/** 所有新 Screen、WidgetController 与 ViewModel 订阅此事件驱动 UI 路由。 */
 	UPROPERTY(BlueprintAssignable, Category = "DBA|FrontendFlow")
 	FDBAOnFrontendStateChanged OnFrontendStateChanged;
@@ -216,7 +243,22 @@ protected:
 	int32 VillageConnectionAttempt = 0;
 	FTimerHandle VillageConnectionRetryTimerHandle;
 	bool bAuthenticationRequestInFlight = false;
+	/** Android 恢复期间的会话刷新门闩，防止前后台抖动产生并行 Refresh。 */
+	bool bResumeSessionRefreshInFlight = false;
+	bool bApplicationWasSuspended = false;
+	/** 同一 Draft 的创建请求单飞门闩；用于阻止双击 Create 生成两个服务端请求。 */
+	bool bCharacterCreateRequestInFlight = false;
+	/** 仅用于 HTTP 幂等头，不写日志、不暴露给 Widget；取消后重试复用同一键。 */
+	FString PendingCharacterCreateIdempotencyKey;
+	FDelegateHandle AuthenticationRefreshFailedHandle;
+	FDelegateHandle ApplicationWillEnterBackgroundHandle;
+	FDelegateHandle ApplicationHasEnteredForegroundHandle;
 
+	/** 统一回收角色域状态；换服不清账号，登出/全局维护可一并清区服。 */
+	void ClearFrontendCharacterContext(bool bClearServerId);
+	void RefreshServerDirectory();
+	void HandleAuthenticationRefreshFailed();
+	void HandleApplicationEnteredBackground();
 	void SetFlowState(EDBALoginFlowState NewState);
 	bool TryTransitionTo(EDBAFrontendState NewState);
 	void ForceRecoverableErrorAndFallback(EDBAFrontendState FallbackState, const FString& ErrorMessage);

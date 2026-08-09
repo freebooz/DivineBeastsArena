@@ -273,17 +273,28 @@ const FDBACharacterDetails* UDBACharacterRosterSubsystem::FindCachedCharacter(co
 	return CharacterId.IsValid() ? CachedDetailsById.Find(CharacterId.ToString()) : nullptr;
 }
 
-void UDBACharacterRosterSubsystem::CreateCharacter(const FDBACharacterCreateRequest& RequestData, const FDBACharacterAppearance& Appearance, FDBACharacterDetailsCompletion Completion)
+void UDBACharacterRosterSubsystem::CreateCharacter(const FDBACharacterCreateRequest& RequestData, const FDBACharacterAppearance& Appearance, const FString& IdempotencyKey, FDBACharacterDetailsCompletion Completion)
 {
 	FString AccountId, ServerId;
 	if (!ResolveActiveCacheScope(AccountId, ServerId)) { if (Completion) Completion(FDBAOperationResult::Failure(EDBAErrorCode::InvalidState, TEXT("创建角色前必须先登录并选择区服。")), {}); return; }
 	UDBAApiClientSubsystem* Api = GetGameInstance()->GetSubsystem<UDBAApiClientSubsystem>();
 	if (!Api) { if (Completion) Completion(FDBAOperationResult::Failure(EDBAErrorCode::ServiceUnavailable, TEXT("角色服务不可用。")), {}); return; }
-	FDBAApiRequest ApiRequest; ApiRequest.Verb = EDBAApiHttpVerb::Post; ApiRequest.Path = TEXT("/api/v1/characters"); ApiRequest.JsonBody = FDBACharacterRosterDtoMapper::ToCreateRequest(ServerId, RequestData, Appearance);
-	ApiRequest.Headers.Add(TEXT("Idempotency-Key"), FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphensLower));
-	const uint64 CurrentRequestGeneration = RequestGeneration;
-	Api->Send(ApiRequest, this, [this, CurrentRequestGeneration, AccountId, ServerId, Completion = MoveTemp(Completion)](const FDBAApiResponse& Response) mutable
+	if (IdempotencyKey.TrimStartAndEnd().IsEmpty())
 	{
+		if (Completion) Completion(FDBAOperationResult::Failure(EDBAErrorCode::InvalidData, TEXT("角色创建请求缺少幂等键。")), {});
+		return;
+	}
+	if (ActiveCreateRequestId.IsValid())
+	{
+		if (Completion) Completion(FDBAOperationResult::Failure(EDBAErrorCode::DuplicateRequest, TEXT("角色创建请求正在处理中。")), {});
+		return;
+	}
+	FDBAApiRequest ApiRequest; ApiRequest.Verb = EDBAApiHttpVerb::Post; ApiRequest.Path = TEXT("/api/v1/characters"); ApiRequest.JsonBody = FDBACharacterRosterDtoMapper::ToCreateRequest(ServerId, RequestData, Appearance);
+	ApiRequest.Headers.Add(TEXT("Idempotency-Key"), IdempotencyKey);
+	const uint64 CurrentRequestGeneration = RequestGeneration;
+	ActiveCreateRequestId = Api->Send(ApiRequest, this, [this, CurrentRequestGeneration, AccountId, ServerId, Completion = MoveTemp(Completion)](const FDBAApiResponse& Response) mutable
+	{
+		ActiveCreateRequestId.Invalidate();
 		if (!IsRequestCurrent(CurrentRequestGeneration, AccountId, ServerId)) return;
 		FDBACharacterDetails Details;
 		TSharedPtr<FJsonObject> Object;
@@ -293,6 +304,35 @@ void UDBACharacterRosterSubsystem::CreateCharacter(const FDBACharacterCreateRequ
 		RefreshCharacterList(ServerId);
 		if (Completion) Completion(FDBAOperationResult::Success(), Details);
 	});
+}
+
+void UDBACharacterRosterSubsystem::CancelCreateCharacterRequest()
+{
+	if (ActiveCreateRequestId.IsValid())
+	{
+		if (UDBAApiClientSubsystem* Api = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAApiClientSubsystem>() : nullptr)
+		{
+			Api->CancelRequest(ActiveCreateRequestId);
+		}
+		ActiveCreateRequestId.Invalidate();
+	}
+}
+
+void UDBACharacterRosterSubsystem::SelectCreatedCharacterForFrontend(const FDBACharacterDetails& Character)
+{
+	if (!Character.Summary.CharacterId.IsValid())
+	{
+		return;
+	}
+	for (TPair<FString, FDBACharacterDetails>& Pair : CachedDetailsById)
+	{
+		Pair.Value.bIsSelected = Pair.Key == Character.Summary.CharacterId.ToString();
+	}
+	FDBACharacterDetails Selected = Character;
+	Selected.bIsSelected = true;
+	CachedDetailsById.Add(Selected.Summary.CharacterId.ToString(), Selected);
+	ApplySelectedCharacter(Selected);
+	PublishCache();
 }
 
 void UDBACharacterRosterSubsystem::DeleteCharacter(const FDBACharacterId& CharacterId, FDBACharacterRosterCompletion Completion)
@@ -348,6 +388,7 @@ void UDBACharacterRosterSubsystem::ClearSelectedCharacter()
 void UDBACharacterRosterSubsystem::ClearCache()
 {
 	++RequestGeneration;
+	CancelCreateCharacterRequest();
 	if (ActiveRosterRequestId.IsValid()) if (UDBAApiClientSubsystem* Api = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAApiClientSubsystem>() : nullptr) Api->CancelRequest(ActiveRosterRequestId);
 	ActiveRosterRequestId.Invalidate(); ResetCacheForScope(FString(), FString()); ClearSelectedCharacter(); PublishCache();
 }

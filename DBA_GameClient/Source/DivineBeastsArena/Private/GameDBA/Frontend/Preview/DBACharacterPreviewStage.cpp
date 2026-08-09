@@ -2,6 +2,7 @@
 
 #include "GameDBA/Frontend/Preview/DBACharacterPreviewStage.h"
 
+#include "Components/AudioComponent.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
 #include "EngineUtils.h"
@@ -26,6 +27,9 @@ ADBACharacterPreviewStage::ADBACharacterPreviewStage()
 	BackgroundAnchor->SetupAttachment(Root);
 	VfxAnchor = CreateDefaultSubobject<USceneComponent>(TEXT("VfxAnchor"));
 	VfxAnchor->SetupAttachment(Root);
+	FiveCampThemeAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("FiveCampThemeAudio"));
+	FiveCampThemeAudio->SetupAttachment(Root);
+	FiveCampThemeAudio->bAutoActivate = false;
 	KeyLight = CreateDefaultSubobject<UDirectionalLightComponent>(TEXT("KeyLight"));
 	KeyLight->SetupAttachment(Root);
 	FillLight = CreateDefaultSubobject<UDirectionalLightComponent>(TEXT("FillLight"));
@@ -105,6 +109,7 @@ ADBACharacterPreviewCameraRig* ADBACharacterPreviewStage::EnsureCameraRig()
 
 void ADBACharacterPreviewStage::ReleasePreviewActor()
 {
+	ClearFiveCampTheme();
 	if (IsValid(PreviewActor))
 	{
 		PreviewActor->ReleasePreviewResources();
@@ -116,6 +121,44 @@ void ADBACharacterPreviewStage::ReleasePreviewActor()
 		CameraRig->Destroy();
 	}
 	CameraRig = nullptr;
+}
+
+void ADBACharacterPreviewStage::ApplyFiveCampTheme(const FDBAFiveCampPreviewTheme& InTheme)
+{
+	// Dedicated Server 从不创建或加载前台主题资源；调用方仍做一次防御性检查，避免未来接入绕过 Subsystem。
+	if (IsDedicatedServer() || InTheme.FiveCamp == EDBAFiveCamp::None)
+	{
+		return;
+	}
+
+	CurrentFiveCampTheme = InTheme;
+	if (FiveCampThemeAudio)
+	{
+		FiveCampThemeAudio->Stop();
+		FiveCampThemeAudio->SetSound(InTheme.ThemeSound);
+		if (InTheme.ThemeSound)
+		{
+			FiveCampThemeAudio->Play();
+		}
+	}
+
+	// 舞台蓝图只消费已经异步解析完成的资源，负责把它们挂到 Background/Vfx 锚点的具体美术组件。
+	// 这里不访问 PreviewActor，不会改写生肖外观，更不会把五营映射成对局 TeamId。
+	BP_OnFiveCampThemeApplied(CurrentFiveCampTheme);
+}
+
+void ADBACharacterPreviewStage::ClearFiveCampTheme()
+{
+	if (FiveCampThemeAudio)
+	{
+		FiveCampThemeAudio->Stop();
+		FiveCampThemeAudio->SetSound(nullptr);
+	}
+	CurrentFiveCampTheme = FDBAFiveCampPreviewTheme();
+	if (!IsDedicatedServer())
+	{
+		BP_OnFiveCampThemeCleared();
+	}
 }
 
 bool ADBACharacterPreviewStage::IsDedicatedServer() const

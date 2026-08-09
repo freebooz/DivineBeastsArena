@@ -332,6 +332,13 @@ void UDBAApiClientSubsystem::QueueAuthenticationRefresh(const FGuid& RequestId)
 void UDBAApiClientSubsystem::HandleAuthenticationRefreshCompleted(const bool bSuccess)
 {
 	bRefreshInFlight = false;
+	if (!bSuccess)
+	{
+		// 401 后已经完成唯一一次 Refresh 尝试。此处只通知前台 Flow 做统一登出，
+		// 不让等待中的每个页面各自弹窗、清 Token 或竞争状态跳转。
+		UE_LOG(LogDBAOnline, Warning, TEXT("前台认证刷新失败，将由流程子系统统一清理会话。"));
+		AuthenticationRefreshFailed.Broadcast();
+	}
 	TArray<FGuid> WaitingRequestIds;
 	for (const TPair<FGuid, FPendingRequest>& Pair : PendingRequests)
 	{

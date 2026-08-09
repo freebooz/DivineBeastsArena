@@ -51,7 +51,20 @@ public:
 	const TArray<FDBACharacterSummary>& GetCachedCharacters() const { return CachedCharacters; }
 	const FDBACharacterDetails* FindCachedCharacter(const FDBACharacterId& CharacterId) const;
 
-	void CreateCharacter(const FDBACharacterCreateRequest& Request, const FDBACharacterAppearance& Appearance, FDBACharacterDetailsCompletion Completion = {});
+	/**
+	 * 提交角色创建意图。IdempotencyKey 由 Flow 为同一份 Draft 生成并在网络取消/重试时复用，
+	 * Roster 只透传给服务端，不在 Widget 或日志中暴露该键。
+	 */
+	void CreateCharacter(const FDBACharacterCreateRequest& Request, const FDBACharacterAppearance& Appearance, const FString& IdempotencyKey, FDBACharacterDetailsCompletion Completion = {});
+
+	/** 安全取消仍在等待的创建请求；服务端可能已收到请求，重试必须复用同一个幂等键。 */
+	void CancelCreateCharacterRequest();
+
+	/**
+	 * 仅在服务端已成功创建后由 Flow 调用，写入前台选中摘要并广播缓存变化；
+	 * 这不是进入世界的授权，也不会发送 select HTTP 请求。
+	 */
+	void SelectCreatedCharacterForFrontend(const FDBACharacterDetails& Character);
 	void DeleteCharacter(const FDBACharacterId& CharacterId, FDBACharacterRosterCompletion Completion = {});
 	void SelectCharacter(const FDBACharacterId& CharacterId, FDBACharacterDetailsCompletion Completion = {});
 	void ClearSelectedCharacter();
@@ -83,5 +96,6 @@ private:
 	FString CachedServerId;
 	uint64 RequestGeneration = 0;
 	FGuid ActiveRosterRequestId;
+	FGuid ActiveCreateRequestId;
 	FDBAOnCharacterRosterChanged CharacterRosterChanged;
 };
