@@ -14,18 +14,22 @@
 #include "Engine/DeveloperSettings.h"
 #include "GameBackendClientSettings.generated.h"
 
-UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "Game Backend Client"))
-class GAMEBACKENDCLIENT_API UDBA_GameBackendClientSettings : public UDeveloperSettings
+UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "DBA External Services"))
+class GAMEBACKENDCLIENT_API UDBAExternalServiceSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
 public:
-	UDBA_GameBackendClientSettings();
+	UDBAExternalServiceSettings();
 
 	virtual FName GetCategoryName() const override;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Connection")
-	FString BackendBaseUrl = TEXT("http://localhost:8080");
+	FString GatewayBaseUrl;
+
+	/** 网关 REST API 版本。请求路径由具体 ApiClient 组合，禁止在 Widget 中拼接。 */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Connection")
+	FString ApiVersion;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Client")
 	FString ClientVersion = TEXT("0.1.0");

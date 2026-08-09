@@ -4,22 +4,23 @@
 #include "GameBackendSessionService.h"
 #include "GameBackendTelemetryService.h"
 #include "GameCore/Networking/Account/DBAAccountServiceBase.h"
+#include "GameDBA/Frontend/Online/DBAApiClientSubsystem.h"
 
 bool UDBABackendFacadeSubsystem::SynchronizeAuthentication(
 	const UDBAAccountServiceBase* AccountService,
 	FString& OutErrorMessage)
 {
 	OutErrorMessage.Reset();
-	UDBA_GameBackendClientSubsystem* Backend = GetGameInstance()
-		? GetGameInstance()->GetSubsystem<UDBA_GameBackendClientSubsystem>()
+	UDBAApiClientSubsystem* ApiClient = GetGameInstance()
+		? GetGameInstance()->GetSubsystem<UDBAApiClientSubsystem>()
 		: nullptr;
-	if (!Backend || !AccountService || !AccountService->IsLoggedIn() || AccountService->GetAccessToken().IsEmpty())
+	if (!ApiClient || !AccountService || !AccountService->IsLoggedIn() || AccountService->GetAccessToken().IsEmpty())
 	{
 		OutErrorMessage = TEXT("后端认证上下文不完整。");
 		return false;
 	}
 
-	Backend->SetAuthTokens(
+	ApiClient->SetAuthenticationTokens(
 		AccountService->GetAccessToken(),
 		AccountService->GetRefreshToken(),
 		AccountService->GetCurrentAccountInfo().AccountId.ToString());

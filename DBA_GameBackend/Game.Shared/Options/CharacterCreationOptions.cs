@@ -17,9 +17,23 @@ public sealed class CharacterCreationOptions
     public string DefaultZodiac { get; init; } = string.Empty;
     public string DefaultPrimaryElement { get; init; } = string.Empty;
     public string DefaultFiveCamp { get; init; } = string.Empty;
+    /** 旧 /api/account/characters 兼容入口使用的默认区服；新 v1 接口必须显式传 ServerId。 */
+    public string DefaultServerId { get; init; } = string.Empty;
     public int InitialLevel { get; init; }
+    public int MaxSlotsPerServer { get; init; }
+    public string RulesVersion { get; init; } = string.Empty;
+    public List<string> AllowedZodiacTypes { get; init; } = [];
+    public List<string> AllowedElementTypes { get; init; } = [];
+    public List<string> AllowedFiveCampTypes { get; init; } = [];
+    public List<string> ReservedNames { get; init; } = [];
+    public Dictionary<string, CharacterAppearanceRuleOptions> AppearanceRules { get; init; } = new(StringComparer.OrdinalIgnoreCase);
     public CharacterCoreAttributesOptions CoreAttributes { get; init; } = new();
     public CharacterErrorMessagesOptions Messages { get; init; } = new();
+}
+
+public sealed class CharacterAppearanceRuleOptions
+{
+    public List<string> AllowedOptionIds { get; init; } = [];
 }
 
 public sealed class CharacterCoreAttributesOptions

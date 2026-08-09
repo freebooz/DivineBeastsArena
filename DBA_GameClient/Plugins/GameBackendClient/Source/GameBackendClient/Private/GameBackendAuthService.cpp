@@ -221,7 +221,7 @@ void UDBA_GameBackendAuthService::RefreshToken(const FDBA_GameBackendAuthRespons
 		Json->SetStringField(TEXT("refreshToken"), RefreshTokenValue);
 	});
 
-	HttpClient->Post(TEXT("/api/auth/refresh"), Body, [this, Callback](const FDBA_GameBackendHttpResult& Result)
+	HttpClient->Post(TEXT("/api/v1/auth/refresh"), Body, [this, Callback](const FDBA_GameBackendHttpResult& Result)
 	{
 		HandleAuthResponse(Result, Callback);
 	}, false);
@@ -235,7 +235,7 @@ void UDBA_GameBackendAuthService::Logout(const FDBA_GameBackendResponseDelegate&
 		return;
 	}
 
-	HttpClient->Post(TEXT("/api/auth/logout"), TEXT("{}"), [this, Callback](const FDBA_GameBackendHttpResult& Result)
+	HttpClient->Post(TEXT("/api/v1/auth/logout"), TEXT("{}"), [this, Callback](const FDBA_GameBackendHttpResult& Result)
 	{
 		if (Result.IsSuccessful())
 		{
@@ -256,7 +256,7 @@ void UDBA_GameBackendAuthService::GetMe(const FDBA_GameBackendResponseDelegate& 
 		return;
 	}
 
-	HttpClient->Get(TEXT("/api/auth/me"), [Callback](const FDBA_GameBackendHttpResult& Result)
+	HttpClient->Get(TEXT("/api/v1/auth/me"), [Callback](const FDBA_GameBackendHttpResult& Result)
 	{
 		ExecuteResponseDelegate(Callback, Result);
 	});
@@ -279,7 +279,7 @@ void UDBA_GameBackendAuthService::AccountLoginAsync(
 		Json->SetStringField(TEXT("password"), Password);
 	});
 
-	HttpClient->Post(TEXT("/api/auth/account/login"), Body, [WeakThis = TWeakObjectPtr<UDBA_GameBackendAuthService>(this), Callback = MoveTemp(Callback)](const FDBA_GameBackendHttpResult& Result)
+	HttpClient->Post(TEXT("/api/v1/auth/login"), Body, [WeakThis = TWeakObjectPtr<UDBA_GameBackendAuthService>(this), Callback = MoveTemp(Callback)](const FDBA_GameBackendHttpResult& Result)
 	{
 		if (WeakThis.IsValid())
 		{
@@ -310,7 +310,7 @@ void UDBA_GameBackendAuthService::AccountRegisterAsync(
 		}
 	});
 
-	HttpClient->Post(TEXT("/api/auth/account/register"), Body, [WeakThis = TWeakObjectPtr<UDBA_GameBackendAuthService>(this), Callback = MoveTemp(Callback)](const FDBA_GameBackendHttpResult& Result)
+	HttpClient->Post(TEXT("/api/v1/auth/register"), Body, [WeakThis = TWeakObjectPtr<UDBA_GameBackendAuthService>(this), Callback = MoveTemp(Callback)](const FDBA_GameBackendHttpResult& Result)
 	{
 		if (WeakThis.IsValid())
 		{
@@ -365,7 +365,7 @@ void UDBA_GameBackendAuthService::RefreshTokenAsync(FDBA_GameBackendNativeAuthCa
 		Json->SetStringField(TEXT("refreshToken"), RefreshTokenValue);
 	});
 
-	HttpClient->Post(TEXT("/api/auth/refresh"), Body, [WeakThis = TWeakObjectPtr<UDBA_GameBackendAuthService>(this), Callback = MoveTemp(Callback)](const FDBA_GameBackendHttpResult& Result)
+	HttpClient->Post(TEXT("/api/v1/auth/refresh"), Body, [WeakThis = TWeakObjectPtr<UDBA_GameBackendAuthService>(this), Callback = MoveTemp(Callback)](const FDBA_GameBackendHttpResult& Result)
 	{
 		if (WeakThis.IsValid())
 		{
@@ -382,7 +382,7 @@ void UDBA_GameBackendAuthService::LogoutAsync(FDBA_GameBackendNativeResponseCall
 		return;
 	}
 
-	HttpClient->Post(TEXT("/api/auth/logout"), TEXT("{}"), [WeakThis = TWeakObjectPtr<UDBA_GameBackendAuthService>(this), Callback = MoveTemp(Callback)](const FDBA_GameBackendHttpResult& Result)
+	HttpClient->Post(TEXT("/api/v1/auth/logout"), TEXT("{}"), [WeakThis = TWeakObjectPtr<UDBA_GameBackendAuthService>(this), Callback = MoveTemp(Callback)](const FDBA_GameBackendHttpResult& Result)
 	{
 		if (Result.IsSuccessful() && WeakThis.IsValid() && WeakThis->Subsystem.IsValid())
 		{

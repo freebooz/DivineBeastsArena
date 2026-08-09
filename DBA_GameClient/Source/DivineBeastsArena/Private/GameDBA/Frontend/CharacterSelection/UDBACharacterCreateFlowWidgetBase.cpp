@@ -25,18 +25,24 @@
 #include "Components/PanelWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
+#include "Engine/GameInstance.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/Texture2D.h"
 #include "GameDBA/Frontend/Flow/DBAFrontendFlowSubsystem.h"
+#include "GameDBA/Frontend/Character/DBACharacterCreateDraftSubsystem.h"
+#include "GameDBA/Frontend/CharacterSelection/UDBACharacterCreateWidgetController.h"
 #include "GameDBA/Frontend/DBAFrontendEnvironmentSubsystem.h"
 #include "GameDBA/UI/Controllers/DBAGameUIManager.h"
 #include "GameDBA/UI/Frontend/DBAFrontendFlowController.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/Character/Data/DBAZodiacRegistrySubsystem.h"
 #include "GameDBA/Data/Assets/DBAZodiacHeroDataAsset.h"
 #include "GameDBA/UI/DBAUIDeveloperSettings.h"
 #include "GameDBA/UI/DBAUIFontUtils.h"
 #include "GameCore/Async/DBAAsyncAssetLoader.h"
 #include "GameDBA/Frontend/CharacterSelection/DBACharacterPresentationActor.h"
+#include "GameDBA/Frontend/Preview/DBACharacterPreviewSubsystem.h"
+#include "GameDBA/Frontend/Preview/DBACharacterPreviewStage.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "InputCoreTypes.h"
@@ -302,6 +308,10 @@ void UDBACharacterCreateFlowWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	// 根页面在可取得 World 后创建唯一 Controller。子步骤 Widget 仅接收此实例，
+	// 因而不会形成各自订阅 Draft/Preview 的重复业务入口。
+	GetOrCreateWidgetController()->BindZodiacStep();
+
 	SetIsFocusable(true);
 	EnsureNativeFallbackLayout();
 	ResolveBoundWidgetsFromWidgetTree();
@@ -360,7 +370,20 @@ void UDBACharacterCreateFlowWidgetBase::NativeDestruct()
 		ZodiacPresentationData->OnDataTableLoaded.RemoveAll(this);
 	}
 	ReleasePresentationLevel();
+	// Controller 的 BeginDestroy 会解除 Native Delegate；这里先释放根页面对它的引用，
+	// 防止关闭页面后仍因 Widget 持有而接收异步生肖资源完成回调。
+	CharacterCreateWidgetController = nullptr;
 	Super::NativeDestruct();
+}
+
+UDBACharacterCreateWidgetController* UDBACharacterCreateFlowWidgetBase::GetOrCreateWidgetController()
+{
+	if (!CharacterCreateWidgetController)
+	{
+		// Outer 选择根 Widget，使 Controller 能经由 GetWorld() 解析同一 GameInstance Subsystem。
+		CharacterCreateWidgetController = NewObject<UDBACharacterCreateWidgetController>(this);
+	}
+	return CharacterCreateWidgetController;
 }
 
 FReply UDBACharacterCreateFlowWidgetBase::NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
@@ -415,9 +438,12 @@ FReply UDBACharacterCreateFlowWidgetBase::NativeOnMouseMove(const FGeometry& InG
 	if (bIsPreviewRotationDragging && InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
 	{
 		const FVector2D MouseDelta = InMouseEvent.GetCursorDelta();
-		if (PresentationStage && FMath::Abs(MouseDelta.X) > KINDA_SMALL_NUMBER)
+		if (FMath::Abs(MouseDelta.X) > KINDA_SMALL_NUMBER)
 		{
-			PresentationStage->AddPreviewYaw(MouseDelta.X * PreviewDragRotationDegreesPerPixel);
+			if (UDBACharacterPreviewSubsystem* PreviewSubsystem = GetGameInstance()->GetSubsystem<UDBACharacterPreviewSubsystem>())
+			{
+				PreviewSubsystem->Rotate(MouseDelta.X * PreviewDragRotationDegreesPerPixel);
+			}
 			LastPreviewDragScreenPosition = InMouseEvent.GetScreenSpacePosition();
 		}
 		else
@@ -472,7 +498,9 @@ FReply UDBACharacterCreateFlowWidgetBase::NativeOnTouchEnded(const FGeometry& In
 
 void UDBACharacterCreateFlowWidgetBase::SetCharacterName(const FString& Name)
 {
+	// 本地成员仅用于既有布局显示；权威草稿始终写入 GameInstance Subsystem。
 	CharacterName = Name.TrimStartAndEnd();
+	GetOrCreateWidgetController()->SetCharacterName(CharacterName);
 	if (CharacterNameInput && CharacterNameInput->GetText().ToString() != CharacterName)
 	{
 		CharacterNameInput->SetText(FText::FromString(CharacterName));
@@ -486,7 +514,19 @@ void UDBACharacterCreateFlowWidgetBase::SetCharacterName(const FString& Name)
 
 void UDBACharacterCreateFlowWidgetBase::SetZodiac(EDBAZodiac Zodiac)
 {
-	SelectedZodiac = Zodiac == EDBAZodiac::None ? EDBAZodiac::Rat : Zodiac;
+	if (Zodiac == EDBAZodiac::None)
+	{
+		TArray<EDBAZodiac> ConfiguredZodiacs;
+		GetConfiguredZodiacs(ConfiguredZodiacs);
+		SelectedZodiac = ConfiguredZodiacs.IsEmpty() ? EDBAZodiac::None : ConfiguredZodiacs[0];
+	}
+	else
+	{
+		SelectedZodiac = Zodiac;
+	}
+	// Draft 会异步加载生肖默认外观，并以请求代次避免快速切换导致旧回调覆盖。
+	// 旧根页面同样经唯一 Controller 写入 Draft；异步默认外观和预览回调不再由 Widget 自行编排。
+	GetOrCreateWidgetController()->SelectZodiac(SelectedZodiac);
 	RefreshChoiceText();
 	RefreshPresentedCharacter();
 	Validate();
@@ -495,6 +535,7 @@ void UDBACharacterCreateFlowWidgetBase::SetZodiac(EDBAZodiac Zodiac)
 void UDBACharacterCreateFlowWidgetBase::SetElement(EDBAElement Element)
 {
 	SelectedElement = Element == EDBAElement::None ? EDBAElement::Water : Element;
+	GetOrCreateWidgetController()->SetElement(SelectedElement);
 	RefreshChoiceText();
 	Validate();
 }
@@ -502,12 +543,14 @@ void UDBACharacterCreateFlowWidgetBase::SetElement(EDBAElement Element)
 void UDBACharacterCreateFlowWidgetBase::SetFiveCamp(EDBAFiveCamp FiveCamp)
 {
 	SelectedFiveCamp = FiveCamp;
+	GetOrCreateWidgetController()->SetFiveCamp(SelectedFiveCamp);
 	RefreshChoiceText();
 	Validate();
 }
 
 void UDBACharacterCreateFlowWidgetBase::Submit()
 {
+	// Widget 只发出“继续/确认”意图；请求 DTO 由 Flow 从 Draft 生成，UI 不持有权威创建数据。
 	if (bIsSubmittingCreate)
 	{
 		UE_LOG(LogDBAUI, Log, TEXT("[CharacterCreateWidget] 忽略重复的角色创建提交。"));
@@ -534,15 +577,6 @@ void UDBACharacterCreateFlowWidgetBase::Submit()
 		return;
 	}
 
-	FDBACharacterCreateRequest Request;
-	Request.CharacterName = CharacterName;
-	Request.Zodiac = SelectedZodiac;
-	Request.PrimaryElement = SelectedElement;
-	Request.FiveCamp = SelectedFiveCamp;
-	Request.DefaultZodiac = SelectedZodiac;
-	Request.DefaultElement = SelectedElement;
-	Request.DefaultFiveCamp = SelectedFiveCamp;
-
 	if (UDBAFrontendFlowController* FlowController = GetFrontendFlowController())
 	{
 		bIsSubmittingCreate = true;
@@ -551,14 +585,10 @@ void UDBACharacterCreateFlowWidgetBase::Submit()
 			CreateButton->SetIsEnabled(false);
 		}
 		ShowValidationMessage(true, NSLOCTEXT("DBACharacterCreateWidget", "Creating", "正在创建角色..."));
-		if (UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		if (UDBAFrontendFlowSubsystem* Flow = GetLoginFlow())
 		{
-			if (UDBAGameUIManager* UIManager = GameInstance->GetSubsystem<UDBAGameUIManager>())
-			{
-				UIManager->ShowLobbyLoadingScreen();
-			}
+			Flow->AdvanceCharacterCreateDraft();
 		}
-		FlowController->SubmitCharacterCreation(Request);
 		UE_LOG(LogDBAUI, Log, TEXT("[CharacterCreateWidget] 已提交角色创建：%s"), *CharacterName);
 	}
 	else
@@ -569,10 +599,8 @@ void UDBACharacterCreateFlowWidgetBase::Submit()
 
 void UDBACharacterCreateFlowWidgetBase::BackToCharacterSelect()
 {
-	if (UDBAFrontendFlowController* FlowController = GetFrontendFlowController())
-	{
-		FlowController->BackToCharacterSelect();
-	}
+	// Flow 根据当前步骤执行上一步或取消，不由 Widget 直接切换 Screen。
+	if (UDBAFrontendFlowSubsystem* Flow = GetLoginFlow()) Flow->BackCharacterCreateStep();
 }
 
 void UDBACharacterCreateFlowWidgetBase::ApplyCharacterFlowViewportPresentation()
@@ -608,8 +636,15 @@ void UDBACharacterCreateFlowWidgetBase::HandleBackClicked()
 
 void UDBACharacterCreateFlowWidgetBase::HandleZodiacClicked()
 {
-	static const TArray<EDBAZodiac> Values = { EDBAZodiac::Rat, EDBAZodiac::Ox, EDBAZodiac::Tiger, EDBAZodiac::Rabbit, EDBAZodiac::Dragon, EDBAZodiac::Snake, EDBAZodiac::Horse, EDBAZodiac::Goat, EDBAZodiac::Monkey, EDBAZodiac::Rooster, EDBAZodiac::Dog, EDBAZodiac::Pig };
-	SetZodiac(CycleEnumValue(SelectedZodiac, Values));
+	TArray<EDBAZodiac> ConfiguredZodiacs;
+	GetConfiguredZodiacs(ConfiguredZodiacs);
+	if (ConfiguredZodiacs.IsEmpty())
+	{
+		UE_LOG(LogDBAUI, Warning, TEXT("[角色创建界面] 未发现可用生肖配置，无法切换生肖。"));
+		return;
+	}
+
+	SetZodiac(CycleEnumValue(SelectedZodiac, ConfiguredZodiacs));
 }
 
 void UDBACharacterCreateFlowWidgetBase::HandleElementClicked()
@@ -626,8 +661,7 @@ void UDBACharacterCreateFlowWidgetBase::HandleFiveCampClicked()
 
 void UDBACharacterCreateFlowWidgetBase::HandleCharacterNameChanged(const FText& NewText)
 {
-	CharacterName = NewText.ToString().TrimStartAndEnd();
-	Validate();
+	SetCharacterName(NewText.ToString());
 }
 
 void UDBACharacterCreateFlowWidgetBase::HandleFlowError(const FString& ErrorMessage)
@@ -636,13 +670,6 @@ void UDBACharacterCreateFlowWidgetBase::HandleFlowError(const FString& ErrorMess
 	if (CreateButton)
 	{
 		CreateButton->SetIsEnabled(true);
-	}
-	if (UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
-	{
-		if (UDBAGameUIManager* UIManager = GameInstance->GetSubsystem<UDBAGameUIManager>())
-		{
-			UIManager->HideLobbyLoadingScreen();
-		}
 	}
 	ShowValidationMessage(false, FText::FromString(ErrorMessage));
 }
@@ -976,6 +1003,20 @@ void UDBACharacterCreateFlowWidgetBase::UnbindControls()
 
 bool UDBACharacterCreateFlowWidgetBase::Validate()
 {
+	// 新链路以 Draft 校验为准；下面旧逻辑仅在 Draft 子系统不可用时提供兼容显示回退。
+	if (UDBACharacterCreateDraftSubsystem* Draft = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterCreateDraftSubsystem>() : nullptr)
+	{
+		const FDBACharacterCreateDraft& CurrentDraft = Draft->GetDraft();
+		CharacterName = CurrentDraft.CharacterName;
+		SelectedZodiac = CurrentDraft.ZodiacType;
+		SelectedElement = CurrentDraft.ElementType;
+		SelectedFiveCamp = CurrentDraft.FiveCampType;
+		FText DraftReason;
+		bIsCreateValid = Draft->CanLeave(DraftReason);
+		ShowValidationMessage(bIsCreateValid, DraftReason.IsEmpty() ? NSLOCTEXT("DBACharacterCreateWidget", "StepReady", "当前步骤已准备完成。") : DraftReason);
+		return bIsCreateValid;
+	}
+
 	FText ValidationMessage;
 	const bool bNameValid = ValidateCharacterName(ValidationMessage);
 	bIsCreateValid = bNameValid && SelectedZodiac != EDBAZodiac::None && SelectedElement != EDBAElement::None;
@@ -1081,8 +1122,30 @@ void UDBACharacterCreateFlowWidgetBase::InitializeZodiacPresentationData()
 		WeakThis->ZodiacPresentationData = LoadedAsset;
 		LoadedAsset->OnDataTableLoaded.AddUObject(WeakThis.Get(), &UDBACharacterCreateFlowWidgetBase::HandleZodiacPresentationDataTableLoaded);
 		LoadedAsset->PreloadAllDataTablesAsync();
+		if (WeakThis->SelectedZodiac == EDBAZodiac::None)
+		{
+			WeakThis->SetZodiac(EDBAZodiac::None);
+		}
 		WeakThis->RefreshChoiceText();
 	});
+}
+
+void UDBACharacterCreateFlowWidgetBase::GetConfiguredZodiacs(TArray<EDBAZodiac>& OutZodiacs) const
+{
+	OutZodiacs.Reset();
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UDBAZodiacRegistrySubsystem* Registry = GameInstance->GetSubsystem<UDBAZodiacRegistrySubsystem>())
+		{
+			Registry->GetAllZodiacTypes(OutZodiacs);
+		}
+	}
+
+	// 十二个单生肖资产迁移完成前，旧聚合表仅作为只读兼容来源；不再回退到 C++ 硬编码列表。
+	if (OutZodiacs.IsEmpty() && ZodiacPresentationData)
+	{
+		ZodiacPresentationData->GetAllAvailableZodiacs(OutZodiacs);
+	}
 }
 
 void UDBACharacterCreateFlowWidgetBase::HandleZodiacPresentationDataTableLoaded(UDataTable* LoadedTable, const FSoftObjectPath& AssetPath)
@@ -1162,9 +1225,10 @@ void UDBACharacterCreateFlowWidgetBase::BindPlacedPresentationStage()
 		PresentationStage = ADBACharacterPresentationActor::FindPlacedPresentationStage(GetWorld());
 	}
 
-	if (!PresentationStage)
+	ADBACharacterPreviewStage* PreviewStage = ADBACharacterPreviewStage::FindPlacedPreviewStage(GetWorld());
+	if (!PresentationStage && !PreviewStage)
 	{
-		UE_LOG(LogDBAUI, Error, TEXT("[角色创建界面] 固定关卡中未放置角色展示 Actor，无法显示角色。"));
+		UE_LOG(LogDBAUI, Error, TEXT("[角色创建界面] 固定关卡中未放置 PreviewStage 或兼容展示舞台，无法显示角色。"));
 		return;
 	}
 
@@ -1174,15 +1238,27 @@ void UDBACharacterCreateFlowWidgetBase::BindPlacedPresentationStage()
 		PC = GetWorld()->GetFirstPlayerController();
 	}
 
-	PresentationStage->SetActorHiddenInGame(false);
-	PresentationStage->ActivatePresentationCamera(PC, 0.0f);
-	PresentationStage->SetPreviewZodiac(SelectedZodiac);
+	if (PresentationStage)
+	{
+		PresentationStage->SetActorHiddenInGame(false);
+	}
+	if (UDBACharacterPreviewSubsystem* PreviewSubsystem = GetGameInstance()->GetSubsystem<UDBACharacterPreviewSubsystem>())
+	{
+		PreviewSubsystem->ActivateCamera(PC, 0.0f);
+	}
+	if (SelectedZodiac != EDBAZodiac::None)
+	{
+		if (UDBACharacterPreviewSubsystem* PreviewSubsystem = GetGameInstance()->GetSubsystem<UDBACharacterPreviewSubsystem>())
+		{
+			PreviewSubsystem->SelectZodiac(SelectedZodiac, FDBACharacterAppearance());
+		}
+	}
 
 	AActor* ViewTarget = PC ? PC->GetViewTarget() : nullptr;
 	UE_LOG(LogDBAUI, Log, TEXT("[CharacterCreateWidget] 使用世界 3D 角色展示舞台：生肖=%d ViewTarget=%s 舞台=%s"),
 		static_cast<int32>(SelectedZodiac),
 		ViewTarget ? *ViewTarget->GetName() : TEXT("无"),
-		*PresentationStage->GetName());
+		*GetNameSafe(PresentationStage ? static_cast<AActor*>(PresentationStage) : static_cast<AActor*>(PreviewStage)));
 }
 
 void UDBACharacterCreateFlowWidgetBase::HandleDeferredPresentationStageBinding()
@@ -1246,7 +1322,7 @@ void UDBACharacterCreateFlowWidgetBase::BeginPreviewRotationDrag(const FVector2D
 
 void UDBACharacterCreateFlowWidgetBase::UpdatePreviewRotationDrag(const FVector2D& ScreenPosition)
 {
-	if (!bIsPreviewRotationDragging || !PresentationStage)
+	if (!bIsPreviewRotationDragging)
 	{
 		return;
 	}
@@ -1254,7 +1330,10 @@ void UDBACharacterCreateFlowWidgetBase::UpdatePreviewRotationDrag(const FVector2
 	const float DeltaX = ScreenPosition.X - LastPreviewDragScreenPosition.X;
 	if (FMath::Abs(DeltaX) > KINDA_SMALL_NUMBER)
 	{
-		PresentationStage->AddPreviewYaw(DeltaX * PreviewDragRotationDegreesPerPixel);
+		if (UDBACharacterPreviewSubsystem* PreviewSubsystem = GetGameInstance()->GetSubsystem<UDBACharacterPreviewSubsystem>())
+		{
+			PreviewSubsystem->Rotate(DeltaX * PreviewDragRotationDegreesPerPixel);
+		}
 	}
 
 	LastPreviewDragScreenPosition = ScreenPosition;
@@ -1267,9 +1346,12 @@ void UDBACharacterCreateFlowWidgetBase::EndPreviewRotationDrag()
 
 void UDBACharacterCreateFlowWidgetBase::RefreshPresentedCharacter()
 {
-	if (PresentationStage)
+	if (SelectedZodiac != EDBAZodiac::None)
 	{
-		PresentationStage->SetPreviewZodiac(SelectedZodiac);
+		if (UDBACharacterPreviewSubsystem* PreviewSubsystem = GetGameInstance()->GetSubsystem<UDBACharacterPreviewSubsystem>())
+		{
+			PreviewSubsystem->SelectZodiac(SelectedZodiac, FDBACharacterAppearance());
+		}
 	}
 }
 

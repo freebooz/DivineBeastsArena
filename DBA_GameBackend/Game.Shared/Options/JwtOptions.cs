@@ -14,6 +14,6 @@ public sealed class JwtOptions
     public string Secret { get; init; } = string.Empty;
     public string Issuer { get; init; } = "GameApi";
     public string Audience { get; init; } = "GameClients";
-    public int AccessTokenExpiryMinutes { get; init; } = 30;
+    public int AccessTokenExpiryMinutes { get; init; } = 15;
     public int RefreshTokenExpiryDays { get; init; } = 30;
 }

@@ -10,11 +10,17 @@
 
 #include "GameDBA/Frontend/Flow/DBAFrontendFlowSubsystem.h"
 
+#include "GameDBA/Frontend/Character/DBACharacterRosterSubsystem.h"
+#include "GameDBA/Frontend/Character/DBACharacterCreateDraftSubsystem.h"
+#include "GameDBA/Frontend/Core/DBAFrontendErrorMapper.h"
+
 #include "GameDBA/Frontend/Account/DBAOnlineAccountService.h"
+#include "GameDBA/Frontend/Settings/DBAFrontendSettings.h"
 #include "GameCore/Core/DBALogChannels.h"
 #include "GameBackendClientSettings.h"
 #include "GameBackendSessionService.h"
 #include "GameDBA/Frontend/Backend/DBABackendFacadeSubsystem.h"
+#include "GameDBA/Frontend/ServerDirectory/DBAServerDirectorySubsystem.h"
 #include "Dom/JsonObject.h"
 #include "Engine/World.h"
 #include "GameCore/Networking/Travel/DBATravelSubsystem.h"
@@ -49,16 +55,128 @@ bool UDBAFrontendFlowSubsystem::ShouldEnterCharacterCreate(int32 CharacterCount)
 	return CharacterCount <= 0;
 }
 
+void UDBAFrontendFlowSubsystem::ApplyCharacterRosterSnapshot(const TArray<FDBACharacterSummary>& Characters)
+{
+	CachedCharacters = Characters;
+	OnCharactersLoaded.Broadcast(CachedCharacters);
+}
+
+void UDBAFrontendFlowSubsystem::SetSelectedCharacterFromRoster(const FDBACharacterSummary& Character)
+{
+	FrontendSessionContext.SelectedCharacterId = Character.CharacterId.ToString();
+	FrontendSessionContext.Zodiac = Character.Zodiac;
+	FrontendSessionContext.Element = Character.PrimaryElement;
+	FrontendSessionContext.FiveCamp = Character.FiveCamp;
+}
+
+void UDBAFrontendFlowSubsystem::ClearSelectedCharacterFromRoster()
+{
+	FrontendSessionContext.SelectedCharacterId.Reset();
+}
+
 void UDBAFrontendFlowSubsystem::SetFlowState(EDBALoginFlowState NewState)
 {
-	if (FlowState == NewState)
+	const EDBAFrontendState TargetState = ResolveFrontendStateForLegacyState(NewState);
+	if (!TryTransitionTo(TargetState))
 	{
+		UE_LOG(LogDBAFrontend, Warning, TEXT("[DBAFrontendFlowSubsystem] 拒绝旧状态到前台状态的非法转换：旧状态=%d，目标状态=%d。"), static_cast<int32>(NewState), static_cast<int32>(TargetState));
 		return;
 	}
+	if (FlowState != NewState)
+	{
+		FlowState = NewState;
+		OnFlowStateChanged.Broadcast(NewState);
+	}
+}
 
-	UE_LOG(LogDBACore, Log, TEXT("[DBAFrontendFlowSubsystem] 流程状态切换：%d -> %d"), static_cast<int32>(FlowState), static_cast<int32>(NewState));
-	FlowState = NewState;
-	OnFlowStateChanged.Broadcast(NewState);
+bool UDBAFrontendFlowSubsystem::TryTransitionTo(const EDBAFrontendState NewState)
+{
+	const EDBAFrontendState PreviousState = FrontendSessionContext.ClientSessionState;
+	if (!DBAFrontendStateMachine::CanTransition(PreviousState, NewState))
+	{
+		UE_LOG(LogDBAFrontend, Warning, TEXT("[DBAFrontendFlowSubsystem] 拒绝非法前台状态转换：%d -> %d。"), static_cast<int32>(PreviousState), static_cast<int32>(NewState));
+		return false;
+	}
+
+	if (PreviousState == NewState)
+	{
+		return true;
+	}
+
+	FrontendSessionContext.ClientSessionState = NewState;
+	UE_LOG(LogDBAFrontend, Log, TEXT("[DBAFrontendFlowSubsystem] 前台状态切换：%d -> %d。"), static_cast<int32>(PreviousState), static_cast<int32>(NewState));
+	OnFrontendStateChanged.Broadcast(PreviousState, NewState);
+	return true;
+}
+
+void UDBAFrontendFlowSubsystem::UpdateLegacyFlowState(const EDBAFrontendState State)
+{
+	EDBALoginFlowState NewLegacyState = EDBALoginFlowState::AwaitingLogin;
+	switch (State)
+	{
+	case EDBAFrontendState::Bootstrapping:
+	case EDBAFrontendState::Startup:
+		NewLegacyState = EDBALoginFlowState::Booting;
+		break;
+	case EDBAFrontendState::CharacterRosterLoading:
+		NewLegacyState = EDBALoginFlowState::LoadingCharacters;
+		break;
+	case EDBAFrontendState::ServerSelect:
+		NewLegacyState = EDBALoginFlowState::ServerSelecting;
+		break;
+	case EDBAFrontendState::CharacterSelect:
+		NewLegacyState = EDBALoginFlowState::CharacterSelecting;
+		break;
+	case EDBAFrontendState::CharacterCreate_Zodiac:
+	case EDBAFrontendState::CharacterCreate_Element:
+	case EDBAFrontendState::CharacterCreate_FiveCamp:
+	case EDBAFrontendState::CharacterCreate_Confirm:
+		NewLegacyState = EDBALoginFlowState::CharacterCreating;
+		break;
+	case EDBAFrontendState::EnteringWorld:
+		NewLegacyState = EDBALoginFlowState::ConnectingVillage;
+		break;
+	case EDBAFrontendState::RecoverableError:
+		NewLegacyState = EDBALoginFlowState::RecoverableError;
+		break;
+	case EDBAFrontendState::FatalError:
+		NewLegacyState = EDBALoginFlowState::FatalError;
+		break;
+	default:
+		NewLegacyState = EDBALoginFlowState::AwaitingLogin;
+		break;
+	}
+
+	if (FlowState != NewLegacyState)
+	{
+		FlowState = NewLegacyState;
+		OnFlowStateChanged.Broadcast(NewLegacyState);
+	}
+}
+
+EDBAFrontendState UDBAFrontendFlowSubsystem::ResolveFrontendStateForLegacyState(const EDBALoginFlowState LegacyState) const
+{
+	switch (LegacyState)
+	{
+	case EDBALoginFlowState::Booting: return EDBAFrontendState::Bootstrapping;
+	case EDBALoginFlowState::AwaitingLogin:
+	case EDBALoginFlowState::Authenticating: return EDBAFrontendState::Login;
+	case EDBALoginFlowState::ServerSelecting: return EDBAFrontendState::ServerSelect;
+	case EDBALoginFlowState::LoadingCharacters: return EDBAFrontendState::CharacterRosterLoading;
+	case EDBALoginFlowState::CharacterSelecting: return EDBAFrontendState::CharacterSelect;
+	case EDBALoginFlowState::CharacterCreating:
+		return DBAFrontendStateMachine::IsCharacterCreationState(FrontendSessionContext.ClientSessionState)
+			? FrontendSessionContext.ClientSessionState
+			: EDBAFrontendState::CharacterCreate_Zodiac;
+	case EDBALoginFlowState::AllocatingVillage:
+	case EDBALoginFlowState::WaitingVillageServer:
+	case EDBALoginFlowState::ConnectingVillage:
+	case EDBALoginFlowState::InitializingVillage:
+	case EDBALoginFlowState::InVillage: return EDBAFrontendState::EnteringWorld;
+	case EDBALoginFlowState::RecoverableError: return EDBAFrontendState::RecoverableError;
+	case EDBALoginFlowState::FatalError: return EDBAFrontendState::FatalError;
+	default: return EDBAFrontendState::Login;
+	}
 }
 
 uint64 UDBAFrontendFlowSubsystem::BeginFlowRequest()
@@ -69,6 +187,7 @@ uint64 UDBAFrontendFlowSubsystem::BeginFlowRequest()
 void UDBAFrontendFlowSubsystem::InvalidatePendingFlowRequests()
 {
 	++FlowRequestGeneration;
+	bAuthenticationRequestInFlight = false;
 }
 
 bool UDBAFrontendFlowSubsystem::IsFlowRequestCurrent(uint64 RequestGeneration) const
@@ -78,8 +197,9 @@ bool UDBAFrontendFlowSubsystem::IsFlowRequestCurrent(uint64 RequestGeneration) c
 
 void UDBAFrontendFlowSubsystem::BroadcastErrorAndSetState(const FString& ErrorMessage, EDBALoginFlowState NewState)
 {
+	OnFlowApiError.Broadcast(UDBAFrontendErrorMapper::FromLegacyMessage(ErrorMessage));
 	OnFlowError.Broadcast(ErrorMessage);
-	SetFlowState(NewState);
+	ForceRecoverableErrorAndFallback(ResolveFrontendStateForLegacyState(NewState), ErrorMessage);
 }
 
 void UDBAFrontendFlowSubsystem::StartLoginFlow()
@@ -93,38 +213,244 @@ void UDBAFrontendFlowSubsystem::StartLoginFlow()
 	{
 		World->GetTimerManager().ClearTimer(VillageConnectionRetryTimerHandle);
 	}
-	// 进入前端后先展示登录页，认证只由用户明确操作触发。
-	SetFlowState(EDBALoginFlowState::AwaitingLogin);
+	FrontendSessionContext = FDBAFrontendSessionContext();
+	bAuthenticationRequestInFlight = false;
+	FrontendSessionContext.ClientSessionState = EDBAFrontendState::Bootstrapping;
+	UpdateLegacyFlowState(EDBAFrontendState::Bootstrapping);
+	TryTransitionTo(EDBAFrontendState::Startup);
+
+	const UDBAFrontendSettings* Settings = GetDefault<UDBAFrontendSettings>();
+	if (Settings && Settings->bAttemptAutoLogin)
+	{
+		StartAutoLogin();
+		return;
+	}
+
+	TryTransitionTo(EDBAFrontendState::Login);
+	UpdateLegacyFlowState(EDBAFrontendState::Login);
 }
 
-void UDBAFrontendFlowSubsystem::SubmitLogin(const FString& Email, const FString& Password)
+void UDBAFrontendFlowSubsystem::StartAutoLogin()
 {
+	if (bAuthenticationRequestInFlight)
+	{
+		UE_LOG(LogDBAOnline, Verbose, TEXT("[DBAFrontendFlowSubsystem] 已有认证请求进行中，忽略重复自动登录请求。"));
+		return;
+	}
+	if (!TryTransitionTo(EDBAFrontendState::AutoLogin))
+	{
+		return;
+	}
+	UpdateLegacyFlowState(EDBAFrontendState::AutoLogin);
+	bAuthenticationRequestInFlight = true;
 	const uint64 RequestGeneration = BeginFlowRequest();
-	SetFlowState(EDBALoginFlowState::Authenticating);
+	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
+	if (!AccountService)
+	{
+		bAuthenticationRequestInFlight = false;
+		TryTransitionTo(EDBAFrontendState::Login);
+		UpdateLegacyFlowState(EDBAFrontendState::Login);
+		return;
+	}
+
+	AccountService->TryAutoLogin(FDBAOnLoginComplete::CreateWeakLambda(this, [this, RequestGeneration](const FDBALoginResponse& Response)
+	{
+		if (!IsFlowRequestCurrent(RequestGeneration))
+		{
+			return;
+		}
+		bAuthenticationRequestInFlight = false;
+		if (!Response.bSuccess)
+		{
+			// 自动登录失败是正常回退，既不向 Widget 传递远端原文，也不阻塞手动登录。
+			TryTransitionTo(EDBAFrontendState::Login);
+			UpdateLegacyFlowState(EDBAFrontendState::Login);
+			return;
+		}
+		HandleLoginSucceeded(Response);
+	}));
+}
+
+void UDBAFrontendFlowSubsystem::HandleLoginSucceeded(const FDBALoginResponse& Response)
+{
+	FrontendSessionContext.AccountId = Response.AccountInfo.AccountId.ToString();
+	if (TryTransitionTo(EDBAFrontendState::ServerSelect))
+	{
+		UpdateLegacyFlowState(EDBAFrontendState::ServerSelect);
+		const UDBAExternalServiceSettings* ServiceSettings = GetDefault<UDBAExternalServiceSettings>();
+		if (UDBAServerDirectorySubsystem* ServerDirectory = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAServerDirectorySubsystem>() : nullptr)
+		{
+			ServerDirectory->RefreshDirectory(
+				ServiceSettings ? ServiceSettings->Region : FString(),
+				ServiceSettings ? ServiceSettings->ClientVersion : FString(),
+				ServiceSettings ? ServiceSettings->Platform : FString());
+		}
+	}
+}
+
+void UDBAFrontendFlowSubsystem::ForceRecoverableErrorAndFallback(const EDBAFrontendState FallbackState, const FString& ErrorMessage)
+{
+	const EDBAFrontendState CurrentState = GetFrontendState();
+	if (CurrentState != EDBAFrontendState::RecoverableError)
+	{
+		TryTransitionTo(EDBAFrontendState::RecoverableError);
+		UpdateLegacyFlowState(EDBAFrontendState::RecoverableError);
+	}
+
+	if (!TryTransitionTo(FallbackState))
+	{
+		TryTransitionTo(EDBAFrontendState::Login);
+		UpdateLegacyFlowState(EDBAFrontendState::Login);
+	}
+	else
+	{
+		UpdateLegacyFlowState(FallbackState);
+	}
+
+	UE_LOG(LogDBAFrontend, Warning, TEXT("[DBAFrontendFlowSubsystem] 前台流程已从可恢复错误回退：%s"), *ErrorMessage);
+}
+
+void UDBAFrontendFlowSubsystem::BeginRegistration()
+{
+	if (TryTransitionTo(EDBAFrontendState::Register))
+	{
+		UpdateLegacyFlowState(EDBAFrontendState::Register);
+	}
+}
+
+void UDBAFrontendFlowSubsystem::SubmitRegistration(const FString& Account, const FString& Password)
+{
+	if (GetFrontendState() != EDBAFrontendState::Register)
+	{
+		UE_LOG(LogDBAOnline, Warning, TEXT("[DBAFrontendFlowSubsystem] 当前前台状态不允许提交账号注册。"));
+		return;
+	}
+	if (bAuthenticationRequestInFlight)
+	{
+		UE_LOG(LogDBAOnline, Verbose, TEXT("[DBAFrontendFlowSubsystem] 已有认证请求进行中，忽略重复注册请求。"));
+		return;
+	}
+
+	const FString NormalizedAccount = Account.TrimStartAndEnd();
+	if (NormalizedAccount.IsEmpty() || Password.IsEmpty())
+	{
+		OnFlowApiError.Broadcast(UDBAFrontendErrorMapper::FromLegacyMessage(TEXT("账号和密码不能为空。")));
+		OnFlowError.Broadcast(TEXT("账号和密码不能为空。"));
+		return;
+	}
+
+	bAuthenticationRequestInFlight = true;
+	const uint64 RequestGeneration = BeginFlowRequest();
+	FlowState = EDBALoginFlowState::Authenticating;
+	OnFlowStateChanged.Broadcast(FlowState);
 
 	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
 	if (!AccountService)
 	{
+		bAuthenticationRequestInFlight = false;
+		ForceRecoverableErrorAndFallback(EDBAFrontendState::Register, TEXT("账号服务不可用。"));
+		return;
+	}
+
+	AccountService->RegisterAccount(NormalizedAccount, Password, FDBAOnLoginComplete::CreateWeakLambda(this, [this, RequestGeneration](const FDBALoginResponse& Response)
+	{
+		if (!IsFlowRequestCurrent(RequestGeneration))
+		{
+			UE_LOG(LogDBAOnline, Verbose, TEXT("[DBAFrontendFlowSubsystem] 忽略已过期的账号注册回调。"));
+			return;
+		}
+
+		bAuthenticationRequestInFlight = false;
+		if (Response.bSuccess)
+		{
+			HandleLoginSucceeded(Response);
+			return;
+		}
+
+		OnFlowApiError.Broadcast(UDBAFrontendErrorMapper::FromLegacyMessage(Response.ErrorMessage));
+		OnFlowError.Broadcast(Response.ErrorMessage);
+		ForceRecoverableErrorAndFallback(EDBAFrontendState::Register, Response.ErrorMessage);
+	}));
+}
+
+void UDBAFrontendFlowSubsystem::CancelRegistration()
+{
+	if (TryTransitionTo(EDBAFrontendState::Login))
+	{
+		UpdateLegacyFlowState(EDBAFrontendState::Login);
+	}
+}
+
+void UDBAFrontendFlowSubsystem::BeginServerSelection()
+{
+	if (TryTransitionTo(EDBAFrontendState::ServerSelect))
+	{
+		UpdateLegacyFlowState(EDBAFrontendState::ServerSelect);
+	}
+}
+
+void UDBAFrontendFlowSubsystem::SelectServer(const FString& ServerId)
+{
+	if (GetFrontendState() != EDBAFrontendState::ServerSelect || ServerId.TrimStartAndEnd().IsEmpty())
+	{
+		UE_LOG(LogDBAOnline, Warning, TEXT("[DBAFrontendFlowSubsystem] 拒绝无效选服请求。"));
+		return;
+	}
+	UDBAServerDirectorySubsystem* ServerDirectory = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAServerDirectorySubsystem>() : nullptr;
+	if (!ServerDirectory || !ServerDirectory->FindSelectableServer(ServerId.TrimStartAndEnd()))
+	{
+		UE_LOG(LogDBAOnline, Warning, TEXT("[DBAFrontendFlowSubsystem] 拒绝选择不存在、不可用或尚未加载完成的区服。"));
+		OnFlowApiError.Broadcast(UDBAFrontendErrorMapper::FromLegacyMessage(TEXT("所选区服当前不可进入，请刷新区服列表后重试。")));
+		OnFlowError.Broadcast(TEXT("所选区服当前不可进入，请刷新区服列表后重试。"));
+		return;
+	}
+
+	if (UDBACharacterRosterSubsystem* Roster = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterRosterSubsystem>() : nullptr)
+	{
+		Roster->ClearCache();
+	}
+	FrontendSessionContext.ServerId = ServerId.TrimStartAndEnd();
+	ServerDirectory->RecordLastSelectedServer(FrontendSessionContext.AccountId, FrontendSessionContext.ServerId);
+	LoadCharactersAfterLogin();
+}
+
+void UDBAFrontendFlowSubsystem::SubmitLogin(const FString& Email, const FString& Password)
+{
+	if (GetFrontendState() != EDBAFrontendState::Login)
+	{
+		UE_LOG(LogDBAOnline, Warning, TEXT("[DBAFrontendFlowSubsystem] 当前前台状态不允许提交账号登录。"));
+		return;
+	}
+	if (bAuthenticationRequestInFlight)
+	{
+		UE_LOG(LogDBAOnline, Verbose, TEXT("[DBAFrontendFlowSubsystem] 已有认证请求进行中，忽略重复账号登录请求。"));
+		return;
+	}
+	bAuthenticationRequestInFlight = true;
+	const uint64 RequestGeneration = BeginFlowRequest();
+	FlowState = EDBALoginFlowState::Authenticating;
+	OnFlowStateChanged.Broadcast(FlowState);
+
+	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
+	if (!AccountService)
+	{
+		bAuthenticationRequestInFlight = false;
 		BroadcastErrorAndSetState(TEXT("账号服务不可用。"), EDBALoginFlowState::AwaitingLogin);
 		return;
 	}
 
-	FDBALoginRequest Request;
-	Request.LoginType = EDBALoginType::Email;
-	Request.Email = Email;
-	Request.Password = Password;
-
-	AccountService->Login(Request, FDBAOnLoginComplete::CreateWeakLambda(this, [this, RequestGeneration](const FDBALoginResponse& Response)
+	AccountService->LoginWithCredentials(Email, Password, FDBAOnLoginComplete::CreateWeakLambda(this, [this, RequestGeneration](const FDBALoginResponse& Response)
 	{
 		if (!IsFlowRequestCurrent(RequestGeneration))
 		{
-			UE_LOG(LogDBACore, Verbose, TEXT("[DBAFrontendFlowSubsystem] 忽略已过期的账号登录回调。"));
+			UE_LOG(LogDBAOnline, Verbose, TEXT("[DBAFrontendFlowSubsystem] 忽略已过期的账号登录回调。"));
 			return;
 		}
+		bAuthenticationRequestInFlight = false;
 
 		if (Response.bSuccess)
 		{
-			LoadCharactersAfterLogin();
+			HandleLoginSucceeded(Response);
 			return;
 		}
 
@@ -134,12 +460,33 @@ void UDBAFrontendFlowSubsystem::SubmitLogin(const FString& Email, const FString&
 
 void UDBAFrontendFlowSubsystem::SubmitGuestLogin()
 {
+	if (GetFrontendState() != EDBAFrontendState::Login)
+	{
+		UE_LOG(LogDBAOnline, Warning, TEXT("[DBAFrontendFlowSubsystem] 当前前台状态不允许提交游客登录。"));
+		return;
+	}
+	const UDBAFrontendSettings* Settings = GetDefault<UDBAFrontendSettings>();
+	if (Settings && !Settings->bEnableGuestLogin)
+	{
+		UE_LOG(LogDBAOnline, Warning, TEXT("[DBAFrontendFlowSubsystem] 当前配置已关闭游客登录入口。"));
+		OnFlowApiError.Broadcast(UDBAFrontendErrorMapper::FromLegacyMessage(TEXT("当前版本未开放游客登录。")));
+		OnFlowError.Broadcast(TEXT("当前版本未开放游客登录。"));
+		return;
+	}
+	if (bAuthenticationRequestInFlight)
+	{
+		UE_LOG(LogDBAOnline, Verbose, TEXT("[DBAFrontendFlowSubsystem] 已有认证请求进行中，忽略重复游客登录请求。"));
+		return;
+	}
+	bAuthenticationRequestInFlight = true;
 	const uint64 RequestGeneration = BeginFlowRequest();
-	SetFlowState(EDBALoginFlowState::Authenticating);
+	FlowState = EDBALoginFlowState::Authenticating;
+	OnFlowStateChanged.Broadcast(FlowState);
 
 	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
 	if (!AccountService)
 	{
+		bAuthenticationRequestInFlight = false;
 		BroadcastErrorAndSetState(TEXT("账号服务不可用。"), EDBALoginFlowState::AwaitingLogin);
 		return;
 	}
@@ -148,13 +495,14 @@ void UDBAFrontendFlowSubsystem::SubmitGuestLogin()
 	{
 		if (!IsFlowRequestCurrent(RequestGeneration))
 		{
-			UE_LOG(LogDBACore, Verbose, TEXT("[DBAFrontendFlowSubsystem] 忽略已过期的游客登录回调。"));
+			UE_LOG(LogDBAOnline, Verbose, TEXT("[DBAFrontendFlowSubsystem] 忽略已过期的游客登录回调。"));
 			return;
 		}
+		bAuthenticationRequestInFlight = false;
 
 		if (Response.bSuccess)
 		{
-			LoadCharactersAfterLogin();
+			HandleLoginSucceeded(Response);
 			return;
 		}
 
@@ -164,47 +512,61 @@ void UDBAFrontendFlowSubsystem::SubmitGuestLogin()
 
 void UDBAFrontendFlowSubsystem::LoadCharactersAfterLogin()
 {
+	const EDBAFrontendState PreviousFrontendState = GetFrontendState();
 	if (!SynchronizeBackendAuthentication())
 	{
-		BroadcastErrorAndSetState(TEXT("后端认证上下文同步失败。"), EDBALoginFlowState::AwaitingLogin);
+		ForceRecoverableErrorAndFallback(PreviousFrontendState, TEXT("后端认证上下文同步失败。"));
 		return;
 	}
 
-	const uint64 RequestGeneration = BeginFlowRequest();
-	const EDBALoginFlowState PreviousState = FlowState;
-	SetFlowState(EDBALoginFlowState::LoadingCharacters);
-
-	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
-	if (!AccountService)
+	if (!TryTransitionTo(EDBAFrontendState::CharacterRosterLoading))
 	{
-		BroadcastErrorAndSetState(TEXT("账号服务不可用。"), EDBALoginFlowState::AwaitingLogin);
+		ForceRecoverableErrorAndFallback(PreviousFrontendState, TEXT("当前状态无法加载角色列表。"));
+		return;
+	}
+	UpdateLegacyFlowState(EDBAFrontendState::CharacterRosterLoading);
+	const uint64 RequestGeneration = BeginFlowRequest();
+
+	UDBACharacterRosterSubsystem* Roster = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterRosterSubsystem>() : nullptr;
+	if (!Roster)
+	{
+		ForceRecoverableErrorAndFallback(PreviousFrontendState, TEXT("账号服务不可用。"));
 		return;
 	}
 
-	AccountService->GetCharacterList(FDBAOnCharacterListLoaded::CreateWeakLambda(this, [this, PreviousState, RequestGeneration](bool bSuccess, const TArray<FDBACharacterSummary>& Characters)
+	Roster->RefreshCharacterList(FrontendSessionContext.ServerId, [this, PreviousFrontendState, RequestGeneration, Roster](const FDBAOperationResult& Result)
 	{
 		if (!IsFlowRequestCurrent(RequestGeneration))
 		{
-			UE_LOG(LogDBACore, Verbose, TEXT("[DBAFrontendFlowSubsystem] 忽略已过期的角色列表回调。"));
+			UE_LOG(LogDBACharacter, Verbose, TEXT("[DBAFrontendFlowSubsystem] 忽略已过期的角色列表回调。"));
 			return;
 		}
 
-		if (!bSuccess)
+		if (!Result.bSuccess)
 		{
-			const EDBALoginFlowState ErrorState =
-				(PreviousState == EDBALoginFlowState::CharacterSelecting || PreviousState == EDBALoginFlowState::CharacterCreating)
-					? PreviousState
-					: EDBALoginFlowState::AwaitingLogin;
-			UE_LOG(LogDBACore, Warning, TEXT("[DBAFrontendFlowSubsystem] 角色列表加载失败，不进入创建流程。"));
-			BroadcastErrorAndSetState(TEXT("获取角色列表失败。"), ErrorState);
+			UE_LOG(LogDBACharacter, Warning, TEXT("[DBAFrontendFlowSubsystem] 角色列表加载失败，不进入创建流程。"));
+			ForceRecoverableErrorAndFallback(PreviousFrontendState, TEXT("获取角色列表失败。"));
 			return;
 		}
 
-		CachedCharacters = Characters;
-		OnCharactersLoaded.Broadcast(CachedCharacters);
-		UE_LOG(LogDBACore, Log, TEXT("[DBAFrontendFlowSubsystem] 角色列表加载完成：%d"), CachedCharacters.Num());
-		SetFlowState(ShouldEnterCharacterCreate(CachedCharacters.Num()) ? EDBALoginFlowState::CharacterCreating : EDBALoginFlowState::CharacterSelecting);
-	}));
+		CachedCharacters = Roster->GetCachedCharacters();
+		UE_LOG(LogDBACharacter, Log, TEXT("[DBAFrontendFlowSubsystem] 角色列表加载完成：%d"), CachedCharacters.Num());
+		const EDBAFrontendState TargetState = ShouldEnterCharacterCreate(CachedCharacters.Num())
+			? EDBAFrontendState::CharacterCreate_Zodiac
+			: EDBAFrontendState::CharacterSelect;
+		if (TargetState == EDBAFrontendState::CharacterCreate_Zodiac)
+		{
+			if (UDBACharacterCreateDraftSubsystem* Draft = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterCreateDraftSubsystem>() : nullptr)
+			{
+				Draft->BeginDraft();
+			}
+			FrontendSessionContext.ResetCharacterDraft();
+		}
+		if (TryTransitionTo(TargetState))
+		{
+			UpdateLegacyFlowState(TargetState);
+		}
+	});
 }
 
 bool UDBAFrontendFlowSubsystem::SynchronizeBackendAuthentication()
@@ -225,7 +587,8 @@ bool UDBAFrontendFlowSubsystem::SynchronizeBackendAuthentication()
 
 void UDBAFrontendFlowSubsystem::SubmitCharacterSelection(const FDBACharacterId& CharacterId)
 {
-	if (FlowState != EDBALoginFlowState::CharacterSelecting && FlowState != EDBALoginFlowState::CharacterCreating)
+	if (GetFrontendState() != EDBAFrontendState::CharacterSelect
+		&& GetFrontendState() != EDBAFrontendState::CharacterCreate_Confirm)
 	{
 		BroadcastErrorAndSetState(TEXT("当前状态不允许选择角色。"), EDBALoginFlowState::AwaitingLogin);
 		return;
@@ -241,33 +604,41 @@ void UDBAFrontendFlowSubsystem::SubmitCharacterSelection(const FDBACharacterId& 
 
 	const uint64 RequestGeneration = BeginFlowRequest();
 
-	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
-	if (!AccountService)
+	UDBACharacterRosterSubsystem* Roster = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterRosterSubsystem>() : nullptr;
+	if (!Roster)
 	{
 		BroadcastErrorAndSetState(TEXT("账号服务不可用。"), EDBALoginFlowState::CharacterSelecting);
 		return;
 	}
 
-	AccountService->SelectCharacter(CharacterId, FDBAOnCharacterSelected::CreateWeakLambda(this, [this, RequestGeneration](const FDBACharacterId& SelectedId)
+	Roster->SelectCharacter(CharacterId, [this, RequestGeneration](const FDBAOperationResult& Result, const FDBACharacterDetails& Details)
 	{
 		if (!IsFlowRequestCurrent(RequestGeneration))
 		{
-			UE_LOG(LogDBACore, Verbose, TEXT("[DBAFrontendFlowSubsystem] 忽略已过期的角色选择回调。"));
+			UE_LOG(LogDBACharacter, Verbose, TEXT("[DBAFrontendFlowSubsystem] 忽略已过期的角色选择回调。"));
 			return;
 		}
 
-		if (SelectedId.IsValid())
+		if (Result.bSuccess && Details.Summary.CharacterId.IsValid())
 		{
+			TryTransitionTo(EDBAFrontendState::EnteringWorld);
 			RequestVillageAllocation();
 			return;
 		}
 
 		BroadcastErrorAndSetState(TEXT("角色选择失败。"), EDBALoginFlowState::CharacterSelecting);
-	}));
+	});
 }
 
 void UDBAFrontendFlowSubsystem::SubmitCharacterCreation(const FDBACharacterCreateRequest& Request)
 {
+	// Flow 只在确认页发送创建意图，禁止任意 Widget 从中间步骤直接创建角色。
+	if (GetFrontendState() != EDBAFrontendState::CharacterCreate_Confirm)
+	{
+		UE_LOG(LogDBACharacter, Warning, TEXT("[DBAFrontendFlowSubsystem] 角色创建请求未通过完整状态机步骤。"));
+		return;
+	}
+
 	if (FlowState != EDBALoginFlowState::CharacterCreating)
 	{
 		BroadcastErrorAndSetState(TEXT("当前状态不允许创建角色。"), EDBALoginFlowState::AwaitingLogin);
@@ -275,58 +646,251 @@ void UDBAFrontendFlowSubsystem::SubmitCharacterCreation(const FDBACharacterCreat
 	}
 	const uint64 RequestGeneration = BeginFlowRequest();
 
-	UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr;
-	if (!AccountService)
+	UDBACharacterRosterSubsystem* Roster = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterRosterSubsystem>() : nullptr;
+	if (!Roster)
 	{
 		BroadcastErrorAndSetState(TEXT("账号服务不可用。"), EDBALoginFlowState::CharacterCreating);
 		return;
 	}
 
-	AccountService->CreateCharacter(Request, FDBAOnCharacterCreated::CreateWeakLambda(this, [this, RequestGeneration](const FDBACharacterCreateResponse& Response)
+	UDBACharacterCreateDraftSubsystem* DraftSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterCreateDraftSubsystem>() : nullptr;
+	FDBACharacterCreateRequest DraftRequest;
+	FText DraftReason;
+	if (!DraftSubsystem || !DraftSubsystem->BuildCreateRequest(DraftRequest, DraftReason))
+	{
+		BroadcastErrorAndSetState(DraftReason.IsEmpty() ? TEXT("角色创建草稿无效。") : DraftReason.ToString(), EDBALoginFlowState::CharacterCreating);
+		return;
+	}
+
+	// 保持旧 Widget 调用兼容；新业务只提交 Draft 构建的请求，避免 Widget 临时变量覆盖已验证外观。
+	(void)Request;
+	const FDBACharacterAppearance DraftAppearance = DraftSubsystem->GetDraft().Appearance;
+	Roster->CreateCharacter(DraftRequest, DraftAppearance, [this, RequestGeneration](const FDBAOperationResult& Result, const FDBACharacterDetails& Details)
 	{
 		if (!IsFlowRequestCurrent(RequestGeneration))
 		{
-			UE_LOG(LogDBACore, Verbose, TEXT("[DBAFrontendFlowSubsystem] 忽略已过期的角色创建回调。"));
+			UE_LOG(LogDBACharacter, Verbose, TEXT("[DBAFrontendFlowSubsystem] 忽略已过期的角色创建回调。"));
 			return;
 		}
 
-		if (Response.bSuccess)
+		if (Result.bSuccess)
 		{
-			CachedCharacters.RemoveAll([&Response](const FDBACharacterSummary& Character)
+			// 服务端创建成功后立即清理本地草稿，再选中新角色；失败时保留草稿供用户修正重试。
+			if (UDBACharacterCreateDraftSubsystem* Draft = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterCreateDraftSubsystem>() : nullptr)
 			{
-				return Character.CharacterId == Response.CharacterSummary.CharacterId;
-			});
-			CachedCharacters.Add(Response.CharacterSummary);
-			OnCharactersLoaded.Broadcast(CachedCharacters);
-			SubmitCharacterSelection(Response.CharacterSummary.CharacterId);
+				Draft->ResetDraft();
+			}
+			SubmitCharacterSelection(Details.Summary.CharacterId);
 			return;
 		}
 
-		BroadcastErrorAndSetState(Response.ErrorMessage, EDBALoginFlowState::CharacterCreating);
-	}));
+		BroadcastErrorAndSetState(Result.ErrorMessage, EDBALoginFlowState::CharacterCreating);
+	});
 }
 
 void UDBAFrontendFlowSubsystem::EnterCharacterCreate()
 {
-	if (FlowState == EDBALoginFlowState::CharacterSelecting || FlowState == EDBALoginFlowState::CharacterCreating)
+	if (GetFrontendState() == EDBAFrontendState::CharacterSelect)
 	{
 		InvalidatePendingFlowRequests();
-		SetFlowState(EDBALoginFlowState::CharacterCreating);
+		// 显式入口必须重新开始草稿，防止已取消创建的输入被重新使用。
+		if (UDBACharacterCreateDraftSubsystem* Draft = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterCreateDraftSubsystem>() : nullptr)
+		{
+			Draft->BeginDraft();
+		}
+		FrontendSessionContext.ResetCharacterDraft();
+		if (TryTransitionTo(EDBAFrontendState::CharacterCreate_Zodiac))
+		{
+			UpdateLegacyFlowState(EDBAFrontendState::CharacterCreate_Zodiac);
+		}
 	}
 }
 
 void UDBAFrontendFlowSubsystem::BackToCharacterSelect()
 {
-	if (FlowState == EDBALoginFlowState::CharacterCreating || FlowState == EDBALoginFlowState::CharacterSelecting)
+	CancelCharacterCreation();
+}
+
+void UDBAFrontendFlowSubsystem::CancelCharacterCreation()
+{
+	if (DBAFrontendStateMachine::IsCharacterCreationState(GetFrontendState()))
 	{
-		if (CachedCharacters.IsEmpty())
-		{
-			BroadcastErrorAndSetState(TEXT("当前没有可选择的角色，请先完成角色创建。"), EDBALoginFlowState::CharacterCreating);
-			return;
-		}
 		InvalidatePendingFlowRequests();
-		SetFlowState(EDBALoginFlowState::CharacterSelecting);
+		// 取消是清理语义，不保留为服务端角色；临时恢复仅在后续明确保存时才由调用方执行。
+		if (UDBACharacterCreateDraftSubsystem* Draft = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterCreateDraftSubsystem>() : nullptr)
+		{
+			Draft->ResetDraft();
+		}
+		FrontendSessionContext.ResetCharacterDraft();
+		if (TryTransitionTo(EDBAFrontendState::CharacterSelect))
+		{
+			UpdateLegacyFlowState(EDBAFrontendState::CharacterSelect);
+		}
 	}
+}
+
+bool UDBAFrontendFlowSubsystem::SelectCharacterCreateZodiac(const EDBAZodiac Zodiac)
+{
+	UDBACharacterCreateDraftSubsystem* Draft = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterCreateDraftSubsystem>() : nullptr;
+	FText Reason;
+	if (GetFrontendState() != EDBAFrontendState::CharacterCreate_Zodiac || !Draft
+		|| (Draft->GetDraft().ZodiacType != Zodiac && !Draft->SetZodiac(Zodiac)) || !Draft->Next(Reason))
+	{
+		return false;
+	}
+	FrontendSessionContext.Zodiac = Draft->GetDraft().ZodiacType;
+	if (!TryTransitionTo(EDBAFrontendState::CharacterCreate_Element))
+	{
+		return false;
+	}
+	UpdateLegacyFlowState(EDBAFrontendState::CharacterCreate_Element);
+	return true;
+}
+
+bool UDBAFrontendFlowSubsystem::SelectCharacterCreateElement(const EDBAElement Element)
+{
+	UDBACharacterCreateDraftSubsystem* Draft = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterCreateDraftSubsystem>() : nullptr;
+	FText Reason;
+	if (GetFrontendState() != EDBAFrontendState::CharacterCreate_Element || !Draft
+		|| (Draft->GetDraft().ElementType != Element && !Draft->SetElement(Element)) || !Draft->Next(Reason))
+	{
+		return false;
+	}
+	FrontendSessionContext.Element = Draft->GetDraft().ElementType;
+	if (!TryTransitionTo(EDBAFrontendState::CharacterCreate_FiveCamp))
+	{
+		return false;
+	}
+	UpdateLegacyFlowState(EDBAFrontendState::CharacterCreate_FiveCamp);
+	return true;
+}
+
+bool UDBAFrontendFlowSubsystem::SelectCharacterCreateFiveCamp(const EDBAFiveCamp FiveCamp)
+{
+	UDBACharacterCreateDraftSubsystem* Draft = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterCreateDraftSubsystem>() : nullptr;
+	FText Reason;
+	if (GetFrontendState() != EDBAFrontendState::CharacterCreate_FiveCamp || !Draft
+		|| (Draft->GetDraft().FiveCampType != FiveCamp && !Draft->SetFiveCamp(FiveCamp)) || !Draft->Next(Reason))
+	{
+		return false;
+	}
+	FrontendSessionContext.FiveCamp = Draft->GetDraft().FiveCampType;
+	if (!TryTransitionTo(EDBAFrontendState::CharacterCreate_Confirm))
+	{
+		return false;
+	}
+	UpdateLegacyFlowState(EDBAFrontendState::CharacterCreate_Confirm);
+	return true;
+}
+
+bool UDBAFrontendFlowSubsystem::AdvanceCharacterCreateDraft()
+{
+	// 统一从当前 Flow 状态取值推进，保证 Flow 路由与 Draft 的业务步骤不会分叉。
+	UDBACharacterCreateDraftSubsystem* Draft = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterCreateDraftSubsystem>() : nullptr;
+	if (!Draft)
+	{
+		return false;
+	}
+
+	switch (GetFrontendState())
+	{
+	case EDBAFrontendState::CharacterCreate_Zodiac:
+		return SelectCharacterCreateZodiac(Draft->GetDraft().ZodiacType);
+	case EDBAFrontendState::CharacterCreate_Element:
+		return SelectCharacterCreateElement(Draft->GetDraft().ElementType);
+	case EDBAFrontendState::CharacterCreate_FiveCamp:
+		return SelectCharacterCreateFiveCamp(Draft->GetDraft().FiveCampType);
+	case EDBAFrontendState::CharacterCreate_Confirm:
+	{
+		FText Reason;
+		if (!Draft->Validate(Reason))
+		{
+			UE_LOG(LogDBACharacter, Warning, TEXT("角色创建确认步骤未通过：%s"), *Reason.ToString());
+			return false;
+		}
+		SubmitCharacterCreation(FDBACharacterCreateRequest());
+		return true;
+	}
+	default:
+		return false;
+	}
+}
+
+void UDBAFrontendFlowSubsystem::BackCharacterCreateStep()
+{
+	// 第一页没有上一步，因此按产品回退策略取消并返回空/角色选择页。
+	if (!DBAFrontendStateMachine::IsCharacterCreationState(GetFrontendState()))
+	{
+		return;
+	}
+	if (GetFrontendState() == EDBAFrontendState::CharacterCreate_Zodiac)
+	{
+		CancelCharacterCreation();
+		return;
+	}
+
+	UDBACharacterCreateDraftSubsystem* Draft = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterCreateDraftSubsystem>() : nullptr;
+	FText Reason;
+	if (!Draft || !Draft->Back(Reason))
+	{
+		UE_LOG(LogDBACharacter, Warning, TEXT("角色创建无法返回上一步：%s"), *Reason.ToString());
+		return;
+	}
+
+	const EDBAFrontendState TargetState = GetFrontendState() == EDBAFrontendState::CharacterCreate_Element
+		? EDBAFrontendState::CharacterCreate_Zodiac
+		: GetFrontendState() == EDBAFrontendState::CharacterCreate_FiveCamp
+			? EDBAFrontendState::CharacterCreate_Element
+			: EDBAFrontendState::CharacterCreate_FiveCamp;
+	if (TryTransitionTo(TargetState))
+	{
+		UpdateLegacyFlowState(TargetState);
+	}
+}
+
+void UDBAFrontendFlowSubsystem::RequestLogout()
+{
+	InvalidatePendingFlowRequests();
+	const auto CompleteLogout = [this]()
+	{
+		if (UDBACharacterRosterSubsystem* Roster = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterRosterSubsystem>() : nullptr)
+		{
+			Roster->ClearCache();
+		}
+		CachedCharacters.Reset();
+		FrontendSessionContext = FDBAFrontendSessionContext();
+		FrontendSessionContext.ClientSessionState = EDBAFrontendState::RecoverableError;
+		TryTransitionTo(EDBAFrontendState::Login);
+		UpdateLegacyFlowState(EDBAFrontendState::Login);
+	};
+
+	if (UDBAOnlineAccountService* AccountService = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>() : nullptr)
+	{
+		AccountService->Logout(FDBAOnLogoutComplete::CreateWeakLambda(this, [CompleteLogout]()
+		{
+			CompleteLogout();
+		}));
+		return;
+	}
+
+	CompleteLogout();
+}
+
+void UDBAFrontendFlowSubsystem::HandleTokenExpired()
+{
+	InvalidatePendingFlowRequests();
+	FrontendSessionContext.AccountId.Reset();
+	FrontendSessionContext.ResetCharacterDraft();
+	ForceRecoverableErrorAndFallback(EDBAFrontendState::Login, TEXT("登录状态已过期。"));
+}
+
+void UDBAFrontendFlowSubsystem::HandleServerUnavailable()
+{
+	InvalidatePendingFlowRequests();
+	const EDBAFrontendState Fallback = CachedCharacters.IsEmpty()
+		? EDBAFrontendState::CharacterCreate_Zodiac
+		: EDBAFrontendState::CharacterSelect;
+	ForceRecoverableErrorAndFallback(Fallback, TEXT("服务器当前不可用。"));
 }
 
 void UDBAFrontendFlowSubsystem::RefreshCharacterList()
@@ -336,13 +900,10 @@ void UDBAFrontendFlowSubsystem::RefreshCharacterList()
 
 void UDBAFrontendFlowSubsystem::RequestVillageAllocation()
 {
-	UDBAOnlineAccountService* AccountService = GetGameInstance()
-		? GetGameInstance()->GetSubsystem<UDBAOnlineAccountService>()
-		: nullptr;
 	UDBABackendFacadeSubsystem* BackendFacade = GetGameInstance()
 		? GetGameInstance()->GetSubsystem<UDBABackendFacadeSubsystem>()
 		: nullptr;
-	const FDBACharacterId SelectedCharacterId = AccountService ? AccountService->GetCurrentCharacterId() : FDBACharacterId();
+	const FDBACharacterId SelectedCharacterId(FrontendSessionContext.SelectedCharacterId);
 	if (!SelectedCharacterId.IsValid() || !BackendFacade)
 	{
 		BroadcastErrorAndSetState(TEXT("无法申请大厅：角色选择或后端会话服务无效。"), ResolveCharacterFlowState());
@@ -357,7 +918,7 @@ void UDBAFrontendFlowSubsystem::RequestVillageAllocation()
 	FDBA_GameBackendResponseDelegate Callback;
 	Callback.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UDBAFrontendFlowSubsystem, HandleVillageAllocationResponse));
 	BackendFacade->AllocateVillage(SelectedCharacterId.ToString(), Callback);
-	UE_LOG(LogDBACore, Log, TEXT("[DBAFrontendFlowSubsystem] 已请求后台分配新手村服务器。"));
+	UE_LOG(LogDBAOnline, Log, TEXT("[DBAFrontendFlowSubsystem] 已请求后台分配新手村服务器。"));
 }
 
 void UDBAFrontendFlowSubsystem::HandleVillageAllocationResponse(
@@ -367,7 +928,7 @@ void UDBAFrontendFlowSubsystem::HandleVillageAllocationResponse(
 {
 	if (!IsFlowRequestCurrent(PendingVillageRequestGeneration))
 	{
-		UE_LOG(LogDBACore, Verbose, TEXT("[DBAFrontendFlowSubsystem] 忽略已过期的新手村分配回调。"));
+		UE_LOG(LogDBAOnline, Verbose, TEXT("[DBAFrontendFlowSubsystem] 忽略已过期的新手村分配回调。"));
 		return;
 	}
 	if (!bSuccess || !ParseVillageAllocation(DataJson, PendingVillageSessionId))
@@ -415,7 +976,7 @@ void UDBAFrontendFlowSubsystem::HandleVillageConnectionResponse(
 	}
 	if (!bSuccess)
 	{
-		const UDBA_GameBackendClientSettings* Settings = GetDefault<UDBA_GameBackendClientSettings>();
+		const UDBAExternalServiceSettings* Settings = GetDefault<UDBAExternalServiceSettings>();
 		const int32 MaxAttempts = Settings ? FMath::Max(1, Settings->VillageConnectionMaxAttempts) : 1;
 		if (VillageConnectionAttempt < MaxAttempts)
 		{
@@ -449,7 +1010,7 @@ void UDBAFrontendFlowSubsystem::HandleVillageConnectionResponse(
 		return;
 	}
 
-	UE_LOG(LogDBACore, Log, TEXT("[DBAFrontendFlowSubsystem] 已发起新手村连接，等待 PlayerState 初始化完成。"));
+	UE_LOG(LogDBAOnline, Log, TEXT("[DBAFrontendFlowSubsystem] 已发起新手村连接，等待 PlayerState 初始化完成。"));
 }
 
 void UDBAFrontendFlowSubsystem::ScheduleVillageConnectionRetry()
@@ -461,7 +1022,7 @@ void UDBAFrontendFlowSubsystem::ScheduleVillageConnectionRetry()
 		return;
 	}
 
-	const UDBA_GameBackendClientSettings* Settings = GetDefault<UDBA_GameBackendClientSettings>();
+	const UDBAExternalServiceSettings* Settings = GetDefault<UDBAExternalServiceSettings>();
 	const float RetryDelay = Settings ? FMath::Max(0.1f, Settings->VillageConnectionRetryDelaySeconds) : 1.0f;
 	World->GetTimerManager().SetTimer(
 		VillageConnectionRetryTimerHandle,
@@ -487,7 +1048,7 @@ void UDBAFrontendFlowSubsystem::ConfirmVillageConnectionReady()
 	{
 		BackendFacade->TrackEvent(TEXT("enter_village"));
 	}
-	UE_LOG(LogDBACore, Log, TEXT("[DBAFrontendFlowSubsystem] 新手村玩家状态已同步，前端流程完成。"));
+	UE_LOG(LogDBAFrontend, Log, TEXT("[DBAFrontendFlowSubsystem] 新手村玩家状态已同步，前端流程完成。"));
 }
 
 EDBALoginFlowState UDBAFrontendFlowSubsystem::ResolveCharacterFlowState() const

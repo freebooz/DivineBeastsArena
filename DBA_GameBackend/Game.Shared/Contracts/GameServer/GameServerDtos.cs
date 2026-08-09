@@ -10,6 +10,35 @@ using Game.Shared.Common;
 
 namespace Game.Shared.Contracts.GameServer;
 
+/** 玩家前台可见的区服状态。该状态与 Dedicated Server 单局实例状态完全隔离。 */
+public static class ServerDirectoryStatuses
+{
+    public const string Online = "Online";
+    public const string Busy = "Busy";
+    public const string Full = "Full";
+    public const string Maintenance = "Maintenance";
+    public const string Offline = "Offline";
+
+    public static bool CanSelect(string status) => status is Online or Busy;
+}
+
+/** 前台区服目录条目；不包含单局 Dedicated Server 的地址、端口或运行时凭据。 */
+public sealed record ServerDirectoryServerDto(
+    Guid ServerId,
+    string Name,
+    string Region,
+    string Status,
+    int Population,
+    bool Recommended,
+    string? MaintenanceMessage,
+    string? MinClientVersion,
+    bool CanSelect);
+
+public sealed record ServerDirectoryQuery(
+    string? Region = null,
+    string? ClientVersion = null,
+    string? Platform = null);
+
 public record InternalAllocateServerResponse(Guid ServerId, string Ip, int Port, string RuntimeToken, DateTimeOffset TokenExpiresAt);
 
 public record RuntimeRegisterRequest(Guid ServerId, Guid SessionId, string RuntimeToken);

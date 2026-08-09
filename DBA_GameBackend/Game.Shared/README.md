@@ -53,11 +53,11 @@ public class ApiResponse<T>
 
 ## 错误码 (ErrorCodes)
 
-### 认证错误 (AUTH_*)
-- `AUTH_INVALID_CREDENTIALS` - 无效的凭证
-- `AUTH_TOKEN_EXPIRED` - 令牌已过期
-- `AUTH_REFRESH_TOKEN_EXPIRED` - 刷新令牌已过期
-- `AUTH_ACCOUNT_BANNED` - 账号已被封禁
+### 认证错误
+- `INVALID_CREDENTIALS` - 账号不存在、密码错误或凭据缺失
+- `TOKEN_EXPIRED` - 访问令牌或刷新令牌已过期/无效
+- `REFRESH_REUSED` - 已撤销的刷新令牌被重放，活动刷新凭据已撤销
+- `ACCOUNT_DISABLED` - 账号已禁用或封禁
 - `AUTH_DEV_LOGIN_DISABLED` - 开发者登录已禁用
 - `AUTH_STEAM_MOCK_ONLY` - Steam登录仅为模拟模式
 - `AUTH_EOS_MOCK_ONLY` - EOS登录仅为模拟模式

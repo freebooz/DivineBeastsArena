@@ -25,6 +25,15 @@ GAMECORE_API DECLARE_LOG_CATEGORY_EXTERN(LogDBACore, Log, All);
  */
 GAMECORE_API DECLARE_LOG_CATEGORY_EXTERN(LogDBAFrontend, Log, All);
 
+/** 在线服务日志域：认证、HTTP、会话与服务目录。严禁输出 Token、Password、RefreshToken 或 GameTicket。 */
+GAMECORE_API DECLARE_LOG_CATEGORY_EXTERN(LogDBAOnline, Log, All);
+
+/** 角色日志域：角色列表、选择、创建草稿及服务端校验结果。 */
+GAMECORE_API DECLARE_LOG_CATEGORY_EXTERN(LogDBACharacter, Log, All);
+
+/** 预览日志域：角色预览场景、SceneCapture 与软资源加载。 */
+GAMECORE_API DECLARE_LOG_CATEGORY_EXTERN(LogDBAPreview, Log, All);
+
 /**
  * 匹配系统日志域
  * 用于记录匹配队列、准备检查、房间创建、Travel 流程

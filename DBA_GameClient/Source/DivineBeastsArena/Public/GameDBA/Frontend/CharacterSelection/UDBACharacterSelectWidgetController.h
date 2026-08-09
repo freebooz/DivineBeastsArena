@@ -12,12 +12,19 @@
 
 #include "CoreMinimal.h"
 #include "GameCore/Networking/Account/DBAAccountTypes.h"
+#include "GameDBA/Core/DBAResultTypes.h"
+#include "GameDBA/Frontend/Core/DBAFrontendContracts.h"
 #include "GameMoba/UI/DBAMobaHUDWidgetControllerBase.h"
 #include "UDBACharacterSelectWidgetController.generated.h"
 
 class UDBAFrontendFlowSubsystem;
+class UDBACharacterRosterSubsystem;
+class UDBACharacterPreviewSubsystem;
+class UDBACharacterSelectViewModel;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDBACharactersChanged, const TArray<FDBACharacterSummary>&, Characters);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDBACharacterDeleteConfirmationRequested, const FDBACharacterSummary&, Character);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDBACharacterSelectUIError, const FDBAApiError&, Error);
 
 UCLASS(BlueprintType, Blueprintable)
 class DIVINEBEASTSARENA_API UDBACharacterSelectWidgetController : public UDBAMobaHUDWidgetControllerBase
@@ -33,12 +40,59 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterSelect")
 	void SelectCharacter(const FDBACharacterId& CharacterId);
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterSelect")
+	void EnterGame();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterSelect")
+	void CreateCharacter();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterSelect")
+	void Refresh();
+
+	/** 显示确认状态；由 WBP_DBA_ModalDialog 绑定 ConfirmDelete/CancelDelete。 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterSelect")
+	void RequestDeleteSelectedCharacter();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterSelect")
+	void ConfirmDelete();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterSelect")
+	void CancelDelete();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterSelect")
+	void BackToServerSelect();
+
+	UFUNCTION(BlueprintPure, Category = "DBA|CharacterSelect")
+	UDBACharacterSelectViewModel* GetViewModel() const { return ViewModel; }
+
 	UPROPERTY(BlueprintAssignable, Category = "DBA|CharacterSelect")
 	FDBACharactersChanged OnCharactersChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "DBA|CharacterSelect")
+	FDBACharacterDeleteConfirmationRequested OnDeleteConfirmationRequested;
+
+	UPROPERTY(BlueprintAssignable, Category = "DBA|CharacterSelect")
+	FDBACharacterSelectUIError OnCharacterSelectError;
 
 protected:
 	UFUNCTION()
 	void HandleCharactersLoaded(const TArray<FDBACharacterSummary>& Characters);
+	void HandleRosterChanged(const TArray<FDBACharacterSummary>& Characters);
+	void HandlePreviewResolved(EDBAZodiac Zodiac, bool bSuccess);
+	void HandleFlowStateChanged(EDBAFrontendState PreviousState, EDBAFrontendState NewState);
+	void ApplySelection(const FDBACharacterId& CharacterId);
+	void PublishError(const FDBAOperationResult& Result);
+	void UnbindServices();
 
 	UDBAFrontendFlowSubsystem* GetLoginFlow() const;
+	UDBACharacterRosterSubsystem* GetRoster() const;
+	UDBACharacterPreviewSubsystem* GetPreviewSubsystem() const;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDBACharacterSelectViewModel> ViewModel;
+
+	TWeakObjectPtr<UDBACharacterRosterSubsystem> Roster;
+	TWeakObjectPtr<UDBACharacterPreviewSubsystem> PreviewSubsystem;
+	FDelegateHandle RosterChangedHandle;
+	FDelegateHandle PreviewResolvedHandle;
 };

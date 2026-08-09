@@ -15,6 +15,7 @@
 #include "DBAOnlineAccountService.generated.h"
 
 class UDBA_GameBackendClientSubsystem;
+class UDBAApiClientSubsystem;
 
 UCLASS()
 class DIVINEBEASTSARENA_API UDBAOnlineAccountService : public UDBAAccountServiceBase
@@ -36,6 +37,13 @@ public:
 	virtual void CreateCharacter(const FDBACharacterCreateRequest& Request, FDBAOnCharacterCreated OnComplete) override;
 	virtual void SelectCharacter(const FDBACharacterId& CharacterId, FDBAOnCharacterSelected OnComplete) override;
 
+	/** 前台认证唯一入口的语义化别名，供 Controller/Flow 使用，不创建第二套认证实现。 */
+	void TryAutoLogin(FDBAOnLoginComplete OnComplete);
+	void LoginWithCredentials(const FString& Account, const FString& Password, FDBAOnLoginComplete OnComplete);
+	void RegisterAccount(const FString& Account, const FString& Password, FDBAOnLoginComplete OnComplete);
+	void RefreshSession(FDBAOnLoginComplete OnComplete);
+	void SetRememberSession(bool bRemember);
+
 protected:
 	void CacheLoginSuccess(const FDBALoginResponse& Response);
 	void LoadOnlineAccountState();
@@ -43,7 +51,9 @@ protected:
 
 private:
 	UDBA_GameBackendClientSubsystem* GetBackendClient() const;
+	UDBAApiClientSubsystem* GetApiClient() const;
 	bool IsRequestCurrent(uint64 Generation) const;
 
 	uint64 RequestGeneration = 0;
+	bool bRememberSession = true;
 };

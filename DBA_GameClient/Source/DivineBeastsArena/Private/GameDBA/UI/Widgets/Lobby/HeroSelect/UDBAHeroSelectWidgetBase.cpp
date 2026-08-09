@@ -9,6 +9,9 @@
 
 
 #include "GameDBA/UI/Widgets/Lobby/HeroSelect/UDBAHeroSelectWidgetBase.h"
+#include "Engine/GameInstance.h"
+#include "GameDBA/Character/Data/DBAZodiacRegistrySubsystem.h"
+#include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/UI/Widgets/Lobby/HeroSelect/UDBAHeroInfoPanelWidgetBase.h"
 #include "GameDBA/UI/Widgets/Lobby/HeroSelect/UDBAHeroSelectWidgetController.h"
 
@@ -48,18 +51,18 @@ void UDBAHeroSelectWidgetBase::SetWidgetController(UDBAHeroSelectWidgetControlle
 void UDBAHeroSelectWidgetBase::RefreshZodiacList()
 {
 	TArray<EDBAZodiac> AvailableZodiacs;
-	AvailableZodiacs.Add(EDBAZodiac::Rat);
-	AvailableZodiacs.Add(EDBAZodiac::Ox);
-	AvailableZodiacs.Add(EDBAZodiac::Tiger);
-	AvailableZodiacs.Add(EDBAZodiac::Rabbit);
-	AvailableZodiacs.Add(EDBAZodiac::Dragon);
-	AvailableZodiacs.Add(EDBAZodiac::Snake);
-	AvailableZodiacs.Add(EDBAZodiac::Horse);
-	AvailableZodiacs.Add(EDBAZodiac::Goat);
-	AvailableZodiacs.Add(EDBAZodiac::Monkey);
-	AvailableZodiacs.Add(EDBAZodiac::Rooster);
-	AvailableZodiacs.Add(EDBAZodiac::Dog);
-	AvailableZodiacs.Add(EDBAZodiac::Pig);
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UDBAZodiacRegistrySubsystem* Registry = GameInstance->GetSubsystem<UDBAZodiacRegistrySubsystem>())
+		{
+			Registry->GetAllZodiacTypes(AvailableZodiacs);
+		}
+	}
+
+	if (AvailableZodiacs.IsEmpty())
+	{
+		UE_LOG(LogDBAUI, Warning, TEXT("[英雄选择界面] 未发现可用生肖 Primary Asset，列表保持为空。"));
+	}
 
 	BP_OnRefreshZodiacList(AvailableZodiacs);
 }
@@ -100,4 +103,3 @@ void UDBAHeroSelectWidgetBase::OnBackButtonClicked()
 		WidgetController->RequestBack();
 	}
 }
-

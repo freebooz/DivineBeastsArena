@@ -15,8 +15,26 @@
 #include "GameDBA/Data/Tables/DBASkillNameRow.h"
 #include "GameCore/Async/DBAAsyncAssetLoader.h"
 
+#if WITH_EDITOR
+#include "Misc/DataValidation.h"
+#endif
+
 UDBAZodiacHeroDataAsset::UDBAZodiacHeroDataAsset()
 {
+}
+
+const FPrimaryAssetType& UDBAZodiacHeroDataAsset::GetZodiacHeroPrimaryAssetType()
+{
+	static const FPrimaryAssetType PrimaryAssetType(TEXT("ZodiacHero"));
+	return PrimaryAssetType;
+}
+
+FPrimaryAssetId UDBAZodiacHeroDataAsset::GetPrimaryAssetId() const
+{
+	// 旧聚合资产继续保持原有直接软引用用途，不进入单生肖 Registry。
+	return bLegacyTableCatalog
+		? Super::GetPrimaryAssetId()
+		: FPrimaryAssetId(GetZodiacHeroPrimaryAssetType(), GetFName());
 }
 
 bool UDBAZodiacHeroDataAsset::GetZodiacHeroDisplayData(EDBAZodiac Zodiac, FDBAZodiacHeroDisplayRow& OutRow) const
@@ -112,8 +130,8 @@ bool UDBAZodiacHeroDataAsset::GetCharacterSelectionSummaryText(EDBAZodiac Zodiac
 		return false;
 	}
 
-	const EDBAZodiacType ZodiacType = static_cast<EDBAZodiacType>(static_cast<int32>(Zodiac));
-	FString HeroBalanceRowName = UEnum::GetValueAsString(ZodiacType);
+	const EDBAZodiacType ZodiacEnumType = static_cast<EDBAZodiacType>(static_cast<int32>(Zodiac));
+	FString HeroBalanceRowName = UEnum::GetValueAsString(ZodiacEnumType);
 	HeroBalanceRowName.RemoveFromStart(TEXT("EDBAZodiacType::"));
 	const FDBAHeroBalanceRow* BalanceRow = BalanceTable->FindRow<FDBAHeroBalanceRow>(FName(*HeroBalanceRowName), TEXT("角色选择展示"));
 	if (!BalanceRow)
@@ -124,9 +142,9 @@ bool UDBAZodiacHeroDataAsset::GetCharacterSelectionSummaryText(EDBAZodiac Zodiac
 
 	TArray<FDBASkillNameRow*> SkillRows;
 	NamesTable->GetAllRows(TEXT("角色选择展示"), SkillRows);
-	SkillRows.RemoveAll([ZodiacType](const FDBASkillNameRow* Row)
+	SkillRows.RemoveAll([ZodiacEnumType](const FDBASkillNameRow* Row)
 	{
-		return !Row || Row->Zodiac != ZodiacType;
+		return !Row || Row->Zodiac != ZodiacEnumType;
 	});
 	SkillRows.Sort([](const FDBASkillNameRow& Left, const FDBASkillNameRow& Right)
 	{
@@ -209,6 +227,23 @@ bool UDBAZodiacHeroDataAsset::ValidateDataIntegrity(TArray<FString>& OutErrors) 
 	OutErrors.Empty();
 	bool bIsValid = true;
 
+	if (!bLegacyTableCatalog)
+	{
+		if (ZodiacType == EDBAZodiac::None)
+		{
+			OutErrors.Add(TEXT("单生肖数据资产未配置 ZodiacType。"));
+			bIsValid = false;
+		}
+
+		if (!DeprecatedLegacyClassificationId.IsNone())
+		{
+			OutErrors.Add(TEXT("单生肖数据资产包含已禁止的旧 Faction/分类引用。"));
+			bIsValid = false;
+		}
+
+		return bIsValid;
+	}
+
 	// 验证数据表引用
 	if (ZodiacHeroDisplayTable.IsNull())
 	{
@@ -250,6 +285,47 @@ bool UDBAZodiacHeroDataAsset::ValidateData_Implementation(TArray<FString>& OutEr
 	}
 	return bIsValid;
 }
+
+#if WITH_EDITOR
+EDataValidationResult UDBAZodiacHeroDataAsset::IsDataValid(FDataValidationContext& Context) const
+{
+	EDataValidationResult Result = Super::IsDataValid(Context);
+	if (bLegacyTableCatalog)
+	{
+		Context.AddWarning(FText::FromString(TEXT("该资产仍为旧 DataTable 聚合模式；请仅将其作为兼容来源，并迁移为十二个单生肖资产。")));
+		return Result;
+	}
+
+	if (ZodiacType == EDBAZodiac::None)
+	{
+		Context.AddError(FText::FromString(TEXT("单生肖数据资产必须配置 ZodiacType。")));
+		Result = EDataValidationResult::Invalid;
+	}
+
+	if (!DeprecatedLegacyClassificationId.IsNone())
+	{
+		Context.AddError(FText::FromString(TEXT("单生肖数据资产不得包含旧 Faction 或旧分类引用。")));
+		Result = EDataValidationResult::Invalid;
+	}
+
+	auto AddMissingResourceWarning = [&Context](bool bMissing, const TCHAR* Label)
+	{
+		if (bMissing)
+		{
+			Context.AddWarning(FText::FromString(FString::Printf(TEXT("单生肖数据资产缺少可选表现资源：%s。"), Label)));
+		}
+	};
+
+	AddMissingResourceWarning(Portrait.IsNull(), TEXT("Portrait"));
+	AddMissingResourceWarning(PreviewActorClass.IsNull(), TEXT("PreviewActorClass"));
+	AddMissingResourceWarning(GameplayCharacterClass.IsNull(), TEXT("GameplayCharacterClass"));
+	AddMissingResourceWarning(BodyMesh.IsNull(), TEXT("BodyMesh"));
+	AddMissingResourceWarning(AnimationBlueprintClass.IsNull(), TEXT("AnimationBlueprintClass"));
+	AddMissingResourceWarning(IdleAnimation.IsNull(), TEXT("IdleAnimation"));
+
+	return Result;
+}
+#endif
 
 void UDBAZodiacHeroDataAsset::PreloadAllDataTablesAsync() const
 {

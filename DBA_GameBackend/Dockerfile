@@ -12,10 +12,14 @@ WORKDIR /src
 COPY GameBackend.slnx ./
 COPY Game.Api/Game.Api.csproj Game.Api/
 COPY Game.Worker/Game.Worker.csproj Game.Worker/
+COPY DBA.ApiGateway/DBA.ApiGateway.csproj DBA.ApiGateway/
+COPY Game.Application/Game.Application.csproj Game.Application/
 COPY Game.Shared/Game.Shared.csproj Game.Shared/
 COPY Game.Infrastructure/Game.Infrastructure.csproj Game.Infrastructure/
 COPY Game.Api.Tests/Game.Api.Tests.csproj Game.Api.Tests/
 COPY Game.IntegrationTests/Game.IntegrationTests.csproj Game.IntegrationTests/
+COPY Game.ServerManagement/Game.ServerManagement.csproj Game.ServerManagement/
+COPY Game.ServerManagement.Tests/Game.ServerManagement.Tests.csproj Game.ServerManagement.Tests/
 
 # 还原依赖
 RUN dotnet restore

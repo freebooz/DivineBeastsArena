@@ -8,6 +8,7 @@
 
 using Game.Shared.Common;
 using Game.Shared.Contracts.Auth;
+using Game.Shared.Errors;
 using Game.Api.Extensions;
 using Game.Api.Services.Auth;
 using System.Security.Claims;
@@ -24,6 +25,23 @@ public static class AuthEndpoints
     /// </summary>
     public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
+        var v1 = app.MapGroup("/api/v1/auth")
+            .WithTags("认证 v1")
+            .RequireRateLimiting("auth");
+
+        v1.MapPost("/register", AccountRegister)
+            .WithSummary("注册账号");
+        v1.MapPost("/login", AccountLogin)
+            .WithSummary("账号登录");
+        v1.MapPost("/refresh", RefreshToken)
+            .WithSummary("轮换刷新令牌");
+        v1.MapPost("/logout", Logout)
+            .WithSummary("退出登录并撤销刷新令牌")
+            .RequireAuthorization();
+        v1.MapGet("/me", GetMe)
+            .WithSummary("获取当前账号信息")
+            .RequireAuthorization();
+
         var group = app.MapGroup("/api/auth")
             .WithTags("认证")
             .RequireRateLimiting("auth");
@@ -226,7 +244,7 @@ Header: Authorization: Bearer <access-token>
         var userAgent = ctx.Request.Headers.UserAgent.ToString();
         var result = await auth.GuestLoginAsync(request, ip, userAgent);
         if (!result.Success)
-            return ErrorResponse.BadRequest(result.ErrorMessage ?? result.ErrorCode!).ToProblem();
+            return ToAuthFailure(result);
         return Results.Ok(ApiResponse<GuestLoginResponse>.Ok(
             new GuestLoginResponse(result.AccessToken!, result.RefreshToken!, result.PlayerId!.Value, result.Nickname!)));
     }
@@ -240,7 +258,7 @@ Header: Authorization: Bearer <access-token>
         var userAgent = ctx.Request.Headers.UserAgent.ToString();
         var result = await auth.DevLoginAsync(request, ip, userAgent);
         if (!result.Success)
-            return ErrorResponse.BadRequest(result.ErrorMessage ?? result.ErrorCode!).ToProblem();
+            return ToAuthFailure(result);
         return Results.Ok(ApiResponse<LoginResponse>.Ok(
             new LoginResponse(result.AccessToken!, result.RefreshToken!, result.PlayerId!.Value, result.Nickname!)));
     }
@@ -254,7 +272,7 @@ Header: Authorization: Bearer <access-token>
         var userAgent = ctx.Request.Headers.UserAgent.ToString();
         var result = await auth.AccountLoginAsync(request, ip, userAgent);
         if (!result.Success)
-            return ErrorResponse.BadRequest(result.ErrorMessage ?? result.ErrorCode!).ToProblem();
+            return ToAuthFailure(result);
         return Results.Ok(ApiResponse<LoginResponse>.Ok(
             new LoginResponse(result.AccessToken!, result.RefreshToken!, result.PlayerId!.Value, result.Nickname!)));
     }
@@ -268,7 +286,7 @@ Header: Authorization: Bearer <access-token>
         var userAgent = ctx.Request.Headers.UserAgent.ToString();
         var result = await auth.AccountRegisterAsync(request, ip, userAgent);
         if (!result.Success)
-            return ErrorResponse.BadRequest(result.ErrorMessage ?? result.ErrorCode!).ToProblem();
+            return ToAuthFailure(result);
         return Results.Ok(ApiResponse<LoginResponse>.Ok(
             new LoginResponse(result.AccessToken!, result.RefreshToken!, result.PlayerId!.Value, result.Nickname!)));
     }
@@ -297,7 +315,7 @@ Header: Authorization: Bearer <access-token>
         var ip = ctx.Connection.RemoteIpAddress?.ToString();
         var result = await auth.RefreshTokenAsync(request.RefreshToken ?? string.Empty, ip);
         if (!result.Success)
-            return ErrorResponse.Unauthorized(result.ErrorMessage ?? result.ErrorCode!).ToProblem();
+            return ToAuthFailure(result);
         return Results.Ok(ApiResponse<RefreshTokenResponse>.Ok(
             new RefreshTokenResponse(result.AccessToken!, result.RefreshToken!, result.PlayerId, result.Nickname)));
     }
@@ -395,6 +413,24 @@ Header: Authorization: Bearer <access-token>
         if (!result.Success)
             return ErrorResponse.BadRequest(result.Message ?? "Password reset failed").ToProblem();
         return Results.Ok(ApiResponse<PasswordChangeResponse>.Ok(result));
+    }
+
+    private static IResult ToAuthFailure(AuthServiceResult result)
+    {
+        var code = result.ErrorCode ?? ErrorCodes.InternalError;
+        var (status, title) = code switch
+        {
+            ErrorCodes.AuthInvalidCredentials => (StatusCodes.Status401Unauthorized, "认证失败"),
+            ErrorCodes.AuthTokenExpired => (StatusCodes.Status401Unauthorized, "令牌已过期"),
+            ErrorCodes.AuthRefreshTokenReused => (StatusCodes.Status401Unauthorized, "刷新令牌已重放"),
+            ErrorCodes.AuthAccountDisabled => (StatusCodes.Status403Forbidden, "账号不可用"),
+            ErrorCodes.PlayerNicknameTaken => (StatusCodes.Status409Conflict, "账号标识已被使用"),
+            ErrorCodes.ValidationError => (StatusCodes.Status400BadRequest, "认证请求无效"),
+            _ => (StatusCodes.Status400BadRequest, "认证请求失败")
+        };
+
+        var message = result.ErrorMessage ?? "认证请求未完成。";
+        return ErrorResponse.Create(status, title, message, code: code).ToProblem();
     }
 
     private static object ToLegacyLoginResponse(AuthServiceResult result, string loginType)

@@ -10,7 +10,8 @@ public enum RefreshCredentialStatus
 {
     Success,
     InvalidOrExpired,
-    AccountBanned
+    Reused,
+    AccountDisabled
 }
 
 public sealed record RefreshCredentialResult(

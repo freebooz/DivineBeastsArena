@@ -13,6 +13,7 @@
 #include "GameDBA/Data/Tables/DBAZodiacPlaceholderTintRow.h"
 #include "GameDBA/Presentation/Visual/DBAZodiacVisualDeveloperSettings.h"
 #include "GameDBA/Data/Registries/DBAZodiacCharacterRegistry.h"
+#include "GameDBA/Character/Appearance/DBACharacterAppearanceComponent.h"
 #include "GameDBA/Frontend/DBAFrontendEnvironmentSubsystem.h"
 #include "Animation/AnimationAsset.h"
 #include "Animation/Skeleton.h"
@@ -268,6 +269,9 @@ ADBACharacterPresentationActor::ADBACharacterPresentationActor()
 	PreviewMeshComponent->SetVisibility(true);
 	PreviewMeshComponent->SetHiddenInGame(false);
 	PreviewMeshComponent->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+
+	AppearanceComponent = CreateDefaultSubobject<UDBACharacterAppearanceComponent>(TEXT("AppearanceComponent"));
+	AppearanceComponent->SetBaseMeshComponent(PreviewMeshComponent);
 
 	PresentationCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("PresentationCamera"));
 	PresentationCamera->SetupAttachment(StageRoot);
@@ -582,13 +586,27 @@ bool ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(USkeletalMeshComp
 void ADBACharacterPresentationActor::BeginPlay()
 {
 	Super::BeginPlay();
-
-	ApplyPreviewAssets(EDBAZodiac::Rat);
 }
 
 void ADBACharacterPresentationActor::SetPreviewZodiac(EDBAZodiac Zodiac)
 {
-	ApplyPreviewAssets(Zodiac == EDBAZodiac::None ? EDBAZodiac::Rat : Zodiac);
+	if (Zodiac == EDBAZodiac::None)
+	{
+		UE_LOG(LogDBAUI, Warning, TEXT("[CharacterPresentationActor] 未选择生肖，跳过预览资源加载。"));
+		return;
+	}
+
+	ApplyPreviewAssets(Zodiac);
+}
+
+void ADBACharacterPresentationActor::ApplyPreviewAppearance(const EDBAZodiac Zodiac, const FDBACharacterAppearance& Appearance)
+{
+	SetPreviewZodiac(Zodiac);
+	if (AppearanceComponent)
+	{
+		AppearanceComponent->SetBaseMeshComponent(PreviewMeshComponent);
+		AppearanceComponent->ApplyAppearance(Zodiac, Appearance);
+	}
 }
 
 void ADBACharacterPresentationActor::AddPreviewYaw(float DeltaYawDegrees)

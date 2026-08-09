@@ -34,6 +34,7 @@
 #include "GameDBA/UI/DBAUIFontUtils.h"
 #include "GameDBA/UI/DBAUIDeveloperSettings.h"
 #include "GameDBA/UI/Frontend/DBAFrontendFlowController.h"
+#include "GameDBA/UI/Subsystems/DBAUILayerManagerSubsystem.h"
 #include "GameDBA/UI/Widgets/Loading/UDBALoadingScreenWidgetBase.h"
 #include "GameDBA/UI/Widgets/Lobby/UDBAGameSettingsWidgetBase.h"
 #include "GameDBA/UI/Widgets/Lobby/UDBAInventoryWidgetBase.h"
@@ -713,7 +714,7 @@ void UDBAGameUIManager::ShowMainLobby()
 	{
 		if (MainLobbyWidget && bMainLobbyVisible)
 		{
-			MainLobbyWidget->RemoveFromParent();
+			RemoveManagedWidget(MainLobbyWidget);
 			bMainLobbyVisible = false;
 		}
 
@@ -731,7 +732,7 @@ void UDBAGameUIManager::ShowMainLobby()
 		const bool bWidgetWorldMatches = WidgetWorld == World || OwningPlayerWorld == World;
 		if (!bWidgetWorldMatches)
 		{
-			MainLobbyWidget->RemoveFromParent();
+			RemoveManagedWidget(MainLobbyWidget);
 			MainLobbyWidget = nullptr;
 			bMainLobbyVisible = false;
 		}
@@ -743,7 +744,7 @@ void UDBAGameUIManager::ShowMainLobby()
 	}
 	if (MainLobbyWidget && !bMainLobbyVisible)
 	{
-		MainLobbyWidget->AddToViewport(0);
+		MountManagedWidget(MainLobbyWidget, EDBAUILayer::Background);
 		DBAUIFonts::ApplyViewportScaledPresentation(MainLobbyWidget);
 		bMainLobbyVisible = true;
 	}
@@ -766,7 +767,7 @@ void UDBAGameUIManager::HideMainLobby()
 
 	if (MainLobbyWidget && bMainLobbyVisible)
 	{
-		MainLobbyWidget->RemoveFromParent();
+		RemoveManagedWidget(MainLobbyWidget);
 		bMainLobbyVisible = false;
 	}
 	HideLobbyPlayerHUD();
@@ -811,7 +812,7 @@ void UDBAGameUIManager::ShowArenaHUD()
 	}
 	if (ArenaHUDWidget && !bArenaHUDVisible)
 	{
-		ArenaHUDWidget->AddToViewport(100);
+		MountManagedWidget(ArenaHUDWidget, EDBAUILayer::Screen);
 		bArenaHUDVisible = true;
 	}
 }
@@ -826,7 +827,7 @@ void UDBAGameUIManager::HideArenaHUD()
 
 	if (ArenaHUDWidget && bArenaHUDVisible)
 	{
-		ArenaHUDWidget->RemoveFromParent();
+		RemoveManagedWidget(ArenaHUDWidget);
 		bArenaHUDVisible = false;
 	}
 }
@@ -869,7 +870,7 @@ void UDBAGameUIManager::ShowLobbyLoadingScreen()
 		const bool bWidgetWorldMatches = WidgetWorld == World || OwningPlayerWorld == World;
 		if (!bWidgetWorldMatches)
 		{
-			LobbyLoadingWidget->RemoveFromParent();
+			RemoveManagedWidget(LobbyLoadingWidget);
 			LobbyLoadingWidget = nullptr;
 			bLobbyLoadingVisible = false;
 		}
@@ -892,7 +893,7 @@ void UDBAGameUIManager::ShowLobbyLoadingScreen()
 	{
 		HideMainLobby();
 		HideAllFlowWidgets();
-		LobbyLoadingWidget->AddToViewport(10000);
+		MountManagedWidget(LobbyLoadingWidget, EDBAUILayer::Modal);
 		LobbyLoadingWidget->UpdateLoadingProgress(0.35f);
 		LobbyLoadingWidget->ShowTips(NSLOCTEXT("DBAGameUIManager", "EnteringLobby", "正在进入大厅..."));
 		ApplyFrontendInputMode(World, LobbyLoadingWidget);
@@ -906,7 +907,7 @@ void UDBAGameUIManager::HideLobbyLoadingScreen()
 	if (LobbyLoadingWidget && bLobbyLoadingVisible)
 	{
 		LobbyLoadingWidget->UpdateLoadingProgress(1.0f);
-		LobbyLoadingWidget->RemoveFromParent();
+		RemoveManagedWidget(LobbyLoadingWidget);
 	}
 	bLobbyLoadingVisible = false;
 }
@@ -925,7 +926,7 @@ void UDBAGameUIManager::ShowGameSettings()
 	}
 	if (GameSettingsWidget && !bGameSettingsVisible)
 	{
-		GameSettingsWidget->AddToViewport(12000);
+		MountManagedWidget(GameSettingsWidget, EDBAUILayer::Modal);
 		CenterModalWidgetInViewport(GameSettingsWidget, FVector2D(680.0f, 520.0f));
 		GameSettingsWidget->RefreshFromRuntime();
 		ApplyFrontendInputMode(World, GameSettingsWidget);
@@ -938,7 +939,7 @@ void UDBAGameUIManager::HideGameSettings()
 {
 	if (GameSettingsWidget && bGameSettingsVisible)
 	{
-		GameSettingsWidget->RemoveFromParent();
+		RemoveManagedWidget(GameSettingsWidget);
 	}
 	bGameSettingsVisible = false;
 
@@ -971,7 +972,7 @@ void UDBAGameUIManager::ShowInventory()
 	}
 	if (InventoryWidget && !bInventoryVisible)
 	{
-		InventoryWidget->AddToViewport(11000);
+		MountManagedWidget(InventoryWidget, EDBAUILayer::Modal);
 		CenterModalWidgetInViewport(InventoryWidget, FVector2D(760.0f, 540.0f));
 		InventoryWidget->RefreshInventory();
 		ApplyFrontendInputMode(World, InventoryWidget);
@@ -984,7 +985,7 @@ void UDBAGameUIManager::HideInventory()
 {
 	if (InventoryWidget && bInventoryVisible)
 	{
-		InventoryWidget->RemoveFromParent();
+		RemoveManagedWidget(InventoryWidget);
 	}
 	bInventoryVisible = false;
 
@@ -1015,7 +1016,7 @@ void UDBAGameUIManager::ShowPartyPanel()
 	{
 		if (!bPartyPanelVisible)
 		{
-			Widget->AddToViewport(6200);
+			MountManagedWidget(Widget, EDBAUILayer::Modal);
 			CenterModalWidgetInViewport(Widget, FVector2D(720.0f, 520.0f));
 			bPartyPanelVisible = true;
 		}
@@ -1028,7 +1029,7 @@ void UDBAGameUIManager::HidePartyPanel()
 {
 	if (PartyPanelWidget && bPartyPanelVisible)
 	{
-		PartyPanelWidget->RemoveFromParent();
+		RemoveManagedWidget(PartyPanelWidget);
 	}
 	bPartyPanelVisible = false;
 	RestoreInputModeAfterOverlayClosed();
@@ -1051,7 +1052,7 @@ void UDBAGameUIManager::ShowInvitePanel()
 	{
 		if (!bInvitePanelVisible)
 		{
-			Widget->AddToViewport(6300);
+			MountManagedWidget(Widget, EDBAUILayer::Modal);
 			CenterModalWidgetInViewport(Widget, FVector2D(640.0f, 520.0f));
 			bInvitePanelVisible = true;
 		}
@@ -1064,7 +1065,7 @@ void UDBAGameUIManager::HideInvitePanel()
 {
 	if (InvitePanelWidget && bInvitePanelVisible)
 	{
-		InvitePanelWidget->RemoveFromParent();
+		RemoveManagedWidget(InvitePanelWidget);
 	}
 	bInvitePanelVisible = false;
 	RestoreInputModeAfterOverlayClosed();
@@ -1087,7 +1088,7 @@ void UDBAGameUIManager::ShowQueueModeSelect()
 	{
 		if (!bQueueModeSelectVisible)
 		{
-			Widget->AddToViewport(6400);
+			MountManagedWidget(Widget, EDBAUILayer::Modal);
 			CenterModalWidgetInViewport(Widget, FVector2D(760.0f, 540.0f));
 			bQueueModeSelectVisible = true;
 		}
@@ -1100,7 +1101,7 @@ void UDBAGameUIManager::HideQueueModeSelect()
 {
 	if (QueueModeSelectWidget && bQueueModeSelectVisible)
 	{
-		QueueModeSelectWidget->RemoveFromParent();
+		RemoveManagedWidget(QueueModeSelectWidget);
 	}
 	bQueueModeSelectVisible = false;
 	RestoreInputModeAfterOverlayClosed();
@@ -1123,7 +1124,7 @@ void UDBAGameUIManager::ShowQueueStatus(const FText& ModeName, const FText& MapN
 	{
 		if (!bQueueStatusVisible)
 		{
-			Widget->AddToViewport(5000);
+			MountManagedWidget(Widget, EDBAUILayer::Modal);
 			CenterModalWidgetInViewport(Widget, FVector2D(520.0f, 180.0f));
 			bQueueStatusVisible = true;
 		}
@@ -1135,7 +1136,7 @@ void UDBAGameUIManager::HideQueueStatus()
 {
 	if (QueueStatusWidget && bQueueStatusVisible)
 	{
-		QueueStatusWidget->RemoveFromParent();
+		RemoveManagedWidget(QueueStatusWidget);
 	}
 	bQueueStatusVisible = false;
 }
@@ -1153,7 +1154,7 @@ void UDBAGameUIManager::ShowMatchFound(const FText& ModeName, const FText& MapNa
 	{
 		if (!bMatchFoundVisible)
 		{
-			Widget->AddToViewport(9000);
+			MountManagedWidget(Widget, EDBAUILayer::Modal);
 			CenterModalWidgetInViewport(Widget, FVector2D(560.0f, 260.0f));
 			bMatchFoundVisible = true;
 		}
@@ -1166,7 +1167,7 @@ void UDBAGameUIManager::HideMatchFound()
 {
 	if (MatchFoundWidget && bMatchFoundVisible)
 	{
-		MatchFoundWidget->RemoveFromParent();
+		RemoveManagedWidget(MatchFoundWidget);
 	}
 	bMatchFoundVisible = false;
 	RestoreInputModeAfterOverlayClosed();
@@ -1185,7 +1186,7 @@ void UDBAGameUIManager::ShowReadyCheck(const FText& ModeName, const FText& MapNa
 	{
 		if (!bReadyCheckVisible)
 		{
-			Widget->AddToViewport(9100);
+			MountManagedWidget(Widget, EDBAUILayer::Modal);
 			CenterModalWidgetInViewport(Widget, FVector2D(560.0f, 300.0f));
 			bReadyCheckVisible = true;
 		}
@@ -1203,7 +1204,7 @@ void UDBAGameUIManager::HideReadyCheck()
 		ReadyCheckWidget->OnReadyCheckCompletedEvent.RemoveDynamic(this, &UDBAGameUIManager::HandleReadyCheckCompleted);
 		if (bReadyCheckVisible)
 		{
-			ReadyCheckWidget->RemoveFromParent();
+			RemoveManagedWidget(ReadyCheckWidget);
 		}
 	}
 	bReadyCheckVisible = false;
@@ -1222,7 +1223,7 @@ void UDBAGameUIManager::ShowPortalConfirm(FName DestinationId, const FText& Dest
 	{
 		if (!bPortalConfirmVisible)
 		{
-			Widget->AddToViewport(9200);
+			MountManagedWidget(Widget, EDBAUILayer::Modal);
 			CenterModalWidgetInViewport(Widget, FVector2D(620.0f, 360.0f));
 			bPortalConfirmVisible = true;
 		}
@@ -1243,7 +1244,7 @@ void UDBAGameUIManager::HidePortalConfirm()
 		PortalConfirmWidget->OnPortalCancelledEvent.RemoveDynamic(this, &UDBAGameUIManager::HandlePortalCancelled);
 		if (bPortalConfirmVisible)
 		{
-			PortalConfirmWidget->RemoveFromParent();
+			RemoveManagedWidget(PortalConfirmWidget);
 		}
 	}
 	bPortalConfirmVisible = false;
@@ -1262,7 +1263,7 @@ void UDBAGameUIManager::ShowInteractionPrompt(EDBAInteractionType Type, const FT
 	{
 		if (!bInteractionPromptVisible)
 		{
-			Widget->AddToViewport(4200);
+			MountManagedWidget(Widget, EDBAUILayer::Debug);
 			PlaceWidgetInViewport(
 				Widget,
 				FAnchors(0.5f, 0.82f),
@@ -1288,7 +1289,7 @@ void UDBAGameUIManager::HideInteractionPrompt()
 	if (InteractionPromptWidget && bInteractionPromptVisible)
 	{
 		InteractionPromptWidget->HidePrompt();
-		InteractionPromptWidget->RemoveFromParent();
+		RemoveManagedWidget(InteractionPromptWidget);
 	}
 	bInteractionPromptVisible = false;
 }
@@ -1319,7 +1320,7 @@ void UDBAGameUIManager::ShowNewbieVillageMain()
 	{
 		if (!bNewbieVillageMainVisible)
 		{
-			Widget->AddToViewport(6100);
+			MountManagedWidget(Widget, EDBAUILayer::Debug);
 			bNewbieVillageMainVisible = true;
 		}
 		Widget->RefreshTaskTracker();
@@ -1331,7 +1332,7 @@ void UDBAGameUIManager::HideNewbieVillageMain()
 {
 	if (NewbieVillageMainWidget && bNewbieVillageMainVisible)
 	{
-		NewbieVillageMainWidget->RemoveFromParent();
+		RemoveManagedWidget(NewbieVillageMainWidget);
 	}
 	bNewbieVillageMainVisible = false;
 	RestoreInputModeAfterOverlayClosed();
@@ -1349,7 +1350,7 @@ void UDBAGameUIManager::ShowNewbieTaskTracker()
 	{
 		if (!bNewbieTaskTrackerVisible)
 		{
-			Widget->AddToViewport(4100);
+			MountManagedWidget(Widget, EDBAUILayer::Debug);
 			PlaceWidgetInViewport(
 				Widget,
 				FAnchors(1.0f, 0.0f),
@@ -1367,7 +1368,7 @@ void UDBAGameUIManager::HideNewbieTaskTracker()
 {
 	if (NewbieTaskTrackerWidget && bNewbieTaskTrackerVisible)
 	{
-		NewbieTaskTrackerWidget->RemoveFromParent();
+		RemoveManagedWidget(NewbieTaskTrackerWidget);
 	}
 	bNewbieTaskTrackerVisible = false;
 }
@@ -1394,7 +1395,7 @@ void UDBAGameUIManager::ShowLobbyPlayerHUD()
 		const bool bWidgetWorldMatches = CurrentWorld && (WidgetWorld == CurrentWorld || OwningPlayerWorld == CurrentWorld);
 		if (!bWidgetWorldMatches)
 		{
-			LobbyPlayerHUDWidget->RemoveFromParent();
+			RemoveManagedWidget(LobbyPlayerHUDWidget);
 			LobbyPlayerHUDWidget = nullptr;
 			bLobbyPlayerHUDVisible = false;
 		}
@@ -1408,7 +1409,7 @@ void UDBAGameUIManager::ShowLobbyPlayerHUD()
 	if (LobbyPlayerHUDWidget && !bLobbyPlayerHUDVisible)
 	{
 		LobbyPlayerHUDWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		LobbyPlayerHUDWidget->AddToViewport(1000);
+		MountManagedWidget(LobbyPlayerHUDWidget, EDBAUILayer::Debug);
 		LobbyPlayerHUDWidget->RefreshFromCurrentCharacterData();
 		bLobbyPlayerHUDVisible = true;
 		ResetLobbyHUDRefreshRetry();
@@ -1429,7 +1430,7 @@ void UDBAGameUIManager::HideLobbyPlayerHUD()
 {
 	if (LobbyPlayerHUDWidget && bLobbyPlayerHUDVisible)
 	{
-		LobbyPlayerHUDWidget->RemoveFromParent();
+		RemoveManagedWidget(LobbyPlayerHUDWidget);
 		bLobbyPlayerHUDVisible = false;
 	}
 }
@@ -1809,6 +1810,26 @@ void UDBAGameUIManager::RefreshLoginFlowWidgetVisibility()
 		}
 		break;
 	}
+	case EDBALoginFlowState::ServerSelecting:
+	{
+		HideLobbyLoadingScreen();
+		StopLoginFlowBackgroundMusic();
+		HideMainLobby();
+		if (LoginWidget)
+		{
+			RemoveManagedWidget(LoginWidget);
+		}
+		if (CharacterSelectWidget)
+		{
+			RemoveManagedWidget(CharacterSelectWidget);
+		}
+		if (CharacterCreateWidget)
+		{
+			RemoveManagedWidget(CharacterCreateWidget);
+		}
+		ResetFlowWidgetRefreshRetry();
+		break;
+	}
 	case EDBALoginFlowState::CharacterSelecting:
 	{
 		if (!HasCompletedAccountLogin(GetGameInstance()))
@@ -1907,15 +1928,15 @@ void UDBAGameUIManager::HideAllFlowWidgets()
 
 	if (LoginWidget)
 	{
-		LoginWidget->RemoveFromParent();
+		RemoveManagedWidget(LoginWidget);
 	}
 	if (CharacterSelectWidget)
 	{
-		CharacterSelectWidget->RemoveFromParent();
+		RemoveManagedWidget(CharacterSelectWidget);
 	}
 	if (CharacterCreateWidget)
 	{
-		CharacterCreateWidget->RemoveFromParent();
+		RemoveManagedWidget(CharacterCreateWidget);
 	}
 	bFlowWidgetVisible = false;
 }
@@ -2019,7 +2040,7 @@ WidgetType* UDBAGameUIManager::EnsureFlowWidgetCreated(TSubclassOf<WidgetType> W
 			return WidgetInstance;
 		}
 
-		WidgetInstance->RemoveFromParent();
+		RemoveManagedWidget(WidgetInstance);
 		WidgetInstance = nullptr;
 	}
 	if (!WidgetClass)
@@ -2178,7 +2199,10 @@ void UDBAGameUIManager::SetFlowWidgetVisible(UUserWidget* WidgetToShow)
 	HideAllFlowWidgets();
 	WidgetToShow->SetIsEnabled(true);
 	WidgetToShow->SetVisibility(ESlateVisibility::Visible);
-	WidgetToShow->AddToViewport(10);
+	if (!MountManagedWidget(WidgetToShow, EDBAUILayer::Screen))
+	{
+		return;
+	}
 	if (UDBALoginFlowWidgetBase* LoginFlowWidget = Cast<UDBALoginFlowWidgetBase>(WidgetToShow))
 	{
 		LoginFlowWidget->ApplyLoginViewportPresentation();
@@ -2253,15 +2277,15 @@ void UDBAGameUIManager::ShowSplashVideo()
 		RemoveAllViewportLoginWidgets(World);
 		if (CharacterSelectWidget)
 		{
-			CharacterSelectWidget->RemoveFromParent();
+			RemoveManagedWidget(CharacterSelectWidget);
 		}
 		if (CharacterCreateWidget)
 		{
-			CharacterCreateWidget->RemoveFromParent();
+			RemoveManagedWidget(CharacterCreateWidget);
 		}
 		bFlowWidgetVisible = false;
 
-		SplashVideoWidget->AddToViewport(999);
+		MountManagedWidget(SplashVideoWidget, EDBAUILayer::Screen);
 		// 启动视频必须全屏铺满，不能使用带 RenderScale 的缩放呈现（小窗口会只显示一角）。
 		SplashVideoWidget->ApplySplashFullscreenPresentation();
 		UE_LOG(LogDBACore, Log, TEXT("[DBAGameUIManager] 启动视频控件已添加到视口并铺满全屏。"));
@@ -2286,7 +2310,31 @@ void UDBAGameUIManager::HideSplashVideo()
 
 	if (SplashVideoWidget && SplashVideoWidget->IsInViewport())
 	{
-		SplashVideoWidget->RemoveFromParent();
+		RemoveManagedWidget(SplashVideoWidget);
+	}
+}
+
+UDBAUILayerManagerSubsystem* UDBAGameUIManager::GetUILayerManager() const
+{
+	return GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAUILayerManagerSubsystem>() : nullptr;
+}
+
+bool UDBAGameUIManager::MountManagedWidget(UUserWidget* Widget, EDBAUILayer Layer)
+{
+	if (UDBAUILayerManagerSubsystem* LayerManager = GetUILayerManager())
+	{
+		return LayerManager->MountWidget(Widget, Layer);
+	}
+
+	UE_LOG(LogDBAFrontend, Error, TEXT("UI 分层管理器不可用，拒绝将业务界面直接加入视口。"));
+	return false;
+}
+
+void UDBAGameUIManager::RemoveManagedWidget(UUserWidget* Widget)
+{
+	if (UDBAUILayerManagerSubsystem* LayerManager = GetUILayerManager())
+	{
+		LayerManager->RemoveWidget(Widget);
 	}
 }
 

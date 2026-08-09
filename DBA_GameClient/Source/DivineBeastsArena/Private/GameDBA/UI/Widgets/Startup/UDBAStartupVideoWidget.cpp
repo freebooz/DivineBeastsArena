@@ -9,6 +9,7 @@
 
 
 #include "GameDBA/UI/Widgets/Startup/UDBAStartupVideoWidget.h"
+#include "GameDBA/Frontend/Startup/DBAStartupViewModel.h"
 #include "Components/Image.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
@@ -17,6 +18,8 @@
 #include "GameDBA/UI/DBAUIDeveloperSettings.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
+#include "Input/Events.h"
+#include "InputCoreTypes.h"
 
 // 仅在非服务端构建时包含MediaAssets
 #if !UE_SERVER
@@ -56,12 +59,16 @@ void UDBAStartupVideoWidget::NativeConstruct()
 	// 绑定跳过按钮点击事件
 	if (SkipButton)
 	{
-		SkipButton->OnClicked.AddDynamic(this, &UDBAStartupVideoWidget::OnSkipClicked);
+		SkipButton->OnClicked.AddDynamic(this, &UDBAStartupVideoWidget::HandleStartupContinueRequested);
 	}
 }
 
 void UDBAStartupVideoWidget::NativeDestruct()
 {
+	if (StartupViewModel)
+	{
+		StartupViewModel->OnChanged.RemoveDynamic(this, &UDBAStartupVideoWidget::HandleStartupViewModelChanged);
+	}
 	// 清理媒体资源
 #if !UE_SERVER
 	if (MediaPlayer)
@@ -74,6 +81,17 @@ void UDBAStartupVideoWidget::NativeDestruct()
 
 	bIsPlaying = false;
 	Super::NativeDestruct();
+}
+
+FReply UDBAStartupVideoWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (StartupViewModel && StartupViewModel->bCanContinue)
+	{
+		HandleStartupContinueRequested();
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
 
 void UDBAStartupVideoWidget::SetMediaPlayer(UObject* InMediaPlayer)
@@ -89,6 +107,38 @@ void UDBAStartupVideoWidget::SetMediaPlayer(UObject* InMediaPlayer)
 		UE_LOG(LogDBAUI, Log, TEXT("[DBAStartupVideoWidget] 媒体播放器已设置"));
 	}
 #endif
+}
+
+void UDBAStartupVideoWidget::SetStartupViewModel(UDBAStartupViewModel* InViewModel)
+{
+	if (StartupViewModel == InViewModel)
+	{
+		return;
+	}
+	if (StartupViewModel)
+	{
+		StartupViewModel->OnChanged.RemoveDynamic(this, &UDBAStartupVideoWidget::HandleStartupViewModelChanged);
+	}
+	StartupViewModel = InViewModel;
+	if (StartupViewModel)
+	{
+		StartupViewModel->OnChanged.AddDynamic(this, &UDBAStartupVideoWidget::HandleStartupViewModelChanged);
+	}
+	HandleStartupViewModelChanged();
+}
+
+void UDBAStartupVideoWidget::HandleStartupViewModelChanged()
+{
+	BP_OnStartupViewModelChanged(StartupViewModel);
+}
+
+void UDBAStartupVideoWidget::HandleStartupContinueRequested()
+{
+	OnSkipClicked();
+	if (StartupViewModel && StartupViewModel->bCanContinue)
+	{
+		OnContinueRequested.Broadcast();
+	}
 }
 
 void UDBAStartupVideoWidget::OnVideoFinished()

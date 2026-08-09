@@ -89,12 +89,12 @@ void UDBA_GameBackendClientSubsystem::Initialize(FSubsystemCollectionBase& Colle
 {
 	Super::Initialize(Collection);
 
-	const UDBA_GameBackendClientSettings* Settings = GetDefault<UDBA_GameBackendClientSettings>();
-	BackendBaseUrl = Settings->BackendBaseUrl;
-	const FString BackendUrlOverride = ReadCommandLineOverride({ TEXT("backendUrl="), TEXT("BackendBaseUrl="), TEXT("DBABackendUrl=") });
+	const UDBAExternalServiceSettings* Settings = GetDefault<UDBAExternalServiceSettings>();
+	GatewayBaseUrl = Settings->GatewayBaseUrl;
+	const FString BackendUrlOverride = ReadCommandLineOverride({ TEXT("gatewayUrl="), TEXT("backendUrl="), TEXT("BackendBaseUrl="), TEXT("DBABackendUrl=") });
 	if (!BackendUrlOverride.IsEmpty())
 	{
-		BackendBaseUrl = BackendUrlOverride;
+		GatewayBaseUrl = BackendUrlOverride;
 	}
 	ClientVersion = Settings->ClientVersion;
 	BuildNumber = Settings->BuildNumber;
@@ -108,7 +108,7 @@ void UDBA_GameBackendClientSubsystem::Initialize(FSubsystemCollectionBase& Colle
 	InitializeServices();
 
 	UE_LOG(LogDBA_GameBackendClient, Log, TEXT("后端子系统初始化完成。基础地址=%s 版本=%s 渠道=%s 平台=%s"),
-		*BackendBaseUrl, *ClientVersion, *Channel, *Platform);
+		*GatewayBaseUrl, *ClientVersion, *Channel, *Platform);
 
 	if (CrashService)
 	{

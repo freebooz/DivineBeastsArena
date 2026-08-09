@@ -12,6 +12,28 @@ using Game.Infrastructure.Database.Entities;
 
 namespace Game.Infrastructure.Database.Configurations;
 
+public class GameServerDirectoryEntryConfiguration : IEntityTypeConfiguration<GameServerDirectoryEntry>
+{
+    public void Configure(EntityTypeBuilder<GameServerDirectoryEntry> b)
+    {
+        b.ToTable("game_servers");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.Name).HasColumnName("name").HasMaxLength(64).IsRequired();
+        b.Property(x => x.Region).HasColumnName("region").HasMaxLength(32).IsRequired();
+        b.Property(x => x.Platform).HasColumnName("platform").HasMaxLength(32).IsRequired();
+        b.Property(x => x.Status).HasColumnName("status").HasMaxLength(16).IsRequired();
+        b.Property(x => x.Population).HasColumnName("population").IsRequired();
+        b.Property(x => x.Recommended).HasColumnName("recommended").IsRequired();
+        b.Property(x => x.MaintenanceMessage).HasColumnName("maintenance_message").HasMaxLength(512);
+        b.Property(x => x.MinClientVersion).HasColumnName("min_client_version").HasMaxLength(32);
+        b.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at").IsRequired();
+        b.HasIndex(x => new { x.Region, x.Platform, x.Status });
+        b.HasIndex(x => new { x.Recommended, x.Population });
+    }
+}
+
 public class GameServerInstanceConfiguration : IEntityTypeConfiguration<GameServerInstance>
 {
     public void Configure(EntityTypeBuilder<GameServerInstance> b)

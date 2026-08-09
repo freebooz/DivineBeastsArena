@@ -8,13 +8,17 @@ WORKDIR /src
 COPY GameBackend.slnx ./
 COPY Game.Api/Game.Api.csproj Game.Api/
 COPY Game.Shared/Game.Shared.csproj Game.Shared/
+COPY Game.Application/Game.Application.csproj Game.Application/
 COPY Game.Infrastructure/Game.Infrastructure.csproj Game.Infrastructure/
+COPY Game.ServerManagement/Game.ServerManagement.csproj Game.ServerManagement/
 
 RUN dotnet restore Game.Api/Game.Api.csproj
 
 COPY Game.Api/ Game.Api/
 COPY Game.Shared/ Game.Shared/
+COPY Game.Application/ Game.Application/
 COPY Game.Infrastructure/ Game.Infrastructure/
+COPY Game.ServerManagement/ Game.ServerManagement/
 
 RUN dotnet build Game.Api/Game.Api.csproj -c Release
 
@@ -29,13 +33,17 @@ WORKDIR /src
 COPY GameBackend.slnx ./
 COPY Game.Worker/Game.Worker.csproj Game.Worker/
 COPY Game.Shared/Game.Shared.csproj Game.Shared/
+COPY Game.Application/Game.Application.csproj Game.Application/
 COPY Game.Infrastructure/Game.Infrastructure.csproj Game.Infrastructure/
+COPY Game.ServerManagement/Game.ServerManagement.csproj Game.ServerManagement/
 
 RUN dotnet restore Game.Worker/Game.Worker.csproj
 
 COPY Game.Worker/ Game.Worker/
 COPY Game.Shared/ Game.Shared/
+COPY Game.Application/ Game.Application/
 COPY Game.Infrastructure/ Game.Infrastructure/
+COPY Game.ServerManagement/ Game.ServerManagement/
 
 RUN dotnet build Game.Worker/Game.Worker.csproj -c Release
 

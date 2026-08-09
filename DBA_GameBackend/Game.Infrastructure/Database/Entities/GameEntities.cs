@@ -8,6 +8,24 @@
 
 namespace Game.Infrastructure.Database.Entities;
 
+/**
+ * 玩家可选择的逻辑区服目录。不能与 GameServerInstance 混用：后者表示短生命周期的单局 Dedicated Server。
+ */
+public class GameServerDirectoryEntry
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Region { get; set; } = string.Empty;
+    public string Platform { get; set; } = "ALL";
+    public string Status { get; set; } = "Offline";
+    public int Population { get; set; }
+    public bool Recommended { get; set; }
+    public string? MaintenanceMessage { get; set; }
+    public string? MinClientVersion { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
 public class GameServerInstance
 {
     public Guid Id { get; set; }

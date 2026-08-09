@@ -10,13 +10,14 @@ namespace Game.Shared.Errors;
 
 public static class ErrorCodes
 {
-    public const string AuthInvalidCredentials = "AUTH_INVALID_CREDENTIALS";
-    public const string AuthTokenExpired = "AUTH_TOKEN_EXPIRED";
-    public const string AuthTokenInvalid = "AUTH_TOKEN_INVALID";
-    public const string AuthRefreshTokenExpired = "AUTH_REFRESH_TOKEN_EXPIRED";
-    public const string AuthRefreshTokenRevoked = "AUTH_REFRESH_TOKEN_REVOKED";
-    public const string AuthAccountBanned = "AUTH_ACCOUNT_BANNED";
-    public const string AuthAccountDisabled = "AUTH_ACCOUNT_DISABLED";
+    public const string AuthInvalidCredentials = "INVALID_CREDENTIALS";
+    public const string AuthTokenExpired = "TOKEN_EXPIRED";
+    public const string AuthTokenInvalid = "TOKEN_EXPIRED";
+    public const string AuthRefreshTokenExpired = "TOKEN_EXPIRED";
+    public const string AuthRefreshTokenReused = "REFRESH_REUSED";
+    public const string AuthRefreshTokenRevoked = "REFRESH_REUSED";
+    public const string AuthAccountDisabled = "ACCOUNT_DISABLED";
+    public const string AuthAccountBanned = AuthAccountDisabled;
     public const string AuthDevLoginDisabled = "AUTH_DEV_LOGIN_DISABLED";
     public const string AuthSteamMockOnly = "AUTH_STEAM_MOCK_ONLY";
     public const string AuthEosMockOnly = "AUTH_EOS_MOCK_ONLY";

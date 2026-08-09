@@ -14,6 +14,8 @@
 #include "GameCore/Networking/Account/DBAAccountServiceBase.h"
 #include "GameCore/Session/Party/DBAPartyServiceBase.h"
 #include "GameDBA/Frontend/Flow/DBAFrontendFlowSubsystem.h"
+#include "GameDBA/Frontend/Settings/DBAFrontendSettings.h"
+#include "GameDBA/Frontend/Startup/DBAStartupCoordinatorSubsystem.h"
 #include "GameBackendClientSubsystem.h"
 #include "GameBackendMatchService.h"
 #include "GameBackendSessionService.h"
@@ -22,7 +24,6 @@
 #include "GameDBA/UI/Controllers/DBAGameUIManager.h"
 #include "GameDBA/Frontend/DBAFrontendEnvironmentSubsystem.h"
 #include "Kismet/GameplayStatics.h"
-#include "Misc/ConfigCacheIni.h"
 #include "Misc/CommandLine.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
@@ -30,7 +31,7 @@
 
 namespace
 {
-	const FName FrontendMapPath(TEXT("/Game/Maps/Lobby/FrontendMap"));
+	FName GetConfiguredFrontendMapPath();
 
 	bool IsFrontendWorld(const UWorld* World)
 	{
@@ -39,8 +40,9 @@ namespace
 			return false;
 		}
 
-		const FString LevelPath = World->PersistentLevel->GetOutermost()->GetName();
-		return LevelPath.Contains(TEXT("FrontendMap"));
+		const FName ConfiguredFrontendMapPath = GetConfiguredFrontendMapPath();
+		return !ConfiguredFrontendMapPath.IsNone()
+			&& World->PersistentLevel->GetOutermost()->GetFName() == ConfiguredFrontendMapPath;
 	}
 
 	bool IsLobbyWorld(const UWorld* World)
@@ -62,18 +64,16 @@ namespace
 			|| (World && World->GetNetMode() == NM_DedicatedServer);
 	}
 
-	FName GetConfiguredMapPath(const TCHAR* ConfigKey, const FName& FallbackPath)
+	FName GetConfiguredFrontendMapPath()
 	{
-		FString ConfigValue;
-		if (GConfig && GConfig->GetString(TEXT("/Script/DivineBeastsArena.DBAFrontendConfig"), ConfigKey, ConfigValue, GGameIni))
+		const UDBAFrontendSettings* Settings = GetDefault<UDBAFrontendSettings>();
+		if (!Settings)
 		{
-			ConfigValue = ConfigValue.TrimStartAndEnd();
-			if (!ConfigValue.IsEmpty())
-			{
-				return FName(*ConfigValue);
-			}
+			return NAME_None;
 		}
-		return FallbackPath;
+
+		const FSoftObjectPath MapPath = Settings->FrontendMap.ToSoftObjectPath();
+		return MapPath.IsValid() ? FName(*MapPath.GetLongPackageName()) : NAME_None;
 	}
 
 }
@@ -93,6 +93,10 @@ bool UDBAGameInstance::CanEnterLobbyGameplay(const UGameInstance* GameInstance)
 void UDBAGameInstance::Init()
 {
 	Super::Init();
+	if (!IsDedicatedServerInstance())
+	{
+		GetSubsystem<UDBAStartupCoordinatorSubsystem>()->BeginStartup();
+	}
 	UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 游戏实例初始化完成。"));
 }
 
@@ -124,6 +128,16 @@ void UDBAGameInstance::OnWorldChanged(UWorld* OldWorld, UWorld* NewWorld)
 	if (IsDedicatedServerInstance() || IsServerRuntime(NewWorld))
 	{
 		return;
+	}
+
+	if (UDBAStartupCoordinatorSubsystem* StartupCoordinator = GetSubsystem<UDBAStartupCoordinatorSubsystem>())
+	{
+		StartupCoordinator->BeginStartup();
+		StartupCoordinator->HandleWorldChanged(NewWorld);
+		if (StartupCoordinator->ShouldHoldFrontendFlow())
+		{
+			return;
+		}
 	}
 
 	if (bPendingStartLoginFlowOnFrontend && IsFrontendWorld(NewWorld))
@@ -194,7 +208,12 @@ void UDBAGameInstance::StartLoginFlow()
 		if (!IsFrontendWorld(World))
 		{
 			bPendingStartLoginFlowOnFrontend = true;
-			const FName ConfiguredFrontendMapPath = GetConfiguredMapPath(TEXT("DefaultFrontendMap"), FrontendMapPath);
+			const FName ConfiguredFrontendMapPath = GetConfiguredFrontendMapPath();
+			if (ConfiguredFrontendMapPath.IsNone())
+			{
+				UE_LOG(LogDBAFrontend, Error, TEXT("[DBAGameInstance] 前台地图配置缺失，无法启动登录流程。"));
+				return;
+			}
 			UE_LOG(LogDBACore, Log, TEXT("[DBAGameInstance] 登录流程前切换到前端地图: %s"), *ConfiguredFrontendMapPath.ToString());
 			UGameplayStatics::OpenLevel(World, ConfiguredFrontendMapPath);
 			return;

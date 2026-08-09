@@ -43,6 +43,13 @@ class DIVINEBEASTSARENA_API UDBASkillGroupGeneratorSubsystem : public UDBAGameIn
 
 public:
 	/**
+	 * 固定技能组主表异步就绪事件。前台只订阅此事件刷新展示投影，
+	 * 不会 Tick 轮询表是否加载完成，也不会借此授予或修改 GAS 技能。
+	 */
+	DECLARE_MULTICAST_DELEGATE(FOnSkillGroupDataReady);
+	FOnSkillGroupDataReady OnSkillGroupDataReady;
+
+	/**
 	 * 根据生肖和元素获取固定技能组
 	 *
 	 * @param Zodiac 生肖类型

@@ -109,8 +109,10 @@ public sealed class AuthService : IAuthService
     public async Task<AuthServiceResult> RefreshTokenAsync(string? refreshToken, string? ip)
     {
         var rotation = await _rotateRefreshCredential.ExecuteAsync(refreshToken, ip, null);
-        if (rotation.Status == RefreshCredentialStatus.AccountBanned)
-            return Fail(ErrorCodes.AuthAccountBanned, _authenticationPolicy.Messages.AccountBanned);
+        if (rotation.Status == RefreshCredentialStatus.AccountDisabled)
+            return Fail(ErrorCodes.AuthAccountDisabled, _authenticationPolicy.Messages.AccountBanned);
+        if (rotation.Status == RefreshCredentialStatus.Reused)
+            return Fail(ErrorCodes.AuthRefreshTokenReused, _authenticationPolicy.Messages.RefreshTokenInvalid);
         if (rotation.Status != RefreshCredentialStatus.Success ||
             rotation.Credentials == null ||
             rotation.Subject == null)
@@ -184,8 +186,8 @@ public sealed class AuthService : IAuthService
         string? ipAddress,
         string? userAgent)
     {
-        if (authentication.Status == CredentialAuthenticationStatus.AccountBanned)
-            return Fail(ErrorCodes.AuthAccountBanned, _authenticationPolicy.Messages.AccountBanned);
+        if (authentication.Status == CredentialAuthenticationStatus.AccountDisabled)
+            return Fail(ErrorCodes.AuthAccountDisabled, _authenticationPolicy.Messages.AccountBanned);
         if (authentication.Status != CredentialAuthenticationStatus.Success || authentication.Subject == null)
             return Fail(ErrorCodes.AuthInvalidCredentials, _authenticationPolicy.Messages.InvalidCredentials);
 

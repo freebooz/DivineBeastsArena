@@ -29,6 +29,10 @@ public:
 	void StartLoginFlow();
 	void SubmitLogin(const FString& Email, const FString& Password);
 	void SubmitGuestLogin();
+	void BeginRegistration();
+	void SubmitRegistration(const FString& Account, const FString& Password);
+	void CancelRegistration();
+	void SetRememberSession(bool bRemember);
 	void SubmitCharacterSelection(const FDBACharacterId& CharacterId);
 	void SubmitCharacterCreation(const FDBACharacterCreateRequest& Request);
 	void EnterCharacterCreate();
@@ -39,7 +43,8 @@ public:
 
 private:
 	UFUNCTION()
-	void HandleLoginFlowStateChanged(EDBALoginFlowState NewState);
+	void HandleFrontendStateChanged(EDBAFrontendState PreviousState, EDBAFrontendState NewState);
+	static EDBALoginFlowState ToLegacyViewState(EDBAFrontendState State);
 
 	TWeakObjectPtr<UDBAFrontendFlowSubsystem> LoginFlow;
 	EDBALoginFlowState CurrentState = EDBALoginFlowState::Booting;

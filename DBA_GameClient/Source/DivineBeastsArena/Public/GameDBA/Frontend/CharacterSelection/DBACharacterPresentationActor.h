@@ -12,6 +12,7 @@
 
 #include "CoreMinimal.h"
 #include "GameCore/Types/DBACommonEnums.h"
+#include "GameDBA/Character/Appearance/DBACharacterAppearanceTypes.h"
 #include "GameFramework/Actor.h"
 #include "DBACharacterPresentationActor.generated.h"
 
@@ -30,6 +31,7 @@ class UStaticMeshComponent;
 class USkeletalMesh;
 class UMaterialInterface;
 class UWorld;
+class UDBACharacterAppearanceComponent;
 
 USTRUCT(BlueprintType)
 struct DIVINEBEASTSARENA_API FDBACharacterPresentationStageSpec
@@ -104,6 +106,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterPresentation")
 	void SetPreviewZodiac(EDBAZodiac Zodiac);
 
+	/** 与正式 GameplayCharacter 共用 AppearanceComponent 的预览入口。 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterPresentation")
+	void ApplyPreviewAppearance(EDBAZodiac Zodiac, const FDBACharacterAppearance& Appearance);
+
+	UFUNCTION(BlueprintPure, Category = "DBA|CharacterPresentation")
+	UDBACharacterAppearanceComponent* GetAppearanceComponent() const { return AppearanceComponent; }
+
 	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterPresentation")
 	void AddPreviewYaw(float DeltaYawDegrees);
 
@@ -124,6 +133,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "DBA|CharacterPresentation")
 	TObjectPtr<USkeletalMeshComponent> PreviewMeshComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "DBA|CharacterPresentation")
+	TObjectPtr<UDBACharacterAppearanceComponent> AppearanceComponent;
 
 	UPROPERTY(VisibleAnywhere, Category = "DBA|CharacterPresentation")
 	TObjectPtr<UCameraComponent> PresentationCamera;

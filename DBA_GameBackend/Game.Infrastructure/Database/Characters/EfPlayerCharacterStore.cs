@@ -6,6 +6,7 @@
 */
 
 using System.Text.Json;
+using System.Text;
 using Game.Application.Characters;
 using Game.Infrastructure.Database.Entities;
 using Game.Shared.Options;
@@ -29,7 +30,7 @@ public sealed class EfPlayerCharacterStore(
     {
         var rows = await db.PlayerCharacters
             .AsNoTracking()
-            .Where(x => x.PlayerId == playerId)
+            .Where(x => x.PlayerId == playerId && !x.IsDeleted)
             .OrderByDescending(x => x.IsSelected)
             .ThenByDescending(x => x.LastUsedAt)
             .ThenBy(x => x.CreatedAt)
@@ -48,7 +49,9 @@ public sealed class EfPlayerCharacterStore(
         {
             Id = character.CharacterId,
             PlayerId = character.PlayerId,
+            ServerId = Guid.TryParse(options.DefaultServerId, out var defaultServerId) ? defaultServerId : Guid.Empty,
             CharacterName = character.CharacterName,
+            NormalizedName = character.CharacterName.Normalize(NormalizationForm.FormKC).Trim().ToUpperInvariant(),
             Zodiac = character.Build.Zodiac,
             PrimaryElement = character.Build.PrimaryElement,
             FiveCamp = character.Build.FiveCamp,
@@ -82,7 +85,7 @@ public sealed class EfPlayerCharacterStore(
     {
         var exists = await db.PlayerCharacters
             .AsNoTracking()
-            .AnyAsync(x => x.PlayerId == playerId && x.Id == characterId, cancellationToken);
+            .AnyAsync(x => x.PlayerId == playerId && x.Id == characterId && !x.IsDeleted, cancellationToken);
         if (!exists)
         {
             return null;
@@ -92,13 +95,13 @@ public sealed class EfPlayerCharacterStore(
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
         await db.PlayerCharacters
-            .Where(x => x.PlayerId == playerId && x.IsSelected)
+            .Where(x => x.PlayerId == playerId && x.IsSelected && !x.IsDeleted)
             .ExecuteUpdateAsync(
                 setters => setters.SetProperty(x => x.IsSelected, false),
                 cancellationToken);
 
         var affectedRows = await db.PlayerCharacters
-            .Where(x => x.PlayerId == playerId && x.Id == characterId)
+            .Where(x => x.PlayerId == playerId && x.Id == characterId && !x.IsDeleted)
             .ExecuteUpdateAsync(
                 setters => setters
                     .SetProperty(x => x.IsSelected, true)
@@ -114,7 +117,7 @@ public sealed class EfPlayerCharacterStore(
         await transaction.CommitAsync(cancellationToken);
         var selected = await db.PlayerCharacters
             .AsNoTracking()
-            .SingleAsync(x => x.PlayerId == playerId && x.Id == characterId, cancellationToken);
+            .SingleAsync(x => x.PlayerId == playerId && x.Id == characterId && !x.IsDeleted, cancellationToken);
         return ToSummary(selected);
     }
 

@@ -14,6 +14,7 @@ public sealed class ErrorResponse
     public string Title { get; init; } = string.Empty;
     public string Detail { get; init; } = string.Empty;
     public int Status { get; init; }
+    public string Code { get; init; } = "REQUEST_FAILED";
     public string? TraceId { get; init; }
     public Dictionary<string, object[]>? Errors { get; init; }
 
@@ -25,13 +26,20 @@ public sealed class ErrorResponse
     {
         Data = null,
         Success = false,
+        Code = this.Code,
         Message = $"{Status}|{Title}|{Detail}",
         Timestamp = DateTimeOffset.UtcNow
     };
 
-    public static ErrorResponse Create(int status, string title, string detail, string? traceId = null) => new()
+    public static ErrorResponse Create(
+        int status,
+        string title,
+        string detail,
+        string? traceId = null,
+        string? code = null) => new()
     {
         Status = status,
+        Code = code ?? $"HTTP_{status}",
         Title = title,
         Detail = detail,
         TraceId = traceId

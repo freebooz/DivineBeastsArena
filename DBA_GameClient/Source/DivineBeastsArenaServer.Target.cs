@@ -39,6 +39,7 @@ public class DivineBeastsArenaServerTarget : TargetRules
 			// 服务器标识
 			"DBA_SERVER=1",
 			"DBA_CLIENT=0",
+			"DBA_WITH_FRONTEND_UI=0",
 		});
 
 		// 编译设置

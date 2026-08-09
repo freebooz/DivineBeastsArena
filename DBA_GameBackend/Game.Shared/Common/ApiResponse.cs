@@ -12,6 +12,8 @@ public class ApiResponse<T>
 {
     public T? Data { get; init; }
     public bool Success { get; init; } = true;
+    /** 机器可读业务码；客户端必须基于该字段映射本地化文案。 */
+    public string Code { get; init; } = "OK";
     public string? Message { get; init; }
     public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
 
@@ -19,13 +21,15 @@ public class ApiResponse<T>
     {
         Data = data,
         Success = true,
+        Code = "OK",
         Message = message
     };
 
-    public static ApiResponse<T> Fail(string message) => new()
+    public static ApiResponse<T> Fail(string message, string code = "REQUEST_FAILED") => new()
     {
         Data = default,
         Success = false,
+        Code = code,
         Message = message
     };
 }
@@ -35,12 +39,14 @@ public class ApiResponse : ApiResponse<object>
     public static ApiResponse Ok(string? message = null) => new()
     {
         Success = true,
+        Code = "OK",
         Message = message
     };
 
-    public static new ApiResponse Fail(string message) => new()
+    public static ApiResponse Fail(string message) => new()
     {
         Success = false,
+        Code = "REQUEST_FAILED",
         Message = message
     };
 }

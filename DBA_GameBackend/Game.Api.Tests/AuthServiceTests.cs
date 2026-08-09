@@ -12,6 +12,7 @@ using Game.Infrastructure.Auth;
 using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Auth;
 using Game.Infrastructure.Database.Entities;
+using Game.Shared.Errors;
 using Game.Shared.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -81,12 +82,15 @@ public class AuthServiceTests
         Assert.True(rotated.Success);
         Assert.NotEqual(initialRefreshToken, rotated.RefreshToken);
         Assert.False(reused.Success);
+        Assert.Equal(ErrorCodes.AuthRefreshTokenReused, reused.ErrorCode);
         Assert.Equal(2, await db.RefreshTokens.CountAsync());
         Assert.NotNull(await db.RefreshTokens
             .Where(x => x.TokenHash == jwt.HashToken(initialRefreshToken))
             .Select(x => x.RevokedAt)
             .SingleAsync());
-        Assert.Contains(await db.RefreshTokens.ToListAsync(), x => x.TokenHash == jwt.HashToken(rotated.RefreshToken!));
+        Assert.All(
+            await db.RefreshTokens.ToListAsync(),
+            token => Assert.NotNull(token.RevokedAt));
     }
 
     [Fact]

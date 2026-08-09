@@ -15,7 +15,10 @@
 #include "GameMoba/UI/DBAMobaHUDWidgetControllerBase.h"
 #include "UDBALoginWidgetController.generated.h"
 
+class UDBALoginViewModel;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDBALoginUIError, const FString&, ErrorMessage);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDBALoginUIApiError, const FDBAApiError&, Error);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDBALoginUIStateChanged, EDBALoginFlowState, State);
 
 UCLASS(BlueprintType, Blueprintable)
@@ -35,8 +38,27 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|Login")
 	void LoginAsGuest();
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|Login")
+	void ShowRegistration();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Login")
+	void RegisterWithCredentials(const FString& Account, const FString& Password);
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Login")
+	void CancelRegistration();
+
+	UFUNCTION(BlueprintCallable, Category = "DBA|Login")
+	void SetRememberSession(bool bRemember);
+
+	UFUNCTION(BlueprintPure, Category = "DBA|Login")
+	UDBALoginViewModel* GetLoginViewModel() const { return LoginViewModel; }
+
 	UPROPERTY(BlueprintAssignable, Category = "DBA|Login")
 	FDBALoginUIError OnLoginError;
+
+	/** 新登录 Screen 应消费 ErrorCode/Category/UserMessage，不解析英文错误文本。 */
+	UPROPERTY(BlueprintAssignable, Category = "DBA|Login")
+	FDBALoginUIApiError OnLoginApiError;
 
 	UPROPERTY(BlueprintAssignable, Category = "DBA|Login")
 	FDBALoginUIStateChanged OnLoginStateChanged;
@@ -46,7 +68,13 @@ protected:
 	void HandleFlowError(const FString& ErrorMessage);
 
 	UFUNCTION()
+	void HandleFlowApiError(const FDBAApiError& Error);
+
+	UFUNCTION()
 	void HandleFlowStateChanged(EDBALoginFlowState State);
 
 	UDBAFrontendFlowSubsystem* GetLoginFlow() const;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDBALoginViewModel> LoginViewModel;
 };

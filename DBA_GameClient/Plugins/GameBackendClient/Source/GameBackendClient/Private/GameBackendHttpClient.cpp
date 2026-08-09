@@ -65,65 +65,105 @@ FDBA_GameBackendHttpClient::FDBA_GameBackendHttpClient(TWeakObjectPtr<UDBA_GameB
 
 void FDBA_GameBackendHttpClient::Get(const FString& Path, const FDBA_GameBackendHttpCallback& Callback, bool bRequiresAuth)
 {
-	FPendingRequest Request;
-	Request.Method = TEXT("GET");
-	Request.Path = Path;
-	Request.bRequiresAuth = bRequiresAuth;
-	Request.Callback = Callback;
-	Send(MoveTemp(Request));
+	FDBA_GameBackendHttpRequestOptions Options;
+	Options.bRequiresAuth = bRequiresAuth;
+	SendRequest(TEXT("GET"), Path, FString(), Options, Callback);
 }
 
 void FDBA_GameBackendHttpClient::Post(const FString& Path, const FString& JsonBody, const FDBA_GameBackendHttpCallback& Callback, bool bRequiresAuth)
 {
-	FPendingRequest Request;
-	Request.Method = TEXT("POST");
-	Request.Path = Path;
-	Request.JsonBody = JsonBody;
-	Request.bRequiresAuth = bRequiresAuth;
-	Request.Callback = Callback;
-	Send(MoveTemp(Request));
+	FDBA_GameBackendHttpRequestOptions Options;
+	Options.bRequiresAuth = bRequiresAuth;
+	SendRequest(TEXT("POST"), Path, JsonBody, Options, Callback);
 }
 
 void FDBA_GameBackendHttpClient::Put(const FString& Path, const FString& JsonBody, const FDBA_GameBackendHttpCallback& Callback, bool bRequiresAuth)
 {
-	FPendingRequest Request;
-	Request.Method = TEXT("PUT");
-	Request.Path = Path;
-	Request.JsonBody = JsonBody;
-	Request.bRequiresAuth = bRequiresAuth;
-	Request.Callback = Callback;
-	Send(MoveTemp(Request));
+	FDBA_GameBackendHttpRequestOptions Options;
+	Options.bRequiresAuth = bRequiresAuth;
+	SendRequest(TEXT("PUT"), Path, JsonBody, Options, Callback);
 }
 
 void FDBA_GameBackendHttpClient::Patch(const FString& Path, const FString& JsonBody, const FDBA_GameBackendHttpCallback& Callback, bool bRequiresAuth)
 {
-	FPendingRequest Request;
-	Request.Method = TEXT("PATCH");
-	Request.Path = Path;
-	Request.JsonBody = JsonBody;
-	Request.bRequiresAuth = bRequiresAuth;
-	Request.Callback = Callback;
-	Send(MoveTemp(Request));
+	FDBA_GameBackendHttpRequestOptions Options;
+	Options.bRequiresAuth = bRequiresAuth;
+	SendRequest(TEXT("PATCH"), Path, JsonBody, Options, Callback);
 }
 
 void FDBA_GameBackendHttpClient::Delete(const FString& Path, const FDBA_GameBackendHttpCallback& Callback, bool bRequiresAuth)
 {
+	FDBA_GameBackendHttpRequestOptions Options;
+	Options.bRequiresAuth = bRequiresAuth;
+	SendRequest(TEXT("DELETE"), Path, FString(), Options, Callback);
+}
+
+FGuid FDBA_GameBackendHttpClient::SendRequest(
+	const FString& Method,
+	const FString& Path,
+	const FString& JsonBody,
+	const FDBA_GameBackendHttpRequestOptions& Options,
+	const FDBA_GameBackendHttpCallback& Callback)
+{
 	FPendingRequest Request;
-	Request.Method = TEXT("DELETE");
+	Request.Method = Method;
 	Request.Path = Path;
-	Request.bRequiresAuth = bRequiresAuth;
+	Request.JsonBody = JsonBody;
+	Request.bRequiresAuth = Options.bRequiresAuth;
+	Request.bAllowRefresh = Options.bAllowRefresh;
+	Request.TimeoutSeconds = Options.TimeoutSeconds;
+	Request.TraceId = Options.CorrelationId;
+	Request.AdditionalHeaders = Options.AdditionalHeaders;
+	Request.RequestId = FGuid::NewGuid();
 	Request.Callback = Callback;
+	const FGuid RequestId = Request.RequestId;
 	Send(MoveTemp(Request));
+	return RequestId;
+}
+
+bool FDBA_GameBackendHttpClient::CancelRequest(const FGuid& RequestId)
+{
+	if (!RequestId.IsValid())
+	{
+		return false;
+	}
+
+	CancelledRequests.Add(RequestId);
+	if (FHttpRequestPtr* ActiveRequest = ActiveRequests.Find(RequestId))
+	{
+		if (ActiveRequest->IsValid())
+		{
+			(*ActiveRequest)->CancelRequest();
+		}
+	}
+	return true;
+}
+
+void FDBA_GameBackendHttpClient::CancelAllRequests()
+{
+	TArray<FGuid> RequestIds;
+	ActiveRequests.GetKeys(RequestIds);
+	for (const FGuid& RequestId : RequestIds)
+	{
+		CancelRequest(RequestId);
+	}
 }
 
 void FDBA_GameBackendHttpClient::Send(FPendingRequest Request)
 {
+	if (IsCancelled(Request.RequestId))
+	{
+		ForgetRequest(Request.RequestId);
+		return;
+	}
+
 	if (!Subsystem.IsValid())
 	{
 		FDBA_GameBackendHttpResult Result;
 		Result.bHttpRequestOk = false;
 		Result.Message = TEXT("后端客户端子系统无效。");
 		Finish(Request, Result);
+		ForgetRequest(Request.RequestId);
 		return;
 	}
 
@@ -137,21 +177,31 @@ void FDBA_GameBackendHttpClient::Send(FPendingRequest Request)
 	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	HttpRequest->SetContentAsString(Request.JsonBody);
 	ApplyHeaders(Request, HttpRequest);
-	HttpRequest->SetTimeout(Subsystem->GetRequestTimeoutSeconds());
+	HttpRequest->SetTimeout(Request.TimeoutSeconds > 0.0f ? Request.TimeoutSeconds : Subsystem->GetRequestTimeoutSeconds());
 
 	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FDBA_GameBackendHttpClient::OnComplete, Request);
+	ActiveRequests.Add(Request.RequestId, HttpRequest);
 	if (!HttpRequest->ProcessRequest())
 	{
 		FDBA_GameBackendHttpResult Result;
 		Result.bHttpRequestOk = false;
 		Result.TraceId = Request.TraceId;
 		Result.Message = TEXT("HTTP 请求启动失败。");
+		ActiveRequests.Remove(Request.RequestId);
 		Finish(Request, Result);
+		ForgetRequest(Request.RequestId);
 	}
 }
 
 void FDBA_GameBackendHttpClient::OnComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FPendingRequest Request)
 {
+	ActiveRequests.Remove(Request.RequestId);
+	if (IsCancelled(Request.RequestId))
+	{
+		ForgetRequest(Request.RequestId);
+		return;
+	}
+
 	FDBA_GameBackendHttpResult Result;
 	Result.bHttpRequestOk = bSucceeded && HttpResponse.IsValid();
 	Result.TraceId = Request.TraceId;
@@ -183,6 +233,12 @@ void FDBA_GameBackendHttpClient::OnComplete(FHttpRequestPtr HttpRequest, FHttpRe
 	{
 		Subsystem->RequestRefreshToken([this, Request](bool bRefreshOk)
 		{
+			if (IsCancelled(Request.RequestId))
+			{
+				ForgetRequest(Request.RequestId);
+				return;
+			}
+
 			if (!Subsystem.IsValid() || !bRefreshOk)
 			{
 				FDBA_GameBackendHttpResult FailResult;
@@ -191,6 +247,7 @@ void FDBA_GameBackendHttpClient::OnComplete(FHttpRequestPtr HttpRequest, FHttpRe
 				FailResult.Message = TEXT("\u9274\u6743\u5931\u8d25\u4e14\u5237\u65b0\u4ee4\u724c\u5931\u8d25\u3002");
 				FailResult.TraceId = Request.TraceId;
 				Finish(Request, FailResult);
+				ForgetRequest(Request.RequestId);
 				return;
 			}
 
@@ -208,6 +265,7 @@ void FDBA_GameBackendHttpClient::OnComplete(FHttpRequestPtr HttpRequest, FHttpRe
 	}
 
 	Finish(Request, Result);
+	ForgetRequest(Request.RequestId);
 }
 
 FString FDBA_GameBackendHttpClient::BuildAbsoluteUrl(const FString& Path) const
@@ -217,7 +275,7 @@ FString FDBA_GameBackendHttpClient::BuildAbsoluteUrl(const FString& Path) const
 		return Path;
 	}
 
-	FString Base = Subsystem->GetBackendBaseUrl().TrimStartAndEnd();
+	FString Base = Subsystem->GetGatewayBaseUrl().TrimStartAndEnd();
 	while (Base.EndsWith(TEXT("/")))
 	{
 		Base.LeftChopInline(1);
@@ -253,6 +311,14 @@ void FDBA_GameBackendHttpClient::ApplyHeaders(const FPendingRequest& Request, co
 		if (!Token.IsEmpty())
 		{
 			HttpRequest->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("Bearer %s"), *Token));
+		}
+	}
+
+	for (const TPair<FString, FString>& Header : Request.AdditionalHeaders)
+	{
+		if (!Header.Key.IsEmpty() && !Header.Value.IsEmpty())
+		{
+			HttpRequest->SetHeader(Header.Key, Header.Value);
 		}
 	}
 }
@@ -308,6 +374,17 @@ void FDBA_GameBackendHttpClient::Finish(const FPendingRequest& Request, const FD
 	{
 		Request.Callback(Result);
 	}
+}
+
+bool FDBA_GameBackendHttpClient::IsCancelled(const FGuid& RequestId) const
+{
+	return RequestId.IsValid() && CancelledRequests.Contains(RequestId);
+}
+
+void FDBA_GameBackendHttpClient::ForgetRequest(const FGuid& RequestId)
+{
+	ActiveRequests.Remove(RequestId);
+	CancelledRequests.Remove(RequestId);
 }
 
 bool FDBA_GameBackendHttpClient::ShouldRetry(const FPendingRequest& Request, const FDBA_GameBackendHttpResult& Result) const

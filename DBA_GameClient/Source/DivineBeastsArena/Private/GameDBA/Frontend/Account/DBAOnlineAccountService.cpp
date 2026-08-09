@@ -7,6 +7,8 @@
 #include "GameBackendPlayerService.h"
 #include "GameCore/Data/Profile/DBAAccountSaveGame.h"
 #include "GameDBA/Frontend/Account/DBAOnlineAccountJson.h"
+#include "GameDBA/Frontend/Online/DBAApiClientSubsystem.h"
+#include "GameDBA/Frontend/Settings/DBAFrontendSettings.h"
 #include "Engine/GameInstance.h"
 #include "HAL/PlatformProcess.h"
 
@@ -38,10 +40,16 @@ void UDBAOnlineAccountService::OnSubsystemInitialize()
 {
 	Super::OnSubsystemInitialize();
 
-	LoadOnlineAccountState();
-	if (UDBA_GameBackendClientSubsystem* BackendClient = GetBackendClient())
+	const UDBAFrontendSettings* Settings = GetDefault<UDBAFrontendSettings>();
+	bRememberSession = !Settings || Settings->bRememberSessionByDefault;
+	if (UDBAApiClientSubsystem* ApiClient = GetApiClient())
 	{
-		BackendClient->SetAuthTokens(SessionToken, RefreshToken, CurrentAccountInfo.AccountId.ToString());
+		ApiClient->SetRefreshTokenPersistenceEnabled(bRememberSession);
+	}
+	LoadOnlineAccountState();
+	if (UDBAApiClientSubsystem* ApiClient = GetApiClient())
+	{
+		ApiClient->SetAuthenticationTokens(SessionToken, RefreshToken, CurrentAccountInfo.AccountId.ToString());
 	}
 
 	LogSubsystemInfo(TEXT("在线账号服务已初始化，传输由 GameBackendClient 统一管理。"));
@@ -52,10 +60,53 @@ void UDBAOnlineAccountService::CancelAllAsyncOperations()
 	++RequestGeneration;
 }
 
+void UDBAOnlineAccountService::TryAutoLogin(FDBAOnLoginComplete OnComplete)
+{
+	AutoLogin(MoveTemp(OnComplete));
+}
+
+void UDBAOnlineAccountService::LoginWithCredentials(const FString& Account, const FString& Password, FDBAOnLoginComplete OnComplete)
+{
+	FDBALoginRequest Request;
+	Request.LoginType = EDBALoginType::Email;
+	Request.Email = Account.TrimStartAndEnd();
+	Request.Password = Password;
+	Login(Request, MoveTemp(OnComplete));
+}
+
+void UDBAOnlineAccountService::RegisterAccount(const FString& Account, const FString& Password, FDBAOnLoginComplete OnComplete)
+{
+	FDBALoginRequest Request;
+	Request.LoginType = EDBALoginType::Email;
+	Request.Email = Account.TrimStartAndEnd();
+	Request.Password = Password;
+	Register(Request, MoveTemp(OnComplete));
+}
+
+void UDBAOnlineAccountService::RefreshSession(FDBAOnLoginComplete OnComplete)
+{
+	AutoLogin(MoveTemp(OnComplete));
+}
+
+void UDBAOnlineAccountService::SetRememberSession(const bool bRemember)
+{
+	bRememberSession = bRemember;
+	if (UDBAApiClientSubsystem* ApiClient = GetApiClient())
+	{
+		ApiClient->SetRefreshTokenPersistenceEnabled(bRememberSession);
+	}
+}
+
 UDBA_GameBackendClientSubsystem* UDBAOnlineAccountService::GetBackendClient() const
 {
 	UGameInstance* GameInstance = GetGameInstance();
 	return GameInstance ? GameInstance->GetSubsystem<UDBA_GameBackendClientSubsystem>() : nullptr;
+}
+
+UDBAApiClientSubsystem* UDBAOnlineAccountService::GetApiClient() const
+{
+	UGameInstance* GameInstance = GetGameInstance();
+	return GameInstance ? GameInstance->GetSubsystem<UDBAApiClientSubsystem>() : nullptr;
 }
 
 bool UDBAOnlineAccountService::IsRequestCurrent(uint64 Generation) const
@@ -68,6 +119,10 @@ void UDBAOnlineAccountService::CacheLoginSuccess(const FDBALoginResponse& Respon
 	CurrentAccountInfo = Response.AccountInfo;
 	SessionToken = Response.SessionToken;
 	RefreshToken = Response.RefreshToken;
+	if (UDBAApiClientSubsystem* ApiClient = GetApiClient())
+	{
+		ApiClient->SetAuthenticationTokens(SessionToken, RefreshToken, CurrentAccountInfo.AccountId.ToString());
+	}
 	SaveOnlineAccountState();
 }
 
@@ -81,8 +136,19 @@ void UDBAOnlineAccountService::LoadOnlineAccountState()
 
 	CurrentAccountInfo = SaveGame->AccountInfo;
 	CurrentCharacterId = SaveGame->CurrentCharacterId;
-	SessionToken = SaveGame->SessionToken;
-	RefreshToken = SaveGame->RefreshToken;
+	// 步骤 08 起，拒绝读取 SaveGame 中的旧明文 Token。
+	// 当前开发安全存储仅在进程内保存 RefreshToken。
+	if (!SaveGame->SessionToken.IsEmpty() || !SaveGame->RefreshToken.IsEmpty())
+	{
+		LogSubsystemWarning(TEXT("发现旧版明文会话存档，已拒绝读取并立即清除令牌。"));
+		SaveGame->SessionToken.Empty();
+		SaveGame->RefreshToken.Empty();
+		SaveAccountSaveGame(SaveGame);
+	}
+	if (UDBAApiClientSubsystem* ApiClient = GetApiClient())
+	{
+		ApiClient->LoadDevelopmentRefreshToken(RefreshToken);
+	}
 }
 
 void UDBAOnlineAccountService::SaveOnlineAccountState(const TArray<FDBACharacterSummary>* Characters)
@@ -99,8 +165,9 @@ void UDBAOnlineAccountService::SaveOnlineAccountState(const TArray<FDBACharacter
 
 	SaveGame->AccountInfo = CurrentAccountInfo;
 	SaveGame->CurrentCharacterId = CurrentCharacterId;
-	SaveGame->SessionToken = SessionToken;
-	SaveGame->RefreshToken = RefreshToken;
+	// Token 仅由 ApiClient 管理：AccessToken 在内存，RefreshToken 交给安全存储实现。
+	SaveGame->SessionToken.Empty();
+	SaveGame->RefreshToken.Empty();
 	if (Characters)
 	{
 		SaveGame->Characters = *Characters;
@@ -292,7 +359,10 @@ void UDBAOnlineAccountService::AutoLogin(FDBAOnLoginComplete OnComplete)
 		OnComplete.ExecuteIfBound(MakeLoginFailure(TEXT("自动登录失败"), TEXT("后端鉴权服务不可用")));
 		return;
 	}
-	BackendClient->SetAuthTokens(SessionToken, RefreshToken, CurrentAccountInfo.AccountId.ToString());
+	if (UDBAApiClientSubsystem* ApiClient = GetApiClient())
+	{
+		ApiClient->SetAuthenticationTokens(SessionToken, RefreshToken, CurrentAccountInfo.AccountId.ToString());
+	}
 
 	const uint64 Generation = RequestGeneration;
 	AuthService->RefreshTokenAsync(
@@ -333,6 +403,10 @@ void UDBAOnlineAccountService::Logout(FDBAOnLogoutComplete OnComplete)
 	{
 		return;
 	}
+	if (UDBAApiClientSubsystem* ApiClient = GetApiClient())
+	{
+		ApiClient->CancelOutstandingRequests();
+	}
 
 	const auto FinishLogout = [WeakThis = TWeakObjectPtr<UDBAOnlineAccountService>(this), OnComplete]()
 	{
@@ -346,9 +420,9 @@ void UDBAOnlineAccountService::Logout(FDBAOnLogoutComplete OnComplete)
 		Service->CurrentCharacterId = FDBACharacterId();
 		Service->SessionToken.Empty();
 		Service->RefreshToken.Empty();
-		if (UDBA_GameBackendClientSubsystem* BackendClient = Service->GetBackendClient())
+		if (UDBAApiClientSubsystem* ApiClient = Service->GetApiClient())
 		{
-			BackendClient->ClearAuthTokens();
+			ApiClient->InvalidateSession();
 		}
 		Service->SaveOnlineAccountState();
 		OnComplete.ExecuteIfBound();

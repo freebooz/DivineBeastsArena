@@ -26,6 +26,8 @@ public class GameDbContext : DbContext
     public DbSet<PlayerUnlock> PlayerUnlocks => Set<PlayerUnlock>();
     public DbSet<PlayerEventLog> PlayerEventLogs => Set<PlayerEventLog>();
     public DbSet<PlayerCharacter> PlayerCharacters => Set<PlayerCharacter>();
+    public DbSet<CharacterAppearance> CharacterAppearances => Set<CharacterAppearance>();
+    public DbSet<CharacterProgress> CharacterProgresses => Set<CharacterProgress>();
     public DbSet<GameConfig> GameConfigs => Set<GameConfig>();
     public DbSet<GameConfigPublishLog> GameConfigPublishLogs => Set<GameConfigPublishLog>();
     public DbSet<GameRoom> GameRooms => Set<GameRoom>();
@@ -34,6 +36,7 @@ public class GameDbContext : DbContext
     public DbSet<GameSession> GameSessions => Set<GameSession>();
     public DbSet<PlayerSession> PlayerSessions => Set<PlayerSession>();
     public DbSet<SessionEvent> SessionEvents => Set<SessionEvent>();
+    public DbSet<GameServerDirectoryEntry> GameServers => Set<GameServerDirectoryEntry>();
     public DbSet<GameServerInstance> GameServerInstances => Set<GameServerInstance>();
     public DbSet<GameServerEvent> GameServerEvents => Set<GameServerEvent>();
     public DbSet<PortAllocation> PortAllocations => Set<PortAllocation>();

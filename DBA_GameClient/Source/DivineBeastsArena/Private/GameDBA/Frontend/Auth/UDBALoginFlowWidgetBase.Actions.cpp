@@ -129,6 +129,10 @@ void UDBALoginFlowWidgetBase::HandleGuestLoginClicked()
 void UDBALoginFlowWidgetBase::HandleRememberToggleClicked()
 {
 	bRememberAccount = !bRememberAccount;
+	if (UDBAFrontendFlowController* FlowController = GetFrontendFlowController())
+	{
+		FlowController->SetRememberSession(bRememberAccount);
+	}
 	UpdateReferenceToggleVisuals();
 	SetStatus(bRememberAccount ? FText::FromString(TEXT("已开启记住账号。")) : FText::FromString(TEXT("已关闭记住账号。")));
 }
@@ -177,7 +181,15 @@ void UDBALoginFlowWidgetBase::HandleForgotPasswordClicked()
 
 void UDBALoginFlowWidgetBase::HandleRegisterAccountClicked()
 {
-	SetStatus(FText::FromString(TEXT("注册功能暂未开放。")));
+	if (UDBAFrontendFlowController* FlowController = GetFrontendFlowController())
+	{
+		ClearError();
+		FlowController->BeginRegistration();
+	}
+	else
+	{
+		ShowError(TEXT("注册流程不可用。"));
+	}
 }
 
 void UDBALoginFlowWidgetBase::HandleAnnouncementClicked()

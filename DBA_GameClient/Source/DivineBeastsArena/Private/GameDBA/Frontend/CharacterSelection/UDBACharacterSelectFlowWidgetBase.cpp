@@ -25,6 +25,7 @@
 #include "Engine/GameViewportClient.h"
 #include "Engine/Texture2D.h"
 #include "GameDBA/Frontend/Flow/DBAFrontendFlowSubsystem.h"
+#include "GameDBA/Frontend/Character/DBACharacterRosterSubsystem.h"
 #include "GameDBA/Frontend/DBAFrontendEnvironmentSubsystem.h"
 #include "GameDBA/UI/Controllers/DBAGameUIManager.h"
 #include "GameDBA/UI/Frontend/DBAFrontendFlowController.h"
@@ -34,6 +35,8 @@
 #include "GameDBA/UI/DBAUIFontUtils.h"
 #include "GameCore/Async/DBAAsyncAssetLoader.h"
 #include "GameDBA/Frontend/CharacterSelection/DBACharacterPresentationActor.h"
+#include "GameDBA/Frontend/Preview/DBACharacterPreviewSubsystem.h"
+#include "GameDBA/Frontend/Preview/DBACharacterPreviewStage.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "InputCoreTypes.h"
@@ -402,9 +405,12 @@ FReply UDBACharacterSelectFlowWidgetBase::NativeOnMouseMove(const FGeometry& InG
 	if (bIsPreviewRotationDragging && InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
 	{
 		const FVector2D MouseDelta = InMouseEvent.GetCursorDelta();
-		if (PresentationStage && FMath::Abs(MouseDelta.X) > KINDA_SMALL_NUMBER)
+		if (FMath::Abs(MouseDelta.X) > KINDA_SMALL_NUMBER)
 		{
-			PresentationStage->AddPreviewYaw(MouseDelta.X * PreviewDragRotationDegreesPerPixel);
+			if (UDBACharacterPreviewSubsystem* PreviewSubsystem = GetGameInstance()->GetSubsystem<UDBACharacterPreviewSubsystem>())
+			{
+				PreviewSubsystem->Rotate(MouseDelta.X * PreviewDragRotationDegreesPerPixel);
+			}
 			LastPreviewDragScreenPosition = InMouseEvent.GetScreenSpacePosition();
 		}
 		else
@@ -522,13 +528,6 @@ void UDBACharacterSelectFlowWidgetBase::ConfirmSelectedCharacter()
 			ConfirmButton->SetIsEnabled(false);
 		}
 		SetStatus(NSLOCTEXT("DBACharacterSelectWidget", "EnteringLobby", "正在进入大厅..."));
-		if (UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
-		{
-			if (UDBAGameUIManager* UIManager = GameInstance->GetSubsystem<UDBAGameUIManager>())
-			{
-				UIManager->ShowLobbyLoadingScreen();
-			}
-		}
 		FlowController->SubmitCharacterSelection(SelectedCharacterId);
 	}
 	else
@@ -660,13 +659,6 @@ void UDBACharacterSelectFlowWidgetBase::HandleFlowError(const FString& ErrorMess
 		ConfirmButton->SetIsEnabled(true);
 	}
 
-	if (UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
-	{
-		if (UDBAGameUIManager* UIManager = GameInstance->GetSubsystem<UDBAGameUIManager>())
-		{
-			UIManager->HideLobbyLoadingScreen();
-		}
-	}
 	SetStatus(FText::FromString(ErrorMessage));
 }
 
@@ -1023,9 +1015,10 @@ void UDBACharacterSelectFlowWidgetBase::BindPlacedPresentationStage()
 		PresentationStage = ADBACharacterPresentationActor::FindPlacedPresentationStage(GetWorld());
 	}
 
-	if (!PresentationStage)
+	ADBACharacterPreviewStage* PreviewStage = ADBACharacterPreviewStage::FindPlacedPreviewStage(GetWorld());
+	if (!PresentationStage && !PreviewStage)
 	{
-		UE_LOG(LogDBAUI, Error, TEXT("[角色选择界面] 固定关卡中未放置角色展示 Actor，无法显示角色。"));
+		UE_LOG(LogDBAUI, Error, TEXT("[角色选择界面] 固定关卡中未放置 PreviewStage 或兼容展示舞台，无法显示角色。"));
 		return;
 	}
 
@@ -1035,8 +1028,14 @@ void UDBACharacterSelectFlowWidgetBase::BindPlacedPresentationStage()
 		PC = GetWorld()->GetFirstPlayerController();
 	}
 
-	PresentationStage->SetActorHiddenInGame(false);
-	PresentationStage->ActivatePresentationCamera(PC, 0.0f);
+	if (PresentationStage)
+	{
+		PresentationStage->SetActorHiddenInGame(false);
+	}
+	if (UDBACharacterPreviewSubsystem* PreviewSubsystem = GetGameInstance()->GetSubsystem<UDBACharacterPreviewSubsystem>())
+	{
+		PreviewSubsystem->ActivateCamera(PC, 0.0f);
+	}
 
 	if (SelectedCharacterId.IsValid())
 	{
@@ -1048,13 +1047,13 @@ void UDBACharacterSelectFlowWidgetBase::BindPlacedPresentationStage()
 	}
 	else
 	{
-		PresentationStage->SetPreviewZodiac(EDBAZodiac::Rat);
+		UE_LOG(LogDBAUI, Log, TEXT("[角色选择界面] 当前没有角色，展示舞台不加载任何生肖预览资源。"));
 	}
 
 	AActor* ViewTarget = PC ? PC->GetViewTarget() : nullptr;
 	UE_LOG(LogDBAUI, Log, TEXT("[CharacterSelectWidget] 使用世界 3D 角色展示舞台。ViewTarget=%s 舞台=%s"),
 		ViewTarget ? *ViewTarget->GetName() : TEXT("无"),
-		*PresentationStage->GetName());
+		*GetNameSafe(PresentationStage ? static_cast<AActor*>(PresentationStage) : static_cast<AActor*>(PreviewStage)));
 }
 
 void UDBACharacterSelectFlowWidgetBase::HandleDeferredPresentationStageBinding()
@@ -1116,7 +1115,7 @@ void UDBACharacterSelectFlowWidgetBase::BeginPreviewRotationDrag(const FVector2D
 
 void UDBACharacterSelectFlowWidgetBase::UpdatePreviewRotationDrag(const FVector2D& ScreenPosition)
 {
-	if (!bIsPreviewRotationDragging || !PresentationStage)
+	if (!bIsPreviewRotationDragging)
 	{
 		return;
 	}
@@ -1124,7 +1123,10 @@ void UDBACharacterSelectFlowWidgetBase::UpdatePreviewRotationDrag(const FVector2
 	const float DeltaX = ScreenPosition.X - LastPreviewDragScreenPosition.X;
 	if (FMath::Abs(DeltaX) > KINDA_SMALL_NUMBER)
 	{
-		PresentationStage->AddPreviewYaw(DeltaX * PreviewDragRotationDegreesPerPixel);
+		if (UDBACharacterPreviewSubsystem* PreviewSubsystem = GetGameInstance()->GetSubsystem<UDBACharacterPreviewSubsystem>())
+		{
+			PreviewSubsystem->Rotate(DeltaX * PreviewDragRotationDegreesPerPixel);
+		}
 	}
 
 	LastPreviewDragScreenPosition = ScreenPosition;
@@ -1137,18 +1139,13 @@ void UDBACharacterSelectFlowWidgetBase::EndPreviewRotationDrag()
 
 void UDBACharacterSelectFlowWidgetBase::UpdatePresentedCharacterById(const FDBACharacterId& CharacterId)
 {
-	if (!PresentationStage)
-	{
-		return;
-	}
-
 	const FDBACharacterSummary* SelectedSummary = CurrentCharacters.FindByPredicate(
 		[&CharacterId](const FDBACharacterSummary& Character)
 		{
 			return Character.CharacterId == CharacterId;
 		});
 
-	EDBAZodiac PreviewZodiac = EDBAZodiac::Rat;
+	EDBAZodiac PreviewZodiac = EDBAZodiac::None;
 	if (SelectedSummary && SelectedSummary->Zodiac != EDBAZodiac::None)
 	{
 		PreviewZodiac = SelectedSummary->Zodiac;
@@ -1158,7 +1155,15 @@ void UDBACharacterSelectFlowWidgetBase::UpdatePresentedCharacterById(const FDBAC
 		PreviewZodiac = CurrentCharacters[0].Zodiac;
 	}
 
-	PresentationStage->SetPreviewZodiac(PreviewZodiac);
+	if (PreviewZodiac != EDBAZodiac::None)
+	{
+		if (UDBACharacterPreviewSubsystem* PreviewSubsystem = GetGameInstance()->GetSubsystem<UDBACharacterPreviewSubsystem>())
+		{
+			const UDBACharacterRosterSubsystem* Roster = GetGameInstance()->GetSubsystem<UDBACharacterRosterSubsystem>();
+			const FDBACharacterDetails* Details = Roster ? Roster->FindCachedCharacter(CharacterId) : nullptr;
+			PreviewSubsystem->SelectCharacter(PreviewZodiac, Details ? Details->Appearance : FDBACharacterAppearance());
+		}
+	}
 }
 
 void UDBACharacterSelectFlowWidgetBase::HandleBackgroundMusicFinished()

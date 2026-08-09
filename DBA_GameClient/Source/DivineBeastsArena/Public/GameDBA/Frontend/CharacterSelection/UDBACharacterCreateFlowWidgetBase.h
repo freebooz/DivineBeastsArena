@@ -27,6 +27,7 @@ class UDataTable;
 class ADBACharacterPresentationActor;
 class USoundBase;
 class UAudioComponent;
+class UDBACharacterCreateWidgetController;
 
 UCLASS(Blueprintable, BlueprintType)
 class DIVINEBEASTSARENA_API UDBACharacterCreateFlowWidgetBase : public UDBAMobaUserWidgetBase
@@ -35,6 +36,14 @@ class DIVINEBEASTSARENA_API UDBACharacterCreateFlowWidgetBase : public UDBAMobaU
 
 public:
 	UDBACharacterCreateFlowWidgetBase(const FObjectInitializer& ObjectInitializer);
+
+	/**
+	 * 为创建页及其子步骤提供唯一 Controller。
+	 * Blueprint 仅在 Construct 时把该返回值注入生肖、外观和预览控件子 Widget，
+	 * 不得自行创建第二个 Controller 或绕过它直接访问业务 Subsystem。
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|CharacterCreate")
+	UDBACharacterCreateWidgetController* GetOrCreateWidgetController();
 
 protected:
 	virtual void NativeOnInitialized() override;
@@ -106,6 +115,7 @@ protected:
 	void ApplyLocalizedText();
 	void BindControls();
 	void UnbindControls();
+	void GetConfiguredZodiacs(TArray<EDBAZodiac>& OutZodiacs) const;
 	bool Validate();
 	bool ValidateCharacterName(FText& OutMessage) const;
 	void RefreshChoiceText();
@@ -169,7 +179,7 @@ protected:
 	FString CharacterName;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterCreate")
-	EDBAZodiac SelectedZodiac = EDBAZodiac::Rat;
+	EDBAZodiac SelectedZodiac = EDBAZodiac::None;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DBA|CharacterCreate")
 	EDBAElement SelectedElement = EDBAElement::Water;
@@ -206,6 +216,10 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAudioComponent> BackgroundMusicComponent;
+
+	/** 由根 Widget 持有，确保同一创建 Screen 内所有子 Widget 共享 Controller 生命周期。 */
+	UPROPERTY(Transient)
+	TObjectPtr<UDBACharacterCreateWidgetController> CharacterCreateWidgetController;
 
 	UPROPERTY(Transient)
 	FTimerHandle DeferredPresentationActivateTimerHandle;

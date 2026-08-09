@@ -83,9 +83,10 @@ public:
 
 
 /**
- * 生肖 DataAsset
+ * 旧生肖 DataAsset 类型。
+ * 新业务必须使用 UDBAZodiacHeroDataAsset；保留该类仅用于尚未完成的资产迁移。
  */
-UCLASS(BlueprintType)
+UCLASS(BlueprintType, meta = (DeprecatedNode, DeprecationMessage = "请使用 UDBAZodiacHeroDataAsset 作为唯一生肖静态配置入口。"))
 class DIVINEBEASTSARENA_API UDBAZodiacDataAsset : public UDBADataAssetBase
 {
     GENERATED_BODY()

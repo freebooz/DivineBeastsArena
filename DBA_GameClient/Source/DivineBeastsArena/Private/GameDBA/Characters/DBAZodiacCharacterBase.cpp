@@ -14,9 +14,11 @@
 #include "GameDBA/Gameplay/Abilities/Spells/DBAChainLightningSpell.h"
 #include "GameDBA/Gameplay/Abilities/Spells/DBAHolyShieldSpell.h"
 #include "GameDBA/Gameplay/Loadout/DBAPlayableSkillComponent.h"
+#include "GameDBA/Character/Appearance/DBACharacterAppearanceComponent.h"
 #include "GameCore/Async/DBAAsyncAssetLoader.h"
 #include "GameDBA/Gameplay/Abilities/Projectiles/DBASkillProjectileBase.h"
 #include "GameDBA/Core/DBAConstants.h"
+#include "GameDBA/Frontend/Core/DBAIdentityTypeAdapter.h"
 #include "GameDBA/Core/DBALogChannels.h"
 #include "GameDBA/Gameplay/GAS/DBAAbilitySystemComponent.h"
 #include "GameDBA/Gameplay/Progression/Attributes/DBABattleAttributeSet.h"
@@ -134,44 +136,17 @@ namespace
 
 	EDBAZodiac ToCommonZodiac(EDBAZodiacType ZodiacType)
 	{
-		switch (ZodiacType)
-		{
-		case EDBAZodiacType::Rat: return EDBAZodiac::Rat;
-		case EDBAZodiacType::Ox: return EDBAZodiac::Ox;
-		case EDBAZodiacType::Tiger: return EDBAZodiac::Tiger;
-		case EDBAZodiacType::Rabbit: return EDBAZodiac::Rabbit;
-		case EDBAZodiacType::Dragon: return EDBAZodiac::Dragon;
-		case EDBAZodiacType::Snake: return EDBAZodiac::Snake;
-		case EDBAZodiacType::Horse: return EDBAZodiac::Horse;
-		case EDBAZodiacType::Goat: return EDBAZodiac::Goat;
-		case EDBAZodiacType::Monkey: return EDBAZodiac::Monkey;
-		case EDBAZodiacType::Rooster: return EDBAZodiac::Rooster;
-		case EDBAZodiacType::Dog: return EDBAZodiac::Dog;
-		case EDBAZodiacType::Pig: return EDBAZodiac::Pig;
-		default: return EDBAZodiac::Rat;
-		}
+		return DBAIdentityTypeAdapter::ToCanonical(ZodiacType);
 	}
 
 	EDBAZodiacType ToZodiacType(EDBAZodiac Zodiac)
 	{
-		const uint8 ZodiacValue = static_cast<uint8>(Zodiac);
-		const uint8 LastZodiacValue = static_cast<uint8>(EDBAZodiac::Pig);
-		return ZodiacValue <= LastZodiacValue
-			? static_cast<EDBAZodiacType>(ZodiacValue)
-			: EDBAZodiacType::None;
+		return DBAIdentityTypeAdapter::ToLegacy(Zodiac);
 	}
 
 	EDBAElement ToCommonElement(EDBAElementType ElementType)
 	{
-		switch (ElementType)
-		{
-		case EDBAElementType::Fire: return EDBAElement::Fire;
-		case EDBAElementType::Water: return EDBAElement::Water;
-		case EDBAElementType::Wood: return EDBAElement::Wood;
-		case EDBAElementType::Metal: return EDBAElement::Gold;
-		case EDBAElementType::Earth: return EDBAElement::Earth;
-		default: return EDBAElement::Fire;
-		}
+		return DBAIdentityTypeAdapter::ToCanonical(ElementType);
 	}
 
 	FVector ResolveHorizontalAimDirection(const FVector& DesiredDirection, const FVector& FallbackDirection)
@@ -285,6 +260,8 @@ ADBAZodiacCharacterBase::ADBAZodiacCharacterBase()
 	LobbyFollowCamera->bUsePawnControlRotation = false;
 
 	PlayableSkillComponent = CreateDefaultSubobject<UDBAPlayableSkillComponent>(TEXT("PlayableSkillComponent"));
+	AppearanceComponent = CreateDefaultSubobject<UDBACharacterAppearanceComponent>(TEXT("AppearanceComponent"));
+	AppearanceComponent->SetBaseMeshComponent(GetMesh());
 
 	// 配置移动速度
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -343,6 +320,10 @@ void ADBAZodiacCharacterBase::BeginPlay()
 
 	InitializeDBAAbilityActorInfo();
 	ApplyLobbyVisuals();
+	if (AppearanceComponent)
+	{
+		AppearanceComponent->ApplyAppearance(DBAIdentityTypeAdapter::ToCanonical(ZodiacType), CharacterAppearance);
+	}
 	BindArenaHUDAttributeDelegates();
 	SyncArenaHUDFromAttributes(true);
 
@@ -487,6 +468,11 @@ void ADBAZodiacCharacterBase::ApplyLobbyVisuals()
 	MeshComponent->SetBoundsScale(2.0f);
 	MeshComponent->UpdateBounds();
 	ADBACharacterPresentationActor::ApplyZodiacMaterialToMesh(MeshComponent, CommonZodiac, this);
+	if (AppearanceComponent)
+	{
+		AppearanceComponent->SetBaseMeshComponent(MeshComponent);
+		AppearanceComponent->ApplyAppearance(CommonZodiac, CharacterAppearance);
+	}
 
 	UE_LOG(LogDBAFrontend, Log, TEXT("[DBAZodiacCharacterBase] 大厅角色外观已应用：Actor=%s 生肖=%d 网格=%s 骨骼=%s 动画=%s 相对位置=%s 相对旋转=%s"),
 		*GetName(),
@@ -522,6 +508,27 @@ void ADBAZodiacCharacterBase::OnRep_ZodiacType()
 {
 	UE_LOG(LogDBAFrontend, Log, TEXT("[DBAZodiacCharacterBase] 已同步大厅生肖，刷新本地外观：Actor=%s 生肖=%d"), *GetName(), static_cast<int32>(ZodiacType));
 	ApplyLobbyVisuals();
+}
+
+void ADBAZodiacCharacterBase::ApplyCharacterAppearance(const FDBACharacterAppearance& NewAppearance)
+{
+	if (!HasAuthority())
+	{
+		UE_LOG(LogDBACharacter, Warning, TEXT("[角色外观] 非服务端请求直接写入外观，已拒绝：Actor=%s。"), *GetName());
+		return;
+	}
+
+	CharacterAppearance = NewAppearance;
+	OnRep_CharacterAppearance();
+	ForceNetUpdate();
+}
+
+void ADBAZodiacCharacterBase::OnRep_CharacterAppearance()
+{
+	if (AppearanceComponent)
+	{
+		AppearanceComponent->ApplyAppearance(DBAIdentityTypeAdapter::ToCanonical(ZodiacType), CharacterAppearance);
+	}
 }
 
 void ADBAZodiacCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -1780,6 +1787,7 @@ void ADBAZodiacCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	// P1-6 改造：DeathState 和 TeamID 已上移到基类 ADBACharacterBase，其 GetLifetimeReplicatedProps 已注册 DOREPLIFETIME
 	DOREPLIFETIME(ADBAZodiacCharacterBase, HeroID);
 	DOREPLIFETIME(ADBAZodiacCharacterBase, ZodiacType);
+	DOREPLIFETIME(ADBAZodiacCharacterBase, CharacterAppearance);
 	DOREPLIFETIME_CONDITION(ADBAZodiacCharacterBase, SkillCooldowns, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(ADBAZodiacCharacterBase, SkillMaxCooldowns, COND_OwnerOnly);
 }

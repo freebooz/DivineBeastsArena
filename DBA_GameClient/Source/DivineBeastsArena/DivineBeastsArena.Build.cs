@@ -12,6 +12,11 @@ public class DivineBeastsArena : ModuleRules
 {
     public DivineBeastsArena(ReadOnlyTargetRules Target) : base(Target)
     {
+        // 前台 UI 仅由客户端和 Editor 使用。当前应用模块仍有公开 UMG/Niagara
+        // 类型，不能在未完成模块拆分前从 Server 编译图中移除这些基础模块；
+        // 但 CommonUI/MVVM 及其后续实现不得进入 Dedicated Server。
+        bool bBuildFrontendUi = Target.Type != TargetType.Server;
+
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
         PublicDependencyModuleNames.AddRange(new string[]
@@ -25,6 +30,8 @@ public class DivineBeastsArena : ModuleRules
             "GameplayTags",
             "GameplayTasks",
             "UMG",
+            "Slate",
+            "SlateCore",
             "GameCore",
             "GameMoba",
             "GameBackendClient",
@@ -34,8 +41,6 @@ public class DivineBeastsArena : ModuleRules
 
         PrivateDependencyModuleNames.AddRange(new string[]
         {
-            "Slate",
-            "SlateCore",
             "NetCore",
             "OnlineSubsystem",
             "OnlineSubsystemUtils",
@@ -52,6 +57,10 @@ public class DivineBeastsArena : ModuleRules
         {
             PrivateDependencyModuleNames.AddRange(new string[]
             {
+                // 前台 UI 栈：只供客户端/Editor 的 Screen、ViewModel 与输入路由使用。
+                "CommonUI",
+                "CommonInput",
+                "ModelViewViewModel",
                 "RenderCore",
                 "RHI",
                 "AudioMixer",

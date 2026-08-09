@@ -10,7 +10,7 @@ public enum CredentialAuthenticationStatus
 {
     Success,
     InvalidCredentials,
-    AccountBanned
+    AccountDisabled
 }
 
 public sealed record StoredCredentialAccount(
@@ -89,8 +89,8 @@ public sealed class AuthenticateCredentialsUseCase(
         var account = await store.FindDevelopmentAccountAsync(displayName.Trim(), cancellationToken);
         if (account == null)
             return Invalid();
-        if (IsBanned(account))
-            return Banned();
+        if (IsDisabled(account))
+            return Disabled();
         if (!string.IsNullOrEmpty(password) && !string.IsNullOrEmpty(account.PasswordHash) &&
             !passwordVerifier.Verify(password, account.PasswordHash))
         {
@@ -102,11 +102,11 @@ public sealed class AuthenticateCredentialsUseCase(
 
     private static CredentialAuthenticationResult Complete(StoredCredentialAccount account)
     {
-        return IsBanned(account) ? Banned() : Success(account);
+        return IsDisabled(account) ? Disabled() : Success(account);
     }
 
-    private static bool IsBanned(StoredCredentialAccount account) =>
-        string.Equals(account.Status, "BANNED", StringComparison.OrdinalIgnoreCase);
+    private static bool IsDisabled(StoredCredentialAccount account) =>
+        !string.Equals(account.Status, "ACTIVE", StringComparison.OrdinalIgnoreCase);
 
     private static CredentialAuthenticationResult Success(StoredCredentialAccount account) =>
         new(
@@ -120,6 +120,6 @@ public sealed class AuthenticateCredentialsUseCase(
     private static CredentialAuthenticationResult Invalid() =>
         new(CredentialAuthenticationStatus.InvalidCredentials);
 
-    private static CredentialAuthenticationResult Banned() =>
-        new(CredentialAuthenticationStatus.AccountBanned);
+    private static CredentialAuthenticationResult Disabled() =>
+        new(CredentialAuthenticationStatus.AccountDisabled);
 }

@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Entities;
 using Game.Shared.Contracts.Character;
+using Game.Shared.Contracts.GameServer;
 
 namespace Game.Infrastructure.Database.Seed;
 
@@ -38,6 +39,7 @@ public class DevelopmentDataSeeder
             await SeedPlayerCharactersAsync(cancellationToken);
             await SeedBanRecordsAsync(cancellationToken);
             await SeedGameConfigsAsync(cancellationToken);
+			await SeedServerDirectoryAsync(cancellationToken);
             await SeedPortAllocationsAsync(cancellationToken);
             await SeedGameRoomsAsync(cancellationToken);
             await SeedGameSessionsAsync(cancellationToken);
@@ -152,6 +154,15 @@ public class DevelopmentDataSeeder
         }
         await _context.SaveChangesAsync(cancellationToken);
     }
+
+	private async Task SeedServerDirectoryAsync(CancellationToken cancellationToken)
+	{
+		foreach (var server in GetServerDirectorySeeds())
+		{
+			await UpsertAsync(_context.GameServers, entry => entry.Id == server.Id, server, cancellationToken);
+		}
+		await _context.SaveChangesAsync(cancellationToken);
+	}
 
     private async Task SeedGameRoomsAsync(CancellationToken cancellationToken)
     {
@@ -947,6 +958,7 @@ public class DevelopmentDataSeeder
     private List<PlayerCharacter> GetPlayerCharacterSeeds()
     {
         var createdAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var defaultServerId = Guid.Parse("55000000-0000-0000-0000-000000000000");
         string CoreAttributes(float maxHealth, float attackPower, float defense, float moveSpeed)
             => JsonSerializer.Serialize(new
             {
@@ -966,7 +978,9 @@ public class DevelopmentDataSeeder
             {
                 Id = Guid.Parse("90000000-0000-0000-0000-000000000001"),
                 PlayerId = DevPlayerIds[0],
+                ServerId = defaultServerId,
                 CharacterName = "DevTiger",
+                NormalizedName = "DEVTIGER",
                 Zodiac = "Tiger",
                 PrimaryElement = "Fire",
                 FiveCamp = "South",
@@ -981,7 +995,9 @@ public class DevelopmentDataSeeder
             {
                 Id = Guid.Parse("90000000-0000-0000-0000-000000000002"),
                 PlayerId = DevPlayerIds[1],
+                ServerId = defaultServerId,
                 CharacterName = "DevDragon",
+                NormalizedName = "DEVDRAGON",
                 Zodiac = "Dragon",
                 PrimaryElement = "Water",
                 FiveCamp = "North",
@@ -996,7 +1012,9 @@ public class DevelopmentDataSeeder
             {
                 Id = Guid.Parse("90000000-0000-0000-0000-000000000003"),
                 PlayerId = DevPlayerIds[2],
+                ServerId = defaultServerId,
                 CharacterName = "DevRat",
+                NormalizedName = "DEVRAT",
                 Zodiac = "Rat",
                 PrimaryElement = "Wood",
                 FiveCamp = "East",
@@ -1966,6 +1984,45 @@ public class DevelopmentDataSeeder
     #endregion
 
     #region Complete API Mock Seeds
+
+	private static List<GameServerDirectoryEntry> GetServerDirectorySeeds()
+	{
+		var timestamp = new DateTimeOffset(2026, 8, 9, 0, 0, 0, TimeSpan.Zero);
+		return new List<GameServerDirectoryEntry>
+		{
+			new()
+			{
+				Id = Guid.Parse("55000000-0000-0000-0000-000000000000"), Name = "本地开发区", Region = "local", Platform = "ALL",
+				Status = ServerDirectoryStatuses.Online, Population = 1, Recommended = true, CreatedAt = timestamp, UpdatedAt = timestamp
+			},
+			new()
+			{
+				Id = Guid.Parse("55000000-0000-0000-0000-000000000001"), Name = "朱雀一区", Region = "cn-east", Platform = "ALL",
+				Status = ServerDirectoryStatuses.Online, Population = 1268, Recommended = true, CreatedAt = timestamp, UpdatedAt = timestamp
+			},
+			new()
+			{
+				Id = Guid.Parse("55000000-0000-0000-0000-000000000002"), Name = "青龙二区", Region = "cn-east", Platform = "ALL",
+				Status = ServerDirectoryStatuses.Busy, Population = 2388, Recommended = true, CreatedAt = timestamp, UpdatedAt = timestamp
+			},
+			new()
+			{
+				Id = Guid.Parse("55000000-0000-0000-0000-000000000003"), Name = "白虎三区", Region = "cn-north", Platform = "WINDOWS",
+				Status = ServerDirectoryStatuses.Full, Population = 3000, Recommended = false, CreatedAt = timestamp, UpdatedAt = timestamp
+			},
+			new()
+			{
+				Id = Guid.Parse("55000000-0000-0000-0000-000000000004"), Name = "玄武维护区", Region = "cn-east", Platform = "ALL",
+				Status = ServerDirectoryStatuses.Maintenance, Population = 0, Recommended = false,
+				MaintenanceMessage = "区服维护中，请稍后再试。", CreatedAt = timestamp, UpdatedAt = timestamp
+			},
+			new()
+			{
+				Id = Guid.Parse("55000000-0000-0000-0000-000000000005"), Name = "麒麟预更新区", Region = "cn-south", Platform = "ANDROID",
+				Status = ServerDirectoryStatuses.Offline, Population = 0, Recommended = false, MinClientVersion = "5.8.1", CreatedAt = timestamp, UpdatedAt = timestamp
+			}
+		};
+	}
 
     private List<GameServerInstance> GetGameServerInstanceSeeds()
     {

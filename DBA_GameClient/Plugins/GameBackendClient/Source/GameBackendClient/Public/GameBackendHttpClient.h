@@ -37,6 +37,20 @@ struct FDBA_GameBackendHttpResult
 
 using FDBA_GameBackendHttpCallback = TFunction<void(const FDBA_GameBackendHttpResult&)>;
 
+/**
+ * 单个 HTTP 请求的传输选项。前台 ApiClient 使用该结构将关联标识、刷新策略和超时
+ * 明确交给唯一传输层；旧服务仍可继续使用 Get/Post 等兼容入口。
+ */
+struct FDBA_GameBackendHttpRequestOptions
+{
+	bool bRequiresAuth = true;
+	bool bAllowRefresh = true;
+	FString CorrelationId;
+	float TimeoutSeconds = 0.0f;
+	/** 由领域服务声明的协议头；不得放入认证凭据或玩家密码。 */
+	TMap<FString, FString> AdditionalHeaders;
+};
+
 class GAMEBACKENDCLIENT_API FDBA_GameBackendHttpClient
 {
 public:
@@ -48,6 +62,17 @@ public:
 	void Patch(const FString& Path, const FString& JsonBody, const FDBA_GameBackendHttpCallback& Callback, bool bRequiresAuth = true);
 	void Delete(const FString& Path, const FDBA_GameBackendHttpCallback& Callback, bool bRequiresAuth = true);
 
+	/** 唯一可取消传输入口。返回的句柄可在刷新等待、重试或实际网络请求期间取消。 */
+	FGuid SendRequest(
+		const FString& Method,
+		const FString& Path,
+		const FString& JsonBody,
+		const FDBA_GameBackendHttpRequestOptions& Options,
+		const FDBA_GameBackendHttpCallback& Callback);
+
+	bool CancelRequest(const FGuid& RequestId);
+	void CancelAllRequests();
+
 private:
 	struct FPendingRequest
 	{
@@ -57,8 +82,11 @@ private:
 		bool bRequiresAuth = true;
 		int32 Attempt = 0;
 		bool bAllowRefresh = true;
+		float TimeoutSeconds = 0.0f;
 		double StartTime = 0.0;
 		FString TraceId;
+		TMap<FString, FString> AdditionalHeaders;
+		FGuid RequestId;
 		FDBA_GameBackendHttpCallback Callback;
 	};
 
@@ -71,7 +99,11 @@ private:
 	void Finish(const FPendingRequest& Request, const FDBA_GameBackendHttpResult& Result) const;
 	bool ShouldRetry(const FPendingRequest& Request, const FDBA_GameBackendHttpResult& Result) const;
 	void Retry(const FPendingRequest& Request) const;
+	bool IsCancelled(const FGuid& RequestId) const;
+	void ForgetRequest(const FGuid& RequestId);
 
 private:
 	TWeakObjectPtr<UDBA_GameBackendClientSubsystem> Subsystem;
+	TMap<FGuid, FHttpRequestPtr> ActiveRequests;
+	TSet<FGuid> CancelledRequests;
 };

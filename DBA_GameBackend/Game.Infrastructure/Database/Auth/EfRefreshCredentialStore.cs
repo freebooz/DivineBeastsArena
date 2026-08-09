@@ -60,9 +60,17 @@ public sealed class EfRefreshCredentialStore(
         var now = DateTimeOffset.UtcNow;
         var candidate = await FindCandidateAsync(refreshTokenHash, now, cancellationToken);
         if (candidate == null)
+        {
+            if (await DetectAndRevokeRefreshTokenReuseAsync(refreshTokenHash, now, cancellationToken))
+            {
+                await transaction.CommitAsync(cancellationToken);
+                return Reused();
+            }
+
             return Invalid();
-        if (IsBanned(candidate))
-            return Banned();
+        }
+        if (IsDisabled(candidate))
+            return Disabled();
 
         var consumed = await db.RefreshTokens
             .Where(x => x.Id == candidate.TokenId && x.RevokedAt == null && x.ExpiresAt > now)
@@ -100,9 +108,14 @@ public sealed class EfRefreshCredentialStore(
                 x => x.TokenHash == refreshTokenHash && x.RevokedAt == null && x.ExpiresAt > now,
                 cancellationToken);
         if (token?.Account?.PlayerIdentity == null)
+        {
+            if (await DetectAndRevokeRefreshTokenReuseAsync(refreshTokenHash, now, cancellationToken))
+                return Reused();
+
             return Invalid();
-        if (string.Equals(token.Account.Status, "BANNED", StringComparison.OrdinalIgnoreCase))
-            return Banned();
+        }
+        if (IsDisabled(token.Account.Status))
+            return Disabled();
 
         token.RevokedAt = now;
         var subject = ToSubject(token.Account, token.Account.PlayerIdentity);
@@ -159,8 +172,52 @@ public sealed class EfRefreshCredentialStore(
     private static LoginCredentialSubject ToSubject(Account account, PlayerIdentity identity) =>
         new(account.Id, identity.PlayerId, identity.DisplayName, account.AccountType);
 
-    private static bool IsBanned(RefreshRotationCandidate candidate) =>
-        string.Equals(candidate.AccountStatus, "BANNED", StringComparison.OrdinalIgnoreCase);
+    private async Task<bool> DetectAndRevokeRefreshTokenReuseAsync(
+        string refreshTokenHash,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var accountId = await db.RefreshTokens
+            .AsNoTracking()
+            .Where(x =>
+                x.TokenHash == refreshTokenHash &&
+                x.RevokedAt != null &&
+                x.ExpiresAt > now)
+            .Select(x => (Guid?)x.AccountId)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (!accountId.HasValue)
+            return false;
+
+        await RevokeActiveCredentialsAsync(accountId.Value, now, cancellationToken);
+        return true;
+    }
+
+    private async Task RevokeActiveCredentialsAsync(
+        Guid accountId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var activeTokens = db.RefreshTokens
+            .Where(x => x.AccountId == accountId && x.RevokedAt == null);
+        if (db.Database.IsRelational())
+        {
+            await activeTokens.ExecuteUpdateAsync(
+                setters => setters.SetProperty(x => x.RevokedAt, now),
+                cancellationToken);
+            return;
+        }
+
+        var trackedTokens = await activeTokens.ToListAsync(cancellationToken);
+        foreach (var token in trackedTokens)
+            token.RevokedAt = now;
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static bool IsDisabled(RefreshRotationCandidate candidate) =>
+        IsDisabled(candidate.AccountStatus);
+
+    private static bool IsDisabled(string accountStatus) =>
+        !string.Equals(accountStatus, "ACTIVE", StringComparison.OrdinalIgnoreCase);
 
     private static RefreshCredentialResult Success(
         IssuedLoginCredentials credentials,
@@ -176,8 +233,11 @@ public sealed class EfRefreshCredentialStore(
     private static RefreshCredentialResult Invalid() =>
         new(RefreshCredentialStatus.InvalidOrExpired);
 
-    private static RefreshCredentialResult Banned() =>
-        new(RefreshCredentialStatus.AccountBanned);
+    private static RefreshCredentialResult Reused() =>
+        new(RefreshCredentialStatus.Reused);
+
+    private static RefreshCredentialResult Disabled() =>
+        new(RefreshCredentialStatus.AccountDisabled);
 
     private sealed record RefreshRotationCandidate(
         Guid TokenId,

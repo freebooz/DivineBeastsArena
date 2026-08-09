@@ -22,11 +22,14 @@
 #endif
 #include "UDBAStartupVideoWidget.generated.h"
 
+class UDBAStartupViewModel;
 class UMediaPlayer;
 class UMediaTexture;
 class UImage;
 class UTextBlock;
 class UButton;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDBAOnStartupContinueRequested);
 
 /**
  * DBAStartupVideoWidget
@@ -46,9 +49,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "StartupVideo")
 	void SetMediaPlayer(UObject* InMediaPlayer);
 
+	UFUNCTION(BlueprintCallable, Category = "DBA|Startup")
+	void SetStartupViewModel(UDBAStartupViewModel* InViewModel);
+
+	UPROPERTY(BlueprintAssignable, Category = "DBA|Startup")
+	FDBAOnStartupContinueRequested OnContinueRequested;
+
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
 	/**
 	 * 视频播放完成时调用（由子类实现）
@@ -72,6 +82,15 @@ protected:
 	 */
 	void OnSkipClicked();
 
+	UFUNCTION()
+	void HandleStartupViewModelChanged();
+
+	UFUNCTION()
+	void HandleStartupContinueRequested();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DBA|Startup", meta = (DisplayName = "On Startup View Model Changed"))
+	void BP_OnStartupViewModelChanged(UDBAStartupViewModel* InViewModel);
+
 private:
 	/** 媒体播放器 */
 #if !UE_SERVER
@@ -93,4 +112,7 @@ private:
 	/** 是否正在播放 */
 	UPROPERTY(Transient)
 	bool bIsPlaying = false;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "DBA|Startup", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UDBAStartupViewModel> StartupViewModel;
 };

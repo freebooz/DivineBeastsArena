@@ -1,6 +1,8 @@
 <Solution>
   <Project Path="Game.Api.Tests/Game.Api.Tests.csproj" />
   <Project Path="Game.Api/Game.Api.csproj" />
+  <Project Path="DBA.ApiGateway/DBA.ApiGateway.csproj" />
+  <Project Path="Game.Application/Game.Application.csproj" />
   <Project Path="Game.Infrastructure/Game.Infrastructure.csproj" />
   <Project Path="Game.IntegrationTests/Game.IntegrationTests.csproj" />
   <Project Path="Game.ServerManagement/Game.ServerManagement.csproj" />

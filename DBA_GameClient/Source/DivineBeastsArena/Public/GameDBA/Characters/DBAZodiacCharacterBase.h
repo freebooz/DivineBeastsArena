@@ -19,6 +19,7 @@
 #include "GameDBA/Gameplay/Loadout/DBAPlayableSkillTypes.h"
 #include "GameDBA/Spectator/DBAObserverTypes.h"
 #include "GameDBA/Characters/IDBACharacterRef.h"
+#include "GameDBA/Character/Appearance/DBACharacterAppearanceTypes.h"
 #include "DBAZodiacCharacterBase.generated.h"
 
 class UDBAZodiacAnimInstance;
@@ -28,6 +29,7 @@ class UCameraComponent;
 class USpringArmComponent;
 class ADBARpcHandler;
 class UDBAPlayableSkillComponent;
+class UDBACharacterAppearanceComponent;
 struct FDBAPlayableSkillRuntimeSpec;
 struct FOnAttributeChangeData;
 
@@ -82,6 +84,13 @@ public:
 
 	/** 由大厅服务器在生成 Pawn 后设置；客户端通过复制回调刷新统一模型的生肖外观。 */
 	void SetLobbyDisplayZodiac(EDBAZodiac NewZodiac);
+
+	/** 服务端写入稳定外观 ID，并复制给客户端恢复同一外观。 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Appearance")
+	void ApplyCharacterAppearance(const FDBACharacterAppearance& NewAppearance);
+
+	UFUNCTION(BlueprintPure, Category = "DBA|Character|Appearance")
+	UDBACharacterAppearanceComponent* GetAppearanceComponent() const { return AppearanceComponent; }
 
 	/** 获取RPC处理器 */
 	UFUNCTION(BlueprintCallable, Category = "DBA|Character|Camera")
@@ -225,6 +234,12 @@ protected:
 	UFUNCTION()
 	void OnRep_ZodiacType();
 
+	UPROPERTY(ReplicatedUsing = OnRep_CharacterAppearance, BlueprintReadOnly, Category = "DBA|Character|Appearance")
+	FDBACharacterAppearance CharacterAppearance;
+
+	UFUNCTION()
+	void OnRep_CharacterAppearance();
+
 	/** 角色元素类型 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DBA|Config")
 	EDBAElementType ElementType = EDBAElementType::None;
@@ -300,6 +315,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DBA|Skill")
 	TObjectPtr<UDBAPlayableSkillComponent> PlayableSkillComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DBA|Character|Appearance")
+	TObjectPtr<UDBACharacterAppearanceComponent> AppearanceComponent;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimationAsset> LobbyIdleAnimation;

@@ -12,6 +12,7 @@
 
 #include "CoreMinimal.h"
 #include "GameDBA/Core/DBAErrorCodes.h"
+#include "GameDBA/Frontend/Core/DBAFrontendContracts.h"
 #include "DBAResultTypes.generated.h"
 
 /**
@@ -27,6 +28,14 @@ struct DIVINEBEASTSARENA_API FDBAOperationResult
 	/** 操作是否成功 */
 	UPROPERTY(BlueprintReadOnly, Category = "Result")
 	bool bSuccess = false;
+
+	/** 异步生命周期；新前台业务应使用该字段判定结果。 */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	EDBAAsyncOperationState OperationState = EDBAAsyncOperationState::Idle;
+
+	/** UI 可安全消费的结构化错误。 */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	FDBAApiError ApiError;
 
 	/** 错误码，成功时为 None */
 	UPROPERTY(BlueprintReadOnly, Category = "Result")
@@ -51,6 +60,7 @@ struct DIVINEBEASTSARENA_API FDBAOperationResult
 	{
 		FDBAOperationResult Result;
 		Result.bSuccess = true;
+		Result.OperationState = EDBAAsyncOperationState::Succeeded;
 		Result.ErrorCode = EDBAErrorCode::None;
 		Result.AdditionalData = InAdditionalData;
 		return Result;
@@ -66,8 +76,21 @@ struct DIVINEBEASTSARENA_API FDBAOperationResult
 	{
 		FDBAOperationResult Result;
 		Result.bSuccess = false;
+		Result.OperationState = EDBAAsyncOperationState::Failed;
 		Result.ErrorCode = InErrorCode;
 		Result.ErrorMessage = InErrorMessage;
+		return Result;
+	}
+
+	static FDBAOperationResult Failure(const FDBAApiError& InApiError)
+	{
+		FDBAOperationResult Result;
+		Result.bSuccess = false;
+		Result.OperationState = InApiError.Category == EDBANetworkErrorCategory::Timeout
+			? EDBAAsyncOperationState::TimedOut
+			: EDBAAsyncOperationState::Failed;
+		Result.ApiError = InApiError;
+		Result.ErrorMessage = InApiError.UserMessage.ToString();
 		return Result;
 	}
 };

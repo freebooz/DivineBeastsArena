@@ -223,11 +223,13 @@ public class PlayerCharacterConfiguration : IEntityTypeConfiguration<PlayerChara
 {
     public void Configure(EntityTypeBuilder<PlayerCharacter> b)
     {
-        b.ToTable("player_character");
+        b.ToTable("characters");
         b.HasKey(x => x.Id);
         b.Property(x => x.Id).HasColumnName("id");
         b.Property(x => x.PlayerId).HasColumnName("player_id").IsRequired();
+        b.Property(x => x.ServerId).HasColumnName("server_id").IsRequired();
         b.Property(x => x.CharacterName).HasColumnName("character_name").HasMaxLength(24).IsRequired();
+        b.Property(x => x.NormalizedName).HasColumnName("normalized_name").HasMaxLength(64).IsRequired();
         b.Property(x => x.Zodiac).HasColumnName("zodiac").HasMaxLength(32).IsRequired();
         b.Property(x => x.PrimaryElement).HasColumnName("primary_element").HasMaxLength(32).IsRequired();
         b.Property(x => x.FiveCamp).HasColumnName("five_camp").HasMaxLength(32).IsRequired();
@@ -235,12 +237,45 @@ public class PlayerCharacterConfiguration : IEntityTypeConfiguration<PlayerChara
         b.Property(x => x.CoreAttributesJson).HasColumnName("core_attributes_json").HasColumnType("jsonb").IsRequired();
         b.Property(x => x.Level).HasColumnName("level").IsRequired().HasDefaultValue(1);
         b.Property(x => x.IsSelected).HasColumnName("is_selected").IsRequired().HasDefaultValue(false);
+        b.Property(x => x.IsDeleted).HasColumnName("is_deleted").IsRequired().HasDefaultValue(false);
+        b.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+        b.Property(x => x.CreationIdempotencyKey).HasColumnName("creation_idempotency_key").HasMaxLength(128);
         b.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         b.Property(x => x.LastUsedAt).HasColumnName("last_used_at").IsRequired();
         b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
-        b.HasIndex(x => x.PlayerId);
-        b.HasIndex(x => new { x.PlayerId, x.CharacterName }).IsUnique();
-        b.HasIndex(x => new { x.PlayerId, x.IsSelected });
+        b.HasIndex(x => new { x.PlayerId, x.ServerId, x.IsDeleted });
+        b.HasIndex(x => new { x.ServerId, x.NormalizedName }).IsUnique();
+        b.HasIndex(x => new { x.PlayerId, x.ServerId, x.IsSelected });
+        b.HasIndex(x => new { x.PlayerId, x.ServerId, x.CreationIdempotencyKey }).IsUnique();
+        b.HasOne(x => x.Appearance).WithOne(x => x.Character).HasForeignKey<CharacterAppearance>(x => x.CharacterId);
+        b.HasOne(x => x.Progress).WithOne(x => x.Character).HasForeignKey<CharacterProgress>(x => x.CharacterId);
+    }
+}
+
+public class CharacterAppearanceConfiguration : IEntityTypeConfiguration<CharacterAppearance>
+{
+    public void Configure(EntityTypeBuilder<CharacterAppearance> b)
+    {
+        b.ToTable("character_appearances");
+        b.HasKey(x => x.CharacterId);
+        b.Property(x => x.CharacterId).HasColumnName("character_id");
+        b.Property(x => x.RulesVersion).HasColumnName("rules_version").HasMaxLength(32).IsRequired();
+        b.Property(x => x.AppearanceJson).HasColumnName("appearance_json").HasColumnType("jsonb").IsRequired();
+        b.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at").IsRequired();
+    }
+}
+
+public class CharacterProgressConfiguration : IEntityTypeConfiguration<CharacterProgress>
+{
+    public void Configure(EntityTypeBuilder<CharacterProgress> b)
+    {
+        b.ToTable("character_progress");
+        b.HasKey(x => x.CharacterId);
+        b.Property(x => x.CharacterId).HasColumnName("character_id");
+        b.Property(x => x.Level).HasColumnName("level").IsRequired();
+        b.Property(x => x.Experience).HasColumnName("experience").IsRequired();
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at").IsRequired();
     }
 }

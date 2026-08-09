@@ -10,13 +10,13 @@
 
 #include "GameBackendClientSettings.h"
 
-UDBA_GameBackendClientSettings::UDBA_GameBackendClientSettings()
+UDBAExternalServiceSettings::UDBAExternalServiceSettings()
 {
 	CategoryName = TEXT("Plugins");
 	SectionName = TEXT("DBA_GameBackendClient");
 }
 
-FName UDBA_GameBackendClientSettings::GetCategoryName() const
+FName UDBAExternalServiceSettings::GetCategoryName() const
 {
 	return TEXT("Plugins");
 }

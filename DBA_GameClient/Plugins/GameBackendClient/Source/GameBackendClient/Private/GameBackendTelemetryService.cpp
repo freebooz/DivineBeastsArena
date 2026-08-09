@@ -70,7 +70,7 @@ void UDBA_GameBackendTelemetryService::Initialize(UDBA_GameBackendClientSubsyste
 	HttpClient = InHttpClient;
 	bShuttingDown = false;
 
-	const UDBA_GameBackendClientSettings* Settings = GetDefault<UDBA_GameBackendClientSettings>();
+	const UDBAExternalServiceSettings* Settings = GetDefault<UDBAExternalServiceSettings>();
 	FlushIntervalSeconds = FMath::Max(1.0f, Settings->TelemetryFlushIntervalSeconds);
 	MaxQueueSize = FMath::Max(10, Settings->TelemetryMaxQueueSize);
 	bTelemetryEnabled = Settings->bEnableTelemetry;

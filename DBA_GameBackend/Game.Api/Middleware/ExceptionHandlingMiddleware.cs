@@ -37,7 +37,7 @@ public sealed class ExceptionHandlingMiddleware
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         var traceId = context.TraceIdentifier;
-        _logger.LogError(exception, "Unhandled exception. TraceId: {TraceId}", traceId);
+        _logger.LogError(exception, "未处理的 API 异常。追踪标识：{TraceId}", traceId);
 
         var (statusCode, title, detail) = exception switch
         {
@@ -50,7 +50,7 @@ public sealed class ExceptionHandlingMiddleware
 
         var response = ErrorResponse.Create((int)statusCode, title, detail, traceId);
         context.Response.StatusCode = (int)statusCode;
-        context.Response.ContentType = "application/problem+json";
-        await context.Response.WriteAsJsonAsync(response);
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(response.ToApiResponse());
     }
 }

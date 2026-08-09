@@ -26,6 +26,7 @@ using Game.Api.Services.Session;
 using Game.Api.Services.Runtime;
 using Game.Api.Services.Settlement;
 using Game.Api.Services.GameServer;
+using Game.Api.Services.ServerDirectory;
 using Game.Api.Services.Inventory;
 using Game.Api.Validators;
 using FluentValidation;
@@ -39,6 +40,7 @@ using Game.Infrastructure.Database.Sessions;
 using Game.Infrastructure.Database.Auth;
 using Game.Infrastructure.Security;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Npgsql;
 using System.Threading.RateLimiting;
 
 namespace Game.Api.Extensions;
@@ -77,9 +79,10 @@ public static class ServiceCollectionExtensions
         RequiredOptionsValidator.ValidateVillageSession(villageSessionOptions);
         RequiredOptionsValidator.ValidateAuthenticationPolicy(authenticationPolicyOptions);
 
-        services.AddDbContext<GameDbContext>(options =>
+        var pooledConnectionString = BuildPooledConnectionString(databaseOptions);
+        services.AddDbContextPool<GameDbContext>(options =>
             options
-                .UseNpgsql(databaseOptions.ConnectionString)
+                .UseNpgsql(pooledConnectionString, npgsql => npgsql.EnableRetryOnFailure())
                 .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.CoreEventId.NavigationBaseIncludeIgnored)));
 
         services.AddSingleton<IRedisConnectionFactory>(_ =>
@@ -92,6 +95,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<TimeProvider>(TimeProvider.System);
         services.Configure<DedicatedServerOrchestrationOptions>(configuration.GetSection(DedicatedServerOrchestrationOptions.Section));
         services.Configure<VillageSessionOptions>(configuration.GetSection(VillageSessionOptions.Section));
+		services.Configure<ServerDirectoryOptions>(configuration.GetSection(ServerDirectoryOptions.Section));
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -135,6 +139,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Services.Runtime.IGameServerService, GameServerService>();
         services.AddScoped<Services.Settlement.ISettlementService, SettlementService>();
         services.AddScoped<IGameServerRegistryService, GameServerRegistryService>();
+		services.AddScoped<IServerDirectoryService, ServerDirectoryService>();
         services.AddScoped<Services.Inventory.IInventoryService, InventoryService>();
         services.AddScoped<IDedicatedServerOrchestrator, DedicatedServerOrchestrator>();
         services.AddScoped<IJoinTicketStore, EfJoinTicketStore>();
@@ -180,6 +185,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IGetPlayerCharactersUseCase, GetPlayerCharactersUseCase>();
         services.AddScoped<ICreatePlayerCharacterUseCase, CreatePlayerCharacterUseCase>();
         services.AddScoped<ISelectPlayerCharacterUseCase, SelectPlayerCharacterUseCase>();
+        services.AddSingleton<CharacterDefinitionValidator>();
+        services.AddScoped<ICharacterRosterStore, EfCharacterRosterStore>();
+        services.AddScoped<ICharacterRosterService, CharacterRosterService>();
         services.AddHostedService<Services.Match.MatchmakingBackgroundService>();
 
         return services;
@@ -322,5 +330,17 @@ public static class ServiceCollectionExtensions
             : forwardedFor.Split(',')[0].Trim();
 
         return $"{policy}:{ip ?? "unknown"}";
+    }
+
+    private static string BuildPooledConnectionString(DatabaseOptions options)
+    {
+        var builder = new NpgsqlConnectionStringBuilder(options.ConnectionString)
+        {
+            Pooling = true,
+            MinPoolSize = Math.Max(0, options.MinPoolSize)
+        };
+        builder.MaxPoolSize = Math.Max(builder.MinPoolSize, options.MaxPoolSize);
+
+        return builder.ConnectionString;
     }
 }

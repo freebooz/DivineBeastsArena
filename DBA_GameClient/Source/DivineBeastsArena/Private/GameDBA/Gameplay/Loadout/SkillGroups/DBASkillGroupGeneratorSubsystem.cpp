@@ -74,6 +74,7 @@ void UDBASkillGroupGeneratorSubsystem::OnSubsystemDeinitialize()
 	// P1-1 改造：项目基类统一调用 Super::Deinitialize，此处仅清理派生类状态
 	LoadedSkillGroupDataTable = nullptr;
 	LoadedSkillGroupSummaryDataTable = nullptr;
+	OnSkillGroupDataReady.Clear();
 }
 
 void UDBASkillGroupGeneratorSubsystem::LoadSkillGroupDataTable()
@@ -92,6 +93,7 @@ void UDBASkillGroupGeneratorSubsystem::LoadSkillGroupDataTable()
 		if (UDataTable* ExistingTable = SkillGroupDataTable.Get())
 		{
 			LoadedSkillGroupDataTable = ExistingTable;
+			OnSkillGroupDataReady.Broadcast();
 		}
 		else
 		{
@@ -100,6 +102,10 @@ void UDBASkillGroupGeneratorSubsystem::LoadSkillGroupDataTable()
 				FStreamableDelegate::CreateWeakLambda(this, [this]()
 				{
 					LoadedSkillGroupDataTable = SkillGroupDataTable.Get();
+					if (LoadedSkillGroupDataTable)
+					{
+						OnSkillGroupDataReady.Broadcast();
+					}
 				}),
 				FStreamableManager::AsyncLoadHighPriority,
 				true);

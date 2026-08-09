@@ -154,7 +154,9 @@ public class PlayerCharacter
 {
     public Guid Id { get; set; }
     public Guid PlayerId { get; set; }
+    public Guid ServerId { get; set; }
     public string CharacterName { get; set; } = string.Empty;
+    public string NormalizedName { get; set; } = string.Empty;
     public string Zodiac { get; set; } = "Rat";
     public string PrimaryElement { get; set; } = "Water";
     public string FiveCamp { get; set; } = "East";
@@ -162,9 +164,35 @@ public class PlayerCharacter
     public string CoreAttributesJson { get; set; } = "{}";
     public int Level { get; set; } = 1;
     public bool IsSelected { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
+    public string? CreationIdempotencyKey { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset LastUsedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }
 
     public PlayerProfile? PlayerProfile { get; set; }
+    public CharacterAppearance? Appearance { get; set; }
+    public CharacterProgress? Progress { get; set; }
+}
+
+/** 服务端权威外观快照；仅保存稳定选项 ID，绝不保存 UE 资产路径。 */
+public class CharacterAppearance
+{
+    public Guid CharacterId { get; set; }
+    public string RulesVersion { get; set; } = string.Empty;
+    public string AppearanceJson { get; set; } = "{}";
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public PlayerCharacter? Character { get; set; }
+}
+
+/** 角色进度表；保留 PlayerCharacter.Level 作为既有对局链兼容投影。 */
+public class CharacterProgress
+{
+    public Guid CharacterId { get; set; }
+    public int Level { get; set; } = 1;
+    public long Experience { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public PlayerCharacter? Character { get; set; }
 }

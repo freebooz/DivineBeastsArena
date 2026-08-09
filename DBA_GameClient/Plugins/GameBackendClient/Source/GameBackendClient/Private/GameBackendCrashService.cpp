@@ -72,7 +72,7 @@ void UDBA_GameBackendCrashService::Initialize(UDBA_GameBackendClientSubsystem* I
 {
 	Subsystem = InSubsystem;
 	HttpClient = InHttpClient;
-	bCrashUploadEnabled = GetDefault<UDBA_GameBackendClientSettings>()->bEnableCrashUpload;
+	bCrashUploadEnabled = GetDefault<UDBAExternalServiceSettings>()->bEnableCrashUpload;
 }
 
 void UDBA_GameBackendCrashService::ScanCrashFiles()

@@ -945,6 +945,72 @@ namespace Game.Infrastructure.Database.Migrations
                     b.ToTable("game_server_event", (string)null);
                 });
 
+            modelBuilder.Entity("Game.Infrastructure.Database.Entities.GameServerDirectoryEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("MaintenanceMessage")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("maintenance_message");
+
+                    b.Property<string>("MinClientVersion")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("min_client_version");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("platform");
+
+                    b.Property<int>("Population")
+                        .HasColumnType("integer")
+                        .HasColumnName("population");
+
+                    b.Property<bool>("Recommended")
+                        .HasColumnType("boolean")
+                        .HasColumnName("recommended");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("region");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Recommended", "Population");
+
+                    b.HasIndex("Region", "Platform", "Status");
+
+                    b.ToTable("game_servers", (string)null);
+                });
+
             modelBuilder.Entity("Game.Infrastructure.Database.Entities.GameServerInstance", b =>
                 {
                     b.Property<Guid>("Id")

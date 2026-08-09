@@ -32,7 +32,7 @@ namespace DBAConstantsCore
 	 * DivineBeastsArena 层的 DBAConstants::Map_MainLobby 应引用此常量，
 	 * 避免路径分歧。
 	 *
-	 * 配置覆盖入口：DefaultGame.ini [/Script/DivineBeastsArena.DBAFrontendConfig] DefaultLobbyMap
+	 * 已废弃：前台地图由 UDBAFrontendSettings 的软引用配置；该常量仅供尚未迁移的大厅代码兼容使用。
 	 */
 	constexpr const TCHAR* Map_MainLobby = TEXT("/Game/Lobby/Maps/MainLobby");
 

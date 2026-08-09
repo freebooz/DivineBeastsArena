@@ -8,8 +8,8 @@ services:
       context: .
       dockerfile: Dockerfile.single
     container_name: game-backend
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
@@ -27,16 +27,65 @@ services:
       # 数据种子（开发环境启用）
       - SeedData__Enabled=true
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 20s
+    restart: unless-stopped
+    networks:
+      - game-network
+
+  # 仅执行现有 GameDbContext 的 EF migration；不创建第二个 DbContext。
+  db-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.single
+    container_name: game-db-migrate
+    entrypoint: ["dotnet", "/app/api/Game.Api.dll"]
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Database__RunMigrationsAndExit=true
+      - Database__ConnectionString=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Include Error Detail=false
+      - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD},abortConnect=false
+      - Jwt__Secret=${JWT_SECRET}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      - InternalApi__Key=${INTERNAL_API_KEY}
+      - SeedData__Enabled=false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - game-network
+
+  # 网关只处理路由、限流、关联标识、日志与健康检查；不承载游戏角色业务。
+  dba-api-gateway:
+    build:
+      context: .
+      dockerfile: DBA.ApiGateway/Dockerfile
+    container_name: dba-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ReverseProxy__Clusters__game-api__Destinations__game-api-primary__Address=http://game-backend:8080/
+    depends_on:
+      game-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
     networks:
       - game-network
@@ -50,8 +99,8 @@ services:
     container_name: game-api
     profiles:
       - separate
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - Database__ConnectionString=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Include Error Detail=false

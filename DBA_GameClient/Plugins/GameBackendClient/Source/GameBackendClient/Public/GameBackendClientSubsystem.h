@@ -52,7 +52,7 @@ public:
 	void Logout();
 
 	UFUNCTION(BlueprintPure, Category = "DBA_GameBackend|Config")
-	const FString& GetBackendBaseUrl() const { return BackendBaseUrl; }
+	const FString& GetGatewayBaseUrl() const { return GatewayBaseUrl; }
 
 	UFUNCTION(BlueprintPure, Category = "DBA_GameBackend|Config")
 	const FString& GetClientVersion() const { return ClientVersion; }
@@ -225,7 +225,7 @@ private:
 
 	TSharedPtr<FDBA_GameBackendHttpClient> HttpClient;
 
-	FString BackendBaseUrl;
+	FString GatewayBaseUrl;
 	FString ClientVersion;
 	FString BuildNumber;
 	FString Channel;

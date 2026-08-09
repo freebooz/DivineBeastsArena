@@ -28,6 +28,7 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "GameDBA/Core/DBALogChannels.h"
+#include "GameDBA/Frontend/Settings/DBAFrontendSettings.h"
 #include "GameDBA/UI/Controllers/DBAGameUIManager.h"
 #include "GameDBA/UI/DBAUIFontUtils.h"
 #include "Engine/Texture2D.h"
@@ -1304,6 +1305,8 @@ void UDBALoginFlowWidgetBase::NativeOnInitialized()
 void UDBALoginFlowWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+	const UDBAFrontendSettings* FrontendSettings = GetDefault<UDBAFrontendSettings>();
+	bRememberAccount = !FrontendSettings || FrontendSettings->bRememberSessionByDefault;
 	FViewport::ViewportResizedEvent.RemoveAll(this);
 	FViewport::ViewportResizedEvent.AddUObject(this, &UDBALoginFlowWidgetBase::HandleViewportResized);
 

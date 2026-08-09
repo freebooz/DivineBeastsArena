@@ -13,6 +13,7 @@ using Game.ServerManagement.DedicatedServers;
 using Game.Shared.Options;
 using Game.Worker.DedicatedServers;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Serilog;
 using Serilog.Formatting.Compact;
 
@@ -31,7 +32,15 @@ var dedicatedServerOptions = builder.Configuration.GetSection(DedicatedServerOrc
 RequiredOptionsValidator.ValidateDatabase(databaseOptions);
 RequiredOptionsValidator.ValidateDedicatedServerOrchestration(dedicatedServerOptions, builder.Environment.IsProduction());
 
-builder.Services.AddDbContext<GameDbContext>(options => options.UseNpgsql(databaseOptions.ConnectionString));
+var minPoolSize = Math.Max(0, databaseOptions.MinPoolSize);
+var pooledConnectionString = new NpgsqlConnectionStringBuilder(databaseOptions.ConnectionString)
+{
+    Pooling = true,
+    MinPoolSize = minPoolSize,
+    MaxPoolSize = Math.Max(minPoolSize, databaseOptions.MaxPoolSize)
+}.ConnectionString;
+builder.Services.AddDbContextPool<GameDbContext>(options =>
+    options.UseNpgsql(pooledConnectionString, npgsql => npgsql.EnableRetryOnFailure()));
 builder.Services.Configure<MaintenanceWorkerOptions>(builder.Configuration.GetSection(MaintenanceWorkerOptions.Section));
 builder.Services.Configure<DedicatedServerOrchestrationOptions>(builder.Configuration.GetSection(DedicatedServerOrchestrationOptions.Section));
 builder.Services.Configure<DedicatedServerMaintenanceOptions>(builder.Configuration.GetSection(DedicatedServerMaintenanceOptions.Section));

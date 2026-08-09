@@ -18,7 +18,53 @@
 #include "GameDBA/Data/Tables/DBAZodiacHeroData.h"
 #include "GameDBA/Data/Tables/DBAFixedSkillGroupData.h"
 #include "GameDBA/Gameplay/Progression/Balance/DBAHeroBalanceRow.h"
+#if WITH_EDITOR
+#include "Misc/DataValidation.h"
+#endif
 #include "DBAZodiacHeroDataAsset.generated.h"
+
+class AActor;
+class APawn;
+class UAnimationAsset;
+class UAnimInstance;
+class UNiagaraSystem;
+class USkeletalMesh;
+class USoundBase;
+class UTexture2D;
+
+/**
+ * 角色预览镜头的静态配置。数值由每个生肖数据资产配置，预览系统只读取而不推导。
+ */
+USTRUCT(BlueprintType)
+struct DIVINEBEASTSARENA_API FDBAZodiacPreviewCameraPreset
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Preview")
+	FVector CameraOffset = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Preview")
+	FRotator CameraRotation = FRotator::ZeroRotator;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Preview")
+	float FieldOfView = 0.0f;
+
+	/** 到角色焦点的默认距离；零表示沿用 Preview Camera Rig 的场景配置。 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Preview", meta = (ClampMin = "0.0"))
+	float Distance = 0.0f;
+
+	/** 不同体型的镜头焦点高度偏移。 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Preview")
+	float Height = 0.0f;
+
+	/** 缩放下限；零表示沿用 Preview Camera Rig 的场景配置。 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Preview", meta = (ClampMin = "0.0"))
+	float MinDistance = 0.0f;
+
+	/** 缩放上限；零表示沿用 Preview Camera Rig 的场景配置。 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Preview", meta = (ClampMin = "0.0"))
+	float MaxDistance = 0.0f;
+};
 
 /**
  * 生肖英雄数据资产
@@ -51,12 +97,90 @@ public:
 
 	UDBAZodiacHeroDataAsset();
 
+	/** 单生肖主资产类型；旧表聚合资产不会注册为该类型。 */
+	static const FPrimaryAssetType& GetZodiacHeroPrimaryAssetType();
+
+	virtual FPrimaryAssetId GetPrimaryAssetId() const override;
+
+	/** 是否为兼容旧选角表的聚合资产。新生肖资产必须为 false。 */
+	bool IsLegacyTableCatalog() const { return bLegacyTableCatalog; }
+
 	//~ IDBAValidatableInterface 实现
 	virtual bool ValidateData_Implementation(TArray<FString>& OutErrors) const override;
 	//~ IDBAValidatableInterface 实现 结束
 
 	/** DataTable 加载完成事件广播。UI 可订阅此事件驱动更新，避免轮询。 */
 	FOnDataTableLoaded OnDataTableLoaded;
+
+	// ==================== 单生肖静态配置（步骤 14 主权威） ====================
+
+	/** 新资产必须关闭该兼容开关，才会作为 ZodiacHero Primary Asset 被 Registry 扫描。 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Migration", meta = (DisplayName = "旧表聚合兼容模式"))
+	bool bLegacyTableCatalog = true;
+
+	/** 生肖身份；AssetRegistrySearchable 供 Registry 在不加载重资源的前提下建立索引。 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable, Category = "DBA|Zodiac|Identity")
+	EDBAZodiac ZodiacType = EDBAZodiac::None;
+
+	/** 角色肖像；图标继承自 UDBADataAssetBase::Icon。 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Presentation")
+	TSoftObjectPtr<UTexture2D> Portrait;
+
+	/** 创建角色第一步展示的定位文案；由生肖 DataAsset 配置，禁止 Widget 硬编码。 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Presentation")
+	FText CharacterCreateRoleSummary;
+
+	/** 创建角色第一步展示的难度文案；为空时 UI 不显示占位难度。 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Presentation")
+	FText CharacterCreateDifficulty;
+
+	/** 仅用于前台预览的 Actor 类；Dedicated Server 不得创建该类。 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Preview")
+	TSoftClassPtr<AActor> PreviewActorClass;
+
+	/** 对局角色类；TeamId 不从本资产的生肖、元素或五大阵营字段推导。 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Gameplay")
+	TSoftClassPtr<APawn> GameplayCharacterClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Appearance")
+	TSoftObjectPtr<USkeletalMesh> BodyMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Appearance")
+	TSoftObjectPtr<USkeletalMesh> HeadMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Appearance")
+	TArray<TSoftObjectPtr<UObject>> DefaultEquipmentAssets;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Animation")
+	TSoftClassPtr<UAnimInstance> AnimationBlueprintClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Animation")
+	TSoftObjectPtr<UAnimationAsset> IdleAnimation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Animation")
+	TSoftObjectPtr<UAnimationAsset> SelectAnimation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Preview")
+	TSoftObjectPtr<UNiagaraSystem> PreviewVFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Preview")
+	TSoftObjectPtr<USoundBase> PreviewSFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Preview")
+	FDBAZodiacPreviewCameraPreset CameraPreset;
+
+	/** 外观槽位 -> 默认选项 ID；只保存 ID，不直接同步加载外观资源。 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Appearance")
+	TMap<FName, FName> DefaultAppearanceOptionIds;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DBA|Zodiac|Appearance")
+	TArray<FName> AllowedAppearanceOptionIds;
+
+	/**
+	 * 仅为历史资产迁移时的阻断哨兵。该字段不得用于业务；非空即表示仍有旧分类引用，校验会失败。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable, Category = "DBA|Zodiac|Migration", meta = (DeprecatedProperty, DeprecationMessage = "生肖资产不得携带旧 Faction 或其他旧分类引用。"))
+	FName DeprecatedLegacyClassificationId;
 
 	/**
 	 * 生肖英雄显示数据表
@@ -178,6 +302,10 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "ZodiacHeroData")
 	bool ValidateDataIntegrity(TArray<FString>& OutErrors) const;
+
+#if WITH_EDITOR
+	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override;
+#endif
 
 	/**
 	 * 异步预加载全部生肖英雄数据表。

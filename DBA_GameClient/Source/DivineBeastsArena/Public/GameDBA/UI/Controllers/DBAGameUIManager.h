@@ -42,6 +42,8 @@ class UDBANewbieTaskTrackerWidgetBase;
 class UAudioComponent;
 class UUserWidget;
 class USoundBase;
+class UDBAUILayerManagerSubsystem;
+enum class EDBAUILayer : uint8;
 struct FStreamableHandle;
 
 /**
@@ -597,4 +599,8 @@ private:
 	TObjectPtr<USoundBase> LoginFlowBackgroundMusicSound;
 
 	void StartLoginFlowBackgroundMusic(USoundBase* DesiredSound);
+
+	UDBAUILayerManagerSubsystem* GetUILayerManager() const;
+	bool MountManagedWidget(UUserWidget* Widget, EDBAUILayer Layer);
+	void RemoveManagedWidget(UUserWidget* Widget);
 };
