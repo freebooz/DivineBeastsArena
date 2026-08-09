@@ -20,6 +20,7 @@
 | `/api/auth` 中已有 v1 successor 的路由 | `Deprecation` + successor `Link` 响应头 | `/api/v1/auth/*` | 新客户端禁止使用 |
 | `/api/account/characters` | `Deprecation` + successor `Link` 响应头 | `/api/v1/characters` | 新客户端禁止使用 |
 | `/api/players/me/characters` | `Deprecation` + successor `Link` 响应头 | `/api/v1/characters` | 新客户端禁止使用 |
+| `/api/v1/auth/player-name/ensure` | `Deprecation` + successor `Link` 响应头 | `/api/v1/auth/player-name/generate` | 新客户端只调用 `/generate` |
 
 `UDBAZodiacDataAsset`、`DeprecatedLegacyClassificationId` 和旧 Village 私有链此前已经带有 Deprecated/迁移注释，本步骤继续保留。
 

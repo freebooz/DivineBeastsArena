@@ -26,7 +26,7 @@
 
 namespace
 {
-	UAbilitySystemComponent* ResolveAbilitySystemComponent(AActor* Actor)
+	UAbilitySystemComponent* ResolveSkillVFXAbilitySystemComponent(AActor* Actor)
 	{
 		if (!Actor)
 		{
@@ -55,7 +55,7 @@ namespace
 		}
 	}
 
-	EDBAElement ResolveElementFromActor(AActor* Actor, EDBAElement FallbackElement)
+	EDBAElement ResolveSkillVFXElementFromActor(AActor* Actor, EDBAElement FallbackElement)
 	{
 		if (const ADBAZodiacCharacterBase* ZodiacCharacter = Cast<ADBAZodiacCharacterBase>(Actor))
 		{
@@ -66,9 +66,9 @@ namespace
 		return FallbackElement;
 	}
 
-	float ResolveDefense(AActor* Actor)
+	float ResolveSkillVFXDefense(AActor* Actor)
 	{
-		if (UAbilitySystemComponent* ASC = ResolveAbilitySystemComponent(Actor))
+		if (UAbilitySystemComponent* ASC = ResolveSkillVFXAbilitySystemComponent(Actor))
 		{
 			if (const UDBABattleAttributeSet* BattleAttributes = ASC->GetSet<UDBABattleAttributeSet>())
 			{
@@ -79,35 +79,35 @@ namespace
 		return 0.0f;
 	}
 
-	int32 ResolveResonanceLevel(AActor* Actor)
+	int32 ResolveSkillVFXResonanceLevel(AActor* Actor)
 	{
 		if (const ADBAZodiacCharacterBase* ZodiacCharacter = Cast<ADBAZodiacCharacterBase>(Actor))
 		{
 			return ZodiacCharacter->GetResonanceLevel();
 		}
-		if (const UDBAAbilitySystemComponent* ASC = Cast<UDBAAbilitySystemComponent>(ResolveAbilitySystemComponent(Actor)))
+		if (const UDBAAbilitySystemComponent* ASC = Cast<UDBAAbilitySystemComponent>(ResolveSkillVFXAbilitySystemComponent(Actor)))
 		{
 			return ASC->GetResonanceLevel();
 		}
 		return 0;
 	}
 
-	int32 ResolveChainLevel(AActor* Actor)
+	int32 ResolveSkillVFXChainLevel(AActor* Actor)
 	{
 		if (const ADBAZodiacCharacterBase* ZodiacCharacter = Cast<ADBAZodiacCharacterBase>(Actor))
 		{
 			return ZodiacCharacter->GetChainLevel();
 		}
-		if (const UDBAAbilitySystemComponent* ASC = Cast<UDBAAbilitySystemComponent>(ResolveAbilitySystemComponent(Actor)))
+		if (const UDBAAbilitySystemComponent* ASC = Cast<UDBAAbilitySystemComponent>(ResolveSkillVFXAbilitySystemComponent(Actor)))
 		{
 			return ASC->GetChainLevel();
 		}
 		return 0;
 	}
 
-	float ResolveCriticalRate(AActor* Actor, float FallbackCriticalRate)
+	float ResolveSkillVFXCriticalRate(AActor* Actor, float FallbackCriticalRate)
 	{
-		if (UAbilitySystemComponent* ASC = ResolveAbilitySystemComponent(Actor))
+		if (UAbilitySystemComponent* ASC = ResolveSkillVFXAbilitySystemComponent(Actor))
 		{
 			if (const UDBABattleAttributeSet* BattleAttributes = ASC->GetSet<UDBABattleAttributeSet>())
 			{
@@ -118,7 +118,7 @@ namespace
 		return FMath::Max(FallbackCriticalRate, 0.0f);
 	}
 
-	FGameplayTag ResolveCueTag(const FGameplayTag& ConfiguredTag, const TCHAR* FallbackTagName)
+	FGameplayTag ResolveSkillVFXCueTag(const FGameplayTag& ConfiguredTag, const TCHAR* FallbackTagName)
 	{
 		if (ConfiguredTag.IsValid())
 		{
@@ -212,7 +212,7 @@ void UDBAZodiacSkillVFXComponent_Generic::PlayCastingVFX(AActor* Target)
 		}
 	}
 
-	ExecuteSkillGameplayCue(ResolveCueTag(CastingCueTag, TEXT("GameplayCue.DBA.Skill.Cast")), Target ? Target : OwnerActor, OwnerActor->GetActorLocation(), 0.0f, false);
+	ExecuteSkillGameplayCue(ResolveSkillVFXCueTag(CastingCueTag, TEXT("GameplayCue.DBA.Skill.Cast")), Target ? Target : OwnerActor, OwnerActor->GetActorLocation(), 0.0f, false);
 }
 
 void UDBAZodiacSkillVFXComponent_Generic::PlayImpactVFX(AActor* HitTarget)
@@ -257,7 +257,7 @@ void UDBAZodiacSkillVFXComponent_Generic::PlayImpactVFX(AActor* HitTarget)
 	}
 	else
 	{
-		ExecuteSkillGameplayCue(ResolveCueTag(ImpactCueTag, TEXT("GameplayCue.DBA.Skill.Impact")), HitTarget ? HitTarget : OwnerActor, ImpactLocation, 0.0f, false);
+		ExecuteSkillGameplayCue(ResolveSkillVFXCueTag(ImpactCueTag, TEXT("GameplayCue.DBA.Skill.Impact")), HitTarget ? HitTarget : OwnerActor, ImpactLocation, 0.0f, false);
 	}
 }
 
@@ -275,7 +275,7 @@ void UDBAZodiacSkillVFXComponent_Generic::PlayProjectileVFX(FVector Start, FVect
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, Start);
 	}
 
-	ExecuteSkillGameplayCue(ResolveCueTag(ProjectileCueTag, TEXT("GameplayCue.DBA.Skill.Projectile")), GetOwner(), Start, 0.0f, false);
+	ExecuteSkillGameplayCue(ResolveSkillVFXCueTag(ProjectileCueTag, TEXT("GameplayCue.DBA.Skill.Projectile")), GetOwner(), Start, 0.0f, false);
 }
 
 void UDBAZodiacSkillVFXComponent_Generic::PlayAOEVFX(FVector Center, float Radius)
@@ -291,7 +291,7 @@ void UDBAZodiacSkillVFXComponent_Generic::PlayAOEVFX(FVector Center, float Radiu
 		}
 	}
 
-	ExecuteSkillGameplayCue(ResolveCueTag(AOECueTag, TEXT("GameplayCue.DBA.Skill.AOE")), GetOwner(), Center, EffectiveRadius, false);
+	ExecuteSkillGameplayCue(ResolveSkillVFXCueTag(AOECueTag, TEXT("GameplayCue.DBA.Skill.AOE")), GetOwner(), Center, EffectiveRadius, false);
 
 	if (bApplyDamageOnImpact)
 	{
@@ -321,7 +321,7 @@ void UDBAZodiacSkillVFXComponent_Generic::PlayChannelVFX()
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SFX, OwnerActor->GetActorLocation());
 	}
 
-	ExecuteSkillGameplayCue(ResolveCueTag(ChannelCueTag, TEXT("GameplayCue.DBA.Skill.Channel")), OwnerActor, OwnerActor->GetActorLocation(), 0.0f, false);
+	ExecuteSkillGameplayCue(ResolveSkillVFXCueTag(ChannelCueTag, TEXT("GameplayCue.DBA.Skill.Channel")), OwnerActor, OwnerActor->GetActorLocation(), 0.0f, false);
 }
 
 void UDBAZodiacSkillVFXComponent_Generic::StopChannelVFX()
@@ -368,12 +368,12 @@ float UDBAZodiacSkillVFXComponent_Generic::CalculateSkillDamage(AActor* HitTarge
 	}
 
 	const EDBAElement EffectiveAttackElement = AttackElement == EDBAElement::None
-		? ResolveElementFromActor(OwnerActor, EDBAElement::None)
+		? ResolveSkillVFXElementFromActor(OwnerActor, EDBAElement::None)
 		: AttackElement;
-	const EDBAElement EffectiveDefenseElement = ResolveElementFromActor(HitTarget, FallbackDefenseElement);
-	const int32 EffectiveResonanceLevel = ResonanceLevelOverride >= 0 ? ResonanceLevelOverride : ResolveResonanceLevel(OwnerActor);
-	const int32 EffectiveChainLevel = ChainLevelOverride >= 0 ? ChainLevelOverride : ResolveChainLevel(OwnerActor);
-	const float EffectiveCriticalRate = CriticalRateOverride >= 0.0f ? CriticalRateOverride : ResolveCriticalRate(OwnerActor, 0.0f);
+	const EDBAElement EffectiveDefenseElement = ResolveSkillVFXElementFromActor(HitTarget, FallbackDefenseElement);
+	const int32 EffectiveResonanceLevel = ResonanceLevelOverride >= 0 ? ResonanceLevelOverride : ResolveSkillVFXResonanceLevel(OwnerActor);
+	const int32 EffectiveChainLevel = ChainLevelOverride >= 0 ? ChainLevelOverride : ResolveSkillVFXChainLevel(OwnerActor);
+	const float EffectiveCriticalRate = CriticalRateOverride >= 0.0f ? CriticalRateOverride : ResolveSkillVFXCriticalRate(OwnerActor, 0.0f);
 	const float EffectiveCriticalMultiplier = FMath::Max(CriticalMultiplier, 1.0f);
 
 	return UDBADamageCalculator::CalculateFinalDamage(
@@ -382,7 +382,7 @@ float UDBAZodiacSkillVFXComponent_Generic::CalculateSkillDamage(AActor* HitTarge
 		EffectiveDefenseElement,
 		EffectiveResonanceLevel,
 		EffectiveChainLevel,
-		ResolveDefense(HitTarget),
+		ResolveSkillVFXDefense(HitTarget),
 		EffectiveCriticalRate,
 		EffectiveCriticalMultiplier,
 		bOutIsCritical);
@@ -406,7 +406,7 @@ bool UDBAZodiacSkillVFXComponent_Generic::ApplySkillDamage(AActor* HitTarget, FV
 	}
 
 	const EDBAElement EffectiveAttackElement = AttackElement == EDBAElement::None
-		? ResolveElementFromActor(OwnerActor, EDBAElement::None)
+		? ResolveSkillVFXElementFromActor(OwnerActor, EDBAElement::None)
 		: AttackElement;
 	const FVector EffectiveHitLocation = HitLocation.IsNearlyZero() ? HitTarget->GetActorLocation() : HitLocation;
 	UDBADamageCalculator::ApplyDamageToTargetWithCue(
@@ -415,7 +415,7 @@ bool UDBAZodiacSkillVFXComponent_Generic::ApplySkillDamage(AActor* HitTarget, FV
 		OutFinalDamage,
 		EffectiveAttackElement,
 		bOutIsCritical,
-		ResolveCueTag(ImpactCueTag, TEXT("GameplayCue.DBA.Skill.Impact")),
+		ResolveSkillVFXCueTag(ImpactCueTag, TEXT("GameplayCue.DBA.Skill.Impact")),
 		EffectiveHitLocation);
 
 	return true;
@@ -472,10 +472,10 @@ void UDBAZodiacSkillVFXComponent_Generic::ExecuteSkillGameplayCue(const FGamepla
 	}
 
 	AActor* OwnerActor = GetOwner();
-	UAbilitySystemComponent* CueASC = ResolveAbilitySystemComponent(CueTarget);
+	UAbilitySystemComponent* CueASC = ResolveSkillVFXAbilitySystemComponent(CueTarget);
 	if (!CueASC)
 	{
-		CueASC = ResolveAbilitySystemComponent(OwnerActor);
+		CueASC = ResolveSkillVFXAbilitySystemComponent(OwnerActor);
 	}
 	if (!CueASC)
 	{

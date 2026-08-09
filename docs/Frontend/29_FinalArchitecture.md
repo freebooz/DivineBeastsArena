@@ -99,6 +99,8 @@ Draft 只保存稳定 ID 和显示摘要，不保存任意资产路径或服务�
 - `/api/v1/characters`
 - `/api/v1/game/enter`
 
+玩家名初始化不再隐式挂在 `/api/v1/auth/login`：`AuthService` 只认证和签发 Token。UE 注册成功后的首次认证编排使用 AccessToken 调用 `/api/v1/auth/player-name/generate`，普通账号登录与 Refresh 不调用该接口。
+
 `GameDbContext` 是唯一 EF Core DbContext。PostgreSQL 保存账号、Profile、角色、外观、进度、区服和会话权威数据；Redis 只用于缓存、短期 Session/Ticket 与一次性 consume 索引。
 
 已有 successor 的 `/api/auth` 路径、`/api/account/characters` 与 `/api/players/me/characters` 返回 Deprecated 响应头。它们仍复用现有应用层/数据库，不允许复制新的规则或 DTO 权威。
@@ -114,3 +116,11 @@ Draft 只保存稳定 ID 和显示摘要，不保存任意资产路径或服务�
 当前 Config 仍将 `GameDefaultMap`、`BootMap` 和 `FrontendMap` 指向 `/Game/Maps/Lobby/FrontendMap`。源码已有 `ADBABootGameMode` 和 Startup Coordinator，但尚未拥有已验证的独立 `L_DBA_Boot` / `L_DBA_Frontend` 二进制地图，因此最终文档以当前可追溯路径为准，不虚构资产已经迁移。
 
 `DA_DBA_UIFlowRegistry` 的二进制字符串证据显示 CharacterSelect/Create 当前指向 `/Game/DBA/UI/Lobby/Character/*`。`/Game/DBA/UI/Frontend/Character/*` 同名资产仍存在，但在 Editor 证明无引用并完成 Fix Redirectors 前不可删除。
+
+## 工程验证记录
+
+- UE5.8 `DivineBeastsArenaEditor Win64 Development`：成功。
+- UE5.8 `DivineBeastsArenaServer Win64 Development`：成功；构建图仍报告第三方 `StructUtils` 已废弃告警。
+- .NET 10 `dotnet build GameBackend.sln --no-restore`：成功，0 警告、0 错误。
+- 后端测试：`Game.ServerManagement.Tests` 5/5、`Game.IntegrationTests` 2/2 通过；`Game.Api.Tests` 97/184 通过。失败项集中在既有 InMemory 事务警告、WebApplicationFactory 未建 Host 与一项中文错误文本期望，不能写成全绿。
+- 未执行自动 E2E smoke，也未取得人工运行验收结论；因此本步骤仍不删除二进制资产或 Legacy 运行时对象。
