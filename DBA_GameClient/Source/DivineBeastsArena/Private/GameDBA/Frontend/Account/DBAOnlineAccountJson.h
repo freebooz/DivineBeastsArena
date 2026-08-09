@@ -22,6 +22,8 @@ public:
 	static FString BuildSelectCharacterRequest(const FDBACharacterId& CharacterId);
 
 	static bool ParseLoginResponse(const FString& Json, FDBALoginResponse& OutResponse, FString& OutError);
+	/** 解析独立玩家名接口，只向上层暴露稳定名称，不让 Widget 持有原始 JSON。 */
+	static bool ParseGeneratedPlayerNameResponse(const FString& Json, FString& OutPlayerName, FString& OutError);
 	static bool ParseCharacterListResponse(const FString& Json, TArray<FDBACharacterSummary>& OutCharacters, FString& OutError);
 	static bool ParseCreateCharacterResponse(const FString& Json, FDBACharacterCreateResponse& OutResponse, FString& OutError);
 	static bool ParseSelectCharacterResponse(const FString& Json, FDBACharacterId& OutCharacterId, FString& OutError);

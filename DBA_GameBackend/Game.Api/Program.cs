@@ -24,6 +24,7 @@ using Game.Api.Endpoints.Settlement;
 using Game.Api.Endpoints.GameServer;
 using Game.Api.Endpoints.ServerDirectory;
 using Game.Api.Endpoints.GameFeatures;
+using Game.Api.Endpoints.Game;
 using Game.Api.Endpoints.Platform;
 using Game.Api.Endpoints.Launcher;
 using Game.Api.Endpoints.Feedback;
@@ -110,6 +111,7 @@ try
     app.MapRoomEndpoints();
     app.MapMatchEndpoints();
     app.MapSessionEndpoints();
+    app.MapGameEnterEndpoints();
     app.MapRuntimeEndpoints();
     app.MapSettlementEndpoints();
     app.MapGameServerEndpoints();

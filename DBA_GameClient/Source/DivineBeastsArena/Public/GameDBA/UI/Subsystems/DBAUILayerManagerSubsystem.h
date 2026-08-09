@@ -37,6 +37,8 @@ class DIVINEBEASTSARENA_API UDBAUILayerManagerSubsystem : public UDBAGameInstanc
 	GENERATED_BODY()
 
 public:
+	/** Dedicated Server 不创建任何 UMG/CommonUI 根布局管理对象。 */
+	virtual bool IsSupportedInCurrentEnvironment() const override;
 	virtual void OnSubsystemInitialize() override;
 	virtual void OnSubsystemDeinitialize() override;
 

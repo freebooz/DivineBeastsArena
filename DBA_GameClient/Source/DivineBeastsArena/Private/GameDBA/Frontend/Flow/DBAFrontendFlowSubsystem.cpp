@@ -17,22 +17,24 @@
 #include "GameDBA/Frontend/Account/DBAOnlineAccountService.h"
 #include "GameDBA/Frontend/Online/DBAApiClientSubsystem.h"
 #include "GameDBA/Frontend/Preview/DBACharacterPreviewSubsystem.h"
+#include "GameDBA/Frontend/Session/DBAGameSessionSubsystem.h"
 #include "GameDBA/Frontend/Settings/DBAFrontendSettings.h"
 #include "GameCore/Core/DBALogChannels.h"
 #include "GameBackendClientSettings.h"
 #include "GameBackendSessionService.h"
 #include "GameDBA/Frontend/Backend/DBABackendFacadeSubsystem.h"
 #include "GameDBA/Frontend/ServerDirectory/DBAServerDirectorySubsystem.h"
+#include "Misc/CoreDelegates.h"
 #include "Dom/JsonObject.h"
 #include "Engine/World.h"
 #include "GameCore/Networking/Travel/DBATravelSubsystem.h"
-#include "Misc/CoreDelegates.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "TimerManager.h"
 
 namespace
 {
+	/** 旧 Village 兼容链路使用的响应解析器；新 /api/v1/game/enter 由 UDBAGameSessionSubsystem 解析。 */
 	bool ParseVillageAllocation(const FString& DataJson, FString& OutSessionId)
 	{
 		TSharedPtr<FJsonObject> Root;
@@ -41,7 +43,6 @@ namespace
 		{
 			return false;
 		}
-
 		TSharedPtr<FJsonObject> Payload = Root;
 		const TSharedPtr<FJsonObject>* DataObject = nullptr;
 		if (Root->TryGetObjectField(TEXT("data"), DataObject) && DataObject && DataObject->IsValid())
@@ -57,6 +58,7 @@ void UDBAFrontendFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	// Flow 只订阅 ApiClient 的认证结果，不反向让 ApiClient 依赖 UI/Flow 模块。
 	Collection.InitializeDependency<UDBAApiClientSubsystem>();
+	Collection.InitializeDependency<UDBAGameSessionSubsystem>();
 	Super::Initialize(Collection);
 
 	if (UDBAApiClientSubsystem* ApiClient = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAApiClientSubsystem>() : nullptr)
@@ -330,6 +332,12 @@ void UDBAFrontendFlowSubsystem::InvalidatePendingFlowRequests()
 {
 	++FlowRequestGeneration;
 	bAuthenticationRequestInFlight = false;
+	// 换服、登出、创建页返回和应用挂起均经此处失效；同步取消尚未获得 Ticket 的入服请求，
+	// 防止旧账号或旧区服的异步回调在之后触发旅行。
+	if (UDBAGameSessionSubsystem* GameSession = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAGameSessionSubsystem>() : nullptr)
+	{
+		GameSession->CancelEnterGame();
+	}
 }
 
 bool UDBAFrontendFlowSubsystem::IsFlowRequestCurrent(uint64 RequestGeneration) const
@@ -348,13 +356,6 @@ void UDBAFrontendFlowSubsystem::StartLoginFlow()
 {
 	InvalidatePendingFlowRequests();
 	CachedCharacters.Reset();
-	PendingVillageRequestGeneration = 0;
-	PendingVillageSessionId.Reset();
-	VillageConnectionAttempt = 0;
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(VillageConnectionRetryTimerHandle);
-	}
 	FrontendSessionContext = FDBAFrontendSessionContext();
 	bAuthenticationRequestInFlight = false;
 	bResumeSessionRefreshInFlight = false;
@@ -761,8 +762,33 @@ void UDBAFrontendFlowSubsystem::SubmitCharacterSelection(const FDBACharacterId& 
 
 		if (Result.bSuccess && Details.Summary.CharacterId.IsValid())
 		{
-			TryTransitionTo(EDBAFrontendState::EnteringWorld);
-			RequestVillageAllocation();
+			if (!TryTransitionTo(EDBAFrontendState::EnteringWorld))
+			{
+				BroadcastErrorAndSetState(TEXT("无法进入游戏状态。"), EDBALoginFlowState::CharacterSelecting);
+				return;
+			}
+			// Flow 切换到 EnteringWorld 后，LayerManager 会停止角色页交互；入服网络与旅行由专用子系统完成。
+			UpdateLegacyFlowState(EDBAFrontendState::EnteringWorld);
+			UDBAGameSessionSubsystem* GameSession = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAGameSessionSubsystem>() : nullptr;
+			if (!GameSession)
+			{
+				BroadcastErrorAndSetState(TEXT("入服会话服务不可用。"), EDBALoginFlowState::CharacterSelecting);
+				return;
+			}
+			GameSession->EnterGame(Details.Summary.CharacterId.ToString(), FrontendSessionContext.ServerId,
+				[this, RequestGeneration](const FDBAOperationResult& EnterResult)
+				{
+					if (!IsFlowRequestCurrent(RequestGeneration))
+					{
+						return;
+					}
+					if (!EnterResult.bSuccess)
+					{
+						BroadcastErrorAndSetState(
+							EnterResult.ErrorMessage.IsEmpty() ? TEXT("进入游戏失败。") : EnterResult.ErrorMessage,
+							EDBALoginFlowState::CharacterSelecting);
+					}
+				});
 			return;
 		}
 

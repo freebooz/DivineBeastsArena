@@ -248,6 +248,28 @@ bool FDBAOnlineAccountJson::ParseLoginResponse(const FString& Json, FDBALoginRes
 	return true;
 }
 
+bool FDBAOnlineAccountJson::ParseGeneratedPlayerNameResponse(
+	const FString& Json,
+	FString& OutPlayerName,
+	FString& OutError)
+{
+	TSharedPtr<FJsonObject> Root;
+	if (!ParseObject(Json, Root, OutError))
+	{
+		return false;
+	}
+
+	const TSharedPtr<FJsonObject> Payload = ResolvePayloadObject(Root);
+	OutPlayerName = GetStringField(Payload, TEXT("nickname")).TrimStartAndEnd();
+	if (OutPlayerName.IsEmpty())
+	{
+		OutError = TEXT("玩家名接口响应缺少 nickname 字段。");
+		return false;
+	}
+
+	return true;
+}
+
 bool FDBAOnlineAccountJson::ParseCharacterListResponse(const FString& Json, TArray<FDBACharacterSummary>& OutCharacters, FString& OutError)
 {
 	TSharedPtr<FJsonObject> Object;

@@ -14,7 +14,11 @@
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FDBAOnFrontendViewStateChanged, EDBALoginFlowState);
 
-UCLASS()
+/**
+ * 旧 UMG 的流程投影适配器。
+ * 新页面应直接通过各自 WidgetController 消费 UDBAFrontendFlowSubsystem，禁止创建新的本类实例。
+ */
+UCLASS(meta = (DeprecatedNode, DeprecationMessage = "请使用页面专属 WidgetController + UDBAFrontendFlowSubsystem。"))
 class DIVINEBEASTSARENA_API UDBAFrontendFlowController : public UObject
 {
 	GENERATED_BODY()

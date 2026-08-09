@@ -22,6 +22,11 @@ public static class AccountEndpoints
             .WithTags("玩家角色")
             .RequireAuthorization();
 
+        // 两组旧角色接口继续服务已发布客户端，但不再是角色业务权威入口。
+        // 响应头向调用方明确声明 successor，便于网关、客户端和运维观测迁移进度。
+        legacyGroup.AddEndpointFilter(AddDeprecatedCharacterApiHeadersAsync);
+        playerGroup.AddEndpointFilter(AddDeprecatedCharacterApiHeadersAsync);
+
         legacyGroup.MapGet("/characters", GetCharacters)
             .WithSummary("获取当前账号角色列表")
             .WithDescription("兼容旧版 Unreal 客户端的角色列表接口。");
@@ -43,6 +48,15 @@ public static class AccountEndpoints
             .WithSummary("选择当前玩家角色");
         playerGroup.MapPost("/select", SelectCharacterByBody)
             .WithSummary("通过请求体选择当前玩家角色");
+    }
+
+    private static async ValueTask<object?> AddDeprecatedCharacterApiHeadersAsync(
+        EndpointFilterInvocationContext context,
+        EndpointFilterDelegate next)
+    {
+        context.HttpContext.Response.Headers["Deprecation"] = "true";
+        context.HttpContext.Response.Headers["Link"] = "</api/v1/characters>; rel=\"successor-version\"";
+        return await next(context);
     }
 
     private static async Task<IResult> GetCharacters(

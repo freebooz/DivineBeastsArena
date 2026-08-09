@@ -87,3 +87,9 @@ code --install-extension llvm-vs-code-extensions.vscode-clangd
 - Dedicated Server 权威架构
 - 新项目资产统一进入 `Content/DBA`
 - 目录和命名以 `docs/Architecture/命名与目录登记表.md` 为准
+
+## 前台最终架构
+
+启动到角色创建的生产主链以 `UDBAFrontendFlowSubsystem` 和 `EDBAFrontendState` 为唯一状态权威。网络、角色列表、创建草稿、3D 预览、UI 分层与进入游戏分别由专属 Subsystem/Coordinator 所有；Widget 不直接发送 HTTP、保存 Token、创建其他 Screen 或调用 Travel。
+
+当前二进制 UI Registry 仍指向 `/Game/DBA/UI/Lobby/Character` 下的兼容资产。`/Game/DBA/UI/Frontend/Character` 同名资产在完成 Editor Reference Viewer、人工 E2E 和 Fix Redirectors 之前不得删除。详情见仓库根目录 [步骤29最终架构](../docs/Frontend/29_FinalArchitecture.md)。

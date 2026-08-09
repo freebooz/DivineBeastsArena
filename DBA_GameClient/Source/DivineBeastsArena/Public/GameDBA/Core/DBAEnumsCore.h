@@ -19,7 +19,7 @@
  * 十二生肖类型
  * 决定英雄身份、外观剪影、动画基调、生肖大招来源
  */
-UENUM(BlueprintType)
+UENUM(BlueprintType, meta = (Deprecated = "5.8", DeprecationMessage = "请使用 GameCore/Types/DBACommonEnums.h 中的 EDBAZodiac；本类型只用于旧资产迁移。"))
 enum class EDBAZodiacType : uint8
 {
 	None        UMETA(DisplayName = "无"),
@@ -46,7 +46,7 @@ enum class EDBAZodiacType : uint8
  * 决定克制关系、属性加成、技能元素
  * 五行相克：Metal 克 Wood，Wood 克 Earth，Earth 克 Water，Water 克 Fire，Fire 克 Metal
  */
-UENUM(BlueprintType)
+UENUM(BlueprintType, meta = (Deprecated = "5.8", DeprecationMessage = "请使用 GameCore/Types/DBACommonEnums.h 中的 EDBAElement；本类型只用于旧资产迁移。"))
 enum class EDBAElementType : uint8
 {
 	None        UMETA(DisplayName = "无"),
@@ -66,7 +66,7 @@ enum class EDBAElementType : uint8
  * 决定外观、法相、阵营徽记、特效主题、UI 图标风格、声音风格
  * 与 TeamId 完全解耦，纯表现层
  */
-UENUM(BlueprintType)
+UENUM(BlueprintType, meta = (Deprecated = "5.8", DeprecationMessage = "请使用 GameCore/Types/DBACommonEnums.h 中的 EDBAFiveCamp；本类型只用于旧资产迁移。"))
 enum class EDBAFiveCampType : uint8
 {
 	None        UMETA(DisplayName = "无"),
@@ -223,11 +223,10 @@ enum class EDBAGameFlowDomain : uint8
 };
 
 /**
- * EDBAFrontendStep
- * 前台流程步骤
- * 用于前台子系统状态管理
+ * 旧前台步骤枚举，仅用于存量资产反序列化。
+ * 新前台状态机的唯一权威类型是 EDBAFrontendState；本枚举不得新增值或出现在新接口中。
  */
-UENUM(BlueprintType)
+UENUM(BlueprintType, meta = (Deprecated = "5.8", DeprecationMessage = "请使用 EDBAFrontendState；EDBAFrontendStep 仅保留给存量资产迁移。"))
 enum class EDBAFrontendStep : uint8
 {
 	None                UMETA(DisplayName = "无"),

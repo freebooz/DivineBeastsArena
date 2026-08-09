@@ -40,11 +40,23 @@ public sealed class EfSessionAdmissionStore(GameDbContext db) : ISessionAdmissio
         var server = session.ServerId is Guid serverId
             ? await db.GameServerInstances.AsNoTracking().FirstOrDefaultAsync(x => x.Id == serverId, cancellationToken)
             : null;
-        var selectedCharacter = await db.PlayerCharacters
+        // 优先读取本次 GameSession 在分配阶段已经冻结的 CharacterId。角色选择是按区服进行的，
+        // 不能在签发连接票据时再从账号的全局“最近选中角色”回退，否则快速换服后可能把另一个
+        // 区服的角色构筑写入本次会话。仅当旧会话尚未冻结角色时，才保留既有 IsSelected 兼容查询。
+        IQueryable<PlayerCharacter> selectedCharacterQuery = db.PlayerCharacters
             .AsNoTracking()
-            .Where(x => x.PlayerId == playerId && x.IsSelected)
-            .OrderByDescending(x => x.LastUsedAt)
-            .FirstOrDefaultAsync(cancellationToken);
+            .Where(x => x.PlayerId == playerId && !x.IsDeleted);
+        if (playerSession.CharacterId is Guid frozenCharacterId)
+        {
+            selectedCharacterQuery = selectedCharacterQuery.Where(x => x.Id == frozenCharacterId);
+        }
+        else
+        {
+            selectedCharacterQuery = selectedCharacterQuery
+                .Where(x => x.IsSelected)
+                .OrderByDescending(x => x.LastUsedAt);
+        }
+        var selectedCharacter = await selectedCharacterQuery.FirstOrDefaultAsync(cancellationToken);
 
         return new SessionAdmissionSnapshot(
             session.Id,

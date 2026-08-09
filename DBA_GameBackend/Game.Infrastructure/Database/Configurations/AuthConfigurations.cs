@@ -132,6 +132,10 @@ public class PlayerProfileConfiguration : IEntityTypeConfiguration<PlayerProfile
         b.HasKey(x => x.PlayerId);
         b.Property(x => x.PlayerId).HasColumnName("player_id");
         b.Property(x => x.Nickname).HasColumnName("nickname").HasMaxLength(64).IsRequired();
+        // 历史账号在迁移后不应被自动改名；新账号由开户存储显式写入 false，首次认证再生成 3-5 个汉字的游戏名。
+        // 并发标记同时也是首次自动命名的一次性闸门：数据库更新会携带原值 false，
+        // 因而并发认证中只有一个请求能写入最终昵称，其他请求重新读取该结果。
+        b.Property(x => x.GameNameInitialized).HasColumnName("game_name_initialized").HasDefaultValue(true).IsConcurrencyToken().IsRequired();
         b.Property(x => x.Avatar).HasColumnName("avatar").HasMaxLength(255);
         b.Property(x => x.Level).HasColumnName("level").IsRequired().HasDefaultValue(1);
         b.Property(x => x.Exp).HasColumnName("exp").IsRequired().HasDefaultValue(0L);

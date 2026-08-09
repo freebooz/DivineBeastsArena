@@ -16,6 +16,13 @@
 #include "GameFramework/PlayerController.h"
 #include "GameCore/Core/DBALogChannels.h"
 
+bool UDBAUILayerManagerSubsystem::IsSupportedInCurrentEnvironment() const
+{
+	// 基类的 ShouldCreateSubsystem 在 World 尚未完全就绪时调用，不能依赖
+	// GetWorld()/LocalPlayer 判断；仅按进程模式过滤 Dedicated Server。
+	return !IsRunningDedicatedServer();
+}
+
 void UDBAUILayerManagerSubsystem::OnSubsystemInitialize()
 {
 	Super::OnSubsystemInitialize();

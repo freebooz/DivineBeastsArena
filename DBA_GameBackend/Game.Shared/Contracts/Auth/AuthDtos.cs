@@ -31,6 +31,8 @@ public record WeChatExternalLoginRequest(string Code, string? Nickname);
 public record WeChatLoginResponse(string AccessToken, string RefreshToken, Guid PlayerId, string Nickname, bool IsNewPlayer);
 
 public record MeResponse(Guid AccountId, Guid PlayerId, string Nickname, string AccountType, string? Email);
+/** 受鉴权保护的玩家名生成接口响应；首次开户后的前台编排调用，同一玩家重复调用返回同一名称。 */
+public record PlayerGameNameResponse(Guid PlayerId, string Nickname, bool WasGenerated);
 
 // Password management requests
 public record ChangePasswordRequest(string OldPassword, string NewPassword);

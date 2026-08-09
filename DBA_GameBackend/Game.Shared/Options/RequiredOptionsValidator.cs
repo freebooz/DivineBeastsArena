@@ -8,6 +8,7 @@
 
 namespace Game.Shared.Options;
 
+using System.Linq;
 using System.Text.RegularExpressions;
 
 public static class RequiredOptionsValidator
@@ -170,6 +171,28 @@ public static class RequiredOptionsValidator
 			throw new InvalidOperationException("AuthenticationPolicy:Messages 必须完整配置中文响应文案。");
 		}
 	}
+
+	/** 验证自动游戏名的运营字符库，避免服务端在首次登录时生成非汉字或长度不符合产品约束的名称。 */
+	public static void ValidatePlayerGameName(PlayerGameNameOptions options)
+	{
+		if (options.MinimumHanCharacters != 3 || options.MaximumHanCharacters != 5)
+		{
+			throw new InvalidOperationException("PlayerGameName 的汉字长度必须固定为 3 至 5。");
+		}
+		if (options.GenerationAttempts is < 1 or > 256)
+		{
+			throw new InvalidOperationException("PlayerGameName:GenerationAttempts 必须介于 1 和 256 之间。");
+		}
+		if (options.Surnames.Length == 0 || options.GivenNameCharacters.Length == 0
+			|| options.Surnames.Any(name => !IsSingleHanCharacter(name))
+			|| options.GivenNameCharacters.Any(name => !IsSingleHanCharacter(name)))
+		{
+			throw new InvalidOperationException("PlayerGameName 的姓氏和名字字库必须均为单个汉字。");
+		}
+	}
+
+	private static bool IsSingleHanCharacter(string? value) =>
+		value is { Length: 1 } && value[0] is >= '\u4E00' and <= '\u9FFF';
 
     public static void ValidateDatabase(DatabaseOptions options)
     {

@@ -2121,6 +2121,13 @@ namespace Game.Infrastructure.Database.Migrations
                         .HasDefaultValue(0L)
                         .HasColumnName("exp");
 
+                    b.Property<bool>("GameNameInitialized")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("game_name_initialized");
+
                     b.Property<DateTimeOffset?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_login_at");

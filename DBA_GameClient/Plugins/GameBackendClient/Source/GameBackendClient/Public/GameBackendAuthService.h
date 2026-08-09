@@ -54,6 +54,12 @@ public:
 	void RefreshTokenAsync(FDBA_GameBackendNativeAuthCallback Callback);
 	void LogoutAsync(FDBA_GameBackendNativeResponseCallback Callback);
 
+	/**
+	 * 首次开户认证完成后，显式向服务端获取 3–5 个汉字玩家名。
+	 * 本请求依赖已经写入 HttpClient 的 AccessToken；普通账号登录不得隐式调用它。
+	 */
+	void GeneratePlayerNameAsync(FDBA_GameBackendNativeResponseCallback Callback);
+
 private:
 	void HandleAuthResponse(const FDBA_GameBackendHttpResult& Result, const FDBA_GameBackendAuthResponseDelegate& Callback);
 	void HandleNativeAuthResponse(const FDBA_GameBackendHttpResult& Result, const FDBA_GameBackendNativeAuthCallback& Callback);

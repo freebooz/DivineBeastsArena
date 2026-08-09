@@ -12,6 +12,7 @@ using Game.Shared.Common;
 using Game.Api.Extensions;
 using Game.Shared.Errors;
 using Game.Infrastructure.Database;
+using Game.Infrastructure.Redis;
 using Game.Api.Services.Runtime;
 using Game.Api.Services.Settlement;
 using Game.Application.Sessions;
@@ -160,7 +161,8 @@ GET /internal/runtime/servers/{serverId}
     private static async Task<IResult> RuntimePlayerJoined(
         RuntimePlayerJoinedRequest request,
         GameDbContext db,
-        IConsumeJoinTicketUseCase consumeJoinTicket)
+        IConsumeJoinTicketUseCase consumeJoinTicket,
+        IGameTicketRedisRegistry gameTicketRegistry)
     {
         var server = await ValidateRuntimeAsync(db, request.ServerId, request.SessionId, request.RuntimeToken);
         if (server is null) return ErrorResponse.Unauthorized("运行时令牌无效。").ToProblem();
@@ -168,7 +170,7 @@ GET /internal/runtime/servers/{serverId}
         var joinTicket = string.IsNullOrWhiteSpace(request.JoinTicket)
             ? request.PlayerSessionToken
             : request.JoinTicket;
-        var consumed = await consumeJoinTicket.ExecuteAsync(new ConsumeJoinTicketCommand(
+        var consumeCommand = new ConsumeJoinTicketCommand(
             request.PlayerId,
             request.CharacterId ?? Guid.Empty,
             request.SessionId,
@@ -178,7 +180,15 @@ GET /internal/runtime/servers/{serverId}
             request.Zodiac ?? string.Empty,
             request.PrimaryElement ?? string.Empty,
             request.FiveCamp,
-            request.FixedSkillGroupId ?? string.Empty));
+            request.FixedSkillGroupId ?? string.Empty);
+        // Redis 首先原子删除同一张已签发票据；PostgreSQL 随后以完整上下文条件更新作为最终权威校验。
+        // 两层均拒绝复用，且两处都不记录 Ticket 明文。
+        if (!await gameTicketRegistry.TryConsumeAsync(consumeCommand))
+        {
+            return ErrorResponse.Unauthorized("一次性入服票据无效、已过期、已使用或与入服上下文不匹配。").ToProblem();
+        }
+
+        var consumed = await consumeJoinTicket.ExecuteAsync(consumeCommand);
         if (consumed is null)
         {
             return ErrorResponse.Unauthorized("一次性入服票据无效、已过期、已使用或与入服上下文不匹配。").ToProblem();

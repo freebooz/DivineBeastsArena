@@ -1,78 +1,45 @@
-﻿# DBA_GameBackend
+# DBA_GameBackend
 
-DBA_GameBackend is the .NET backend for the UE multiplayer game platform. It contains:
+神兽竞技场的 .NET 10 后端，使用 ASP.NET Core、PostgreSQL、Redis、YARP/网关基础设施与 OpenTelemetry。`GameDbContext` 是唯一 EF Core DbContext，PostgreSQL 是权威持久层，Redis 只保存缓存、短期会话与一次性 Ticket。
 
-- `Game.Api`: ASP.NET Core Minimal API, Auth, Player, Config, Room, Match, Session, Runtime, Settlement, Inventory and Admin APIs.
-- `Game.Worker`: background jobs and dedicated server maintenance loops.
-- `Game.Shared`: DTOs, common responses and options.
-- `Game.Infrastructure`: EF Core DbContext, entities, Redis and auth infrastructure.
-- `Game.Api.Tests`: unit tests for validators and API-adjacent rules.
-- `Game.IntegrationTests`: persistence and integration-oriented tests.
+## 工程边界
 
-## Implemented Modules
+- `Game.Api`：外部 REST/JSON、鉴权、限流、统一错误响应和健康检查。
+- `Game.Application`：Auth、Character、Session 等用例与领域契约。
+- `Game.Infrastructure`：EF Core、PostgreSQL、Redis、认证与 Dedicated Server 基础设施。
+- `Game.Shared`：跨项目 DTO、错误码和配置类型。
+- `Game.Worker`：后台维护任务。
+- `Game.ServerManagement`：Dedicated Server 实例编排。
+- `Game.Api.Tests`、`Game.IntegrationTests`：工程契约与集成测试项目；是否执行遵循人工审核策略。
 
-- Auth: `/api/auth/guest-login`, `/api/auth/dev-login`, `/api/auth/refresh`, `/api/auth/logout`, `/api/auth/me`, Steam/EOS mock providers. Access tokens default to 30 minutes; refresh tokens default to 30 days and are stored as hashes.
-- Player: profile, settings, statistics, public profile and unlocks. Nicknames are 2-16 chars and allow Chinese, English, digits and underscore.
-- Config: client manifest/config/bundle plus admin create, update, validate, publish and rollback. Published configs generate checksums.
-- Room / Match / Session: create/join/ready/start rooms, matchmaking tickets, session creation, connection info and reconnect token.
-- Dedicated Server Orchestration: `Game.ServerManagement/DedicatedServers` allocates UDP ports, creates server/runtime tokens, supports LocalProcess and Docker launch modes, handles timeout cleanup, release and kill. `Game.Worker/DedicatedServers` runs the maintenance loop.
-- Runtime API: `/runtime/servers/*` and `/runtime/matches/results` validate runtime tokens, update server/session state and call settlement.
-- Settlement / Inventory: idempotent match results, raw JSON persistence, player statistics, exp/level update, match rewards, inventory logs and GM inventory operations.
-- UE client login bridge: `/api/account/characters` remains for existing DBA_GameClient builds, and `/api/players/me/characters` is available as the standard authenticated character API. Created characters and selected character state are persisted in PostgreSQL.
+## 生产 API 基线
 
-Internal endpoints require:
+- Auth：`/api/v1/auth/*`，支持注册、登录、刷新、登出、当前账号和首次游戏名补全。
+- Server Directory：`GET /api/v1/servers`。
+- Character：`/api/v1/characters`，以 `ServerId` 为角色目录边界。
+- Enter World：`POST /api/v1/game/enter`，签发短 TTL、一次性 GameTicket。
 
-```http
-X-Internal-Api-Key: <InternalApi:Key>
-```
+`/api/auth` 中已有 v1 successor 的路径、`/api/account/characters` 与 `/api/players/me/characters` 仅为旧客户端兼容。它们返回 `Deprecation: true` 和 successor `Link` 响应头；新客户端不得继续调用。
 
-## Local Run
+首次登录玩家名由服务端从 `PlayerGameName` 配置字库生成 3–5 个汉字，保存到 `player_profile.nickname`。账号登录名、玩家名和角色名是三个不同概念。
 
-```bash
+## 工程检查命令
+
+```powershell
 dotnet restore GameBackend.sln
 dotnet build GameBackend.sln
-dotnet test GameBackend.sln
-dotnet run --project Game.Api/Game.Api.csproj
+dotnet test GameBackend.sln --no-build
 ```
 
-Important configuration keys:
+## 必需配置
 
 - `Database:ConnectionString`
 - `Redis:ConnectionString`
 - `Jwt:Secret`
 - `InternalApi:Key`
-- `GameServerManager:*`
+- `PlayerGameName:*`
+- `DedicatedServerOrchestration:*`
 
-## Docker
+真实密码、JWT 密钥、内部 API Key 和证书只能通过环境变量、User Secrets 或部署 Secret 提供，不得提交到仓库。
 
-The backend Dockerfiles and production compose file are kept in this directory.
-
-```bash
-cp .env.example .env
-docker compose --env-file .env config
-docker compose --env-file .env up -d
-```
-
-To enable the production HTTPS edge gateway, set `PUBLIC_DOMAIN` and `ACME_EMAIL` in `.env`, make sure DNS points to the server public IP, then start the `edge` profile:
-
-```bash
-docker compose --env-file .env --profile edge up -d
-```
-
-Observability stack:
-
-```bash
-docker compose --env-file .env -f docker-compose.observability.yml config
-docker compose --env-file .env -f docker-compose.observability.yml up -d
-```
-
-Grafana is bound to `127.0.0.1:3001` by default. Prometheus scrapes the real `game-api:8080/metrics` endpoint and loads the `DBA Game API` dashboard automatically.
-
-Operational scripts:
-
-- `scripts/migrate-db.sh`: run EF Core migrations and exit.
-- `scripts/backup-postgres.sh`: create a compressed PostgreSQL backup.
-- `scripts/restore-postgres.sh <backup.sql.gz>`: restore a compressed PostgreSQL backup.
-- `scripts/rehearse-backup-restore.sh`: create a backup, restore it into a temporary database, run a sanity query, then drop the temporary database.
-- `scripts/run-load-tests.sh`: run k6 login, matchmaking and server allocation load tests.
-- `scripts/check-admin-rbac.sh`: verify admin RBAC behavior through real HTTP requests.
+详细接口见 [docs/api.md](./docs/api.md)，数据库最终基线见 [docs/29_DatabaseBaseline.md](./docs/29_DatabaseBaseline.md)。

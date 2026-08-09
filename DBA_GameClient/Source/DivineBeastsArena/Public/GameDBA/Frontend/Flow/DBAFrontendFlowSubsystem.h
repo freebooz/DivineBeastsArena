@@ -19,9 +19,12 @@
 #include "DBAFrontendFlowSubsystem.generated.h"
 
 /**
- * 登录流程状态枚举
+ * 旧登录流程的只读视图状态。
+ *
+ * 该类型仅为尚未迁移的 UMG/Blueprint 与大厅兼容代码保留；新业务必须读取
+ * EDBAFrontendState，并订阅 OnFrontendStateChanged，禁止继续扩展本枚举。
  */
-UENUM(BlueprintType)
+UENUM(BlueprintType, meta = (Deprecated = "5.8", DeprecationMessage = "请使用 EDBAFrontendState；EDBALoginFlowState 仅保留为旧界面的只读投影。"))
 enum class EDBALoginFlowState : uint8
 {
 	Booting,
@@ -179,7 +182,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|LoginFlow")
 	void RefreshCharacterList();
 
-	UFUNCTION(BlueprintPure, Category = "DBA|LoginFlow")
+	UFUNCTION(BlueprintPure, Category = "DBA|LoginFlow", meta = (DeprecatedFunction, DeprecationMessage = "请使用 GetFrontendState。"))
 	EDBALoginFlowState GetFlowState() const { return FlowState; }
 
 	/** 唯一前台状态机的权威状态。 */
@@ -203,7 +206,7 @@ public:
 	/** 本地玩家的 PlayerState 已在大厅服务器完成复制后调用。 */
 	void ConfirmVillageConnectionReady();
 
-	UPROPERTY(BlueprintAssignable, Category = "DBA|LoginFlow")
+	UPROPERTY(BlueprintAssignable, Category = "DBA|LoginFlow", meta = (DeprecatedProperty, DeprecationMessage = "请订阅 OnFrontendStateChanged。"))
 	FDBAOnLoginFlowStateChanged OnFlowStateChanged;
 
 	UPROPERTY(BlueprintAssignable, Category = "DBA|LoginFlow")
@@ -238,6 +241,7 @@ protected:
 	 * 旧请求回调不得再覆盖当前界面状态。
 	 */
 	uint64 FlowRequestGeneration = 0;
+	/** 旧 Village 两段式链路的兼容状态；新角色选择已不再调用，待大厅连接链路迁移后删除。 */
 	uint64 PendingVillageRequestGeneration = 0;
 	FString PendingVillageSessionId;
 	int32 VillageConnectionAttempt = 0;
@@ -271,12 +275,14 @@ protected:
 	bool IsFlowRequestCurrent(uint64 RequestGeneration) const;
 	void LoadCharactersAfterLogin();
 	bool SynchronizeBackendAuthentication();
+	/** @deprecated 新角色选择必须走 UDBAGameSessionSubsystem。此入口仅保留给既有大厅兼容链路。 */
 	void RequestVillageAllocation();
 	void RequestVillageConnection();
 	void ScheduleVillageConnectionRetry();
 	EDBALoginFlowState ResolveCharacterFlowState() const;
 	void BroadcastErrorAndSetState(const FString& ErrorMessage, EDBALoginFlowState NewState);
 
+	/** @deprecated 旧 Village 两段式回调；新的 /api/v1/game/enter 不经过这里。 */
 	UFUNCTION()
 	void HandleVillageAllocationResponse(bool bSuccess, const FString& ErrorMessage, const FString& DataJson);
 

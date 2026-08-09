@@ -167,6 +167,8 @@ public sealed class AuthService : IAuthService
         string? ipAddress,
         string? userAgent)
     {
+        // 认证服务只签发令牌，不再隐式生成玩家名。首次开户后的前台编排会在拿到
+        // AccessToken 后显式调用 /api/v1/auth/player-name/generate，避免登录接口承担资料写入副作用。
         var credentials = await _issueLoginCredentials.ExecuteAsync(
             subject,
             ipAddress,

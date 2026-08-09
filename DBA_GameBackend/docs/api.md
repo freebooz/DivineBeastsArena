@@ -13,7 +13,20 @@
 }
 ```
 
-## 认证 `/api/auth`
+## 生产认证 `/api/v1/auth`
+
+| 方法 | 地址 | 说明 | 鉴权 |
+| --- | --- | --- | --- |
+| `POST` | `/api/v1/auth/register` | 注册账号并返回 Token。 | 无 |
+| `POST` | `/api/v1/auth/login` | 账号登录；首次登录会自动补全 3–5 个汉字玩家名。 | 无 |
+| `POST` | `/api/v1/auth/refresh` | 刷新令牌 Rotation 入口。 | 无 |
+| `POST` | `/api/v1/auth/logout` | 注销并撤销刷新令牌。 | Bearer |
+| `GET` | `/api/v1/auth/me` | 当前账号与玩家 Profile 摘要。 | Bearer |
+| `POST` | `/api/v1/auth/player-name/ensure` | 幂等确保当前 JWT 玩家已有服务端生成的游戏名。 | Bearer |
+
+## 兼容认证 `/api/auth`（Deprecated）
+
+已有 v1 successor 的登录、注册、刷新、登出和当前账号路径只供旧客户端迁移，响应包含 `Deprecation: true` 与 successor `Link`。游客、开发、外部平台和密码管理接口在获得正式 v1 successor 前保持现状。
 
 | 方法 | 地址 | 说明 | 鉴权 |
 | --- | --- | --- | --- |
@@ -27,7 +40,21 @@
 
 开发账号见 `docs/dev-login-accounts.md`。
 
-## 客户端账号兼容 `/api/account`
+## 旧角色接口（Deprecated）
+
+`/api/account/characters` 与 `/api/players/me/characters` 只供已发布客户端兼容，响应包含 `Deprecation: true` 和 `Link: </api/v1/characters>; rel="successor-version"`。新客户端只能使用下列 v1 CharacterService：
+
+| 方法 | 地址 | 说明 | 鉴权 |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/characters?serverId=` | 获取账号在指定区服的角色列表。 | Bearer |
+| `GET` | `/api/v1/characters/{id}` | 获取属主角色详情。 | Bearer |
+| `POST` | `/api/v1/characters` | 幂等创建角色并进行权威外观/构筑校验。 | Bearer |
+| `DELETE` | `/api/v1/characters/{id}` | 二次确认语义的软删除。 | Bearer |
+| `POST` | `/api/v1/characters/{id}/select` | 选择属主角色。 | Bearer |
+| `GET` | `/api/v1/servers` | 获取可缓存的权威区服目录。 | Bearer |
+| `POST` | `/api/v1/game/enter` | 获取一次性 EnterWorld Ticket。 | Bearer |
+
+### 历史兼容路径
 
 | 方法 | 地址 | 说明 | 鉴权 |
 | --- | --- | --- | --- |

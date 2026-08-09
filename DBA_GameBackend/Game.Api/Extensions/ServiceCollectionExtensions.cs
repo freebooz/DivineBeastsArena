@@ -60,6 +60,7 @@ public static class ServiceCollectionExtensions
         var sessionAdmissionOptions = configuration.GetSection(SessionAdmissionOptions.Section).Get<SessionAdmissionOptions>() ?? new();
         var villageSessionOptions = configuration.GetSection(VillageSessionOptions.Section).Get<VillageSessionOptions>() ?? new();
         var authenticationPolicyOptions = configuration.GetSection(AuthenticationPolicyOptions.Section).Get<AuthenticationPolicyOptions>() ?? new();
+        var playerGameNameOptions = configuration.GetSection(PlayerGameNameOptions.Section).Get<PlayerGameNameOptions>() ?? new();
         if (string.IsNullOrWhiteSpace(authenticationPolicyOptions.PasswordResetBootstrapToken))
         {
             authenticationPolicyOptions.PasswordResetBootstrapToken =
@@ -78,6 +79,7 @@ public static class ServiceCollectionExtensions
         RequiredOptionsValidator.ValidateSessionAdmission(sessionAdmissionOptions);
         RequiredOptionsValidator.ValidateVillageSession(villageSessionOptions);
         RequiredOptionsValidator.ValidateAuthenticationPolicy(authenticationPolicyOptions);
+        RequiredOptionsValidator.ValidatePlayerGameName(playerGameNameOptions);
 
         var pooledConnectionString = BuildPooledConnectionString(databaseOptions);
         services.AddDbContextPool<GameDbContext>(options =>
@@ -92,10 +94,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(characterCreationOptions);
         services.AddSingleton(sessionAdmissionOptions);
         services.AddSingleton(authenticationPolicyOptions);
+        services.AddSingleton(playerGameNameOptions);
         services.AddSingleton<TimeProvider>(TimeProvider.System);
         services.Configure<DedicatedServerOrchestrationOptions>(configuration.GetSection(DedicatedServerOrchestrationOptions.Section));
         services.Configure<VillageSessionOptions>(configuration.GetSection(VillageSessionOptions.Section));
-		services.Configure<ServerDirectoryOptions>(configuration.GetSection(ServerDirectoryOptions.Section));
+        services.Configure<ServerDirectoryOptions>(configuration.GetSection(ServerDirectoryOptions.Section));
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -136,6 +139,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Services.Match.IMatchService, MatchService>();
         services.AddScoped<Services.Session.ISessionService, SessionService>();
         services.AddScoped<Services.Session.IVillageAllocationService, Services.Session.VillageAllocationService>();
+        services.AddScoped<Services.Session.IGameEnterService, Services.Session.GameEnterService>();
         services.AddScoped<Services.Runtime.IGameServerService, GameServerService>();
         services.AddScoped<Services.Settlement.ISettlementService, SettlementService>();
         services.AddScoped<IGameServerRegistryService, GameServerRegistryService>();
@@ -143,6 +147,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Services.Inventory.IInventoryService, InventoryService>();
         services.AddScoped<IDedicatedServerOrchestrator, DedicatedServerOrchestrator>();
         services.AddScoped<IJoinTicketStore, EfJoinTicketStore>();
+        services.AddSingleton<IGameTicketRedisRegistry, GameTicketRedisRegistry>();
         services.AddScoped<ISessionAdmissionStore, EfSessionAdmissionStore>();
         services.AddScoped<ISessionLifecycleStore, EfSessionLifecycleStore>();
         services.AddScoped<ISessionServerAllocationStore, EfSessionServerAllocationStore>();

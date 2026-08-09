@@ -6,6 +6,7 @@
 */
 
 using Game.Application.Sessions;
+using Game.Infrastructure.Redis;
 using Game.Shared.Contracts.Session;
 
 namespace Game.Api.Services.Session;
@@ -30,6 +31,7 @@ public sealed class SessionService : ISessionService
     private readonly IIssueSessionConnectionUseCase _issueSessionConnection;
     private readonly IChangeSessionLifecycleUseCase _changeSessionLifecycle;
     private readonly IAllocateSessionServerUseCase _allocateSessionServer;
+    private readonly IGameTicketRedisRegistry? _gameTicketRegistry;
 
     public SessionService(
         ILogger<SessionService> logger,
@@ -38,7 +40,8 @@ public sealed class SessionService : ISessionService
         ICreateSessionFromMatchUseCase createSessionFromMatch,
         IIssueSessionConnectionUseCase issueSessionConnection,
         IChangeSessionLifecycleUseCase changeSessionLifecycle,
-        IAllocateSessionServerUseCase allocateSessionServer)
+        IAllocateSessionServerUseCase allocateSessionServer,
+        IGameTicketRedisRegistry? gameTicketRegistry = null)
     {
         _logger = logger;
         _getSession = getSession;
@@ -47,6 +50,7 @@ public sealed class SessionService : ISessionService
         _issueSessionConnection = issueSessionConnection;
         _changeSessionLifecycle = changeSessionLifecycle;
         _allocateSessionServer = allocateSessionServer;
+        _gameTicketRegistry = gameTicketRegistry;
     }
 
     public async Task<SessionResponse?> GetSessionAsync(Guid sessionId)
@@ -62,6 +66,25 @@ public sealed class SessionService : ISessionService
         {
             _logger.LogWarning("会话连接信息签发失败。会话={SessionId} 玩家={PlayerId}", sessionId, playerId);
             return null;
+        }
+
+        // 生产 DI 必定注入 Redis 索引。可空参数仅保留给现有纯内存用例测试，避免其伪造 Redis 网络依赖。
+        // Redis 写入失败时不把票据交给客户端，防止 Dedicated Server 无法执行原子消费校验。
+        if (_gameTicketRegistry is not null)
+        {
+            try
+            {
+                if (!await _gameTicketRegistry.RecordIssuedAsync(connection))
+                {
+                    _logger.LogWarning("入服票据 Redis 绑定写入失败，会话={SessionId}。", sessionId);
+                    return null;
+                }
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(exception, "入服票据 Redis 绑定异常，会话={SessionId}。", sessionId);
+                return null;
+            }
         }
 
         return new SessionConnectionResponse(

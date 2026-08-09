@@ -12,6 +12,11 @@ namespace Game.Api.Services.Player;
 
 public interface IPlayerService
 {
+    /**
+     * 确保玩家拥有服务端生成的游戏名。该接口只处理 PlayerProfile.Nickname，绝不修改
+     * 账号登录名或 PlayerIdentity.DisplayName；重复调用幂等，适用于首次登录和显式补偿接口。
+     */
+    Task<PlayerGameNameEnsureResult> EnsureGeneratedGameNameAsync(Guid playerId, CancellationToken cancellationToken = default);
     Task<PlayerProfileResponse?> GetProfileAsync(Guid playerId);
     Task<PlayerProfileResponse?> UpdateProfileAsync(Guid playerId, UpdateProfileRequest request);
     Task<PlayerSettingsResponse?> GetSettingsAsync(Guid playerId);
@@ -22,6 +27,9 @@ public interface IPlayerService
     Task<bool> IsNicknameAvailableAsync(string nickname, Guid? excludePlayerId = null);
     Task<bool> CanUpdateNicknameAsync(Guid playerId);
 }
+
+/** 自动生成游戏玩家名的结果，不携带认证凭据或账号敏感信息。 */
+public sealed record PlayerGameNameEnsureResult(bool Success, string? Nickname = null, bool WasGenerated = false, string? ErrorMessage = null);
 
 public sealed class NicknameValidationResult(bool IsValid, string? ErrorCode = null, string? ErrorMessage = null)
 {

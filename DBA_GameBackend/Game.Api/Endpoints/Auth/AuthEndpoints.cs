@@ -11,6 +11,7 @@ using Game.Shared.Contracts.Auth;
 using Game.Shared.Errors;
 using Game.Api.Extensions;
 using Game.Api.Services.Auth;
+using Game.Api.Services.Player;
 using System.Security.Claims;
 
 namespace Game.Api.Endpoints.Auth;
@@ -40,6 +41,13 @@ public static class AuthEndpoints
             .RequireAuthorization();
         v1.MapGet("/me", GetMe)
             .WithSummary("获取当前账号信息")
+            .RequireAuthorization();
+        v1.MapPost("/player-name/generate", GeneratePlayerGameName)
+            .WithSummary("获取当前玩家的 3–5 个汉字游戏名")
+            .RequireAuthorization();
+        v1.MapPost("/player-name/ensure", EnsurePlayerGameNameCompatibility)
+            .WithSummary("兼容旧版自动玩家名接口")
+            .WithDescription("已废弃，请迁移到 /api/v1/auth/player-name/generate。")
             .RequireAuthorization();
 
         var group = app.MapGroup("/api/auth")
@@ -268,6 +276,7 @@ Header: Authorization: Bearer <access-token>
     /// </summary>
     private static async Task<IResult> AccountLogin(AccountLoginRequest request, IAuthService auth, HttpContext ctx)
     {
+        ApplyLegacyAuthDeprecationHeaders(ctx, "/api/v1/auth/login");
         var ip = ctx.Connection.RemoteIpAddress?.ToString();
         var userAgent = ctx.Request.Headers.UserAgent.ToString();
         var result = await auth.AccountLoginAsync(request, ip, userAgent);
@@ -282,6 +291,7 @@ Header: Authorization: Bearer <access-token>
     /// </summary>
     private static async Task<IResult> AccountRegister(AccountRegisterRequest request, IAuthService auth, HttpContext ctx)
     {
+        ApplyLegacyAuthDeprecationHeaders(ctx, "/api/v1/auth/register");
         var ip = ctx.Connection.RemoteIpAddress?.ToString();
         var userAgent = ctx.Request.Headers.UserAgent.ToString();
         var result = await auth.AccountRegisterAsync(request, ip, userAgent);
@@ -293,6 +303,7 @@ Header: Authorization: Bearer <access-token>
 
     private static async Task<IResult> LegacyLogin(AccountLoginRequest request, IAuthService auth, HttpContext ctx)
     {
+        ApplyLegacyAuthDeprecationHeaders(ctx, "/api/v1/auth/login");
         var ip = ctx.Connection.RemoteIpAddress?.ToString();
         var userAgent = ctx.Request.Headers.UserAgent.ToString();
         var result = await auth.AccountLoginAsync(request, ip, userAgent);
@@ -301,6 +312,7 @@ Header: Authorization: Bearer <access-token>
 
     private static async Task<IResult> LegacyRegister(AccountRegisterRequest request, IAuthService auth, HttpContext ctx)
     {
+        ApplyLegacyAuthDeprecationHeaders(ctx, "/api/v1/auth/register");
         var ip = ctx.Connection.RemoteIpAddress?.ToString();
         var userAgent = ctx.Request.Headers.UserAgent.ToString();
         var result = await auth.AccountRegisterAsync(request, ip, userAgent);
@@ -312,6 +324,7 @@ Header: Authorization: Bearer <access-token>
     /// </summary>
     private static async Task<IResult> RefreshToken(RefreshTokenRequest request, IAuthService auth, HttpContext ctx)
     {
+        ApplyLegacyAuthDeprecationHeaders(ctx, "/api/v1/auth/refresh");
         var ip = ctx.Connection.RemoteIpAddress?.ToString();
         var result = await auth.RefreshTokenAsync(request.RefreshToken ?? string.Empty, ip);
         if (!result.Success)
@@ -325,6 +338,7 @@ Header: Authorization: Bearer <access-token>
     /// </summary>
     private static async Task<IResult> Logout(LogoutRequest? request, IAuthService auth, HttpContext ctx)
     {
+        ApplyLegacyAuthDeprecationHeaders(ctx, "/api/v1/auth/logout");
         var accountId = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? ctx.User.FindFirst("sub")?.Value;
         if (Guid.TryParse(accountId, out var accId))
@@ -337,14 +351,54 @@ Header: Authorization: Bearer <access-token>
     /// </summary>
     private static async Task<IResult> GetMe(IAuthService auth, HttpContext ctx)
     {
+        ApplyLegacyAuthDeprecationHeaders(ctx, "/api/v1/auth/me");
         var accountId = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? ctx.User.FindFirst("sub")?.Value;
         if (!Guid.TryParse(accountId, out var accId))
             return ErrorResponse.Unauthorized().ToProblem();
         var me = await auth.GetMeAsync(accId);
         if (me == null)
-            return ErrorResponse.NotFound("Account not found").ToProblem();
+            return ErrorResponse.NotFound("账号不存在。").ToProblem();
         return Results.Ok(ApiResponse<MeResponse>.Ok(me));
+    }
+
+    /// <summary>
+    /// 获取当前认证玩家的 3–5 个汉字游戏名。
+    /// 接口保持幂等：首次调用生成并持久化，后续调用返回同一名称；客户端不能指定玩家或候选名称。
+    /// </summary>
+    private static async Task<IResult> GeneratePlayerGameName(IPlayerService playerService, HttpContext ctx, CancellationToken cancellationToken)
+    {
+        var playerIdText = ctx.User.FindFirst("player_id")?.Value;
+        if (!Guid.TryParse(playerIdText, out var playerId))
+        {
+            return ErrorResponse.Unauthorized().ToProblem();
+        }
+
+        var result = await playerService.EnsureGeneratedGameNameAsync(playerId, cancellationToken);
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Nickname))
+        {
+            return ErrorResponse.Create(
+                StatusCodes.Status503ServiceUnavailable,
+                "游戏玩家名生成失败",
+                result.ErrorMessage ?? "暂时无法生成游戏玩家名。",
+                code: ErrorCodes.PlayerGameNameGenerationFailed).ToProblem();
+        }
+
+        return Results.Ok(ApiResponse<PlayerGameNameResponse>.Ok(
+            new PlayerGameNameResponse(playerId, result.Nickname, result.WasGenerated)));
+    }
+
+    /// <summary>
+    /// 旧 /ensure 路径的只读迁移入口。它复用同一生成逻辑，不形成第二套玩家名实现。
+    /// </summary>
+    private static Task<IResult> EnsurePlayerGameNameCompatibility(
+        IPlayerService playerService,
+        HttpContext ctx,
+        CancellationToken cancellationToken)
+    {
+        ctx.Response.Headers["Deprecation"] = "true";
+        ctx.Response.Headers["Link"] = "</api/v1/auth/player-name/generate>; rel=\"successor-version\"";
+        return GeneratePlayerGameName(playerService, ctx, cancellationToken);
     }
 
     /// <summary>
@@ -433,6 +487,21 @@ Header: Authorization: Bearer <access-token>
         return ErrorResponse.Create(status, title, message, code: code).ToProblem();
     }
 
+    /**
+     * 只对 /api/auth 下已有 v1 successor 的兼容路由添加废弃响应头。
+     * guest/dev/external/password 等尚无 v1 successor 的接口不会被误标记。
+     */
+    private static void ApplyLegacyAuthDeprecationHeaders(HttpContext context, string successorPath)
+    {
+        if (!context.Request.Path.StartsWithSegments("/api/auth"))
+        {
+            return;
+        }
+
+        context.Response.Headers["Deprecation"] = "true";
+        context.Response.Headers["Link"] = $"<{successorPath}>; rel=\"successor-version\"";
+    }
+
     private static object ToLegacyLoginResponse(AuthServiceResult result, string loginType)
     {
         if (!result.Success)
@@ -440,7 +509,7 @@ Header: Authorization: Bearer <access-token>
             return new
             {
                 success = false,
-                error = result.ErrorMessage ?? result.ErrorCode ?? "Login failed"
+                error = result.ErrorMessage ?? result.ErrorCode ?? "登录失败。"
             };
         }
 
@@ -454,7 +523,7 @@ Header: Authorization: Bearer <access-token>
             {
                 accountId = result.AccountId?.ToString() ?? result.PlayerId?.ToString() ?? string.Empty,
                 playerId = result.PlayerId?.ToString() ?? string.Empty,
-                displayName = result.Nickname ?? "Player",
+                displayName = result.Nickname ?? "玩家",
                 loginType,
                 status = "Normal",
                 level = 1,

@@ -38,6 +38,11 @@ class DIVINEBEASTSARENA_API UDBACharacterPreviewSubsystem final : public UGameIn
 	GENERATED_BODY()
 
 public:
+	/**
+	 * Dedicated Server 没有前台角色预览职责；在子系统创建阶段直接排除，
+	 * 避免仅依赖运行时分支而意外持有前台资源或注册预览回调。
+	 */
+	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 	virtual void Deinitialize() override;
 
 	bool SelectZodiac(EDBAZodiac Zodiac, const FDBACharacterAppearance& Appearance);

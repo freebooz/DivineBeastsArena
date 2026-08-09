@@ -30,6 +30,7 @@ public static class ErrorCodes
     public const string PlayerNicknameCooldown = "PLAYER_NICKNAME_COOLDOWN";
     public const string PlayerNotFound = "PLAYER_NOT_FOUND";
     public const string PlayerInvalidNickname = "PLAYER_INVALID_NICKNAME";
+    public const string PlayerGameNameGenerationFailed = "PLAYER_GAME_NAME_GENERATION_FAILED";
 
     public const string ConfigNotFound = "CONFIG_NOT_FOUND";
     public const string ConfigInvalidJson = "CONFIG_INVALID_JSON";

@@ -7,8 +7,10 @@
 */
 
 using System.Text.Json;
+using System.Security.Cryptography;
 using Game.Shared.Contracts.Player;
 using Game.Shared.Errors;
+using Game.Shared.Options;
 using Game.Infrastructure.Database;
 using Game.Infrastructure.Database.Entities;
 using Game.Infrastructure.Redis;
@@ -19,14 +21,84 @@ namespace Game.Api.Services.Player;
 public sealed class PlayerService : IPlayerService
 {
     private readonly GameDbContext _db;
-    private readonly IRedisConnectionFactory _redis;
+    // Redis 只用于资料缓存失效，不是游戏名生成的权威依赖；存储层不可用时不能阻断首次登录。
+    private readonly IRedisConnectionFactory? _redis;
     private readonly ILogger<PlayerService> _logger;
+    private readonly PlayerGameNameOptions _gameNameOptions;
 
-    public PlayerService(GameDbContext db, IRedisConnectionFactory redis, ILogger<PlayerService> logger)
+    public PlayerService(
+        GameDbContext db,
+        IRedisConnectionFactory? redis,
+        ILogger<PlayerService> logger,
+        PlayerGameNameOptions gameNameOptions)
     {
         _db = db;
         _redis = redis;
         _logger = logger;
+        _gameNameOptions = gameNameOptions;
+    }
+
+    public async Task<PlayerGameNameEnsureResult> EnsureGeneratedGameNameAsync(
+        Guid playerId,
+        CancellationToken cancellationToken = default)
+    {
+        if (playerId == Guid.Empty)
+        {
+            return new(false, ErrorMessage: "玩家标识无效，无法生成游戏玩家名。");
+        }
+
+        // 使用数据库唯一索引作为并发最终裁决。两个登录请求同时到达时，只有一个请求能把
+        // GameNameInitialized 从 false 改为 true；另一请求随后读取同一个最终名字即可。
+        for (var attempt = 0; attempt < _gameNameOptions.GenerationAttempts; attempt++)
+        {
+            var profile = await _db.PlayerProfiles
+                .FirstOrDefaultAsync(x => x.PlayerId == playerId, cancellationToken);
+            if (profile is null)
+            {
+                return new(false, ErrorMessage: "玩家档案不存在，无法生成游戏玩家名。");
+            }
+
+            if (profile.GameNameInitialized)
+            {
+                return new(true, profile.Nickname, false);
+            }
+
+            var candidate = GenerateCandidate();
+            if (string.IsNullOrEmpty(candidate))
+            {
+                return new(false, ErrorMessage: "游戏玩家名生成配置无效。");
+            }
+
+            // 先进行一次廉价检查以降低唯一约束冲突概率；最终仍必须捕获数据库竞争。
+            if (await _db.PlayerProfiles.AnyAsync(x => x.Nickname == candidate, cancellationToken))
+            {
+                continue;
+            }
+
+            profile.Nickname = candidate;
+            profile.GameNameInitialized = true;
+            profile.UpdatedAt = DateTimeOffset.UtcNow;
+            try
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+                await InvalidateCacheAsync(playerId);
+                return new(true, candidate, true);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // 并发登录中其他请求已经完成初始化：丢弃旧跟踪实体后重新读取，
+                // 下一轮会返回已提交的同一个名称，而不会发生“后到请求覆盖前名”。
+                _db.ChangeTracker.Clear();
+            }
+            catch (DbUpdateException exception) when (IsNicknameUniqueViolation(exception))
+            {
+                // 候选名撞上其他玩家时清除本次跟踪状态并重试新候选，
+                // 唯一索引仍是跨服务实例的最终裁决。
+                _db.ChangeTracker.Clear();
+            }
+        }
+
+        return new(false, ErrorMessage: "暂时无法生成唯一的游戏玩家名，请稍后重试。");
     }
 
     public async Task<PlayerProfileResponse?> GetProfileAsync(Guid playerId)
@@ -60,6 +132,8 @@ public sealed class PlayerService : IPlayerService
                     throw new InvalidOperationException(ErrorCodes.PlayerNicknameCooldown);
 
                 profile.Nickname = request.Nickname;
+                // 玩家主动修改昵称后不再属于首次登录自动命名状态，任何后续认证均不得覆盖。
+                profile.GameNameInitialized = true;
                 profile.NicknameUpdatedAt = DateTimeOffset.UtcNow;
             }
             else
@@ -159,6 +233,13 @@ public sealed class PlayerService : IPlayerService
 
     private async Task InvalidateCacheAsync(Guid playerId)
     {
+        // 单元测试与降级部署可以没有 Redis 连接。数据库已是权威源，因此仅跳过缓存失效，
+        // 不应把缓存基础设施故障放大为认证或昵称生成失败。
+        if (_redis is null)
+        {
+            return;
+        }
+
         try
         {
             var db = _redis.GetDatabase();
@@ -168,7 +249,45 @@ public sealed class PlayerService : IPlayerService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to invalidate cache for player {PlayerId}", playerId);
+            _logger.LogWarning(ex, "玩家资料缓存失效失败，数据库权威数据仍可用，玩家标识：{PlayerId}", playerId);
         }
     }
+
+    /** 从配置的单字姓氏与名字字库生成总长度为 3-5 的汉字游戏名。 */
+    private string? GenerateCandidate()
+    {
+        if (_gameNameOptions.Surnames.Length == 0
+            || _gameNameOptions.GivenNameCharacters.Length == 0)
+        {
+            return null;
+        }
+
+        var totalLength = RandomNumberGenerator.GetInt32(
+            _gameNameOptions.MinimumHanCharacters,
+            _gameNameOptions.MaximumHanCharacters + 1);
+        var surname = _gameNameOptions.Surnames[RandomNumberGenerator.GetInt32(_gameNameOptions.Surnames.Length)];
+        if (!IsSingleHanCharacter(surname))
+        {
+            return null;
+        }
+
+        var builder = new System.Text.StringBuilder(surname);
+        while (builder.Length < totalLength)
+        {
+            var givenCharacter = _gameNameOptions.GivenNameCharacters[
+                RandomNumberGenerator.GetInt32(_gameNameOptions.GivenNameCharacters.Length)];
+            if (!IsSingleHanCharacter(givenCharacter))
+            {
+                return null;
+            }
+            builder.Append(givenCharacter);
+        }
+        return builder.ToString();
+    }
+
+    private static bool IsSingleHanCharacter(string? value) =>
+        value is { Length: 1 } && value[0] is >= '\u4E00' and <= '\u9FFF';
+
+    private static bool IsNicknameUniqueViolation(DbUpdateException exception) =>
+        exception.InnerException is Npgsql.PostgresException { SqlState: Npgsql.PostgresErrorCodes.UniqueViolation };
 }

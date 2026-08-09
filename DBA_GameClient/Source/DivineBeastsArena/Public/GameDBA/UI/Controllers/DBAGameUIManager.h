@@ -303,11 +303,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager|Lobby")
 	void ToggleNewbieTaskTracker();
 
-	/** 外部请求显示登录流程界面 */
-	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	/** 旧登录流程挂载入口；仅供现有 Splash/GameInstance 兼容，禁止新页面调用。 */
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager", meta = (DeprecatedFunction, DeprecationMessage = "请由 UDBAFrontendFlowSubsystem 驱动 UDBAUILayerManagerSubsystem 激活 Screen。"))
 	void RequestShowLoginFlowWidget();
 
-	/** 前台流程控制器是 UI 层进入异步登录用例的唯一入口。 */
+	/** @deprecated 仅供旧 FlowWidget 读取兼容投影；新 Widget 使用页面专属 WidgetController。 */
 	UDBAFrontendFlowController* GetFrontendFlowController() const { return FrontendFlowController; }
 
 protected:
@@ -362,10 +362,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
 	virtual void CreateNewbieTaskTrackerWidget();
 
-	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager", meta = (DeprecatedFunction, DeprecationMessage = "请由 UDBAUILayerManagerSubsystem 挂载前台 Screen。"))
 	virtual void ShowLoginFlowWidget();
 
-	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager")
+	UFUNCTION(BlueprintCallable, Category = "DBA|UI|Manager", meta = (DeprecatedFunction, DeprecationMessage = "请由 UDBAUILayerManagerSubsystem 移除前台 Screen。"))
 	virtual void HideLoginFlowWidget();
 
 protected:

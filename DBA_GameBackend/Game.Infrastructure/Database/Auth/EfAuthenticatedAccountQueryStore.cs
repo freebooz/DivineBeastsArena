@@ -23,7 +23,11 @@ public sealed class EfAuthenticatedAccountQueryStore(GameDbContext db)
             .Select(x => new MeResponse(
                 x.Id,
                 x.PlayerIdentity!.PlayerId,
-                x.PlayerIdentity.DisplayName,
+                // /me 面向游戏客户端优先返回玩家档案名；极早期异常数据若尚未补齐档案，
+                // 临时回退账号身份显示名以保持只读接口可用，首次认证会负责补齐正式游戏名。
+                x.PlayerIdentity.PlayerProfile != null
+                    ? x.PlayerIdentity.PlayerProfile.Nickname
+                    : x.PlayerIdentity.DisplayName,
                 x.AccountType,
                 x.Email))
             .FirstOrDefaultAsync(cancellationToken);

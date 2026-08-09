@@ -48,6 +48,22 @@ public record SessionConnectionResponse(
 public record VillageAllocationRequest(Guid CharacterId);
 public record VillageAllocationResponse(Guid SessionId, string Status);
 
+/// <summary>
+/// 前台“进入游戏”意图。客户端只提交已选择角色和其所属区服；
+/// Dedicated Server 实例、连接地址和一次性票据均由服务端决定。
+/// </summary>
+public record GameEnterRequest(Guid CharacterId, Guid ServerId);
+
+/// <summary>
+/// 前台进入游戏响应。<c>Status</c> 为 <c>PENDING</c> 时表示 Dedicated Server 仍在分配或启动，
+/// 客户端可通过同一意图安全重试；为 <c>READY</c> 时才会携带一次性 <c>GameTicket</c>。
+/// AccessToken 绝不复用于本票据，也不得被写入本响应。
+/// </summary>
+public record GameEnterResponse(
+    string Status,
+    Guid SessionId,
+    SessionConnectionResponse? Connection = null);
+
 public record ReconnectTokenResponse(string ReconnectToken, DateTimeOffset ExpiresAt);
 
 public record InternalCreateSessionFromRoomRequest(Guid RoomId);

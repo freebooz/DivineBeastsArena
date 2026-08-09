@@ -374,6 +374,26 @@ void UDBA_GameBackendAuthService::RefreshTokenAsync(FDBA_GameBackendNativeAuthCa
 	}, false);
 }
 
+void UDBA_GameBackendAuthService::GeneratePlayerNameAsync(FDBA_GameBackendNativeResponseCallback Callback)
+{
+	if (!HttpClient)
+	{
+		Callback(false, TEXT("HTTP 客户端不可用，无法获取玩家名。"), TEXT("{}"));
+		return;
+	}
+
+	// 玩家身份只取自 Bearer Token，正文为空，避免客户端指定其他 PlayerId 或提交自造候选名。
+	HttpClient->Post(TEXT("/api/v1/auth/player-name/generate"), TEXT("{}"),
+		[Callback = MoveTemp(Callback)](const FDBA_GameBackendHttpResult& Result)
+		{
+			const bool bSuccess = Result.IsSuccessful();
+			const FString ErrorMessage = bSuccess
+				? FString()
+				: (Result.Message.IsEmpty() ? TEXT("获取游戏玩家名失败。") : Result.Message);
+			Callback(bSuccess, ErrorMessage, Result.RawBody);
+		});
+}
+
 void UDBA_GameBackendAuthService::LogoutAsync(FDBA_GameBackendNativeResponseCallback Callback)
 {
 	if (!HttpClient)

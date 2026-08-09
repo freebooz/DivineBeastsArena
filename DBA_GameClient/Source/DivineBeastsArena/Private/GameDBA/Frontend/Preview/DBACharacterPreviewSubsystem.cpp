@@ -13,6 +13,13 @@
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 
+bool UDBACharacterPreviewSubsystem::ShouldCreateSubsystem(UObject* Outer) const
+{
+	// Preview 只服务于客户端持久前台地图。Dedicated Server 不创建本子系统，
+	// 从生命周期根源避免加载角色展示资源、场景相机和 Niagara 表现依赖。
+	return !IsRunningDedicatedServer();
+}
+
 void UDBACharacterPreviewSubsystem::Deinitialize()
 {
 	ReleasePreview();

@@ -147,6 +147,9 @@ public sealed class EfAccountOnboardingStore(GameDbContext db) : IAccountOnboard
         {
             PlayerId = playerId,
             Nickname = displayName,
+            // 此处仅保存账号身份的临时展示值以满足既有非空/唯一索引；AuthService 在本次首次登录
+            // 签发响应前会调用 IPlayerService 确保生成真正的 3-5 个汉字游戏玩家名。
+            GameNameInitialized = false,
             Level = initialLevel,
             Exp = initialExperience,
             CreatedAt = now

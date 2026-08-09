@@ -87,6 +87,8 @@ public class PlayerProfile
 {
     public Guid PlayerId { get; set; }
     public string Nickname { get; set; } = string.Empty;
+    /** 首次认证是否已由服务端写入游戏玩家名；历史数据迁移为 true，避免覆盖玩家主动改名。 */
+    public bool GameNameInitialized { get; set; } = true;
     public string? Avatar { get; set; }
     public int Level { get; set; } = 1;
     public long Exp { get; set; } = 0;
