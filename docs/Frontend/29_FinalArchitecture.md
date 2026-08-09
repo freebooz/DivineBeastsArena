@@ -122,5 +122,5 @@ Draft 只保存稳定 ID 和显示摘要，不保存任意资产路径或服务�
 - UE5.8 `DivineBeastsArenaEditor Win64 Development`：成功。
 - UE5.8 `DivineBeastsArenaServer Win64 Development`：成功；构建图仍报告第三方 `StructUtils` 已废弃告警。
 - .NET 10 `dotnet build GameBackend.sln --no-restore`：成功，0 警告、0 错误。
-- 后端测试：`Game.ServerManagement.Tests` 5/5、`Game.IntegrationTests` 2/2 通过；`Game.Api.Tests` 97/184 通过。失败项集中在既有 InMemory 事务警告、WebApplicationFactory 未建 Host 与一项中文错误文本期望，不能写成全绿。
+- 后端测试：认证定向 `AuthServiceTests` 5/5、`Game.ServerManagement.Tests` 5/5、`Game.IntegrationTests` 2/2 通过；全量 `Game.Api.Tests` 97/184 通过。失败项集中在既有 InMemory 事务警告、WebApplicationFactory 未建 Host 与一项中文错误文本期望，不能写成全绿。
 - 未执行自动 E2E smoke，也未取得人工运行验收结论；因此本步骤仍不删除二进制资产或 Legacy 运行时对象。
