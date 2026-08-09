@@ -234,6 +234,49 @@ void UDBACharacterRosterSubsystem::CompleteValidationFailure(const FString& Mess
 	if (Completion) Completion(FDBAOperationResult::Failure(EDBAErrorCode::InvalidState, Message));
 }
 
+void UDBACharacterRosterSubsystem::ReconcileSelectionAfterRefresh()
+{
+	UDBAFrontendFlowSubsystem* Flow = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAFrontendFlowSubsystem>() : nullptr;
+	if (!Flow)
+	{
+		return;
+	}
+
+	// 刷新优先保留前台已经选中的稳定 CharacterId；它不存在时才使用服务端选择标记，最后回退列表首项。
+	const FString PreviousSelectedId = Flow->GetFrontendSessionContext().SelectedCharacterId;
+	FDBACharacterDetails* Selected = PreviousSelectedId.IsEmpty() ? nullptr : CachedDetailsById.Find(PreviousSelectedId);
+	if (!Selected)
+	{
+		for (TPair<FString, FDBACharacterDetails>& Pair : CachedDetailsById)
+		{
+			if (Pair.Value.bIsSelected)
+			{
+				Selected = &Pair.Value;
+				break;
+			}
+		}
+	}
+	if (!Selected && !CachedCharacters.IsEmpty())
+	{
+		Selected = CachedDetailsById.Find(CachedCharacters[0].CharacterId.ToString());
+	}
+
+	for (TPair<FString, FDBACharacterDetails>& Pair : CachedDetailsById)
+	{
+		Pair.Value.bIsSelected = Selected && Pair.Key == Selected->Summary.CharacterId.ToString();
+	}
+	if (Selected)
+	{
+		Selected->bIsSelected = true;
+		ApplySelectedCharacter(*Selected);
+	}
+	else
+	{
+		// 空列表或原角色已被其他设备删除时不保留空悬 SelectedCharacterId。
+		ClearSelectedCharacter();
+	}
+}
+
 void UDBACharacterRosterSubsystem::RefreshCharacterList(const FString& InServerId, FDBACharacterRosterCompletion Completion)
 {
 	FString AccountId, SessionServerId;
@@ -262,6 +305,7 @@ void UDBACharacterRosterSubsystem::RefreshCharacterList(const FString& InServerI
 		}
 		ResetCacheForScope(AccountId, SessionServerId);
 		for (const FDBACharacterDetails& Character : Details) { CachedCharacters.Add(Character.Summary); CachedDetailsById.Add(Character.Summary.CharacterId.ToString(), Character); }
+		ReconcileSelectionAfterRefresh();
 		PublishCache();
 		UE_LOG(LogDBACharacter, Log, TEXT("角色列表已刷新：账号=%s，区服=%s，数量=%d。"), *AccountId, *SessionServerId, CachedCharacters.Num());
 		if (Completion) Completion(FDBAOperationResult::Success());

@@ -48,7 +48,13 @@ namespace DBAFrontendStateMachine
 		case EDBAFrontendState::EnteringWorld:
 			return To == EDBAFrontendState::CharacterSelect || To == EDBAFrontendState::RecoverableError || To == EDBAFrontendState::FatalError;
 		case EDBAFrontendState::RecoverableError:
-			return To == EDBAFrontendState::Login || To == EDBAFrontendState::Register || To == EDBAFrontendState::ServerSelect || To == EDBAFrontendState::CharacterSelect || To == EDBAFrontendState::CharacterCreate_Zodiac || To == EDBAFrontendState::FatalError;
+			// 可恢复错误必须能回到原角色创建步骤，避免网络短暂中断强制丢失已验证的 Draft；
+			// 全局维护也允许回启动页，仍由 Flow 决定是否需要清理会话。
+			return To == EDBAFrontendState::Startup || To == EDBAFrontendState::Login || To == EDBAFrontendState::Register
+				|| To == EDBAFrontendState::ServerSelect || To == EDBAFrontendState::CharacterSelect
+				|| To == EDBAFrontendState::CharacterCreate_Zodiac || To == EDBAFrontendState::CharacterCreate_Element
+				|| To == EDBAFrontendState::CharacterCreate_FiveCamp || To == EDBAFrontendState::CharacterCreate_Confirm
+				|| To == EDBAFrontendState::FatalError;
 		case EDBAFrontendState::FatalError:
 			return To == EDBAFrontendState::Bootstrapping;
 		default:

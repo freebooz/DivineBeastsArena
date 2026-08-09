@@ -21,8 +21,11 @@ bool FDBAFrontendStateMachineTransitionTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("登录可以加载角色列表"), DBAFrontendStateMachine::CanTransition(EDBAFrontendState::Login, EDBAFrontendState::CharacterRosterLoading));
 	TestTrue(TEXT("角色创建步骤必须按生肖到元素推进"), DBAFrontendStateMachine::CanTransition(EDBAFrontendState::CharacterCreate_Zodiac, EDBAFrontendState::CharacterCreate_Element));
 	TestTrue(TEXT("角色创建可取消回角色选择"), DBAFrontendStateMachine::CanTransition(EDBAFrontendState::CharacterCreate_FiveCamp, EDBAFrontendState::CharacterSelect));
+	TestTrue(TEXT("角色选择可安全返回选服以切换区服"), DBAFrontendStateMachine::CanTransition(EDBAFrontendState::CharacterSelect, EDBAFrontendState::ServerSelect));
 	TestTrue(TEXT("自动登录失败可回登录"), DBAFrontendStateMachine::CanTransition(EDBAFrontendState::AutoLogin, EDBAFrontendState::Login));
 	TestTrue(TEXT("服务不可用可从可恢复错误回角色选择"), DBAFrontendStateMachine::CanTransition(EDBAFrontendState::RecoverableError, EDBAFrontendState::CharacterSelect));
+	TestTrue(TEXT("网络恢复可返回角色创建确认步骤而不丢失草稿"), DBAFrontendStateMachine::CanTransition(EDBAFrontendState::RecoverableError, EDBAFrontendState::CharacterCreate_Confirm));
+	TestTrue(TEXT("全局维护可从可恢复错误回启动页"), DBAFrontendStateMachine::CanTransition(EDBAFrontendState::RecoverableError, EDBAFrontendState::Startup));
 	TestFalse(TEXT("引导初始化不能直接进入角色选择"), DBAFrontendStateMachine::CanTransition(EDBAFrontendState::Bootstrapping, EDBAFrontendState::CharacterSelect));
 	TestFalse(TEXT("登录不能跳过创建步骤直接确认角色"), DBAFrontendStateMachine::CanTransition(EDBAFrontendState::Login, EDBAFrontendState::CharacterCreate_Confirm));
 	TestFalse(TEXT("元素步骤不能直接进入进服"), DBAFrontendStateMachine::CanTransition(EDBAFrontendState::CharacterCreate_Element, EDBAFrontendState::EnteringWorld));

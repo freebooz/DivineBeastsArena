@@ -148,7 +148,7 @@ void UDBAFrontendFlowSubsystem::RefreshServerDirectory()
 	{
 		ServerDirectory->RefreshDirectory(
 			ServiceSettings ? ServiceSettings->Region : FString(),
-			ServiceSettings ? ServiceSettings->ApiVersion : FString(),
+			ServiceSettings ? ServiceSettings->ClientVersion : FString(),
 			ServiceSettings ? ServiceSettings->Platform : FString());
 	}
 }
@@ -357,6 +357,8 @@ void UDBAFrontendFlowSubsystem::StartLoginFlow()
 	}
 	FrontendSessionContext = FDBAFrontendSessionContext();
 	bAuthenticationRequestInFlight = false;
+	bResumeSessionRefreshInFlight = false;
+	bApplicationWasSuspended = false;
 	FrontendSessionContext.ClientSessionState = EDBAFrontendState::Bootstrapping;
 	UpdateLegacyFlowState(EDBAFrontendState::Bootstrapping);
 	TryTransitionTo(EDBAFrontendState::Startup);
@@ -419,14 +421,7 @@ void UDBAFrontendFlowSubsystem::HandleLoginSucceeded(const FDBALoginResponse& Re
 	if (TryTransitionTo(EDBAFrontendState::ServerSelect))
 	{
 		UpdateLegacyFlowState(EDBAFrontendState::ServerSelect);
-		const UDBAExternalServiceSettings* ServiceSettings = GetDefault<UDBAExternalServiceSettings>();
-		if (UDBAServerDirectorySubsystem* ServerDirectory = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBAServerDirectorySubsystem>() : nullptr)
-		{
-			ServerDirectory->RefreshDirectory(
-				ServiceSettings ? ServiceSettings->Region : FString(),
-				ServiceSettings ? ServiceSettings->ClientVersion : FString(),
-				ServiceSettings ? ServiceSettings->Platform : FString());
-		}
+		RefreshServerDirectory();
 	}
 }
 
@@ -525,9 +520,15 @@ void UDBAFrontendFlowSubsystem::CancelRegistration()
 
 void UDBAFrontendFlowSubsystem::BeginServerSelection()
 {
+	// 从角色选择返回选服必须彻底脱离旧区服作用域，防止缓存、选中态和前台预览串服。
+	if (GetFrontendState() != EDBAFrontendState::ServerSelect)
+	{
+		ClearFrontendCharacterContext(true);
+	}
 	if (TryTransitionTo(EDBAFrontendState::ServerSelect))
 	{
 		UpdateLegacyFlowState(EDBAFrontendState::ServerSelect);
+		RefreshServerDirectory();
 	}
 }
 
@@ -547,10 +548,8 @@ void UDBAFrontendFlowSubsystem::SelectServer(const FString& ServerId)
 		return;
 	}
 
-	if (UDBACharacterRosterSubsystem* Roster = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterRosterSubsystem>() : nullptr)
-	{
-		Roster->ClearCache();
-	}
+	// 选服是新的账号+区服缓存作用域开始点，必须先取消旧列表/创建请求并释放旧预览。
+	ClearFrontendCharacterContext(false);
 	FrontendSessionContext.ServerId = ServerId.TrimStartAndEnd();
 	ServerDirectory->RecordLastSelectedServer(FrontendSessionContext.AccountId, FrontendSessionContext.ServerId);
 	LoadCharactersAfterLogin();
@@ -1041,14 +1040,15 @@ void UDBAFrontendFlowSubsystem::BackCharacterCreateStep()
 void UDBAFrontendFlowSubsystem::RequestLogout()
 {
 	InvalidatePendingFlowRequests();
+	// 本地清理不能等待远端 logout 回包：Token 过期或网络异常时，旧角色缓存/预览必须立刻不可见。
+	ClearFrontendCharacterContext(true);
+	FrontendSessionContext.AccountId.Reset();
 	const auto CompleteLogout = [this]()
 	{
-		if (UDBACharacterRosterSubsystem* Roster = GetGameInstance() ? GetGameInstance()->GetSubsystem<UDBACharacterRosterSubsystem>() : nullptr)
-		{
-			Roster->ClearCache();
-		}
-		CachedCharacters.Reset();
+		// AccountService 负责清 Token；Flow 负责清理所有前台业务摘要与预览资源。
 		FrontendSessionContext = FDBAFrontendSessionContext();
+		bResumeSessionRefreshInFlight = false;
+		bApplicationWasSuspended = false;
 		FrontendSessionContext.ClientSessionState = EDBAFrontendState::RecoverableError;
 		TryTransitionTo(EDBAFrontendState::Login);
 		UpdateLegacyFlowState(EDBAFrontendState::Login);
@@ -1068,10 +1068,10 @@ void UDBAFrontendFlowSubsystem::RequestLogout()
 
 void UDBAFrontendFlowSubsystem::HandleTokenExpired()
 {
-	InvalidatePendingFlowRequests();
-	FrontendSessionContext.AccountId.Reset();
-	FrontendSessionContext.ResetCharacterDraft();
-	ForceRecoverableErrorAndFallback(EDBAFrontendState::Login, TEXT("登录状态已过期。"));
+	// 该入口只由 ApiClient 的单飞 Refresh 失败或 Android Resume 的 Refresh 失败调用。
+	// 统一走 RequestLogout，确保 Token、账号、区服、角色、Draft 与 Preview 同时失效。
+	UE_LOG(LogDBAOnline, Warning, TEXT("登录状态已过期，执行统一登出。"));
+	RequestLogout();
 }
 
 void UDBAFrontendFlowSubsystem::HandleServerUnavailable()
@@ -1081,6 +1081,33 @@ void UDBAFrontendFlowSubsystem::HandleServerUnavailable()
 		? EDBAFrontendState::CharacterCreate_Zodiac
 		: EDBAFrontendState::CharacterSelect;
 	ForceRecoverableErrorAndFallback(Fallback, TEXT("服务器当前不可用。"));
+}
+
+void UDBAFrontendFlowSubsystem::HandleNetworkLost()
+{
+	InvalidatePendingFlowRequests();
+	const EDBAFrontendState CurrentState = GetFrontendState();
+	const EDBAFrontendState Fallback = DBAFrontendStateMachine::IsCharacterCreationState(CurrentState)
+		? CurrentState
+		: (CurrentState == EDBAFrontendState::CharacterSelect || CurrentState == EDBAFrontendState::CharacterRosterLoading)
+			? EDBAFrontendState::CharacterSelect
+			: (CurrentState == EDBAFrontendState::ServerSelect ? EDBAFrontendState::ServerSelect : EDBAFrontendState::Login);
+	// 仅发布一条结构化错误并回到可重试 Screen；NetworkStatus 可订阅，不创建无限 Modal。
+	const FDBAApiError Error = UDBAFrontendErrorMapper::FromHttpStatus(0, TEXT("network.connection_lost"));
+	OnFlowApiError.Broadcast(Error);
+	OnFlowError.Broadcast(Error.UserMessage.ToString());
+	ForceRecoverableErrorAndFallback(Fallback, TEXT("网络连接已中断，请恢复网络后重试。"));
+}
+
+void UDBAFrontendFlowSubsystem::HandleBackendMaintenance(const bool bAffectsServerDirectory)
+{
+	ClearFrontendCharacterContext(true);
+	const EDBAFrontendState Fallback = bAffectsServerDirectory ? EDBAFrontendState::ServerSelect : EDBAFrontendState::Startup;
+	ForceRecoverableErrorAndFallback(Fallback, bAffectsServerDirectory ? TEXT("区服目录正在维护。") : TEXT("服务正在全局维护。"));
+	if (bAffectsServerDirectory && GetFrontendState() == EDBAFrontendState::ServerSelect)
+	{
+		RefreshServerDirectory();
+	}
 }
 
 void UDBAFrontendFlowSubsystem::RefreshCharacterList()

@@ -83,6 +83,11 @@ void UDBACharacterSelectWidgetController::ConfirmDelete()
 			if (!ViewModel) return;
 			ViewModel->SetRosterLoading(false);
 			if (!Result.bSuccess) { PublishError(Result); return; }
+			// 删除当前角色后先释放旧预览，再安全选择下一项；空列表不会遗留已销毁角色的 Mesh/异步回调。
+			if (UDBACharacterPreviewSubsystem* Preview = GetPreviewSubsystem())
+			{
+				Preview->ReleasePreview();
+			}
 			const TArray<FDBACharacterSummary>& Characters = GetRoster()->GetCachedCharacters();
 			const FDBACharacterSummary* Next = Characters.FindByPredicate([DeletedId](const FDBACharacterSummary& Character) { return Character.CharacterId != DeletedId; });
 			if (Next) ApplySelection(Next->CharacterId); else HandleRosterChanged(Characters);
@@ -109,10 +114,23 @@ void UDBACharacterSelectWidgetController::HandleRosterChanged(const TArray<FDBAC
 {
 	if (!ViewModel) return;
 	ViewModel->SetRosterLoading(false);
+	if (Characters.IsEmpty())
+	{
+		// 空角色列表是合法状态（删除最后一个角色或新服），必须同时清理 ViewModel 与前台 3D 预览。
+		if (UDBACharacterPreviewSubsystem* Preview = GetPreviewSubsystem()) Preview->ReleasePreview();
+		ViewModel->ApplyRoster(Characters, nullptr);
+		OnCharactersChanged.Broadcast(Characters);
+		return;
+	}
+
 	const FDBACharacterDetails* Details = nullptr;
 	if (UDBACharacterRosterSubsystem* CurrentRoster = GetRoster())
 	{
-		const FDBACharacterId Desired = ViewModel->GetSelectedCharacterId().IsValid() ? ViewModel->GetSelectedCharacterId() : (Characters.IsEmpty() ? FDBACharacterId() : Characters[0].CharacterId);
+		const FDBACharacterId PreviousSelectedId = ViewModel->GetSelectedCharacterId();
+		const bool bPreviousSelectionStillExists = PreviousSelectedId.IsValid()
+			&& Characters.ContainsByPredicate([&PreviousSelectedId](const FDBACharacterSummary& Character) { return Character.CharacterId == PreviousSelectedId; });
+		// 刷新优先保留原 CharacterId；若已删除/换服，则回退本次列表第一项，不保留空悬选中态。
+		const FDBACharacterId Desired = bPreviousSelectionStillExists ? PreviousSelectedId : Characters[0].CharacterId;
 		Details = CurrentRoster->FindCachedCharacter(Desired);
 	}
 	ViewModel->ApplyRoster(Characters, Details);

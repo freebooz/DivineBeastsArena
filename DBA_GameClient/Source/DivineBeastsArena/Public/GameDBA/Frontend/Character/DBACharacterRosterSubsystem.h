@@ -86,6 +86,8 @@ private:
 	bool ResolveActiveCacheScope(FString& OutAccountId, FString& OutServerId) const;
 	void ResetCacheForScope(const FString& AccountId, const FString& ServerId);
 	bool IsRequestCurrent(uint64 RequestGeneration, const FString& AccountId, const FString& ServerId) const;
+	/** 刷新后的选中回收：保留仍存在的角色，否则选择服务端标记角色、首项或清空。 */
+	void ReconcileSelectionAfterRefresh();
 	void PublishCache();
 	void ApplySelectedCharacter(const FDBACharacterDetails& Character);
 	void CompleteValidationFailure(const FString& Message, FDBACharacterRosterCompletion Completion) const;
