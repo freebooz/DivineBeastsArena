@@ -1,10 +1,14 @@
 using System;
+using Game.Infrastructure.Database;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace Game.Infrastructure.Database.Migrations;
 
+[DbContext(typeof(GameDbContext))]
+[Migration("20260809113000_AddCharacterServiceAuthority")]
 public partial class AddCharacterServiceAuthority : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)

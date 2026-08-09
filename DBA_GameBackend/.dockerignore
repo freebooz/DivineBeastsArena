@@ -1,0 +1,19 @@
+# 禁止把宿主机生成物复制进 Linux 构建阶段，否则 Windows NuGet 路径会污染容器内的 project.assets.json。
+**/bin/
+**/obj/
+
+# 版本控制与编辑器缓存不属于镜像构建输入。
+.git/
+.vs/
+.vscode/
+
+# 真实密钥只能由 Docker Compose 在运行时注入，严禁进入镜像构建上下文。
+.env
+.env.*
+!.env.example
+
+# 本地运行日志、测试结果和上传暂存目录不得进入生产镜像。
+**/logs/
+**/TestResults/
+**/telemetry-events/
+**/crash-uploads/

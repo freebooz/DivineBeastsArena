@@ -367,6 +367,59 @@ namespace Game.Infrastructure.Database.Migrations
                     b.ToTable("ban_record", (string)null);
                 });
 
+            modelBuilder.Entity("Game.Infrastructure.Database.Entities.CharacterAppearance", b =>
+                {
+                    b.Property<Guid>("CharacterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("character_id");
+
+                    b.Property<string>("AppearanceJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("appearance_json");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("RulesVersion")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("rules_version");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("CharacterId");
+
+                    b.ToTable("character_appearances", (string)null);
+                });
+
+            modelBuilder.Entity("Game.Infrastructure.Database.Entities.CharacterProgress", b =>
+                {
+                    b.Property<Guid>("CharacterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("character_id");
+
+                    b.Property<long>("Experience")
+                        .HasColumnType("bigint")
+                        .HasColumnName("experience");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("integer")
+                        .HasColumnName("level");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("CharacterId");
+
+                    b.ToTable("character_progress", (string)null);
+                });
+
             modelBuilder.Entity("Game.Infrastructure.Database.Entities.ClientVersion", b =>
                 {
                     b.Property<Guid>("Id")
@@ -912,39 +965,6 @@ namespace Game.Infrastructure.Database.Migrations
                     b.ToTable("game_room_player", (string)null);
                 });
 
-            modelBuilder.Entity("Game.Infrastructure.Database.Entities.GameServerEvent", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("event_type");
-
-                    b.Property<string>("PayloadJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("payload_json");
-
-                    b.Property<Guid>("ServerId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("server_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ServerId");
-
-                    b.ToTable("game_server_event", (string)null);
-                });
-
             modelBuilder.Entity("Game.Infrastructure.Database.Entities.GameServerDirectoryEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1009,6 +1029,39 @@ namespace Game.Infrastructure.Database.Migrations
                     b.HasIndex("Region", "Platform", "Status");
 
                     b.ToTable("game_servers", (string)null);
+                });
+
+            modelBuilder.Entity("Game.Infrastructure.Database.Entities.GameServerEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("event_type");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload_json");
+
+                    b.Property<Guid>("ServerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("server_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ServerId");
+
+                    b.ToTable("game_server_event", (string)null);
                 });
 
             modelBuilder.Entity("Game.Infrastructure.Database.Entities.GameServerInstance", b =>
@@ -1807,6 +1860,15 @@ namespace Game.Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("CreationIdempotencyKey")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("creation_idempotency_key");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
                     b.Property<string>("FiveCamp")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -1818,6 +1880,12 @@ namespace Game.Infrastructure.Database.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("fixed_skill_group_id");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
 
                     b.Property<bool>("IsSelected")
                         .ValueGeneratedOnAdd()
@@ -1835,6 +1903,12 @@ namespace Game.Infrastructure.Database.Migrations
                         .HasDefaultValue(1)
                         .HasColumnName("level");
 
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("normalized_name");
+
                     b.Property<Guid>("PlayerId")
                         .HasColumnType("uuid")
                         .HasColumnName("player_id");
@@ -1844,6 +1918,10 @@ namespace Game.Infrastructure.Database.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("primary_element");
+
+                    b.Property<Guid>("ServerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("server_id");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1857,14 +1935,17 @@ namespace Game.Infrastructure.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PlayerId");
-
-                    b.HasIndex("PlayerId", "CharacterName")
+                    b.HasIndex("ServerId", "NormalizedName")
                         .IsUnique();
 
-                    b.HasIndex("PlayerId", "IsSelected");
+                    b.HasIndex("PlayerId", "ServerId", "CreationIdempotencyKey")
+                        .IsUnique();
 
-                    b.ToTable("player_character", (string)null);
+                    b.HasIndex("PlayerId", "ServerId", "IsDeleted");
+
+                    b.HasIndex("PlayerId", "ServerId", "IsSelected");
+
+                    b.ToTable("characters", (string)null);
                 });
 
             modelBuilder.Entity("Game.Infrastructure.Database.Entities.PlayerEventLog", b =>
@@ -2969,6 +3050,28 @@ namespace Game.Infrastructure.Database.Migrations
                     b.Navigation("Account");
                 });
 
+            modelBuilder.Entity("Game.Infrastructure.Database.Entities.CharacterAppearance", b =>
+                {
+                    b.HasOne("Game.Infrastructure.Database.Entities.PlayerCharacter", "Character")
+                        .WithOne("Appearance")
+                        .HasForeignKey("Game.Infrastructure.Database.Entities.CharacterAppearance", "CharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Character");
+                });
+
+            modelBuilder.Entity("Game.Infrastructure.Database.Entities.CharacterProgress", b =>
+                {
+                    b.HasOne("Game.Infrastructure.Database.Entities.PlayerCharacter", "Character")
+                        .WithOne("Progress")
+                        .HasForeignKey("Game.Infrastructure.Database.Entities.CharacterProgress", "CharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Character");
+                });
+
             modelBuilder.Entity("Game.Infrastructure.Database.Entities.DeviceLogin", b =>
                 {
                     b.HasOne("Game.Infrastructure.Database.Entities.Account", "Account")
@@ -3307,6 +3410,13 @@ namespace Game.Infrastructure.Database.Migrations
             modelBuilder.Entity("Game.Infrastructure.Database.Entities.MatchResult", b =>
                 {
                     b.Navigation("PlayerResults");
+                });
+
+            modelBuilder.Entity("Game.Infrastructure.Database.Entities.PlayerCharacter", b =>
+                {
+                    b.Navigation("Appearance");
+
+                    b.Navigation("Progress");
                 });
 
             modelBuilder.Entity("Game.Infrastructure.Database.Entities.PlayerProfile", b =>

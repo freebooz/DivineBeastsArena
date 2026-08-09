@@ -1,8 +1,8 @@
 ﻿# DBA_GameBackend Docker Compose - 开发环境
-# 统一打包：Game.Api + Game.Worker + PostgreSQL + Redis
+# 开发环境基础服务：Game.Api + PostgreSQL + Redis；Worker 通过 separate Profile 按需独立启动。
 
 services:
-  # ========== 统一容器方案（API + Worker） ==========
+  # ========== 默认 API 容器 ==========
   game-backend:
     build:
       context: .
