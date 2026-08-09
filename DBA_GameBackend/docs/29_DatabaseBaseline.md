@@ -21,7 +21,7 @@
 
 ## 本轮迁移
 
-`20260809140000_AddPlayerGameNameInitialization` 为 `player_profile` 增加 `game_name_initialized`。历史数据默认 true，避免上线迁移覆盖旧玩家昵称；新开户显式写 false，首次成功认证生成 3–5 个汉字玩家名后原子切换为 true。
+`20260809140000_AddPlayerGameNameInitialization` 为 `player_profile` 增加 `game_name_initialized`。历史数据默认 true，避免上线迁移覆盖旧玩家昵称；新开户显式写 false，首次认证后的独立 `/api/v1/auth/player-name/generate` 请求生成名称并原子切换为 true。账号登录事务不修改此字段。
 
 ## 迁移要求
 

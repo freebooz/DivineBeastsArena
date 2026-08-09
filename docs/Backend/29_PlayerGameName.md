@@ -2,7 +2,7 @@
 
 ## 目标与边界
 
-首次成功认证时，服务端为新玩家自动生成一个 **3 至 5 个汉字**的游戏玩家名。该名称保存于 `player_profile.nickname`，与账号登录名、`PlayerIdentity.DisplayName`、角色名完全分离：
+首次开户认证完成后，前台调用独立接口获取一个 **3 至 5 个汉字**的游戏玩家名。该名称保存于 `player_profile.nickname`，与账号登录名、`PlayerIdentity.DisplayName`、角色名完全分离：
 
 - 账号登录名用于认证，不被自动改写。
 - 游戏玩家名用于玩家 Profile 展示。
@@ -11,21 +11,23 @@
 ## 自动填充流程
 
 1. 开户存储创建 `PlayerProfile` 时写入临时唯一昵称，并将 `game_name_initialized` 设为 `false`。
-2. 注册、账号登录、游客登录、开发登录或刷新令牌获得认证主体后，`AuthService` 在生成响应前调用 `IPlayerService.EnsureGeneratedGameNameAsync`。
-3. 服务端从 `PlayerGameName` 配置的单字姓氏和名字字库使用加密安全随机数生成 3–5 个汉字候选。
-4. PostgreSQL 的 `nickname` 唯一索引与 `game_name_initialized` 并发标记共同保证并发首次登录不会覆盖先提交的昵称。
-5. 成功认证响应中的 `nickname` 即为最终游戏玩家名。玩家主动改名后，初始化标记保持为 true，后续认证绝不覆盖。
+2. `AuthService` 只签发 Token，不调用玩家名服务，也不在账号登录路径产生 Profile 写副作用。
+3. UE 注册流程拿到 AccessToken 后自动调用 `POST /api/v1/auth/player-name/generate`；普通账号登录与刷新令牌不会调用该接口。
+4. 服务端从 `PlayerGameName` 配置的单字姓氏和名字字库使用加密安全随机数生成 3–5 个汉字候选。
+5. PostgreSQL 的 `nickname` 唯一索引与 `game_name_initialized` 并发标记共同保证并发首次调用不会覆盖先提交的昵称。玩家主动改名后，初始化标记保持为 true，后续调用只返回既有名称。
 
 历史账号的迁移默认 `game_name_initialized = true`，因此不会在上线后被批量自动改名。
 
 ## 接口
 
-`POST /api/v1/auth/player-name/ensure`
+`POST /api/v1/auth/player-name/generate`
 
 - 需要 Bearer AccessToken。
 - 不接受名称或 PlayerId 参数；服务端只读取 JWT 的 `player_id`，因此不能为其他账号生成或覆盖名称。
 - 幂等：已完成初始化时返回既有昵称，`wasGenerated = false`。
 - 初次补全时返回 `wasGenerated = true`。
+
+旧 `/api/v1/auth/player-name/ensure` 仅为兼容适配器，返回 `Deprecation: true` 和 successor `Link`；新客户端不得调用。
 
 成功响应数据：
 
@@ -47,4 +49,4 @@
 
 ## 人工审核建议
 
-在可见开发环境中注册一个全新账号并登录，确认响应和 `/me` 均展示 3–5 个汉字昵称；再次登录应返回同一昵称。随后手工修改 Profile 昵称，再次认证应保留人工昵称。不得用自动登录或自动接口脚本代替人工业务验收。
+在可见开发环境中注册一个全新账号，确认注册后出现一次独立 `/player-name/generate` 请求并展示 3–5 个汉字昵称；随后普通 `/login` 不得附带该请求。再次调用生成接口应返回同一昵称。不得用自动登录或自动接口脚本代替人工业务验收。

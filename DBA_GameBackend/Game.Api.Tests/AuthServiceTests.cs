@@ -276,8 +276,8 @@ public class AuthServiceTests
         var authenticationPolicy = CreateAuthenticationPolicy(
             builtConfiguration["Auth:PasswordResetBootstrapToken"]);
         var onboardingStore = new EfAccountOnboardingStore(db);
-        // 测试中的档案名已经由历史数据初始化，不会触发 Redis 缓存失效；仍使用生产 PlayerService，
-        // 以确保 AuthService 构造依赖与生产 DI 保持一致而不是建立第二套测试逻辑。
+        // AuthService 只验证认证与令牌生命周期，不再构造或调用 PlayerService；
+        // 玩家名生成由独立受鉴权端点覆盖，避免账号登录测试产生资料写入副作用。
         return new AuthService(
             new GuestLoginUseCase(
                 new Sha256DeviceIdentifierHasher(),

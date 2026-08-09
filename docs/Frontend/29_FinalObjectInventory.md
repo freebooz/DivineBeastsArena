@@ -48,7 +48,7 @@
 | 能力 | 唯一 Owner | 传输契约 | 状态 |
 | --- | --- | --- | --- |
 | 注册/登录/刷新/登出 | `AuthService` | `/api/v1/auth/*` | KEEP |
-| 首次玩家名 | `PlayerService` | `/api/v1/auth/player-name/ensure` 与认证响应 | KEEP |
+| 首次玩家名 | `PlayerService` | `/api/v1/auth/player-name/generate`；UE 注册编排显式调用 | KEEP |
 | 区服目录 | `ServerDirectoryService` | `/api/v1/servers` | KEEP |
 | 角色 CRUD/选择 | CharacterService 应用层与 `CharacterEndpoints` | `/api/v1/characters` | KEEP，唯一新客户端入口 |
 | EnterWorld | `GameEnterService` | `/api/v1/game/enter` | KEEP |

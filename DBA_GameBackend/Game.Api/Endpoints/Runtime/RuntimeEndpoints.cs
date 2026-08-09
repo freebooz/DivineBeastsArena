@@ -276,7 +276,7 @@ GET /internal/runtime/servers/{serverId}
             : Results.Ok(ApiResponse<object>.Ok(new { matchResultId = result.Id }));
     }
 
-    private static async Task<Game.Infrastructure.Database.Entities.GameServerInstance?> ValidateRuntimeAsync(
+    private static async Task<global::Game.Infrastructure.Database.Entities.GameServerInstance?> ValidateRuntimeAsync(
         GameDbContext db,
         Guid serverId,
         Guid sessionId,
@@ -293,7 +293,7 @@ GET /internal/runtime/servers/{serverId}
 
     private static void AddSessionEvent(GameDbContext db, Guid sessionId, string eventType, string payloadJson)
     {
-        db.SessionEvents.Add(new Game.Infrastructure.Database.Entities.SessionEvent
+        db.SessionEvents.Add(new global::Game.Infrastructure.Database.Entities.SessionEvent
         {
             Id = Guid.NewGuid(),
             GameSessionId = sessionId,
@@ -305,7 +305,7 @@ GET /internal/runtime/servers/{serverId}
 
     private static void AddServerEvent(GameDbContext db, Guid serverId, string eventType, string payloadJson)
     {
-        db.GameServerEvents.Add(new Game.Infrastructure.Database.Entities.GameServerEvent
+        db.GameServerEvents.Add(new global::Game.Infrastructure.Database.Entities.GameServerEvent
         {
             Id = Guid.NewGuid(),
             ServerId = serverId,

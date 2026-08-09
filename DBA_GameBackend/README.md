@@ -14,14 +14,14 @@
 
 ## 生产 API 基线
 
-- Auth：`/api/v1/auth/*`，支持注册、登录、刷新、登出、当前账号和首次游戏名补全。
+- Auth：`/api/v1/auth/*`，支持注册、登录、刷新、登出、当前账号和独立玩家名生成。
 - Server Directory：`GET /api/v1/servers`。
 - Character：`/api/v1/characters`，以 `ServerId` 为角色目录边界。
 - Enter World：`POST /api/v1/game/enter`，签发短 TTL、一次性 GameTicket。
 
 `/api/auth` 中已有 v1 successor 的路径、`/api/account/characters` 与 `/api/players/me/characters` 仅为旧客户端兼容。它们返回 `Deprecation: true` 和 successor `Link` 响应头；新客户端不得继续调用。
 
-首次登录玩家名由服务端从 `PlayerGameName` 配置字库生成 3–5 个汉字，保存到 `player_profile.nickname`。账号登录名、玩家名和角色名是三个不同概念。
+首次开户后，UE 使用 AccessToken 自动调用 `/api/v1/auth/player-name/generate`，由服务端从 `PlayerGameName` 配置字库生成 3–5 个汉字并保存到 `player_profile.nickname`。`/api/v1/auth/login` 只认证，不调用玩家名接口。账号登录名、玩家名和角色名是三个不同概念。
 
 ## 工程检查命令
 

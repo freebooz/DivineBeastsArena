@@ -17,12 +17,13 @@
 
 | 方法 | 地址 | 说明 | 鉴权 |
 | --- | --- | --- | --- |
-| `POST` | `/api/v1/auth/register` | 注册账号并返回 Token。 | 无 |
-| `POST` | `/api/v1/auth/login` | 账号登录；首次登录会自动补全 3–5 个汉字玩家名。 | 无 |
+| `POST` | `/api/v1/auth/register` | 注册账号并返回 Token；前台随后调用独立玩家名接口完成首次开户编排。 | 无 |
+| `POST` | `/api/v1/auth/login` | 仅执行账号认证与 Token 签发，不生成或修改玩家名。 | 无 |
 | `POST` | `/api/v1/auth/refresh` | 刷新令牌 Rotation 入口。 | 无 |
 | `POST` | `/api/v1/auth/logout` | 注销并撤销刷新令牌。 | Bearer |
 | `GET` | `/api/v1/auth/me` | 当前账号与玩家 Profile 摘要。 | Bearer |
-| `POST` | `/api/v1/auth/player-name/ensure` | 幂等确保当前 JWT 玩家已有服务端生成的游戏名。 | Bearer |
+| `POST` | `/api/v1/auth/player-name/generate` | 获取当前 JWT 玩家 3–5 个汉字游戏名；首次生成并持久化，后续幂等返回。 | Bearer |
+| `POST` | `/api/v1/auth/player-name/ensure` | Deprecated 兼容路径，迁移到 `/generate`。 | Bearer |
 
 ## 兼容认证 `/api/auth`（Deprecated）
 

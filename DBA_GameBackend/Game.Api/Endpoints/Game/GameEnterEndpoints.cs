@@ -4,6 +4,7 @@
 - 端点复用既有认证 claim、会话分配与票据签发服务，以适配层完成 /api/v1 新契约迁移。
 */
 
+using Game.Api.Extensions;
 using Game.Api.Services.Session;
 using Game.Shared.Common;
 using Game.Shared.Contracts.Session;

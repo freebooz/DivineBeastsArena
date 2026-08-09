@@ -226,6 +226,8 @@ void UDBAOnlineAccountService::Login(const FDBALoginRequest& RequestData, FDBAOn
 			Response.AccountInfo.AccountId = FDBAAccountId(Tokens.PlayerId);
 			Response.AccountInfo.LoginType = EDBALoginType::Email;
 			Response.AccountInfo.Status = EDBAAccountStatus::Normal;
+
+			// 普通账号登录只处理认证响应，不调用玩家名生成接口。
 			Service->CacheLoginSuccess(Response);
 			OnComplete.ExecuteIfBound(Response);
 		});
@@ -276,8 +278,44 @@ void UDBAOnlineAccountService::Register(const FDBALoginRequest& RequestData, FDB
 			Response.AccountInfo.AccountId = FDBAAccountId(Tokens.PlayerId);
 			Response.AccountInfo.LoginType = EDBALoginType::Email;
 			Response.AccountInfo.Status = EDBAAccountStatus::Normal;
+
+			// 注册成功即建立首次认证会话，但注册端点本身不承担玩家名写入。
+			// 先缓存令牌，使独立玩家名请求携带 Bearer Token；成功后再向 Flow 发布最终登录结果。
 			Service->CacheLoginSuccess(Response);
-			OnComplete.ExecuteIfBound(Response);
+			UDBA_GameBackendClientSubsystem* CurrentBackendClient = Service->GetBackendClient();
+			UDBA_GameBackendAuthService* CurrentAuthService = CurrentBackendClient ? CurrentBackendClient->GetAuthService() : nullptr;
+			if (!CurrentAuthService)
+			{
+				OnComplete.ExecuteIfBound(MakeLoginFailure(TEXT("首次玩家名生成失败"), TEXT("后端鉴权服务不可用。")));
+				return;
+			}
+
+			CurrentAuthService->GeneratePlayerNameAsync(
+				[WeakThis, Generation, OnComplete, Response](bool bNameSuccess, const FString& NameError, const FString& NameJson) mutable
+				{
+					UDBAOnlineAccountService* CurrentService = WeakThis.Get();
+					if (!CurrentService || !CurrentService->IsRequestCurrent(Generation))
+					{
+						return;
+					}
+					if (!bNameSuccess)
+					{
+						OnComplete.ExecuteIfBound(MakeLoginFailure(TEXT("首次玩家名生成失败"), NameError));
+						return;
+					}
+
+					FString GeneratedPlayerName;
+					FString PlayerNameParseError;
+					if (!FDBAOnlineAccountJson::ParseGeneratedPlayerNameResponse(NameJson, GeneratedPlayerName, PlayerNameParseError))
+					{
+						OnComplete.ExecuteIfBound(MakeLoginFailure(TEXT("玩家名响应解析失败"), PlayerNameParseError));
+						return;
+					}
+
+					Response.AccountInfo.DisplayName = GeneratedPlayerName;
+					CurrentService->CacheLoginSuccess(Response);
+					OnComplete.ExecuteIfBound(Response);
+				});
 		});
 }
 
